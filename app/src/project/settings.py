@@ -1,7 +1,3 @@
-"""
-Django settings for project project.
-"""
-
 import inspect
 import logging
 from datetime import timedelta
@@ -9,8 +5,7 @@ from functools import wraps
 
 import environ
 import structlog
-
-# from celery.schedules import crontab
+from celery.schedules import crontab
 from kombu import Queue
 
 root = environ.Path(__file__) - 2
@@ -71,6 +66,7 @@ INSTALLED_APPS = [
     "django_extensions",
     "django_probes",
     "django_structlog",
+    "abstract_block_dumper",
     "constance",
     "project.core",
 ]
@@ -217,14 +213,12 @@ CELERY_RESULT_EXPIRES = int(timedelta(days=1).total_seconds())  # time until tas
 CELERY_COMPRESSION = "gzip"  # task compression
 CELERY_MESSAGE_COMPRESSION = "gzip"  # result compression
 CELERY_SEND_EVENTS = True  # needed for worker monitoring
-CELERY_BEAT_SCHEDULE = {  # type: ignore
-    # 'task_name': {
-    #     'task': "project.core.tasks.demo_task",
-    #     'args': [2, 2],
-    #     'kwargs': {},
-    #     'schedule': crontab(minute=0, hour=0),
-    #     'options': {"time_limit": 300},
-    # },
+CELERY_BEAT_SCHEDULE = {
+    "cleanup-old-tasks": {
+        "task": "abstract_block_dumper.v1.tasks.cleanup_old_tasks",
+        "schedule": crontab(hour=2, minute=0),  # Daily at 2 AM
+        "kwargs": {"days": 7},  # Customize retention period
+    },
 }
 CELERY_TASK_CREATE_MISSING_QUEUES = False
 CELERY_TASK_QUEUES = (Queue("celery"), Queue("worker"), Queue("dead_letter"))
@@ -253,6 +247,8 @@ EMAIL_HOST_PASSWORD = env("EMAIL_HOST_PASSWORD")
 EMAIL_USE_TLS = env.bool("EMAIL_USE_TLS")
 DEFAULT_FROM_EMAIL = env("DEFAULT_FROM_EMAIL")
 
+LOG_LEVEL = env("LOG_LEVEL", default="DEBUG")
+
 LOGGING = {
     "version": 1,
     "disable_existing_loggers": False,
@@ -270,7 +266,7 @@ LOGGING = {
     },
     "root": {
         "handlers": ["console"],
-        "level": "DEBUG",
+        "level": LOG_LEVEL,
     },
     "loggers": {
         "django": {
@@ -329,7 +325,8 @@ def configure_structlog():
 configure_structlog()
 
 # Sentry
-if SENTRY_DSN := env("SENTRY_DSN", default=""):
+SENTRY_DSN = env("SENTRY_DSN", default="")
+if SENTRY_DSN and SENTRY_DSN.strip():
     import sentry_sdk
     from sentry_sdk.integrations.celery import CeleryIntegration
     from sentry_sdk.integrations.django import DjangoIntegration
@@ -351,3 +348,12 @@ if SENTRY_DSN := env("SENTRY_DSN", default=""):
     )
     ignore_logger("django.security.DisallowedHost")
     ignore_logger("django_structlog.celery.receivers")
+
+
+# Abstract Block Dumper specific settings
+BITTENSOR_NETWORK = "finney"  # Options: 'finney', 'local', 'testnet', 'mainnet'
+BLOCK_DUMPER_START_FROM_BLOCK = "current"  # Options: None, 'current', or int
+BLOCK_DUMPER_POLL_INTERVAL = 6  # seconds between polling for new blocks
+BLOCK_TASK_RETRY_BACKOFF = 2  # minutes for retry backoff base
+BLOCK_DUMPER_MAX_ATTEMPTS = 3  # maximum retry attempts
+BLOCK_TASK_MAX_RETRY_DELAY_MINUTES = 1440  # maximum retry delay (24 hours)

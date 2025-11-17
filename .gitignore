@@ -18,3 +18,5 @@ media/
 .terraform/
 .nox/
 __pycache__
+app/src/celerybeat-schedule.db
+logs/

@@ -1,0 +1,1 @@
+../envs/prod/celery-entrypoint.sh
