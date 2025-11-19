@@ -1,5 +1,5 @@
 
-# Base requirements
+# Base cookiecutter-rt-django README
 
 - docker with [compose plugin](https://docs.docker.com/compose/install/linux/)
 - python 3.11

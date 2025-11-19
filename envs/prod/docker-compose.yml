@@ -60,7 +60,7 @@ services:
   app:
     build:
       context: .
-      dockerfile: app/Dockerfile
+      dockerfile: app/envs/prod/Dockerfile
     image: project/app
     healthcheck:
       test: ["CMD", "./healthcheck.py", "/var/run/gunicorn/gunicorn.sock"]
@@ -88,8 +88,8 @@ services:
   block-scheduler:
     build:
       context: .
-      dockerfile: app/Dockerfile
-    image: metagraph_dumper/app
+      dockerfile: app/envs/prod/Dockerfile
+    image: block_dumper/app
     healthcheck:
       test: wget -q --spider 127.0.0.1:8000/admin/login/ || exit 1
     init: true

@@ -21,10 +21,12 @@ dependencies = [
     "nox==2024.10.9",
     "more-itertools~=10.3.0",
     "psutil>=5.9.8",
+    "pydantic~=2.0",
     "prometheus-client~=0.17.0",
     "django-prometheus==2.3.1",
     "django-business-metrics>=1.0.1,<2",
     "abstract-block-dumper==0.0.4",
+    "turbobt>=0.3.0",
 ]
 
 [build-system]
@@ -75,7 +77,7 @@ ignore = [
 
 [tool.ruff.lint.per-file-ignores]
 "__init__.py" = ["F401"]
-"**/test*/**.py" = ["D", "F403", "F405", "S106", "S311"]
+"**/test*/**.py" = ["ANN201", "D", "F403", "F405", "S101", "S106", "S311"]
 
 [tool.codespell]
 skip = '*.min.js,*.lock,*/monitoring_certs/*'
