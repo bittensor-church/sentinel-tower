@@ -85,6 +85,30 @@ services:
     logging:
       <<: *logging
 
+  block-scheduler:
+    build:
+      context: .
+      dockerfile: app/Dockerfile
+    image: metagraph_dumper/app
+    healthcheck:
+      test: wget -q --spider 127.0.0.1:8000/admin/login/ || exit 1
+    init: true
+    restart: unless-stopped
+    env_file: ./.env
+    command: nice python manage.py block_tasks_v1
+    environment:
+      - PROMETHEUS_MULTIPROC_DIR=/prometheus-multiproc-dir
+    volumes:
+      - backend-static:/root/src/static
+      - ./media:/root/src/media
+      - ./prometheus-metrics:/prometheus-multiproc-dir
+    depends_on:
+      - celery-worker
+      - redis
+      - db
+    logging:
+      <<: *logging
+
   celery-worker:
     image: project/app
     init: true

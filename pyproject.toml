@@ -11,8 +11,8 @@ dependencies = [
     "django-probes==1.7.0",
     "django-debug-toolbar==4.1.0",
     "django-structlog[celery]==8.0.0",
-    "celery~=5.3.1",
-    "flower~=2.0.0",
+    "celery~=5.5.3",
+    "flower~=2.0.1",
     "gunicorn==20.1.0",
     "psycopg[binary]~=3.1.19",
     "redis~=4.6.0",
@@ -24,6 +24,7 @@ dependencies = [
     "prometheus-client~=0.17.0",
     "django-prometheus==2.3.1",
     "django-business-metrics>=1.0.1,<2",
+    "abstract-block-dumper==0.0.4",
 ]
 
 [build-system]

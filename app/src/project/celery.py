@@ -2,7 +2,7 @@ import logging
 import os
 
 from celery import Celery
-from celery.signals import setup_logging, worker_process_shutdown
+from celery.signals import celeryd_init, setup_logging, worker_process_shutdown
 from django.conf import settings
 from django_structlog.celery.steps import DjangoStructLogInitStep
 from more_itertools import chunked
@@ -14,7 +14,7 @@ os.environ.setdefault("DJANGO_SETTINGS_MODULE", "project.settings")
 
 app = Celery("project")
 app.config_from_object("django.conf:settings", namespace="CELERY")
-app.steps["worker"].add(DjangoStructLogInitStep)
+app.steps["worker"].add(DjangoStructLogInitStep)  # type: ignore
 app.autodiscover_tasks(lambda: settings.INSTALLED_APPS)
 
 num_tasks_in_queue = Gauge(
@@ -65,4 +65,13 @@ def flush_tasks(queue_name: str) -> None:
 
 @worker_process_shutdown.connect
 def child_exit(pid, **kw):
-    multiprocess.mark_process_dead(pid)
+    if os.environ.get("PROMETHEUS_MULTIPROC_DIR"):
+        multiprocess.mark_process_dead(pid)
+
+
+@celeryd_init.connect
+def on_worker_init(**kwargs) -> None:
+    """Load block tasks when worker initializes."""
+    from abstract_block_dumper.v1.celery import setup_celery_tasks  # noqa: PLC0415
+
+    setup_celery_tasks()

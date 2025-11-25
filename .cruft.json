@@ -24,7 +24,7 @@
       "allauth_trust_external_emails": "n",
       "allauth_providers": "n",
       "vulnerabilities_scanning": "y",
-      "sentry_dsn": "'update-me-later'",
+      "sentry_dsn": "",
       "csp_enabled": "n",
       "csp_report_only": "y",
       "csp_report_url": "",
