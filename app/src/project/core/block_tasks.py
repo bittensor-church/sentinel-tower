@@ -9,7 +9,7 @@ from sentinel.services.storage import create_local_json_storage
 logger = structlog.get_logger()
 
 @block_task(
-    condition=lambda bn: True,
+    condition=lambda _bn: True,
 )
 def store_hyperparameters(block_number: int) -> list[str]:
     """
