@@ -1,5 +1,5 @@
 [project]
-name = "bittensor_sentinel"
+name = "sentinel_dumper"
 requires-python = "==3.11.*"
 version = "0"
 dependencies = [
@@ -25,8 +25,9 @@ dependencies = [
     "prometheus-client~=0.17.0",
     "django-prometheus==2.3.1",
     "django-business-metrics>=1.0.1,<2",
-    "abstract-block-dumper==0.0.4",
+    "abstract-block-dumper[prometheus]==0.0.8",
     "turbobt>=0.3.0",
+    "bittensor-sentinel==0.0.6",
 ]
 
 [build-system]

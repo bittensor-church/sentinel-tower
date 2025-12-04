@@ -1,45 +1,35 @@
 import structlog
 from abstract_block_dumper.v1.decorators import block_task
-from django.conf import settings
+from sentinel.v1.providers.bittensor import bittensor_provider
+from sentinel.v1.services.extractors.extrinsics.filters import filter_hyperparam_extrinsics
+from sentinel.v1.services.sentinel import sentinel_service
 
-from sentinel.providers.bittensor import bittensor_provider
-from sentinel.services.sentinel import sentinel_service
-from sentinel.services.storage import create_local_json_storage
+from project.core.services import JsonLinesStorage
 
 logger = structlog.get_logger()
 
-@block_task(
-    condition=lambda _bn: True,
-)
-def store_hyperparameters(block_number: int) -> list[str]:
+
+
+@block_task
+def store_hyperparameters(block_number: int) -> str:
     """
-    A block task that processes every block and stores hyperparameters.
-
-    The storage backend and format are configured via environment variables.
-    See _get_storage_service() for configuration options.
-
+    Store extrinsics from the given block number that contain hyperparameter updates.
     """
-    batch_processing = []
-    for netuid in [17, 19, 21]:
-        sentinel = sentinel_service(bittensor_provider())
+    hyperparams_storage = JsonLinesStorage("data/bittensor/hyperparams-extrinsics.jsonl")
 
-        # Collect hyperparameter values
-        block = sentinel.ingest_block(block_number, netuid)
+    service = sentinel_service(bittensor_provider())
+    block = service.ingest_block(block_number)
+    hyperparam_extrinsics = filter_hyperparam_extrinsics(block.extrinsics)
+    if not hyperparam_extrinsics:
+        return ""
 
-        # Store result with organized path structure
+    logger.info(
+        "Storing hyperparameter extrinsics",
+        block_number=block_number,
+        extrinsics_count=len(hyperparam_extrinsics),
+    )
 
-        storage_service = create_local_json_storage(f"{settings.MEDIA_ROOT}/data/hyperparams")
-        stored_path = storage_service.store(
-            block_number, netuid, block.hyperparameters, f"subnet_{netuid}/block_{block_number}",
-        )
+    for extrinsic in hyperparam_extrinsics:
+        hyperparams_storage.append({"block_number": block_number, **extrinsic.model_dump()})
 
-        logger.info(
-            "Stored hyperparameters",
-            block_number=block_number,
-            netuid=netuid,
-            stored_path=stored_path,
-            hyperparameters=block.hyperparameters.model_dump(),
-        )
-        batch_processing.append(stored_path)
-
-    return batch_processing
+    return f"Stored {len(hyperparam_extrinsics)} hyperparameter extrinsics from block {block_number}"
