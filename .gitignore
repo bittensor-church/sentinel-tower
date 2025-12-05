@@ -21,3 +21,4 @@ __pycache__
 app/src/celerybeat-schedule.db
 logs/
 .gitdo/
+.DS_Store

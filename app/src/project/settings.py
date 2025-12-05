@@ -355,7 +355,7 @@ if SENTRY_DSN and SENTRY_DSN.strip():
 # Abstract Block Dumper specific settings
 BITTENSOR_NETWORK = "finney"  # Options: 'finney', 'local', 'testnet', 'mainnet'
 BLOCK_DUMPER_START_FROM_BLOCK = "current"  # Options: None, 'current', or int
-BLOCK_DUMPER_POLL_INTERVAL = 3  # seconds between polling for new blocks
+BLOCK_DUMPER_POLL_INTERVAL = 5  # seconds between polling for new blocks
 BLOCK_DUMPER_REALTIME_HEAD_ONLY = True  # Only process current head block, no catch-up
 BLOCK_TASK_RETRY_BACKOFF = 1  # minutes for retry backoff base
 BLOCK_DUMPER_MAX_ATTEMPTS = 3  # maximum retry attempts
