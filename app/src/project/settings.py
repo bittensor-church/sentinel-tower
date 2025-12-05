@@ -247,7 +247,7 @@ EMAIL_HOST_PASSWORD = env("EMAIL_HOST_PASSWORD")
 EMAIL_USE_TLS = env.bool("EMAIL_USE_TLS")
 DEFAULT_FROM_EMAIL = env("DEFAULT_FROM_EMAIL")
 
-LOG_LEVEL = env("LOG_LEVEL", default="DEBUG")
+LOG_LEVEL = env("LOG_LEVEL", default="INFO")
 
 LOGGING = {
     "version": 1,
@@ -300,6 +300,11 @@ LOGGING = {
         "parso": {
             "handlers": ["console"],
             "level": "INFO",
+        },
+        # Suppress verbose websocket connection debug logs
+        "websockets": {
+            "handlers": ["console"],
+            "level": "WARNING",
         },
     },
 }
