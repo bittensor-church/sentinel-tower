@@ -121,6 +121,7 @@ services:
       - PROMETHEUS_MULTIPROC_DIR=/prometheus-multiproc-dir/celery-worker
     command: ./celery-entrypoint.sh
     volumes:
+      - ./media:/root/src/media
       - ./prometheus-metrics:/prometheus-multiproc-dir
     tmpfs: /run
     depends_on:

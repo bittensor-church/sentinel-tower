@@ -1880,6 +1880,9 @@ dependencies = [
 ]
 
 [package.dev-dependencies]
+format = [
+    { name = "ruff" },
+]
 lint = [
     { name = "codespell" },
     { name = "ruff" },
@@ -1930,6 +1933,7 @@ requires-dist = [
 ]
 
 [package.metadata.requires-dev]
+format = [{ name = "ruff" }]
 lint = [
     { name = "codespell", extras = ["toml"] },
     { name = "ruff" },

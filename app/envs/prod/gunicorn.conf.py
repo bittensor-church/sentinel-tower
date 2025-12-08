@@ -17,6 +17,5 @@ wsgi_app = "project.wsgi:application"
 access_logfile = "-"
 
 
-
 def child_exit(server, worker):
     multiprocess.mark_process_dead(worker.pid)

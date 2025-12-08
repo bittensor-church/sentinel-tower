@@ -49,6 +49,9 @@ lint = [
     "ruff",
     "codespell[toml]",
 ]
+format = [
+    "ruff",
+]
 type_check = [
     "django-stubs[compatible-mypy]",
     "djangorestframework-stubs[compatible-mypy]",
