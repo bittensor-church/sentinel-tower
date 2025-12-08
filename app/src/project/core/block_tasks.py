@@ -10,7 +10,7 @@ from project.core.services import JsonLinesStorage
 logger = structlog.get_logger()
 
 
-@block_task
+# @block_task
 def store_hyperparameters(block_number: int) -> str:
     """
     Store extrinsics from the given block number that contain hyperparameter updates.
