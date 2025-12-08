@@ -5,7 +5,7 @@ from prometheus_client import multiprocess
 
 env = environ.Env()
 
-workers = env.int("GUNICORN_WORKERS", multiprocessing.cpu_count() + 1)
+workers = env.int("GUNICORN_WORKERS", 1)
 max_workers = env.int("GUNICORN_MAX_WORKERS", 0)
 
 if max_workers > 0:
