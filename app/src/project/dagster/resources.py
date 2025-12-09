@@ -16,33 +16,60 @@ class JsonLinesReader(ConfigurableResource):
 
     base_path: str
 
-    def read_file(self, relative_path: str) -> list[dict[str, Any]]:
+    def _get_file_path(self, relative_path: str) -> Path:
+        return Path(self.base_path) / relative_path
+
+    def read_file(self, relative_path: str, start_line: int = 0) -> tuple[list[dict[str, Any]], int]:
         """
-        Read all JSON objects from a JSONL file.
+        Read JSON objects from a JSONL file, optionally starting from a specific line.
 
         Args:
-            relative_path: Path relative to base_path (e.g., "data/bittensor/hyperparams-extrinsics.jsonl")
+            relative_path: Path relative to base_path
+            start_line: Line number to start reading from (0-indexed)
 
         Returns:
-            List of parsed JSON objects
+            Tuple of (list of parsed JSON objects, last line number read)
 
         """
-        file_path = Path(self.base_path) / relative_path
+        file_path = self._get_file_path(relative_path)
         if not file_path.exists():
-            return []
+            return [], start_line
 
         records = []
+        current_line = 0
         with open(file_path, encoding="utf-8") as f:
-            for line in f:
-                line = line.strip()
-                if line:
-                    records.append(json.loads(line))
-        return records
+            for raw_line in f:
+                if current_line >= start_line:
+                    stripped = raw_line.strip()
+                    if stripped:
+                        records.append(json.loads(stripped))
+                current_line += 1
+        return records, current_line
 
-    def read_hyperparams(self) -> list[dict[str, Any]]:
-        """Read all hyperparameter extrinsics."""
-        return self.read_file("data/bittensor/hyperparams-extrinsics.jsonl")
+    def count_lines(self, relative_path: str) -> int:
+        """Count total lines in a JSONL file."""
+        file_path = self._get_file_path(relative_path)
+        if not file_path.exists():
+            return 0
 
-    def read_set_weights(self) -> list[dict[str, Any]]:
-        """Read all set-weights extrinsics."""
-        return self.read_file("data/bittensor/set-weights-extrinsics.jsonl")
+        count = 0
+        with open(file_path, encoding="utf-8") as f:
+            for _ in f:
+                count += 1
+        return count
+
+    def read_hyperparams(self, start_line: int = 0) -> tuple[list[dict[str, Any]], int]:
+        """Read hyperparameter extrinsics from start_line onwards."""
+        return self.read_file("data/bittensor/hyperparams-extrinsics.jsonl", start_line)
+
+    def read_set_weights(self, start_line: int = 0) -> tuple[list[dict[str, Any]], int]:
+        """Read set-weights extrinsics from start_line onwards."""
+        return self.read_file("data/bittensor/set-weights-extrinsics.jsonl", start_line)
+
+    def get_hyperparams_line_count(self) -> int:
+        """Get total line count of hyperparams file."""
+        return self.count_lines("data/bittensor/hyperparams-extrinsics.jsonl")
+
+    def get_set_weights_line_count(self) -> int:
+        """Get total line count of set-weights file."""
+        return self.count_lines("data/bittensor/set-weights-extrinsics.jsonl")

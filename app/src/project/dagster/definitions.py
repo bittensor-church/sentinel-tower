@@ -14,6 +14,14 @@ django.setup()
 from django.conf import settings
 
 from project.dagster.assets import hyperparams_extrinsics, set_weights_extrinsics
+from project.dagster.jobs import (
+    hourly_ingest_schedule,
+    hyperparams_sensor,
+    ingest_all_events_job,
+    ingest_hyperparams_job,
+    ingest_set_weights_job,
+    set_weights_sensor,
+)
 from project.dagster.resources import JsonLinesReader
 
 # Determine base path for JSONL files (use Django's MEDIA_ROOT)
@@ -23,6 +31,18 @@ defs = dg.Definitions(
     assets=[
         hyperparams_extrinsics,
         set_weights_extrinsics,
+    ],
+    jobs=[
+        ingest_hyperparams_job,
+        ingest_set_weights_job,
+        ingest_all_events_job,
+    ],
+    sensors=[
+        hyperparams_sensor,
+        set_weights_sensor,
+    ],
+    schedules=[
+        hourly_ingest_schedule,
     ],
     resources={
         "jsonl_reader": JsonLinesReader(base_path=MEDIA_ROOT),

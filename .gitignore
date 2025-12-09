@@ -24,3 +24,4 @@ logs/
 .DS_Store
 .dagster/
 app/src/.dagster/
+nginx/htpasswd/
