@@ -210,6 +210,7 @@ services:
       - app
       - cadvisor
       - node-exporter
+      - dagster
     command: nginx -g 'daemon off;'
     ports:
       - 80:80
