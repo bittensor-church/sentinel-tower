@@ -218,7 +218,6 @@ services:
     volumes:
       - ./nginx/templates:/etc/nginx/templates
       - ./nginx/config_helpers:/etc/nginx/config_helpers
-      - ./nginx/htpasswd:/etc/nginx/htpasswd:ro
       - backend-static:/srv/static:ro
       - ./media:/srv/media:ro
       - ./letsencrypt/etc:/etc/letsencrypt

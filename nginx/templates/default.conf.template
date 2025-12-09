@@ -83,9 +83,6 @@ server {
     }
 
     location /dagster/ {
-        auth_basic "Dagster";
-        auth_basic_user_file /etc/nginx/htpasswd/dagster;
-
         proxy_pass http://dagster/dagster/;
         proxy_http_version 1.1;
         proxy_set_header Host $http_host;
