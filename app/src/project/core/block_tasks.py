@@ -1,7 +1,6 @@
 import sentinel.v1.services.extractors.extrinsics.filters as extrinsics_filters
 import structlog
 from abstract_block_dumper.v1.decorators import block_task
-from sentinel.v1.dto import ExtrinsicDTO
 from sentinel.v1.providers.bittensor import bittensor_provider
 from sentinel.v1.services.sentinel import sentinel_service
 
@@ -35,35 +34,7 @@ def store_hyperparameters(block_number: int) -> str:
     return f"Stored {len(hyperparam_extrinsics)} hyperparameter extrinsics from block {block_number}"
 
 
-def extract_netuid_from_extrinsic(extrinsic: ExtrinsicDTO) -> int | None:
-    """
-    Extract the netuid from a set weights extrinsic, if present.
-
-    Example extrinsic call_args:
-    "call_args": [
-        {
-            "name": "netuid",
-            "type": "NetUid",
-            "value": 18
-        },
-        ...
-    ]
-    """
-    for arg in extrinsic.call.call_args:
-        if arg.name == "netuid":
-            try:
-                return int(arg.value)
-            except (ValueError, TypeError):
-                logger.warning(
-                    "Failed to extract netuid from extrinsic",
-                    extrinsic_hash=extrinsic.extrinsic_hash,
-                    netuid_value=arg.value,
-                )
-                return None
-    return None
-
-
-# @block_task
+@block_task
 def store_set_weights_extrinsics(block_number: int) -> str:
     """
     Store extrinsics from the given block number that contain set weight updates.
@@ -83,11 +54,12 @@ def store_set_weights_extrinsics(block_number: int) -> str:
 
     netuids = set()
     for extrinsic in set_weights_extrinsics:
-        netuid = extract_netuid_from_extrinsic(extrinsic)
+        netuid = extrinsic.netuid
         if netuid is None:
             logger.warning(
-                "Skipping set weights extrinsic without valid netuid",
-                extrinsic_hash=extrinsic.extrinsic_hash,
+                "Skipping set weights extrinsic with missing netuid",
+                block_number=block_number,
+                extrinsic=extrinsic.model_dump(),
             )
             continue
         weights_storage = JsonLinesStorage(f"data/bittensor/netuid/{netuid}/set-weights-extrinsics.jsonl")

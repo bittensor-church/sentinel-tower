@@ -280,19 +280,20 @@ wheels = [
 
 [[package]]
 name = "bittensor-sentinel"
-version = "0.0.7"
+version = "0.0.9"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
     { name = "asgiref" },
+    { name = "bittensor" },
     { name = "pydantic" },
     { name = "structlog" },
     { name = "substrate-interface" },
     { name = "turbobt" },
     { name = "typer" },
 ]
-sdist = { url = "https://files.pythonhosted.org/packages/30/79/56268b7ae306243b8512bb8bf95ff59d142cc5ed7f9e99014d2c43007593/bittensor_sentinel-0.0.7.tar.gz", hash = "sha256:22a36c3b7a34dadc3b10140aaa430c055c7e51cd760923d23955ddc0ad96b6ea", size = 124195, upload-time = "2025-12-04T14:20:21.823Z" }
+sdist = { url = "https://files.pythonhosted.org/packages/a7/83/3f036df579b7958e3397384da12a17ab9339cea5dbd50a43fea8a210bde9/bittensor_sentinel-0.0.9.tar.gz", hash = "sha256:8bffab571aec1a69d8d0ed0448e572a522626e9fe93aab2cd297654eba251e4e", size = 202972, upload-time = "2025-12-09T03:12:33.483Z" }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/d0/4f/56a229a95c321b54f41788589fd23282edc22e92155e5dd56a8601034e96/bittensor_sentinel-0.0.7-py3-none-any.whl", hash = "sha256:10096ab21061eda7e5ebd092226fde6d58ef6f991daa02b0c19ba0bd14acdfb9", size = 25462, upload-time = "2025-12-04T14:20:20.232Z" },
+    { url = "https://files.pythonhosted.org/packages/f4/e6/f18cd69e2f7e608ec34a76bb45acc13f136958088fabac5e48fce3c51b02/bittensor_sentinel-0.0.9-py3-none-any.whl", hash = "sha256:f184743e7b82e93364fee5512790af96cd776873deda6ccd4e604f5221977647", size = 30362, upload-time = "2025-12-09T03:12:31.861Z" },
 ]
 
 [[package]]
@@ -1906,7 +1907,7 @@ type-check = [
 [package.metadata]
 requires-dist = [
     { name = "abstract-block-dumper", extras = ["prometheus"], specifier = "==0.0.9" },
-    { name = "bittensor-sentinel", specifier = "~=0.0.7" },
+    { name = "bittensor-sentinel", specifier = "~=0.0.9" },
     { name = "celery", specifier = "~=5.5.3" },
     { name = "django", specifier = "~=4.2.4" },
     { name = "django-business-metrics", specifier = ">=1.0.1,<2" },
