@@ -39,12 +39,14 @@ def store_set_weights_extrinsics(block_number: int) -> str:
     """
     Store extrinsics from the given block number that contain set weight updates.
     """
+    weights_storage = JsonLinesStorage("data/bittensor/set-weights-extrinsics.jsonl")
+
     service = sentinel_service(bittensor_provider())
     block = service.ingest_block(block_number)
 
     set_weights_extrinsics = extrinsics_filters.filter_weight_set_extrinsics(block.extrinsics)
     if not set_weights_extrinsics:
-        return "No set weights extrinsics found"
+        return ""
 
     logger.info(
         "Storing set weights extrinsics",
@@ -52,21 +54,7 @@ def store_set_weights_extrinsics(block_number: int) -> str:
         extrinsics_count=len(set_weights_extrinsics),
     )
 
-    netuids = set()
     for extrinsic in set_weights_extrinsics:
-        netuid = extrinsic.netuid
-        if netuid is None:
-            logger.warning(
-                "Skipping set weights extrinsic with missing netuid",
-                block_number=block_number,
-                extrinsic=extrinsic.model_dump(),
-            )
-            continue
-        weights_storage = JsonLinesStorage(f"data/bittensor/netuid/{netuid}/set-weights-extrinsics.jsonl")
-        weights_storage.append({"block_number": block_number, "netuid": netuid, **extrinsic.model_dump()})
-        netuids.add(netuid)
+        weights_storage.append({"block_number": block_number, **extrinsic.model_dump()})
 
-    return (
-        f"Stored {len(set_weights_extrinsics)} set weights extrinsics from block {block_number} "
-        f"across netuids: {sorted(netuids)}"
-    )
+    return f"Stored {len(set_weights_extrinsics)} set weights extrinsics from block {block_number}"

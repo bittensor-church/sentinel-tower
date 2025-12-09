@@ -184,6 +184,23 @@ services:
     logging:
       <<: *logging
 
+  dagster-daemon:
+    image: project/app
+    init: true
+    restart: unless-stopped
+    env_file: ./.env
+    environment:
+      - DEBUG=off
+      - DAGSTER_HOME=/root/src
+    command: dagster-daemon run -m project.dagster.definitions
+    volumes:
+      - ./media:/root/src/media
+      - dagster-storage:/root/src/.dagster
+    depends_on:
+      - dagster
+    logging:
+      <<: *logging
+
   nginx:
     image: 'ghcr.io/reef-technologies/nginx-rt:v1.2.2'
     restart: unless-stopped
