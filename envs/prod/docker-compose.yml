@@ -162,6 +162,28 @@ services:
     logging:
       <<: *logging
 
+  dagster:
+    image: project/app
+    healthcheck:
+      test: wget -qO- 127.0.0.1:3000/server_info > /dev/null || exit 1
+    init: true
+    restart: unless-stopped
+    env_file: ./.env
+    environment:
+      - DEBUG=off
+      - DAGSTER_HOME=/root/src
+    command: ./dagster-entrypoint.sh
+    volumes:
+      - ./media:/root/src/media
+      - dagster-storage:/root/src/.dagster
+    depends_on:
+      - redis
+      - db
+    ports:
+      - 127.0.0.1:3000:3000
+    logging:
+      <<: *logging
+
   nginx:
     image: 'ghcr.io/reef-technologies/nginx-rt:v1.2.2'
     restart: unless-stopped
@@ -275,3 +297,4 @@ volumes:
   gunicorn-socket:
   nodeexporter_collectors:
   alloy-data:
+  dagster-storage:

@@ -50,5 +50,25 @@ services:
     depends_on:
       - db
 
+  dagster:
+    build:
+      context: ../../
+      dockerfile: app/envs/prod/Dockerfile
+    image: project/app
+    init: true
+    env_file: ./.env
+    environment:
+      - DAGSTER_HOME=/root/src
+    command: ./dagster-entrypoint.sh
+    volumes:
+      - ./media:/root/src/media
+      - dagster-storage:/root/src/.dagster
+    depends_on:
+      - redis
+      - db
+    ports:
+      - ${DAGSTER_PORT:-3000}:3000
+
 volumes:
   backups:
+  dagster-storage:

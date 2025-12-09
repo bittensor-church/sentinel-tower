@@ -9,7 +9,7 @@ from project.core.services import JsonLinesStorage
 logger = structlog.get_logger()
 
 
-@block_task
+@block_task(celery_kwargs={"rate_limit": "10/m"})
 def store_hyperparameters(block_number: int) -> str:
     """
     Store extrinsics from the given block number that contain hyperparameter updates.
@@ -34,7 +34,7 @@ def store_hyperparameters(block_number: int) -> str:
     return f"Stored {len(hyperparam_extrinsics)} hyperparameter extrinsics from block {block_number}"
 
 
-@block_task
+@block_task(celery_kwargs={"rate_limit": "10/m"})
 def store_set_weights_extrinsics(block_number: int) -> str:
     """
     Store extrinsics from the given block number that contain set weight updates.
