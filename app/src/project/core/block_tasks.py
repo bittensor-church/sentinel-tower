@@ -1,6 +1,7 @@
 import sentinel.v1.services.extractors.extrinsics.filters as extrinsics_filters
 import structlog
 from abstract_block_dumper.v1.decorators import block_task
+from sentinel.v1.models.block import Block
 from sentinel.v1.providers.bittensor import bittensor_provider
 from sentinel.v1.services.sentinel import sentinel_service
 
@@ -23,7 +24,7 @@ def store_blockchain_data(block_number: int) -> str:
     return f"{hyperparam_extrinsics}\n{set_weights_extrinsics}".strip()
 
 
-def store_hyperparam_extrinsics(block, block_number: int) -> str:
+def store_hyperparam_extrinsics(block: Block, block_number: int) -> str:
     """
     Store extrinsics from the given block number that contain hyperparameter updates.
     """
@@ -43,7 +44,7 @@ def store_hyperparam_extrinsics(block, block_number: int) -> str:
     return f"Stored {len(hyperparam_extrinsics)} hyperparameter extrinsics from block {block_number}"
 
 
-def store_set_weights_extrinsics(block, block_number: int) -> str:
+def store_set_weights_extrinsics(block: Block, block_number: int) -> str:
     """
     Store extrinsics from the given block number that contain set_weights calls.
     """

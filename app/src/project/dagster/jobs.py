@@ -99,6 +99,9 @@ def ingest_set_weights(context: dg.OpExecutionContext, jsonl_reader: JsonLinesRe
         call_data = record.get("call", {})
         weights_data = {arg["name"]: arg["value"] for arg in call_data.get("call_args", [])}
 
+        # Extract events data
+        events = record.get("events", [])
+
         _, created = SetWeightsEvent.objects.get_or_create(
             extrinsic_hash=extrinsic_hash,
             defaults={
@@ -107,6 +110,7 @@ def ingest_set_weights(context: dg.OpExecutionContext, jsonl_reader: JsonLinesRe
                 "address": record.get("address"),
                 "status": record.get("status"),
                 "weights_data": weights_data,
+                "events": events,
             },
         )
 

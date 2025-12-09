@@ -63,8 +63,11 @@ class SetWeightsEvent(models.Model):
     # Status
     status = models.CharField(max_length=20, null=True, blank=True)
 
-    # Store weights data as JSON
+    # Store weights data (call args) as JSON
     weights_data = models.JSONField(default=dict)
+
+    # Store extrinsic events as JSON
+    events = models.JSONField(default=list)
 
     # Timestamps
     created_at = models.DateTimeField(auto_now_add=True)
