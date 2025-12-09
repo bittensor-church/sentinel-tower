@@ -33,6 +33,13 @@ def ingest_hyperparams(context: dg.OpExecutionContext, jsonl_reader: JsonLinesRe
 
         # Extract call info
         call_data = record.get("call", {})
+        call_args_list = call_data.get("call_args", [])
+        call_args_dict = {arg["name"]: arg["value"] for arg in call_args_list}
+
+        # Extract netuid - check record level first, then call_args
+        netuid = record.get("netuid")
+        if netuid is None:
+            netuid = call_args_dict.get("netuid")
 
         _, created = HyperparamEvent.objects.get_or_create(
             extrinsic_hash=extrinsic_hash,
@@ -40,10 +47,10 @@ def ingest_hyperparams(context: dg.OpExecutionContext, jsonl_reader: JsonLinesRe
                 "block_number": record.get("block_number", 0),
                 "call_function": call_data.get("call_function", ""),
                 "call_module": call_data.get("call_module", ""),
-                "netuid": record.get("netuid"),
+                "netuid": netuid,
                 "address": record.get("address"),
                 "status": record.get("status"),
-                "call_args": {arg["name"]: arg["value"] for arg in call_data.get("call_args", [])},
+                "call_args": call_args_dict,
             },
         )
 
