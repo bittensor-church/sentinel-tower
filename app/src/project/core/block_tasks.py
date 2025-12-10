@@ -1,7 +1,7 @@
 import sentinel.v1.services.extractors.extrinsics.filters as extrinsics_filters
 import structlog
 from abstract_block_dumper.v1.decorators import block_task
-from sentinel.v1.models.block import Block
+from sentinel.v1.dto import ExtrinsicDTO
 from sentinel.v1.providers.bittensor import bittensor_provider
 from sentinel.v1.services.sentinel import sentinel_service
 
@@ -18,18 +18,20 @@ def store_blockchain_data(block_number: int) -> str:
     service = sentinel_service(bittensor_provider())
     block = service.ingest_block(block_number)
 
-    hyperparam_extrinsics = store_hyperparam_extrinsics(block, block_number)
-    set_weights_extrinsics = store_set_weights_extrinsics(block, block_number)
+    extrinsics = block.extrinsics
+
+    hyperparam_extrinsics = store_hyperparam_extrinsics(extrinsics, block_number)
+    set_weights_extrinsics = store_set_weights_extrinsics(extrinsics, block_number)
 
     return f"{hyperparam_extrinsics}\n{set_weights_extrinsics}".strip()
 
 
-def store_hyperparam_extrinsics(block: Block, block_number: int) -> str:
+def store_hyperparam_extrinsics(extrinsics: list[ExtrinsicDTO], block_number: int) -> str:
     """
     Store extrinsics from the given block number that contain hyperparameter updates.
     """
     hyperparams_storage = JsonLinesStorage("data/bittensor/hyperparams-extrinsics.jsonl")
-    hyperparam_extrinsics = extrinsics_filters.filter_hyperparam_extrinsics(block.extrinsics)
+    hyperparam_extrinsics = extrinsics_filters.filter_hyperparam_extrinsics(extrinsics)
     if not hyperparam_extrinsics:
         return ""
 
@@ -44,12 +46,12 @@ def store_hyperparam_extrinsics(block: Block, block_number: int) -> str:
     return f"Stored {len(hyperparam_extrinsics)} hyperparameter extrinsics from block {block_number}"
 
 
-def store_set_weights_extrinsics(block: Block, block_number: int) -> str:
+def store_set_weights_extrinsics(extrinsics: list[ExtrinsicDTO], block_number: int) -> str:
     """
     Store extrinsics from the given block number that contain set_weights calls.
     """
     weights_storage = JsonLinesStorage("data/bittensor/set-weights-extrinsics.jsonl")
-    set_weights_extrinsics = extrinsics_filters.filter_weight_set_extrinsics(block.extrinsics)
+    set_weights_extrinsics = extrinsics_filters.filter_weight_set_extrinsics(extrinsics)
     if not set_weights_extrinsics:
         return ""
 
