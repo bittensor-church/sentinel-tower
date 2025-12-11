@@ -216,12 +216,12 @@ services:
     environment:
       - NGINX_HOST=${NGINX_HOST}
     volumes:
-      - ../../nginx/templates:/etc/nginx/templates
-      - ../../nginx/config_helpers:/etc/nginx/config_helpers
+      - ./nginx/templates:/etc/nginx/templates
+      - ./nginx/config_helpers:/etc/nginx/config_helpers
       - backend-static:/srv/static:ro
       - ./media:/srv/media:ro
       - ./letsencrypt/etc:/etc/letsencrypt
-      - ../../nginx/monitoring_certs:/etc/monitoring_certs
+      - ./nginx/monitoring_certs:/etc/monitoring_certs
       - gunicorn-socket:/var/run/gunicorn:ro
     depends_on:
       - app
