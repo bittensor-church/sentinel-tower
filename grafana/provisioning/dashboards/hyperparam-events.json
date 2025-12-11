@@ -596,6 +596,10 @@
                       "success": {
                         "color": "green",
                         "index": 0
+                      },
+                      "failed": {
+                        "color": "red",
+                        "index": 1
                       }
                     },
                     "type": "value"
