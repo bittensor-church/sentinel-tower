@@ -625,6 +625,18 @@
                 "value": 150
               }
             ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "args"
+            },
+            "properties": [
+              {
+                "id": "custom.width",
+                "value": 300
+              }
+            ]
           }
         ]
       },
@@ -655,7 +667,7 @@
           "editorMode": "code",
           "format": "table",
           "rawQuery": true,
-          "rawSql": "SELECT \n  created_at as time,\n  netuid,\n  call_function as parameter,\n  SUBSTRING(address, 1, 8) || '...' || SUBSTRING(address, LENGTH(address)-5) as address,\n  block_number,\n  status\nFROM core_hyperparamevent\nORDER BY created_at DESC\nLIMIT 50",
+          "rawSql": "SELECT \n  created_at as time,\n  netuid,\n  call_function as parameter,\n  call_args as args,\n  SUBSTRING(address, 1, 8) || '...' || SUBSTRING(address, LENGTH(address)-5) as address,\n  block_number,\n  status\nFROM core_hyperparamevent\nORDER BY created_at DESC\nLIMIT 50",
           "refId": "A"
         }
       ],
