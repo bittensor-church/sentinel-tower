@@ -22,31 +22,33 @@ services:
     ports:
       - ${POSTGRES_PORT}:5432
 
-  # backups:
-  #   build:
-  #     context: backups/
-  #     dockerfile: Dockerfile
-  #   init: true
-  #   restart: unless-stopped
-  #   environment:
-  #     - DATABASE_URL=${DATABASE_URL}
-  #     - BACKUP_LOCAL_DIR=/var/backups
-  #     - BACKUP_LOCAL_ROTATE_KEEP_LAST=${BACKUP_LOCAL_ROTATE_KEEP_LAST}
-  #     - B2_BUCKET=${BACKUP_B2_BUCKET}
-  #     - B2_FOLDER=${BACKUP_B2_FOLDER}
-  #     - B2_APPLICATION_KEY_ID=${BACKUP_B2_APPLICATION_KEY_ID}
-  #     - B2_APPLICATION_KEY=${BACKUP_B2_APPLICATION_KEY}
-  #     - EMAIL_HOST=${EMAIL_HOST}
-  #     - EMAIL_PORT=${EMAIL_PORT}
-  #     - EMAIL_HOST_USER=${EMAIL_HOST_USER}
-  #     - EMAIL_HOST_PASSWORD=${EMAIL_HOST_PASSWORD}
-  #     - EMAIL_TARGET=${EMAIL_TARGET}
-  #     - DEFAULT_FROM_EMAIL=${DEFAULT_FROM_EMAIL}
-  #     - SENTRY_DSN=${SENTRY_DSN}
-  #   volumes:
-  #     - backups:/var/backups
-  #   depends_on:
-  #     - db
+  app:
+    build:
+      context: ./
+      dockerfile: app/envs/prod/Dockerfile
+    image: project/app
+    init: true
+    env_file: ./.env
+    environment:
+      - DATABASE_URL=postgres://postgres:12345@db:5432/project
+      - POSTGRES_HOST=db
+      - POSTGRES_PORT=5432
+      - REDIS_HOST=redis
+      - REDIS_PORT=6379
+    command: >
+      sh -c "./prometheus-cleanup.sh &&
+             PROMETHEUS_EXPORT_MIGRATIONS=0 ./manage.py wait_for_database --timeout 10 &&
+             PROMETHEUS_EXPORT_MIGRATIONS=0 ./manage.py migrate &&
+             gunicorn -b 0.0.0.0:8000 project.wsgi:application"
+    volumes:
+      - ./app/src/media:/root/src/media
+    depends_on:
+      db:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    ports:
+      - ${APP_PORT:-8000}:8000
 
   dagster-webserver:
     build:
@@ -100,6 +102,40 @@ services:
       redis:
         condition: service_healthy
 
+  prometheus:
+    image: prom/prometheus:v2.47.0
+    command:
+      - '--config.file=/etc/prometheus/prometheus.yml'
+      - '--storage.tsdb.path=/prometheus'
+      - '--web.enable-lifecycle'
+    volumes:
+      - ./prometheus:/etc/prometheus:ro
+      - prometheus-data:/prometheus
+    ports:
+      - ${PROMETHEUS_PORT:-9090}:9090
+    depends_on:
+      - app
+
+  grafana:
+    image: grafana/grafana:10.2.0
+    environment:
+      - GF_SECURITY_ADMIN_USER=${GRAFANA_ADMIN_USER:-admin}
+      - GF_SECURITY_ADMIN_PASSWORD=${GRAFANA_ADMIN_PASSWORD:-admin}
+      - GF_USERS_ALLOW_SIGN_UP=false
+      - POSTGRES_DB=${POSTGRES_DB}
+      - POSTGRES_USER=${POSTGRES_USER}
+      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD}
+    volumes:
+      - ./grafana/provisioning:/etc/grafana/provisioning:ro
+      - grafana-data:/var/lib/grafana
+    ports:
+      - ${GRAFANA_PORT:-3001}:3000
+    depends_on:
+      - prometheus
+      - db
+
 volumes:
   # backups:
   dagster-storage:
+  prometheus-data:
+  grafana-data:
