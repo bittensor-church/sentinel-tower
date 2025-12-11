@@ -4,7 +4,6 @@ from django.db import models
 
 
 class BlockchainEvent(models.Model):
-
     block_number = models.PositiveBigIntegerField(db_index=True)
     extrinsic_hash = models.CharField(max_length=66, unique=True)
     address = models.CharField(max_length=66, blank=True, db_index=True)

@@ -1,4 +1,5 @@
 """Dagster resources for blockchain data processing."""
+
 import json
 from pathlib import Path
 from typing import Any
@@ -122,7 +123,10 @@ class JsonLinesReader(ConfigurableResource):
         return total
 
     def read_partitioned_file(
-        self, relative_dir: str, filename: str, start_line: int = 0,
+        self,
+        relative_dir: str,
+        filename: str,
+        start_line: int = 0,
     ) -> tuple[list[dict[str, Any]], int]:
         """Read a specific partitioned file from start_line onwards."""
         return self.read_file(f"{relative_dir}/{filename}", start_line)

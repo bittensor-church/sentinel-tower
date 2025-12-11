@@ -1,4 +1,5 @@
 """Dagster definitions for the blockchain data pipeline."""
+
 import os
 from pathlib import Path
 
@@ -11,10 +12,10 @@ import django
 
 django.setup()
 
-from django.conf import settings
+from django.conf import settings  # noqa: E402
 
-from project.dagster.assets import hyperparams_extrinsics, set_weights_extrinsics
-from project.dagster.jobs import (
+from project.dagster.assets import hyperparams_extrinsics, set_weights_extrinsics  # noqa: E402
+from project.dagster.jobs import (  # noqa: E402
     hourly_ingest_schedule,
     hyperparams_sensor,
     ingest_all_events_job,
@@ -22,7 +23,7 @@ from project.dagster.jobs import (
     ingest_set_weights_job,
     set_weights_sensor,
 )
-from project.dagster.resources import JsonLinesReader
+from project.dagster.resources import JsonLinesReader  # noqa: E402
 
 # Determine base path for JSONL files (use Django's MEDIA_ROOT)
 MEDIA_ROOT = str(getattr(settings, "MEDIA_ROOT", Path(__file__).parent.parent.parent / "media"))

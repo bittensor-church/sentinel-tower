@@ -1,5 +1,3 @@
-import multiprocessing
-
 import environ
 from prometheus_client import multiprocess
 

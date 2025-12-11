@@ -4,59 +4,58 @@ from django.db import migrations, models
 
 
 class Migration(migrations.Migration):
-
     dependencies = [
-        ('core', '0002_setweightsevent_events'),
+        ("core", "0002_setweightsevent_events"),
     ]
 
     operations = [
         migrations.RemoveIndex(
-            model_name='hyperparamevent',
-            name='core_hyperp_call_fu_ccbb3f_idx',
+            model_name="hyperparamevent",
+            name="core_hyperp_call_fu_ccbb3f_idx",
         ),
         migrations.AddField(
-            model_name='setweightsevent',
-            name='call_function',
-            field=models.CharField(db_index=True, default='', max_length=100),
+            model_name="setweightsevent",
+            name="call_function",
+            field=models.CharField(db_index=True, default="", max_length=100),
             preserve_default=False,
         ),
         migrations.AddField(
-            model_name='setweightsevent',
-            name='call_module',
-            field=models.CharField(default='', max_length=100),
+            model_name="setweightsevent",
+            name="call_module",
+            field=models.CharField(default="", max_length=100),
             preserve_default=False,
         ),
         migrations.AlterField(
-            model_name='hyperparamevent',
-            name='address',
-            field=models.CharField(blank=True, db_index=True, default='', max_length=66),
+            model_name="hyperparamevent",
+            name="address",
+            field=models.CharField(blank=True, db_index=True, default="", max_length=66),
             preserve_default=False,
         ),
         migrations.AlterField(
-            model_name='hyperparamevent',
-            name='status',
-            field=models.CharField(blank=True, default='', max_length=20),
+            model_name="hyperparamevent",
+            name="status",
+            field=models.CharField(blank=True, default="", max_length=20),
             preserve_default=False,
         ),
         migrations.AlterField(
-            model_name='setweightsevent',
-            name='address',
-            field=models.CharField(blank=True, db_index=True, default='', max_length=66),
+            model_name="setweightsevent",
+            name="address",
+            field=models.CharField(blank=True, db_index=True, default="", max_length=66),
             preserve_default=False,
         ),
         migrations.AlterField(
-            model_name='setweightsevent',
-            name='netuid',
+            model_name="setweightsevent",
+            name="netuid",
             field=models.PositiveIntegerField(blank=True, db_index=True, null=True),
         ),
         migrations.AlterField(
-            model_name='setweightsevent',
-            name='status',
-            field=models.CharField(blank=True, default='', max_length=20),
+            model_name="setweightsevent",
+            name="status",
+            field=models.CharField(blank=True, default="", max_length=20),
             preserve_default=False,
         ),
         migrations.AddIndex(
-            model_name='hyperparamevent',
-            index=models.Index(fields=['netuid', 'address'], name='core_hyperp_netuid_84aa7a_idx'),
+            model_name="hyperparamevent",
+            index=models.Index(fields=["netuid", "address"], name="core_hyperp_netuid_84aa7a_idx"),
         ),
     ]

@@ -44,16 +44,20 @@ def store_hyperparam_extrinsics(extrinsics: list[ExtrinsicDTO], block_number: in
     )
 
     for extrinsic in hyperparam_extrinsics:
-        hyperparams_storage.append({
-            "block_number": block_number,
-            "timestamp": timestamp,
-            **extrinsic.model_dump(),
-        })
+        hyperparams_storage.append(
+            {
+                "block_number": block_number,
+                "timestamp": timestamp,
+                **extrinsic.model_dump(),
+            }
+        )
     return f"Stored {len(hyperparam_extrinsics)} hyperparameter extrinsics from block {block_number}"
 
 
 def store_set_weights_extrinsics(
-    extrinsics: list[ExtrinsicDTO], block_number: int, timestamp: int | None,
+    extrinsics: list[ExtrinsicDTO],
+    block_number: int,
+    timestamp: int | None,
 ) -> str:
     """
     Store extrinsics from the given block number that contain set_weights calls.
@@ -74,9 +78,12 @@ def store_set_weights_extrinsics(
     )
 
     for extrinsic in set_weights_extrinsics:
-        weights_storage.append({
-            "block_number": block_number,
-            "timestamp": timestamp,
-            **extrinsic.model_dump(),
-        }, date=date_str)
+        weights_storage.append(
+            {
+                "block_number": block_number,
+                "timestamp": timestamp,
+                **extrinsic.model_dump(),
+            },
+            date=date_str,
+        )
     return f"Stored {len(set_weights_extrinsics)} set_weights extrinsics from block {block_number}"

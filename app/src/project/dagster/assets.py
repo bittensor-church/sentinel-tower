@@ -1,4 +1,5 @@
 """Dagster assets for blockchain data processing."""
+
 from typing import Any
 
 import dagster as dg
