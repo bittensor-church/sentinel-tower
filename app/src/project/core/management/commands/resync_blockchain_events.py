@@ -3,7 +3,7 @@
 from django.core.management.base import BaseCommand, CommandParser
 
 from project.core.models import HyperparamEvent, IngestionCheckpoint, SetWeightsEvent
-from project.dagster.jobs import HYPERPARAMS_FILE, SET_WEIGHTS_FILE
+from project.dagster.jobs import HYPERPARAMS_FILE, SET_WEIGHTS_DIR
 
 
 class Command(BaseCommand):
@@ -52,5 +52,5 @@ class Command(BaseCommand):
 
         if not dry_run:
             SetWeightsEvent.objects.all().delete()
-            IngestionCheckpoint.objects.filter(file_path=SET_WEIGHTS_FILE).delete()
+            IngestionCheckpoint.objects.filter(file_path=SET_WEIGHTS_DIR).delete()
             self.stdout.write(self.style.SUCCESS("Deleted SetWeightsEvent records and reset checkpoint"))
