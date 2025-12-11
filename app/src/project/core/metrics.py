@@ -7,7 +7,7 @@ from django.http import HttpResponse
 from django_prometheus.exports import ExportToDjangoView
 from prometheus_client import REGISTRY, multiprocess
 
-from ..celery import get_num_tasks_in_queue, num_tasks_in_queue
+from project.celery import get_num_tasks_in_queue, num_tasks_in_queue
 
 
 class RecursiveMultiProcessCollector(multiprocess.MultiProcessCollector):
@@ -27,7 +27,6 @@ else:
 
 def metrics_view(request):
     """Exports metrics as a Django view"""
-
     for queue in settings.CELERY_TASK_QUEUES:
         num_tasks_in_queue.labels(queue.name).set(get_num_tasks_in_queue(queue.name))
 
