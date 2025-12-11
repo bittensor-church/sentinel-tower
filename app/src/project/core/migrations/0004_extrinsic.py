@@ -21,8 +21,16 @@ class Migration(migrations.Migration):
                 ("call_module", models.CharField(max_length=100)),
                 ("created_at", models.DateTimeField(auto_now_add=True)),
                 ("block_hash", models.CharField(blank=True, db_index=True, max_length=66)),
-                ("extrinsic_index", models.PositiveIntegerField(blank=True, help_text="Index within the block", null=True)),
-                ("block_timestamp", models.PositiveBigIntegerField(blank=True, help_text="Block timestamp from Timestamp.Now", null=True)),
+                (
+                    "extrinsic_index",
+                    models.PositiveIntegerField(blank=True, help_text="Index within the block", null=True),
+                ),
+                (
+                    "block_timestamp",
+                    models.PositiveBigIntegerField(
+                        blank=True, help_text="Block timestamp from Timestamp.Now", null=True
+                    ),
+                ),
                 ("success", models.BooleanField(db_index=True, default=False)),
                 ("error_data", models.JSONField(blank=True, help_text="Error attributes if failed", null=True)),
                 ("call_args", models.JSONField(default=dict, help_text="Call arguments from extrinsic")),
@@ -51,7 +59,9 @@ class Migration(migrations.Migration):
         ),
         migrations.AddIndex(
             model_name="extrinsic",
-            index=models.Index(fields=["call_module", "call_function", "success"], name="extrinsics_call_mo_1a7e2f_idx"),
+            index=models.Index(
+                fields=["call_module", "call_function", "success"], name="extrinsics_call_mo_1a7e2f_idx"
+            ),
         ),
         migrations.AddIndex(
             model_name="extrinsic",
