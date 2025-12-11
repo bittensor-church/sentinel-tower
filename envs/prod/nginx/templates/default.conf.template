@@ -100,8 +100,12 @@ server {
     }
 
     # Grafana
+    location = /grafana {
+        return 301 $scheme://$host/grafana/;
+    }
+
     location /grafana/ {
-        proxy_pass http://grafana/;
+        proxy_pass http://grafana;
         proxy_http_version 1.1;
         proxy_set_header Host $http_host;
         proxy_set_header X-Real-IP $remote_addr;
@@ -113,6 +117,10 @@ server {
     }
 
     # Dagster
+    location = /dagster {
+        return 301 $scheme://$host/dagster/;
+    }
+
     location /dagster/ {
         proxy_pass http://dagster/dagster/;
         proxy_http_version 1.1;
