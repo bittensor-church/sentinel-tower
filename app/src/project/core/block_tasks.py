@@ -1,3 +1,5 @@
+from datetime import UTC, datetime
+
 import sentinel.v1.services.extractors.extrinsics.filters as extrinsics_filters
 import structlog
 from abstract_block_dumper.v1.decorators import block_task
@@ -17,16 +19,16 @@ def store_blockchain_data(block_number: int) -> str:
     """
     service = sentinel_service(bittensor_provider())
     block = service.ingest_block(block_number)
-
     extrinsics = block.extrinsics
 
-    hyperparam_extrinsics = store_hyperparam_extrinsics(extrinsics, block_number)
-    set_weights_extrinsics = store_set_weights_extrinsics(extrinsics, block_number)
+    # Extract timestampt extrinsics to store events with proper timestamps
+    hyperparam_extrinsics = store_hyperparam_extrinsics(extrinsics, block_number, block.timestamp)
+    set_weights_extrinsics = store_set_weights_extrinsics(extrinsics, block_number, block.timestamp)
 
     return f"{hyperparam_extrinsics}\n{set_weights_extrinsics}".strip()
 
 
-def store_hyperparam_extrinsics(extrinsics: list[ExtrinsicDTO], block_number: int) -> str:
+def store_hyperparam_extrinsics(extrinsics: list[ExtrinsicDTO], block_number: int, timestamp: int | None) -> str:
     """
     Store extrinsics from the given block number that contain hyperparameter updates.
     """
@@ -42,18 +44,28 @@ def store_hyperparam_extrinsics(extrinsics: list[ExtrinsicDTO], block_number: in
     )
 
     for extrinsic in hyperparam_extrinsics:
-        hyperparams_storage.append({"block_number": block_number, **extrinsic.model_dump()})
+        hyperparams_storage.append({
+            "block_number": block_number,
+            "timestamp": timestamp,
+            **extrinsic.model_dump(),
+        })
     return f"Stored {len(hyperparam_extrinsics)} hyperparameter extrinsics from block {block_number}"
 
 
-def store_set_weights_extrinsics(extrinsics: list[ExtrinsicDTO], block_number: int) -> str:
+def store_set_weights_extrinsics(
+    extrinsics: list[ExtrinsicDTO], block_number: int, timestamp: int | None,
+) -> str:
     """
     Store extrinsics from the given block number that contain set_weights calls.
+    Files are partitioned by date (YYYY-MM-DD) based on block timestamp.
     """
-    weights_storage = JsonLinesStorage("data/bittensor/set-weights-extrinsics.jsonl")
+    weights_storage = JsonLinesStorage("data/bittensor/set-weights-extrinsics/{date}.jsonl")
     set_weights_extrinsics = extrinsics_filters.filter_weight_set_extrinsics(extrinsics)
     if not set_weights_extrinsics:
         return ""
+
+    # Convert timestamp to date string for partitioning (timestamp is in milliseconds)
+    date_str = datetime.fromtimestamp(timestamp / 1000, tz=UTC).strftime("%Y-%m-%d") if timestamp else "unknown"
 
     logger.info(
         "Storing set weights extrinsics",
@@ -62,5 +74,9 @@ def store_set_weights_extrinsics(extrinsics: list[ExtrinsicDTO], block_number: i
     )
 
     for extrinsic in set_weights_extrinsics:
-        weights_storage.append({"block_number": block_number, **extrinsic.model_dump()})
+        weights_storage.append({
+            "block_number": block_number,
+            "timestamp": timestamp,
+            **extrinsic.model_dump(),
+        }, date=date_str)
     return f"Stored {len(set_weights_extrinsics)} set_weights extrinsics from block {block_number}"

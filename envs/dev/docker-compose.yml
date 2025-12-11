@@ -1,5 +1,3 @@
-version: '3.7'
-
 services:
   redis:
     image: mirror.gcr.io/valkey/valkey:8.1-alpine
@@ -24,51 +22,84 @@ services:
     ports:
       - ${POSTGRES_PORT}:5432
 
-  backups:
-    build:
-      context: backups/
-      dockerfile: Dockerfile
-    init: true
-    restart: unless-stopped
-    environment:
-      - DATABASE_URL=${DATABASE_URL}
-      - BACKUP_LOCAL_DIR=/var/backups
-      - BACKUP_LOCAL_ROTATE_KEEP_LAST=${BACKUP_LOCAL_ROTATE_KEEP_LAST}
-      - B2_BUCKET=${BACKUP_B2_BUCKET}
-      - B2_FOLDER=${BACKUP_B2_FOLDER}
-      - B2_APPLICATION_KEY_ID=${BACKUP_B2_APPLICATION_KEY_ID}
-      - B2_APPLICATION_KEY=${BACKUP_B2_APPLICATION_KEY}
-      - EMAIL_HOST=${EMAIL_HOST}
-      - EMAIL_PORT=${EMAIL_PORT}
-      - EMAIL_HOST_USER=${EMAIL_HOST_USER}
-      - EMAIL_HOST_PASSWORD=${EMAIL_HOST_PASSWORD}
-      - EMAIL_TARGET=${EMAIL_TARGET}
-      - DEFAULT_FROM_EMAIL=${DEFAULT_FROM_EMAIL}
-      - SENTRY_DSN=${SENTRY_DSN}
-    volumes:
-      - backups:/var/backups
-    depends_on:
-      - db
+  # backups:
+  #   build:
+  #     context: backups/
+  #     dockerfile: Dockerfile
+  #   init: true
+  #   restart: unless-stopped
+  #   environment:
+  #     - DATABASE_URL=${DATABASE_URL}
+  #     - BACKUP_LOCAL_DIR=/var/backups
+  #     - BACKUP_LOCAL_ROTATE_KEEP_LAST=${BACKUP_LOCAL_ROTATE_KEEP_LAST}
+  #     - B2_BUCKET=${BACKUP_B2_BUCKET}
+  #     - B2_FOLDER=${BACKUP_B2_FOLDER}
+  #     - B2_APPLICATION_KEY_ID=${BACKUP_B2_APPLICATION_KEY_ID}
+  #     - B2_APPLICATION_KEY=${BACKUP_B2_APPLICATION_KEY}
+  #     - EMAIL_HOST=${EMAIL_HOST}
+  #     - EMAIL_PORT=${EMAIL_PORT}
+  #     - EMAIL_HOST_USER=${EMAIL_HOST_USER}
+  #     - EMAIL_HOST_PASSWORD=${EMAIL_HOST_PASSWORD}
+  #     - EMAIL_TARGET=${EMAIL_TARGET}
+  #     - DEFAULT_FROM_EMAIL=${DEFAULT_FROM_EMAIL}
+  #     - SENTRY_DSN=${SENTRY_DSN}
+  #   volumes:
+  #     - backups:/var/backups
+  #   depends_on:
+  #     - db
 
-  dagster:
+  dagster-webserver:
     build:
-      context: ../../
+      context: ./
       dockerfile: app/envs/prod/Dockerfile
     image: project/app
     init: true
     env_file: ./.env
     environment:
       - DAGSTER_HOME=/root/src
+      - DATABASE_URL=postgres://postgres:12345@db:5432/project
+      - POSTGRES_HOST=db
+      - POSTGRES_PORT=5432
+      - REDIS_HOST=redis
+      - REDIS_PORT=6379
     command: ./dagster-entrypoint.sh
     volumes:
-      - ./media:/root/src/media
+      - ./app/src/media:/root/src/media
       - dagster-storage:/root/src/.dagster
     depends_on:
-      - redis
-      - db
+      db:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
     ports:
       - ${DAGSTER_PORT:-3000}:3000
 
+  dagster-daemon:
+    build:
+      context: ./
+      dockerfile: app/envs/prod/Dockerfile
+    image: project/app
+    init: true
+    env_file: ./.env
+    environment:
+      - DAGSTER_HOME=/root/src
+      - DATABASE_URL=postgres://postgres:12345@db:5432/project
+      - POSTGRES_HOST=db
+      - POSTGRES_PORT=5432
+      - REDIS_HOST=redis
+      - REDIS_PORT=6379
+    command: dagster-daemon run
+    volumes:
+      - ./app/src/media:/root/src/media
+      - dagster-storage:/root/src/.dagster
+    depends_on:
+      dagster-webserver:
+        condition: service_started
+      db:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+
 volumes:
-  backups:
+  # backups:
   dagster-storage:
