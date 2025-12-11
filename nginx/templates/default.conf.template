@@ -13,6 +13,10 @@ upstream dagster {
     server dagster:3000;
 }
 
+upstream grafana {
+    server grafana:3000;
+}
+
 server {
     listen 80 default_server;
     server_name _;
@@ -24,7 +28,15 @@ server {
 server {
     listen 80;
     server_name ${NGINX_HOST};
-    return 301 https://${NGINX_HOST}$request_uri;
+
+    location /alive/ {
+        return 200 'OK';
+        add_header Content-Type text/plain;
+    }
+
+    location / {
+        return 301 https://${NGINX_HOST}$request_uri;
+    }
 }
 
 server {
@@ -66,6 +78,11 @@ server {
 
     client_max_body_size 100M;
 
+    location /alive/ {
+        return 200 'OK';
+        add_header Content-Type text/plain;
+    }
+
     location /static/ {
         root /srv/;
     }
@@ -82,6 +99,28 @@ server {
         return 404;
     }
 
+    # Grafana
+    location = /grafana {
+        return 301 $scheme://$host/grafana/;
+    }
+
+    location /grafana/ {
+        proxy_pass http://grafana;
+        proxy_http_version 1.1;
+        proxy_set_header Host $http_host;
+        proxy_set_header X-Real-IP $remote_addr;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto $scheme;
+        # WebSocket support for Grafana
+        proxy_set_header Upgrade $http_upgrade;
+        proxy_set_header Connection "upgrade";
+    }
+
+    # Dagster
+    location = /dagster {
+        return 301 $scheme://$host/dagster/;
+    }
+
     location /dagster/ {
         proxy_pass http://dagster/dagster/;
         proxy_http_version 1.1;
@@ -95,6 +134,7 @@ server {
         proxy_read_timeout 86400;
     }
 
+    # Backend (default)
     location / {
         proxy_pass_header Server;
         proxy_redirect off;
@@ -185,4 +225,3 @@ server {
         proxy_pass http://backups:8000/;
     }
 }
-
