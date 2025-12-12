@@ -50,7 +50,7 @@ def ingest_hyperparams(context: dg.OpExecutionContext, jsonl_reader: JsonLinesRe
             datetime.fromtimestamp(timestamp_ms / 1000, tz=UTC) if timestamp_ms else None
         )
 
-        _, created = HyperparamEvent.objects.get_or_create(
+        obj, created = HyperparamEvent.objects.get_or_create(
             extrinsic_hash=extrinsic_hash,
             defaults={
                 "block_number": record.get("block_number", 0),
@@ -67,6 +67,10 @@ def ingest_hyperparams(context: dg.OpExecutionContext, jsonl_reader: JsonLinesRe
         if created:
             created_count += 1
         else:
+            # Backfill timestamp for existing records
+            if obj.timestamp is None and timestamp_dt is not None:
+                obj.timestamp = timestamp_dt
+                obj.save(update_fields=["timestamp"])
             skipped_count += 1
 
     # Update checkpoint
@@ -128,7 +132,7 @@ def ingest_set_weights(context: dg.OpExecutionContext, jsonl_reader: JsonLinesRe
             datetime.fromtimestamp(timestamp_ms / 1000, tz=UTC) if timestamp_ms else None
         )
 
-        _, created = SetWeightsEvent.objects.get_or_create(
+        obj, created = SetWeightsEvent.objects.get_or_create(
             extrinsic_hash=extrinsic_hash,
             defaults={
                 "block_number": record.get("block_number", 0),
@@ -144,6 +148,10 @@ def ingest_set_weights(context: dg.OpExecutionContext, jsonl_reader: JsonLinesRe
         if created:
             created_count += 1
         else:
+            # Backfill timestamp for existing records
+            if obj.timestamp is None and timestamp_dt is not None:
+                obj.timestamp = timestamp_dt
+                obj.save(update_fields=["timestamp"])
             skipped_count += 1
 
     # Update checkpoint with total lines processed
