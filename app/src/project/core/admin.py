@@ -10,20 +10,20 @@ admin.site.index_title = "Welcome to project Administration"
 
 @register(HyperparamEvent)
 class HyperparamEventAdmin(admin.ModelAdmin):
-    list_display = ["block_number", "call_function", "netuid", "address", "status", "created_at"]
+    list_display = ["block_number", "timestamp", "call_function", "netuid", "address", "status"]
     list_filter = ["call_function", "call_module", "status", "netuid"]
     search_fields = ["extrinsic_hash", "address", "call_function"]
     ordering = ["-block_number"]
-    readonly_fields = ["created_at"]
+    readonly_fields = ["timestamp", "created_at"]
 
 
 @register(SetWeightsEvent)
 class SetWeightsEventAdmin(admin.ModelAdmin):
-    list_display = ["block_number", "netuid", "address", "status", "created_at"]
+    list_display = ["block_number", "timestamp", "netuid", "address", "status"]
     list_filter = ["netuid", "status"]
     search_fields = ["extrinsic_hash", "address"]
     ordering = ["-block_number"]
-    readonly_fields = ["created_at"]
+    readonly_fields = ["timestamp", "created_at"]
 
 
 @register(IngestionCheckpoint)

@@ -1,5 +1,7 @@
 """Dagster jobs and sensors for automated data ingestion."""
 
+from datetime import UTC, datetime
+
 import dagster as dg
 
 from project.core.models import HyperparamEvent, IngestionCheckpoint, SetWeightsEvent
@@ -42,10 +44,17 @@ def ingest_hyperparams(context: dg.OpExecutionContext, jsonl_reader: JsonLinesRe
         if netuid is None:
             netuid = call_args_dict.get("netuid")
 
+        # Convert milliseconds timestamp to datetime
+        timestamp_ms = record.get("timestamp")
+        timestamp_dt = (
+            datetime.fromtimestamp(timestamp_ms / 1000, tz=UTC) if timestamp_ms else None
+        )
+
         _, created = HyperparamEvent.objects.get_or_create(
             extrinsic_hash=extrinsic_hash,
             defaults={
                 "block_number": record.get("block_number", 0),
+                "timestamp": timestamp_dt,
                 "call_function": call_data.get("call_function", ""),
                 "call_module": call_data.get("call_module", ""),
                 "netuid": netuid,
@@ -113,10 +122,17 @@ def ingest_set_weights(context: dg.OpExecutionContext, jsonl_reader: JsonLinesRe
         # Extract events data
         events = record.get("events", [])
 
+        # Convert milliseconds timestamp to datetime
+        timestamp_ms = record.get("timestamp")
+        timestamp_dt = (
+            datetime.fromtimestamp(timestamp_ms / 1000, tz=UTC) if timestamp_ms else None
+        )
+
         _, created = SetWeightsEvent.objects.get_or_create(
             extrinsic_hash=extrinsic_hash,
             defaults={
                 "block_number": record.get("block_number", 0),
+                "timestamp": timestamp_dt,
                 "netuid": netuid,
                 "address": record.get("address"),
                 "status": record.get("status"),

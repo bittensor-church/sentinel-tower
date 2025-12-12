@@ -69,7 +69,7 @@
           "editorMode": "code",
           "format": "table",
           "rawQuery": true,
-          "rawSql": "SELECT COUNT(*) as value FROM core_hyperparamevent WHERE created_at >= NOW() - INTERVAL '24 hours'",
+          "rawSql": "SELECT COUNT(*) as value FROM core_hyperparamevent WHERE timestamp >= NOW() - INTERVAL '24 hours'",
           "refId": "A"
         }
       ],
@@ -128,7 +128,7 @@
           "editorMode": "code",
           "format": "table",
           "rawQuery": true,
-          "rawSql": "SELECT COUNT(*) as value FROM core_hyperparamevent WHERE created_at >= NOW() - INTERVAL '7 days'",
+          "rawSql": "SELECT COUNT(*) as value FROM core_hyperparamevent WHERE timestamp >= NOW() - INTERVAL '7 days'",
           "refId": "A"
         }
       ],
@@ -187,7 +187,7 @@
           "editorMode": "code",
           "format": "table",
           "rawQuery": true,
-          "rawSql": "SELECT COUNT(DISTINCT netuid) as value FROM core_hyperparamevent WHERE created_at >= NOW() - INTERVAL '7 days'",
+          "rawSql": "SELECT COUNT(DISTINCT netuid) as value FROM core_hyperparamevent WHERE timestamp >= NOW() - INTERVAL '7 days'",
           "refId": "A"
         }
       ],
@@ -246,7 +246,7 @@
           "editorMode": "code",
           "format": "table",
           "rawQuery": true,
-          "rawSql": "SELECT COUNT(DISTINCT call_function) as value FROM core_hyperparamevent WHERE created_at >= NOW() - INTERVAL '7 days'",
+          "rawSql": "SELECT COUNT(DISTINCT call_function) as value FROM core_hyperparamevent WHERE timestamp >= NOW() - INTERVAL '7 days'",
           "refId": "A"
         }
       ],
@@ -336,7 +336,7 @@
           "editorMode": "code",
           "format": "time_series",
           "rawQuery": true,
-          "rawSql": "SELECT \n  date_trunc('hour', created_at) as time,\n  call_function as metric,\n  COUNT(*) as value\nFROM core_hyperparamevent\nWHERE created_at >= NOW() - INTERVAL '7 days'\nGROUP BY 1, 2\nORDER BY 1",
+          "rawSql": "SELECT \n  date_trunc('hour', timestamp) as time,\n  call_function as metric,\n  COUNT(*) as value\nFROM core_hyperparamevent\nWHERE timestamp >= NOW() - INTERVAL '7 days'\nGROUP BY 1, 2\nORDER BY 1",
           "refId": "A"
         }
       ],
@@ -398,7 +398,7 @@
           "editorMode": "code",
           "format": "table",
           "rawQuery": true,
-          "rawSql": "SELECT \n  call_function as metric,\n  COUNT(*) as value\nFROM core_hyperparamevent\nWHERE created_at >= NOW() - INTERVAL '7 days'\nGROUP BY call_function\nORDER BY value DESC\nLIMIT 10",
+          "rawSql": "SELECT \n  call_function as metric,\n  COUNT(*) as value\nFROM core_hyperparamevent\nWHERE timestamp >= NOW() - INTERVAL '7 days'\nGROUP BY call_function\nORDER BY value DESC\nLIMIT 10",
           "refId": "A"
         }
       ],
@@ -460,7 +460,7 @@
           "editorMode": "code",
           "format": "table",
           "rawQuery": true,
-          "rawSql": "SELECT \n  'Subnet ' || COALESCE(netuid::text, 'N/A') as metric,\n  COUNT(*) as value\nFROM core_hyperparamevent\nWHERE created_at >= NOW() - INTERVAL '7 days'\nGROUP BY netuid\nORDER BY value DESC\nLIMIT 10",
+          "rawSql": "SELECT \n  'Subnet ' || COALESCE(netuid::text, 'N/A') as metric,\n  COUNT(*) as value\nFROM core_hyperparamevent\nWHERE timestamp >= NOW() - INTERVAL '7 days'\nGROUP BY netuid\nORDER BY value DESC\nLIMIT 10",
           "refId": "A"
         }
       ],
@@ -546,7 +546,7 @@
           "editorMode": "code",
           "format": "table",
           "rawQuery": true,
-          "rawSql": "SELECT \n  netuid,\n  call_function as parameter,\n  COUNT(*) as changes\nFROM core_hyperparamevent\nWHERE created_at >= NOW() - INTERVAL '7 days'\nGROUP BY netuid, call_function\nORDER BY changes DESC\nLIMIT 20",
+          "rawSql": "SELECT \n  netuid,\n  call_function as parameter,\n  COUNT(*) as changes\nFROM core_hyperparamevent\nWHERE timestamp >= NOW() - INTERVAL '7 days'\nGROUP BY netuid, call_function\nORDER BY changes DESC\nLIMIT 20",
           "refId": "A"
         }
       ],
@@ -667,7 +667,7 @@
           "editorMode": "code",
           "format": "table",
           "rawQuery": true,
-          "rawSql": "SELECT \n  created_at as time,\n  netuid,\n  call_function as parameter,\n  call_args as args,\n  SUBSTRING(address, 1, 8) || '...' || SUBSTRING(address, LENGTH(address)-5) as address,\n  block_number,\n  status\nFROM core_hyperparamevent\nORDER BY created_at DESC\nLIMIT 50",
+          "rawSql": "SELECT \n  timestamp as time,\n  netuid,\n  call_function as parameter,\n  call_args as args,\n  SUBSTRING(address, 1, 8) || '...' || SUBSTRING(address, LENGTH(address)-5) as address,\n  block_number,\n  status\nFROM core_hyperparamevent\nORDER BY timestamp DESC\nLIMIT 50",
           "refId": "A"
         }
       ],

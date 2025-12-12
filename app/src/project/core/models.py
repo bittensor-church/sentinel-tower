@@ -24,6 +24,12 @@ class BlockchainEvent(models.Model):
 
 class SubnetEvent(BlockchainEvent):
     netuid = models.PositiveIntegerField(null=True, blank=True, db_index=True)
+    timestamp = models.DateTimeField(
+        null=True,
+        blank=True,
+        db_index=True,
+        help_text="Block timestamp",
+    )
 
     class Meta:
         abstract = True
