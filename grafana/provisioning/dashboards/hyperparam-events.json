@@ -415,7 +415,7 @@
   "timepicker": {},
   "timezone": "",
   "title": "Bittensor Events",
-  "uid": "bittensor-events",
+  "uid": "hyperparam-events",
   "version": 1,
   "weekStart": ""
 }

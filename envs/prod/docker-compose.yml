@@ -327,6 +327,21 @@ services:
     logging:
       <<: *logging
 
+  alertmanager:
+    image: prom/alertmanager:v0.26.0
+    restart: unless-stopped
+    volumes:
+      - ./prometheus/alertmanager.yml:/etc/alertmanager/alertmanager.yml:ro
+    command:
+      - '--config.file=/etc/alertmanager/alertmanager.yml'
+      - '--storage.path=/alertmanager'
+    environment:
+      - SLACK_WEBHOOK_URL=${SLACK_WEBHOOK_URL}
+    ports:
+      - 127.0.0.1:9093:9093
+    logging:
+      <<: *logging
+
   grafana:
     image: grafana/grafana:10.2.0
     restart: unless-stopped
