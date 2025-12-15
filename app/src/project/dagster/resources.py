@@ -9,7 +9,7 @@ from dagster import ConfigurableResource
 
 logger = logging.getLogger(__name__)
 
-SET_WEIGHTS_DIR = "data/bittensor/set-weights-extrinsics"
+EXTRINSICS_DIR = "data/bittensor/extrinsics"
 
 
 class JsonLinesReader(ConfigurableResource):
@@ -72,21 +72,13 @@ class JsonLinesReader(ConfigurableResource):
                 count += 1
         return count
 
-    def read_hyperparams(self, start_line: int = 0) -> tuple[list[dict[str, Any]], int]:
-        """Read hyperparameter extrinsics from start_line onwards."""
-        return self.read_file("data/bittensor/hyperparams-extrinsics.jsonl", start_line)
+    def read_extrinsics(self) -> tuple[list[dict[str, Any]], int]:
+        """Read extrinsics from all partitioned files in the extrinsics directory."""
+        return self.read_partitioned_dir(EXTRINSICS_DIR)
 
-    def read_set_weights(self) -> tuple[list[dict[str, Any]], int]:
-        """Read set-weights extrinsics from all partitioned files."""
-        return self.read_partitioned_dir(SET_WEIGHTS_DIR)
-
-    def get_hyperparams_line_count(self) -> int:
-        """Get total line count of hyperparams file."""
-        return self.count_lines("data/bittensor/hyperparams-extrinsics.jsonl")
-
-    def get_set_weights_line_count(self) -> int:
-        """Get total line count across all partitioned set-weights files."""
-        return self.count_partitioned_lines(SET_WEIGHTS_DIR)
+    def get_extrinsics_line_count(self) -> int:
+        """Get total line count across all partitioned extrinsics files."""
+        return self.count_partitioned_lines(EXTRINSICS_DIR)
 
     def list_partitioned_files(self, relative_dir: str) -> list[str]:
         """List all JSONL files in a partitioned directory, sorted by name (date)."""
