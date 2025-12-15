@@ -1,7 +1,7 @@
 from django.contrib import admin
 from django.contrib.admin import register
 
-from project.core.models import HyperparamEvent, IngestionCheckpoint, SetWeightsEvent
+from project.core.models import Extrinsic, HyperparamEvent, IngestionCheckpoint, SetWeightsEvent
 
 admin.site.site_header = "project Administration"
 admin.site.site_title = "project"
@@ -24,6 +24,15 @@ class SetWeightsEventAdmin(admin.ModelAdmin):
     search_fields = ["extrinsic_hash", "address"]
     ordering = ["-block_number"]
     readonly_fields = ["timestamp", "created_at"]
+
+
+@register(Extrinsic)
+class ExtrinsicAdmin(admin.ModelAdmin):
+    list_display = ["block_number", "extrinsic_index", "call_module", "call_function", "netuid", "success", "address"]
+    list_filter = ["call_module", "call_function", "success", "netuid"]
+    search_fields = ["extrinsic_hash", "address", "call_function"]
+    ordering = ["-block_number", "-extrinsic_index"]
+    readonly_fields = ["created_at"]
 
 
 @register(IngestionCheckpoint)
