@@ -4,16 +4,15 @@ from django.db import migrations
 
 
 class Migration(migrations.Migration):
-
     dependencies = [
-        ('core', '0006_hyperparamevent_timestamp_setweightsevent_timestamp'),
+        ("core", "0006_hyperparamevent_timestamp_setweightsevent_timestamp"),
     ]
 
     operations = [
         migrations.DeleteModel(
-            name='HyperparamEvent',
+            name="HyperparamEvent",
         ),
         migrations.DeleteModel(
-            name='SetWeightsEvent',
+            name="SetWeightsEvent",
         ),
     ]

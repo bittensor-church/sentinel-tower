@@ -4,20 +4,19 @@ from django.db import migrations, models
 
 
 class Migration(migrations.Migration):
-
     dependencies = [
-        ('core', '0005_auto_index_rename'),
+        ("core", "0005_auto_index_rename"),
     ]
 
     operations = [
         migrations.AddField(
-            model_name='hyperparamevent',
-            name='timestamp',
-            field=models.DateTimeField(blank=True, db_index=True, help_text='Block timestamp', null=True),
+            model_name="hyperparamevent",
+            name="timestamp",
+            field=models.DateTimeField(blank=True, db_index=True, help_text="Block timestamp", null=True),
         ),
         migrations.AddField(
-            model_name='setweightsevent',
-            name='timestamp',
-            field=models.DateTimeField(blank=True, db_index=True, help_text='Block timestamp', null=True),
+            model_name="setweightsevent",
+            name="timestamp",
+            field=models.DateTimeField(blank=True, db_index=True, help_text="Block timestamp", null=True),
         ),
     ]
