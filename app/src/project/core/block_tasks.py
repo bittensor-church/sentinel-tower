@@ -31,7 +31,7 @@ def store_extrinsics(extrinsics: list[ExtrinsicDTO], block_number: int, timestam
     """
     Store extrinsics from the given block number.
     """
-    extrinsics_storage = JsonLinesStorage("data/bittensor/set-weights-extrinsics/{date}.jsonl")
+    extrinsics_storage = JsonLinesStorage("data/bittensor/extrinsics/{date}.jsonl")
     if not extrinsics:
         return 0
 

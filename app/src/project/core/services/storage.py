@@ -1,6 +1,10 @@
+import fcntl
 import json
+import os
+from pathlib import Path
 from typing import Any
 
+from django.conf import settings
 from django.core.files.base import ContentFile
 from django.core.files.storage import default_storage
 
@@ -13,7 +17,7 @@ class JsonLinesStorage:
     path templates.
 
     Works with any Django storage backend:
-    - Local filesystem (default)
+    - Local filesystem (default) - uses file locking for concurrency safety
     - S3 (when django-storages with S3 backend is configured)
     - Any other configured storage backend
 
@@ -37,9 +41,21 @@ class JsonLinesStorage:
         """Resolve the path template with provided values."""
         return self.path_template.format(**kwargs)
 
+    def _get_absolute_path(self, relative_path: str) -> Path:
+        """Get absolute filesystem path for local storage."""
+        media_root = getattr(settings, "MEDIA_ROOT", "")
+        return Path(media_root) / relative_path
+
+    def _is_local_storage(self) -> bool:
+        """Check if using local filesystem storage."""
+        storage_class = default_storage.__class__.__name__
+        return storage_class in ("FileSystemStorage", "OverwriteStorage")
+
     def append(self, data: Any, **path_params: Any) -> str:
         """
         Append a JSON object as a new line to the file.
+
+        Thread-safe for local filesystem storage using file locking.
 
         Args:
             data: The data to append (will be JSON serialized as a single line)
@@ -51,6 +67,41 @@ class JsonLinesStorage:
         file_path = self._resolve_path(**path_params)
         json_line = json.dumps(data, default=str) + "\n"
 
+        if self._is_local_storage():
+            return self._append_local(file_path, json_line)
+        return self._append_storage(file_path, json_line)
+
+    def _append_local(self, file_path: str, json_line: str) -> str:
+        """
+        Append to local file with locking for concurrency safety.
+
+        Uses fcntl.flock() for exclusive access during write.
+        """
+        abs_path = self._get_absolute_path(file_path)
+
+        # Ensure parent directory exists
+        abs_path.parent.mkdir(parents=True, exist_ok=True)
+
+        # Open in append mode with exclusive lock
+        with abs_path.open("a", encoding="utf-8") as f:
+            fcntl.flock(f.fileno(), fcntl.LOCK_EX)
+            try:
+                f.write(json_line)
+                f.flush()
+                os.fsync(f.fileno())
+            finally:
+                fcntl.flock(f.fileno(), fcntl.LOCK_UN)
+
+        return file_path
+
+    def _append_storage(self, file_path: str, json_line: str) -> str:
+        """
+        Append using Django storage backend (for S3, etc.).
+
+        Note: This is not fully atomic for remote storage backends.
+        For high-concurrency scenarios with S3, consider using
+        a different approach (e.g., one file per record).
+        """
         if default_storage.exists(file_path):
             with default_storage.open(file_path, "r") as f:
                 existing_content = f.read()

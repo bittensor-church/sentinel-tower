@@ -28,8 +28,8 @@
       "gridPos": { "h": 4, "w": 4, "x": 0, "y": 1 },
       "id": 50,
       "options": { "colorMode": "value", "graphMode": "area", "justifyMode": "auto", "orientation": "auto", "reduceOptions": { "calcs": ["lastNotNull"], "fields": "", "values": false }, "textMode": "auto" },
-      "targets": [{ "datasource": { "type": "postgres", "uid": "postgresql" }, "rawQuery": true, "rawSql": "SELECT (SELECT COUNT(*) FROM core_hyperparamevent) + (SELECT COUNT(*) FROM core_setweightsevent) as value", "refId": "A", "format": "table" }],
-      "title": "Total Events",
+      "targets": [{ "datasource": { "type": "postgres", "uid": "postgresql" }, "rawQuery": true, "rawSql": "SELECT COUNT(*) as value FROM extrinsics", "refId": "A", "format": "table" }],
+      "title": "Total Extrinsics",
       "type": "stat"
     },
     {
@@ -45,7 +45,7 @@
       "gridPos": { "h": 4, "w": 4, "x": 4, "y": 1 },
       "id": 51,
       "options": { "colorMode": "value", "graphMode": "area", "justifyMode": "auto", "orientation": "auto", "reduceOptions": { "calcs": ["lastNotNull"], "fields": "", "values": false }, "textMode": "auto" },
-      "targets": [{ "datasource": { "type": "postgres", "uid": "postgresql" }, "rawQuery": true, "rawSql": "SELECT MAX(block_number) as value FROM (SELECT block_number FROM core_hyperparamevent UNION ALL SELECT block_number FROM core_setweightsevent) t", "refId": "A", "format": "table" }],
+      "targets": [{ "datasource": { "type": "postgres", "uid": "postgresql" }, "rawQuery": true, "rawSql": "SELECT MAX(block_number) as value FROM extrinsics", "refId": "A", "format": "table" }],
       "title": "Latest Block",
       "type": "stat"
     },
@@ -62,7 +62,7 @@
       "gridPos": { "h": 4, "w": 4, "x": 8, "y": 1 },
       "id": 52,
       "options": { "colorMode": "value", "graphMode": "area", "justifyMode": "auto", "orientation": "auto", "reduceOptions": { "calcs": ["lastNotNull"], "fields": "", "values": false }, "textMode": "auto" },
-      "targets": [{ "datasource": { "type": "postgres", "uid": "postgresql" }, "rawQuery": true, "rawSql": "SELECT COUNT(DISTINCT netuid) as value FROM (SELECT netuid FROM core_hyperparamevent WHERE netuid IS NOT NULL UNION SELECT netuid FROM core_setweightsevent WHERE netuid IS NOT NULL) t", "refId": "A", "format": "table" }],
+      "targets": [{ "datasource": { "type": "postgres", "uid": "postgresql" }, "rawQuery": true, "rawSql": "SELECT COUNT(DISTINCT netuid) as value FROM extrinsics WHERE netuid IS NOT NULL", "refId": "A", "format": "table" }],
       "title": "Total Subnets",
       "type": "stat"
     },
@@ -79,7 +79,7 @@
       "gridPos": { "h": 4, "w": 4, "x": 12, "y": 1 },
       "id": 53,
       "options": { "colorMode": "value", "graphMode": "area", "justifyMode": "auto", "orientation": "auto", "reduceOptions": { "calcs": ["lastNotNull"], "fields": "", "values": false }, "textMode": "auto" },
-      "targets": [{ "datasource": { "type": "postgres", "uid": "postgresql" }, "rawQuery": true, "rawSql": "SELECT COUNT(DISTINCT address) as value FROM (SELECT address FROM core_hyperparamevent UNION SELECT address FROM core_setweightsevent) t", "refId": "A", "format": "table" }],
+      "targets": [{ "datasource": { "type": "postgres", "uid": "postgresql" }, "rawQuery": true, "rawSql": "SELECT COUNT(DISTINCT address) as value FROM extrinsics WHERE address != ''", "refId": "A", "format": "table" }],
       "title": "Unique Addresses",
       "type": "stat"
     },
@@ -97,7 +97,7 @@
       "gridPos": { "h": 4, "w": 4, "x": 16, "y": 1 },
       "id": 54,
       "options": { "colorMode": "value", "graphMode": "area", "justifyMode": "auto", "orientation": "auto", "reduceOptions": { "calcs": ["lastNotNull"], "fields": "", "values": false }, "textMode": "auto" },
-      "targets": [{ "datasource": { "type": "postgres", "uid": "postgresql" }, "rawQuery": true, "rawSql": "SELECT COALESCE(SUM(CASE WHEN status != 'success' THEN 1 ELSE 0 END)::float / NULLIF(COUNT(*), 0), 0) as value FROM (SELECT status FROM core_hyperparamevent UNION ALL SELECT status FROM core_setweightsevent) t", "refId": "A", "format": "table" }],
+      "targets": [{ "datasource": { "type": "postgres", "uid": "postgresql" }, "rawQuery": true, "rawSql": "SELECT COALESCE(1.0 - (SUM(CASE WHEN success THEN 1 ELSE 0 END)::float / NULLIF(COUNT(*), 0)), 0) as value FROM extrinsics", "refId": "A", "format": "table" }],
       "title": "Failure Rate",
       "type": "stat"
     },
@@ -114,8 +114,8 @@
       "gridPos": { "h": 4, "w": 4, "x": 20, "y": 1 },
       "id": 55,
       "options": { "colorMode": "value", "graphMode": "area", "justifyMode": "auto", "orientation": "auto", "reduceOptions": { "calcs": ["lastNotNull"], "fields": "", "values": false }, "textMode": "auto" },
-      "targets": [{ "datasource": { "type": "postgres", "uid": "postgresql" }, "rawQuery": true, "rawSql": "SELECT ((SELECT COUNT(*) FROM core_hyperparamevent WHERE timestamp >= NOW() - INTERVAL '24 hours') + (SELECT COUNT(*) FROM core_setweightsevent WHERE timestamp >= NOW() - INTERVAL '24 hours')) as value", "refId": "A", "format": "table" }],
-      "title": "Events (24h)",
+      "targets": [{ "datasource": { "type": "postgres", "uid": "postgresql" }, "rawQuery": true, "rawSql": "SELECT COUNT(*) as value FROM extrinsics WHERE created_at >= NOW() - INTERVAL '24 hours'", "refId": "A", "format": "table" }],
+      "title": "Extrinsics (24h)",
       "type": "stat"
     },
     {
@@ -133,10 +133,9 @@
       "id": 56,
       "options": { "legend": { "calcs": ["sum"], "displayMode": "table", "placement": "right", "showLegend": true }, "tooltip": { "mode": "multi", "sort": "desc" } },
       "targets": [
-        { "datasource": { "type": "postgres", "uid": "postgresql" }, "rawQuery": true, "rawSql": "SELECT date_trunc('hour', timestamp) as time, 'Hyperparam' as metric, COUNT(*) as value FROM core_hyperparamevent WHERE timestamp >= NOW() - INTERVAL '7 days' GROUP BY 1 ORDER BY 1", "refId": "A", "format": "time_series" },
-        { "datasource": { "type": "postgres", "uid": "postgresql" }, "rawQuery": true, "rawSql": "SELECT date_trunc('hour', timestamp) as time, 'Set Weights' as metric, COUNT(*) as value FROM core_setweightsevent WHERE timestamp >= NOW() - INTERVAL '7 days' GROUP BY 1 ORDER BY 1", "refId": "B", "format": "time_series" }
+        { "datasource": { "type": "postgres", "uid": "postgresql" }, "rawQuery": true, "rawSql": "SELECT date_trunc('hour', created_at) as time, call_module as metric, COUNT(*) as value FROM extrinsics WHERE created_at >= NOW() - INTERVAL '7 days' GROUP BY 1, 2 ORDER BY 1", "refId": "A", "format": "time_series" }
       ],
-      "title": "All Events Over Time",
+      "title": "All Extrinsics Over Time",
       "type": "timeseries"
     },
     {
@@ -148,8 +147,8 @@
       "gridPos": { "h": 8, "w": 8, "x": 0, "y": 13 },
       "id": 57,
       "options": { "legend": { "displayMode": "list", "placement": "right", "showLegend": true }, "pieType": "donut", "reduceOptions": { "calcs": ["lastNotNull"], "fields": "/^value$/", "values": true }, "tooltip": { "mode": "single", "sort": "none" }, "displayLabels": ["name", "percent"] },
-      "targets": [{ "datasource": { "type": "postgres", "uid": "postgresql" }, "rawQuery": true, "rawSql": "SELECT 'Hyperparam' as metric, COUNT(*) as value FROM core_hyperparamevent UNION ALL SELECT 'Set Weights' as metric, COUNT(*) as value FROM core_setweightsevent", "refId": "A", "format": "table" }],
-      "title": "Event Type Distribution",
+      "targets": [{ "datasource": { "type": "postgres", "uid": "postgresql" }, "rawQuery": true, "rawSql": "SELECT call_module as metric, COUNT(*) as value FROM extrinsics GROUP BY call_module ORDER BY value DESC LIMIT 10", "refId": "A", "format": "table" }],
+      "title": "Distribution by Module",
       "type": "piechart"
     },
     {
@@ -161,7 +160,7 @@
       "gridPos": { "h": 8, "w": 8, "x": 8, "y": 13 },
       "id": 58,
       "options": { "legend": { "displayMode": "list", "placement": "right", "showLegend": true }, "pieType": "donut", "reduceOptions": { "calcs": ["lastNotNull"], "fields": "/^value$/", "values": true }, "tooltip": { "mode": "single", "sort": "none" }, "displayLabels": ["name", "percent"] },
-      "targets": [{ "datasource": { "type": "postgres", "uid": "postgresql" }, "rawQuery": true, "rawSql": "SELECT status as metric, COUNT(*) as value FROM (SELECT status FROM core_hyperparamevent UNION ALL SELECT status FROM core_setweightsevent) t GROUP BY status ORDER BY value DESC", "refId": "A", "format": "table" }],
+      "targets": [{ "datasource": { "type": "postgres", "uid": "postgresql" }, "rawQuery": true, "rawSql": "SELECT CASE WHEN success THEN 'Success' ELSE 'Failed' END as metric, COUNT(*) as value FROM extrinsics GROUP BY success", "refId": "A", "format": "table" }],
       "title": "Status Distribution",
       "type": "piechart"
     },
@@ -174,12 +173,12 @@
           "mappings": [],
           "thresholds": { "mode": "absolute", "steps": [{ "color": "green", "value": null }] }
         },
-        "overrides": [{ "matcher": { "id": "byName", "options": "events" }, "properties": [{ "id": "custom.cellOptions", "value": { "mode": "gradient", "type": "gauge" } }] }]
+        "overrides": [{ "matcher": { "id": "byName", "options": "count" }, "properties": [{ "id": "custom.cellOptions", "value": { "mode": "gradient", "type": "gauge" } }] }]
       },
       "gridPos": { "h": 8, "w": 8, "x": 16, "y": 13 },
       "id": 59,
-      "options": { "cellHeight": "sm", "footer": { "countRows": false, "fields": "", "reducer": ["sum"], "show": true }, "showHeader": true, "sortBy": [{ "desc": true, "displayName": "events" }] },
-      "targets": [{ "datasource": { "type": "postgres", "uid": "postgresql" }, "rawQuery": true, "rawSql": "SELECT SUBSTRING(address, 1, 8) || '...' as address, COUNT(*) as events FROM (SELECT address FROM core_hyperparamevent UNION ALL SELECT address FROM core_setweightsevent) t GROUP BY address ORDER BY events DESC LIMIT 15", "refId": "A", "format": "table" }],
+      "options": { "cellHeight": "sm", "footer": { "countRows": false, "fields": "", "reducer": ["sum"], "show": true }, "showHeader": true, "sortBy": [{ "desc": true, "displayName": "count" }] },
+      "targets": [{ "datasource": { "type": "postgres", "uid": "postgresql" }, "rawQuery": true, "rawSql": "SELECT SUBSTRING(address, 1, 8) || '...' as address, COUNT(*) as count FROM extrinsics WHERE address != '' GROUP BY address ORDER BY count DESC LIMIT 15", "refId": "A", "format": "table" }],
       "title": "Most Active Addresses",
       "type": "table"
     },
@@ -188,7 +187,7 @@
       "gridPos": { "h": 1, "w": 24, "x": 0, "y": 21 },
       "id": 100,
       "panels": [],
-      "title": "Hyperparam Events",
+      "title": "AdminUtils Extrinsics (Hyperparam Changes)",
       "type": "row"
     },
     {
@@ -197,8 +196,8 @@
       "gridPos": { "h": 4, "w": 6, "x": 0, "y": 22 },
       "id": 1,
       "options": { "colorMode": "value", "graphMode": "area", "justifyMode": "auto", "orientation": "auto", "reduceOptions": { "calcs": ["lastNotNull"], "fields": "", "values": false }, "textMode": "auto" },
-      "targets": [{ "datasource": { "type": "postgres", "uid": "postgresql" }, "rawQuery": true, "rawSql": "SELECT COUNT(*) as value FROM core_hyperparamevent WHERE timestamp >= NOW() - INTERVAL '24 hours'", "refId": "A", "format": "table" }],
-      "title": "Hyperparam (24h)",
+      "targets": [{ "datasource": { "type": "postgres", "uid": "postgresql" }, "rawQuery": true, "rawSql": "SELECT COUNT(*) as value FROM extrinsics WHERE call_module = 'AdminUtils' AND created_at >= NOW() - INTERVAL '24 hours'", "refId": "A", "format": "table" }],
+      "title": "AdminUtils (24h)",
       "type": "stat"
     },
     {
@@ -207,8 +206,8 @@
       "gridPos": { "h": 4, "w": 6, "x": 6, "y": 22 },
       "id": 2,
       "options": { "colorMode": "value", "graphMode": "area", "justifyMode": "auto", "orientation": "auto", "reduceOptions": { "calcs": ["lastNotNull"], "fields": "", "values": false }, "textMode": "auto" },
-      "targets": [{ "datasource": { "type": "postgres", "uid": "postgresql" }, "rawQuery": true, "rawSql": "SELECT COUNT(*) as value FROM core_hyperparamevent WHERE timestamp >= NOW() - INTERVAL '7 days'", "refId": "A", "format": "table" }],
-      "title": "Hyperparam (7d)",
+      "targets": [{ "datasource": { "type": "postgres", "uid": "postgresql" }, "rawQuery": true, "rawSql": "SELECT COUNT(*) as value FROM extrinsics WHERE call_module = 'AdminUtils' AND created_at >= NOW() - INTERVAL '7 days'", "refId": "A", "format": "table" }],
+      "title": "AdminUtils (7d)",
       "type": "stat"
     },
     {
@@ -217,7 +216,7 @@
       "gridPos": { "h": 4, "w": 6, "x": 12, "y": 22 },
       "id": 3,
       "options": { "colorMode": "value", "graphMode": "area", "justifyMode": "auto", "orientation": "auto", "reduceOptions": { "calcs": ["lastNotNull"], "fields": "", "values": false }, "textMode": "auto" },
-      "targets": [{ "datasource": { "type": "postgres", "uid": "postgresql" }, "rawQuery": true, "rawSql": "SELECT COUNT(DISTINCT netuid) as value FROM core_hyperparamevent WHERE timestamp >= NOW() - INTERVAL '7 days'", "refId": "A", "format": "table" }],
+      "targets": [{ "datasource": { "type": "postgres", "uid": "postgresql" }, "rawQuery": true, "rawSql": "SELECT COUNT(DISTINCT netuid) as value FROM extrinsics WHERE call_module = 'AdminUtils' AND created_at >= NOW() - INTERVAL '7 days'", "refId": "A", "format": "table" }],
       "title": "Subnets Affected (7d)",
       "type": "stat"
     },
@@ -227,7 +226,7 @@
       "gridPos": { "h": 4, "w": 6, "x": 18, "y": 22 },
       "id": 4,
       "options": { "colorMode": "value", "graphMode": "area", "justifyMode": "auto", "orientation": "auto", "reduceOptions": { "calcs": ["lastNotNull"], "fields": "", "values": false }, "textMode": "auto" },
-      "targets": [{ "datasource": { "type": "postgres", "uid": "postgresql" }, "rawQuery": true, "rawSql": "SELECT COUNT(DISTINCT call_function) as value FROM core_hyperparamevent WHERE timestamp >= NOW() - INTERVAL '7 days'", "refId": "A", "format": "table" }],
+      "targets": [{ "datasource": { "type": "postgres", "uid": "postgresql" }, "rawQuery": true, "rawSql": "SELECT COUNT(DISTINCT call_function) as value FROM extrinsics WHERE call_module = 'AdminUtils' AND created_at >= NOW() - INTERVAL '7 days'", "refId": "A", "format": "table" }],
       "title": "Param Types (7d)",
       "type": "stat"
     },
@@ -240,8 +239,8 @@
       "gridPos": { "h": 8, "w": 16, "x": 0, "y": 26 },
       "id": 5,
       "options": { "legend": { "calcs": [], "displayMode": "list", "placement": "bottom", "showLegend": true }, "tooltip": { "mode": "single", "sort": "none" } },
-      "targets": [{ "datasource": { "type": "postgres", "uid": "postgresql" }, "rawQuery": true, "rawSql": "SELECT date_trunc('hour', timestamp) as time, call_function as metric, COUNT(*) as value FROM core_hyperparamevent WHERE timestamp >= NOW() - INTERVAL '7 days' GROUP BY 1, 2 ORDER BY 1", "refId": "A", "format": "time_series" }],
-      "title": "Hyperparam Changes Over Time",
+      "targets": [{ "datasource": { "type": "postgres", "uid": "postgresql" }, "rawQuery": true, "rawSql": "SELECT date_trunc('hour', created_at) as time, call_function as metric, COUNT(*) as value FROM extrinsics WHERE call_module = 'AdminUtils' AND created_at >= NOW() - INTERVAL '7 days' GROUP BY 1, 2 ORDER BY 1", "refId": "A", "format": "time_series" }],
+      "title": "AdminUtils Changes Over Time",
       "type": "timeseries"
     },
     {
@@ -250,21 +249,21 @@
       "gridPos": { "h": 8, "w": 8, "x": 16, "y": 26 },
       "id": 6,
       "options": { "legend": { "displayMode": "list", "placement": "right", "showLegend": true }, "pieType": "pie", "reduceOptions": { "calcs": ["lastNotNull"], "fields": "/^value$/", "values": true }, "tooltip": { "mode": "single", "sort": "none" }, "displayLabels": ["name", "value"] },
-      "targets": [{ "datasource": { "type": "postgres", "uid": "postgresql" }, "rawQuery": true, "rawSql": "SELECT call_function as metric, COUNT(*) as value FROM core_hyperparamevent WHERE timestamp >= NOW() - INTERVAL '7 days' GROUP BY call_function ORDER BY value DESC LIMIT 10", "refId": "A", "format": "table" }],
-      "title": "Changes by Parameter Type",
+      "targets": [{ "datasource": { "type": "postgres", "uid": "postgresql" }, "rawQuery": true, "rawSql": "SELECT call_function as metric, COUNT(*) as value FROM extrinsics WHERE call_module = 'AdminUtils' AND created_at >= NOW() - INTERVAL '7 days' GROUP BY call_function ORDER BY value DESC LIMIT 10", "refId": "A", "format": "table" }],
+      "title": "Changes by Function",
       "type": "piechart"
     },
     {
       "datasource": { "type": "postgres", "uid": "postgresql" },
       "fieldConfig": {
         "defaults": { "color": { "mode": "thresholds" }, "custom": { "align": "auto", "cellOptions": { "type": "auto" }, "inspect": false }, "mappings": [], "thresholds": { "mode": "absolute", "steps": [{ "color": "green", "value": null }] } },
-        "overrides": [{ "matcher": { "id": "byName", "options": "status" }, "properties": [{ "id": "mappings", "value": [{ "options": { "success": { "color": "green", "index": 0 }, "failed": { "color": "red", "index": 1 } }, "type": "value" }] }, { "id": "custom.cellOptions", "value": { "type": "color-background" } }] }, { "matcher": { "id": "byName", "options": "address" }, "properties": [{ "id": "custom.width", "value": 150 }] }, { "matcher": { "id": "byName", "options": "args" }, "properties": [{ "id": "custom.width", "value": 300 }] }]
+        "overrides": [{ "matcher": { "id": "byName", "options": "success" }, "properties": [{ "id": "mappings", "value": [{ "options": { "true": { "color": "green", "index": 0, "text": "Success" }, "false": { "color": "red", "index": 1, "text": "Failed" } }, "type": "value" }] }, { "id": "custom.cellOptions", "value": { "type": "color-background" } }] }, { "matcher": { "id": "byName", "options": "address" }, "properties": [{ "id": "custom.width", "value": 150 }] }, { "matcher": { "id": "byName", "options": "call_args" }, "properties": [{ "id": "custom.width", "value": 300 }] }]
       },
       "gridPos": { "h": 10, "w": 24, "x": 0, "y": 34 },
       "id": 9,
       "options": { "cellHeight": "sm", "footer": { "countRows": false, "fields": "", "reducer": ["sum"], "show": false }, "showHeader": true },
-      "targets": [{ "datasource": { "type": "postgres", "uid": "postgresql" }, "rawQuery": true, "rawSql": "SELECT timestamp as time, netuid, call_function as parameter, call_args as args, SUBSTRING(address, 1, 8) || '...' || SUBSTRING(address, LENGTH(address)-5) as address, block_number, status FROM core_hyperparamevent ORDER BY timestamp DESC LIMIT 50", "refId": "A", "format": "table" }],
-      "title": "Recent Hyperparam Changes",
+      "targets": [{ "datasource": { "type": "postgres", "uid": "postgresql" }, "rawQuery": true, "rawSql": "SELECT created_at as time, netuid, call_function as parameter, call_args, SUBSTRING(address, 1, 8) || '...' || SUBSTRING(address, LENGTH(address)-5) as address, block_number, success FROM extrinsics WHERE call_module = 'AdminUtils' ORDER BY created_at DESC LIMIT 50", "refId": "A", "format": "table" }],
+      "title": "Recent AdminUtils Changes",
       "type": "table"
     },
     {
@@ -281,7 +280,7 @@
       "gridPos": { "h": 4, "w": 6, "x": 0, "y": 45 },
       "id": 10,
       "options": { "colorMode": "value", "graphMode": "area", "justifyMode": "auto", "orientation": "auto", "reduceOptions": { "calcs": ["lastNotNull"], "fields": "", "values": false }, "textMode": "auto" },
-      "targets": [{ "datasource": { "type": "postgres", "uid": "postgresql" }, "rawQuery": true, "rawSql": "SELECT COUNT(*) as value FROM core_setweightsevent WHERE timestamp >= NOW() - INTERVAL '24 hours'", "refId": "A", "format": "table" }],
+      "targets": [{ "datasource": { "type": "postgres", "uid": "postgresql" }, "rawQuery": true, "rawSql": "SELECT COUNT(*) as value FROM extrinsics WHERE call_function = 'set_weights' AND created_at >= NOW() - INTERVAL '24 hours'", "refId": "A", "format": "table" }],
       "title": "Set Weights (24h)",
       "type": "stat"
     },
@@ -291,7 +290,7 @@
       "gridPos": { "h": 4, "w": 6, "x": 6, "y": 45 },
       "id": 11,
       "options": { "colorMode": "value", "graphMode": "area", "justifyMode": "auto", "orientation": "auto", "reduceOptions": { "calcs": ["lastNotNull"], "fields": "", "values": false }, "textMode": "auto" },
-      "targets": [{ "datasource": { "type": "postgres", "uid": "postgresql" }, "rawQuery": true, "rawSql": "SELECT COUNT(*) as value FROM core_setweightsevent WHERE timestamp >= NOW() - INTERVAL '7 days'", "refId": "A", "format": "table" }],
+      "targets": [{ "datasource": { "type": "postgres", "uid": "postgresql" }, "rawQuery": true, "rawSql": "SELECT COUNT(*) as value FROM extrinsics WHERE call_function = 'set_weights' AND created_at >= NOW() - INTERVAL '7 days'", "refId": "A", "format": "table" }],
       "title": "Set Weights (7d)",
       "type": "stat"
     },
@@ -301,7 +300,7 @@
       "gridPos": { "h": 4, "w": 6, "x": 12, "y": 45 },
       "id": 12,
       "options": { "colorMode": "value", "graphMode": "area", "justifyMode": "auto", "orientation": "auto", "reduceOptions": { "calcs": ["lastNotNull"], "fields": "", "values": false }, "textMode": "auto" },
-      "targets": [{ "datasource": { "type": "postgres", "uid": "postgresql" }, "rawQuery": true, "rawSql": "SELECT COUNT(DISTINCT netuid) as value FROM core_setweightsevent WHERE timestamp >= NOW() - INTERVAL '7 days'", "refId": "A", "format": "table" }],
+      "targets": [{ "datasource": { "type": "postgres", "uid": "postgresql" }, "rawQuery": true, "rawSql": "SELECT COUNT(DISTINCT netuid) as value FROM extrinsics WHERE call_function = 'set_weights' AND created_at >= NOW() - INTERVAL '7 days'", "refId": "A", "format": "table" }],
       "title": "Active Subnets (7d)",
       "type": "stat"
     },
@@ -311,7 +310,7 @@
       "gridPos": { "h": 4, "w": 6, "x": 18, "y": 45 },
       "id": 13,
       "options": { "colorMode": "value", "graphMode": "area", "justifyMode": "auto", "orientation": "auto", "reduceOptions": { "calcs": ["lastNotNull"], "fields": "", "values": false }, "textMode": "auto" },
-      "targets": [{ "datasource": { "type": "postgres", "uid": "postgresql" }, "rawQuery": true, "rawSql": "SELECT COUNT(DISTINCT address) as value FROM core_setweightsevent WHERE timestamp >= NOW() - INTERVAL '7 days'", "refId": "A", "format": "table" }],
+      "targets": [{ "datasource": { "type": "postgres", "uid": "postgresql" }, "rawQuery": true, "rawSql": "SELECT COUNT(DISTINCT address) as value FROM extrinsics WHERE call_function = 'set_weights' AND created_at >= NOW() - INTERVAL '7 days'", "refId": "A", "format": "table" }],
       "title": "Active Validators (7d)",
       "type": "stat"
     },
@@ -324,7 +323,7 @@
       "gridPos": { "h": 8, "w": 24, "x": 0, "y": 49 },
       "id": 14,
       "options": { "legend": { "calcs": [], "displayMode": "list", "placement": "bottom", "showLegend": true }, "tooltip": { "mode": "single", "sort": "none" } },
-      "targets": [{ "datasource": { "type": "postgres", "uid": "postgresql" }, "rawQuery": true, "rawSql": "SELECT date_trunc('hour', timestamp) as time, 'Subnet ' || netuid::text as metric, COUNT(*) as value FROM core_setweightsevent WHERE timestamp >= NOW() - INTERVAL '7 days' GROUP BY 1, netuid ORDER BY 1", "refId": "A", "format": "time_series" }],
+      "targets": [{ "datasource": { "type": "postgres", "uid": "postgresql" }, "rawQuery": true, "rawSql": "SELECT date_trunc('hour', created_at) as time, 'Subnet ' || netuid::text as metric, COUNT(*) as value FROM extrinsics WHERE call_function = 'set_weights' AND created_at >= NOW() - INTERVAL '7 days' GROUP BY 1, netuid ORDER BY 1", "refId": "A", "format": "time_series" }],
       "title": "Set Weights Over Time by Subnet",
       "type": "timeseries"
     },
@@ -334,7 +333,7 @@
       "gridPos": { "h": 8, "w": 12, "x": 0, "y": 57 },
       "id": 15,
       "options": { "legend": { "displayMode": "list", "placement": "right", "showLegend": true }, "pieType": "pie", "reduceOptions": { "calcs": ["lastNotNull"], "fields": "/^value$/", "values": true }, "tooltip": { "mode": "single", "sort": "none" }, "displayLabels": ["name", "value"] },
-      "targets": [{ "datasource": { "type": "postgres", "uid": "postgresql" }, "rawQuery": true, "rawSql": "SELECT 'Subnet ' || netuid::text as metric, COUNT(*) as value FROM core_setweightsevent WHERE timestamp >= NOW() - INTERVAL '7 days' GROUP BY netuid ORDER BY value DESC LIMIT 10", "refId": "A", "format": "table" }],
+      "targets": [{ "datasource": { "type": "postgres", "uid": "postgresql" }, "rawQuery": true, "rawSql": "SELECT 'Subnet ' || netuid::text as metric, COUNT(*) as value FROM extrinsics WHERE call_function = 'set_weights' AND created_at >= NOW() - INTERVAL '7 days' GROUP BY netuid ORDER BY value DESC LIMIT 10", "refId": "A", "format": "table" }],
       "title": "Set Weights by Subnet",
       "type": "piechart"
     },
@@ -344,7 +343,7 @@
       "gridPos": { "h": 8, "w": 12, "x": 12, "y": 57 },
       "id": 16,
       "options": { "legend": { "displayMode": "list", "placement": "right", "showLegend": true }, "pieType": "pie", "reduceOptions": { "calcs": ["lastNotNull"], "fields": "/^value$/", "values": true }, "tooltip": { "mode": "single", "sort": "none" }, "displayLabels": ["name", "value"] },
-      "targets": [{ "datasource": { "type": "postgres", "uid": "postgresql" }, "rawQuery": true, "rawSql": "SELECT SUBSTRING(address, 1, 8) || '...' as metric, COUNT(*) as value FROM core_setweightsevent WHERE timestamp >= NOW() - INTERVAL '7 days' GROUP BY address ORDER BY value DESC LIMIT 10", "refId": "A", "format": "table" }],
+      "targets": [{ "datasource": { "type": "postgres", "uid": "postgresql" }, "rawQuery": true, "rawSql": "SELECT SUBSTRING(address, 1, 8) || '...' as metric, COUNT(*) as value FROM extrinsics WHERE call_function = 'set_weights' AND created_at >= NOW() - INTERVAL '7 days' GROUP BY address ORDER BY value DESC LIMIT 10", "refId": "A", "format": "table" }],
       "title": "Top Validators by Activity",
       "type": "piechart"
     },
@@ -357,7 +356,7 @@
       "gridPos": { "h": 8, "w": 12, "x": 0, "y": 65 },
       "id": 60,
       "options": { "cellHeight": "sm", "footer": { "countRows": false, "fields": "", "reducer": ["sum"], "show": true }, "showHeader": true, "sortBy": [{ "desc": true, "displayName": "count" }] },
-      "targets": [{ "datasource": { "type": "postgres", "uid": "postgresql" }, "rawQuery": true, "rawSql": "SELECT netuid, SUBSTRING(address, 1, 8) || '...' as validator, COUNT(*) as count FROM core_setweightsevent WHERE timestamp >= NOW() - INTERVAL '7 days' GROUP BY netuid, address ORDER BY count DESC LIMIT 20", "refId": "A", "format": "table" }],
+      "targets": [{ "datasource": { "type": "postgres", "uid": "postgresql" }, "rawQuery": true, "rawSql": "SELECT netuid, SUBSTRING(address, 1, 8) || '...' as validator, COUNT(*) as count FROM extrinsics WHERE call_function = 'set_weights' AND created_at >= NOW() - INTERVAL '7 days' GROUP BY netuid, address ORDER BY count DESC LIMIT 20", "refId": "A", "format": "table" }],
       "title": "Top Validators by Subnet",
       "type": "table"
     },
@@ -370,7 +369,7 @@
       "gridPos": { "h": 8, "w": 12, "x": 12, "y": 65 },
       "id": 61,
       "options": { "cellHeight": "sm", "footer": { "countRows": false, "fields": "", "reducer": ["sum"], "show": false }, "showHeader": true, "sortBy": [{ "desc": true, "displayName": "avg_per_day" }] },
-      "targets": [{ "datasource": { "type": "postgres", "uid": "postgresql" }, "rawQuery": true, "rawSql": "SELECT netuid, COUNT(*) as total, ROUND(COUNT(*)::numeric / 7, 1) as avg_per_day FROM core_setweightsevent WHERE timestamp >= NOW() - INTERVAL '7 days' GROUP BY netuid ORDER BY total DESC LIMIT 15", "refId": "A", "format": "table" }],
+      "targets": [{ "datasource": { "type": "postgres", "uid": "postgresql" }, "rawQuery": true, "rawSql": "SELECT netuid, COUNT(*) as total, ROUND(COUNT(*)::numeric / 7, 1) as avg_per_day, ROUND(100.0 * SUM(CASE WHEN success THEN 1 ELSE 0 END) / COUNT(*), 1) as success_rate FROM extrinsics WHERE call_function = 'set_weights' AND created_at >= NOW() - INTERVAL '7 days' GROUP BY netuid ORDER BY total DESC LIMIT 15", "refId": "A", "format": "table" }],
       "title": "Subnet Activity (7d)",
       "type": "table"
     },
@@ -378,32 +377,83 @@
       "datasource": { "type": "postgres", "uid": "postgresql" },
       "fieldConfig": {
         "defaults": { "color": { "mode": "thresholds" }, "custom": { "align": "auto", "cellOptions": { "type": "auto" }, "inspect": false }, "mappings": [], "thresholds": { "mode": "absolute", "steps": [{ "color": "green", "value": null }] } },
-        "overrides": [{ "matcher": { "id": "byName", "options": "status" }, "properties": [{ "id": "mappings", "value": [{ "options": { "success": { "color": "green", "index": 0 }, "failed": { "color": "red", "index": 1 } }, "type": "value" }] }, { "id": "custom.cellOptions", "value": { "type": "color-background" } }] }, { "matcher": { "id": "byName", "options": "address" }, "properties": [{ "id": "custom.width", "value": 150 }] }]
+        "overrides": [{ "matcher": { "id": "byName", "options": "success" }, "properties": [{ "id": "mappings", "value": [{ "options": { "true": { "color": "green", "index": 0, "text": "Success" }, "false": { "color": "red", "index": 1, "text": "Failed" } }, "type": "value" }] }, { "id": "custom.cellOptions", "value": { "type": "color-background" } }] }, { "matcher": { "id": "byName", "options": "address" }, "properties": [{ "id": "custom.width", "value": 150 }] }]
       },
       "gridPos": { "h": 10, "w": 24, "x": 0, "y": 73 },
       "id": 17,
       "options": { "cellHeight": "sm", "footer": { "countRows": false, "fields": "", "reducer": ["sum"], "show": false }, "showHeader": true },
-      "targets": [{ "datasource": { "type": "postgres", "uid": "postgresql" }, "rawQuery": true, "rawSql": "SELECT timestamp as time, netuid, SUBSTRING(address, 1, 8) || '...' || SUBSTRING(address, LENGTH(address)-5) as address, block_number, status FROM core_setweightsevent ORDER BY timestamp DESC LIMIT 50", "refId": "A", "format": "table" }],
+      "targets": [{ "datasource": { "type": "postgres", "uid": "postgresql" }, "rawQuery": true, "rawSql": "SELECT created_at as time, netuid, SUBSTRING(address, 1, 8) || '...' || SUBSTRING(address, LENGTH(address)-5) as address, block_number, success FROM extrinsics WHERE call_function = 'set_weights' ORDER BY created_at DESC LIMIT 50", "refId": "A", "format": "table" }],
       "title": "Recent Set Weights Events",
+      "type": "table"
+    },
+    {
+      "collapsed": false,
+      "gridPos": { "h": 1, "w": 24, "x": 0, "y": 83 },
+      "id": 102,
+      "panels": [],
+      "title": "Top Functions Analysis",
+      "type": "row"
+    },
+    {
+      "datasource": { "type": "postgres", "uid": "postgresql" },
+      "fieldConfig": {
+        "defaults": { "color": { "mode": "thresholds" }, "custom": { "align": "auto", "cellOptions": { "type": "auto" }, "inspect": false }, "mappings": [], "thresholds": { "mode": "absolute", "steps": [{ "color": "green", "value": null }] } },
+        "overrides": [{ "matcher": { "id": "byName", "options": "count" }, "properties": [{ "id": "custom.cellOptions", "value": { "mode": "gradient", "type": "gauge" } }] }]
+      },
+      "gridPos": { "h": 10, "w": 12, "x": 0, "y": 84 },
+      "id": 18,
+      "options": { "cellHeight": "sm", "footer": { "countRows": false, "fields": "", "reducer": ["sum"], "show": true }, "showHeader": true, "sortBy": [{ "desc": true, "displayName": "count" }] },
+      "targets": [{ "datasource": { "type": "postgres", "uid": "postgresql" }, "rawQuery": true, "rawSql": "SELECT call_module, call_function, COUNT(*) as count, ROUND(100.0 * SUM(CASE WHEN success THEN 1 ELSE 0 END) / COUNT(*), 1) as success_rate FROM extrinsics GROUP BY call_module, call_function ORDER BY count DESC LIMIT 25", "refId": "A", "format": "table" }],
+      "title": "Top 25 Call Functions",
+      "type": "table"
+    },
+    {
+      "datasource": { "type": "postgres", "uid": "postgresql" },
+      "fieldConfig": {
+        "defaults": { "color": { "mode": "thresholds" }, "custom": { "align": "auto", "cellOptions": { "type": "auto" }, "inspect": false }, "mappings": [], "thresholds": { "mode": "absolute", "steps": [{ "color": "green", "value": null }] } },
+        "overrides": [{ "matcher": { "id": "byName", "options": "failure_count" }, "properties": [{ "id": "color", "value": { "fixedColor": "red", "mode": "fixed" } }, { "id": "custom.cellOptions", "value": { "mode": "gradient", "type": "gauge" } }] }]
+      },
+      "gridPos": { "h": 10, "w": 12, "x": 12, "y": 84 },
+      "id": 19,
+      "options": { "cellHeight": "sm", "footer": { "countRows": false, "fields": "", "reducer": ["sum"], "show": true }, "showHeader": true, "sortBy": [{ "desc": true, "displayName": "failure_count" }] },
+      "targets": [{ "datasource": { "type": "postgres", "uid": "postgresql" }, "rawQuery": true, "rawSql": "SELECT call_module, call_function, COUNT(*) FILTER (WHERE NOT success) as failure_count, ROUND(100.0 * COUNT(*) FILTER (WHERE NOT success) / NULLIF(COUNT(*), 0), 1) as failure_rate FROM extrinsics WHERE created_at >= NOW() - INTERVAL '7 days' GROUP BY call_module, call_function HAVING COUNT(*) FILTER (WHERE NOT success) > 0 ORDER BY failure_count DESC LIMIT 20", "refId": "A", "format": "table" }],
+      "title": "Functions with Most Failures (7d)",
       "type": "table"
     }
   ],
   "refresh": "1m",
   "schemaVersion": 38,
   "style": "dark",
-  "tags": ["bittensor", "hyperparams", "set-weights"],
+  "tags": ["bittensor", "extrinsics", "set-weights", "adminutils"],
   "templating": {
     "list": [{
       "current": { "selected": false, "text": "All", "value": "$__all" },
       "datasource": { "type": "postgres", "uid": "postgresql" },
-      "definition": "SELECT DISTINCT netuid FROM (SELECT netuid FROM core_hyperparamevent WHERE netuid IS NOT NULL UNION SELECT netuid FROM core_setweightsevent WHERE netuid IS NOT NULL) t ORDER BY netuid",
+      "definition": "SELECT DISTINCT netuid FROM extrinsics WHERE netuid IS NOT NULL ORDER BY netuid",
       "hide": 0,
       "includeAll": true,
       "label": "Subnet",
       "multi": true,
       "name": "netuid",
       "options": [],
-      "query": "SELECT DISTINCT netuid FROM (SELECT netuid FROM core_hyperparamevent WHERE netuid IS NOT NULL UNION SELECT netuid FROM core_setweightsevent WHERE netuid IS NOT NULL) t ORDER BY netuid",
+      "query": "SELECT DISTINCT netuid FROM extrinsics WHERE netuid IS NOT NULL ORDER BY netuid",
+      "refresh": 1,
+      "regex": "",
+      "skipUrlSync": false,
+      "sort": 1,
+      "type": "query"
+    },
+    {
+      "current": { "selected": false, "text": "All", "value": "$__all" },
+      "datasource": { "type": "postgres", "uid": "postgresql" },
+      "definition": "SELECT DISTINCT call_module FROM extrinsics ORDER BY call_module",
+      "hide": 0,
+      "includeAll": true,
+      "label": "Module",
+      "multi": true,
+      "name": "call_module",
+      "options": [],
+      "query": "SELECT DISTINCT call_module FROM extrinsics ORDER BY call_module",
       "refresh": 1,
       "regex": "",
       "skipUrlSync": false,

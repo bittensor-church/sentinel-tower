@@ -22,60 +22,6 @@ class BlockchainEvent(models.Model):
         ]
 
 
-class SubnetEvent(BlockchainEvent):
-    netuid = models.PositiveIntegerField(null=True, blank=True, db_index=True)
-    timestamp = models.DateTimeField(
-        null=True,
-        blank=True,
-        db_index=True,
-        help_text="Block timestamp",
-    )
-
-    class Meta:
-        abstract = True
-
-
-class HyperparamEvent(SubnetEvent):
-    """
-    Stores hyperparameter change events from the Bittensor blockchain.
-
-    Each record represents a single hyperparameter change extrinsic.
-    """
-
-    call_args = models.JSONField(default=dict)
-
-    class Meta:
-        ordering = ["-block_number"]
-        indexes = [
-            models.Index(fields=["block_number", "netuid"]),
-            models.Index(fields=["netuid", "address"]),
-        ]
-
-    def __str__(self) -> str:
-        return f"hyperparam change netuid={self.netuid} @ block {self.block_number}"
-
-
-class SetWeightsEvent(SubnetEvent):
-    """
-    Stores set_weights extrinsic events from the Bittensor blockchain.
-
-    Each record represents a single set_weights call.
-    """
-
-    weights_data = models.JSONField(default=dict)
-    events = models.JSONField(default=list)
-
-    class Meta:
-        ordering = ["-block_number"]
-        indexes = [
-            models.Index(fields=["block_number", "netuid"]),
-            models.Index(fields=["netuid", "address"]),
-        ]
-
-    def __str__(self) -> str:
-        return f"set_weights netuid={self.netuid} @ block {self.block_number}"
-
-
 class Extrinsic(BlockchainEvent):
     """
     Generic extrinsic storage matching bittensor SDK BlockInfo.extrinsics structure.
