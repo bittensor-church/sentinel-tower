@@ -14,14 +14,14 @@ django.setup()
 
 from django.conf import settings  # noqa: E402
 
-from project.dagster.assets import hyperparams_extrinsics, set_weights_extrinsics  # noqa: E402
+from project.dagster.assets import hyperparams_extrinsics  # noqa: E402
 from project.dagster.jobs import (  # noqa: E402
+    extrinsics_sensor,
     hourly_ingest_schedule,
     hyperparams_sensor,
     ingest_all_events_job,
+    ingest_extrinsics_job,
     ingest_hyperparams_job,
-    ingest_set_weights_job,
-    set_weights_sensor,
 )
 from project.dagster.resources import JsonLinesReader  # noqa: E402
 
@@ -31,16 +31,15 @@ MEDIA_ROOT = str(getattr(settings, "MEDIA_ROOT", Path(__file__).parent.parent.pa
 defs = dg.Definitions(
     assets=[
         hyperparams_extrinsics,
-        set_weights_extrinsics,
     ],
     jobs=[
         ingest_hyperparams_job,
-        ingest_set_weights_job,
+        ingest_extrinsics_job,
         ingest_all_events_job,
     ],
     sensors=[
         hyperparams_sensor,
-        set_weights_sensor,
+        extrinsics_sensor,
     ],
     schedules=[
         hourly_ingest_schedule,

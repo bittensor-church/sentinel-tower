@@ -134,6 +134,57 @@ services:
       - prometheus
       - db
 
+  celery-worker:
+    build:
+      context: ./
+      dockerfile: app/envs/prod/Dockerfile
+    image: project/app
+    init: true
+    healthcheck:
+      test: celery -A project status > /dev/null || exit 1
+    env_file: ./.env
+    environment:
+      - DATABASE_URL=postgres://postgres:12345@db:5432/project
+      - POSTGRES_HOST=db
+      - POSTGRES_PORT=5432
+      - REDIS_HOST=redis
+      - REDIS_PORT=6379
+      - CELERY_BROKER_URL=redis://redis:6379/0
+    command: ./celery-entrypoint.sh
+    volumes:
+      - ./app/src/media:/root/src/media
+    tmpfs: /run
+    depends_on:
+      redis:
+        condition: service_healthy
+
+  block-scheduler:
+    build:
+      context: ./
+      dockerfile: app/envs/prod/Dockerfile
+    image: project/app
+    healthcheck:
+      test: wget -q --spider 127.0.0.1:8000/admin/login/ || exit 1
+    init: true
+    env_file: ./.env
+    command: python manage.py block_tasks_v1
+    environment:
+      - DATABASE_URL=postgres://postgres:12345@db:5432/project
+      - POSTGRES_HOST=db
+      - POSTGRES_PORT=5432
+      - REDIS_HOST=redis
+      - REDIS_PORT=6379
+      - CELERY_BROKER_URL=redis://redis:6379/0
+    volumes:
+      - ./app/src/media:/root/src/media
+    depends_on:
+      celery-worker:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      db:
+        condition: service_healthy
+
 volumes:
   # backups:
   dagster-storage:

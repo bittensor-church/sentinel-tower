@@ -1,10 +1,13 @@
 """Dagster resources for blockchain data processing."""
 
 import json
+import logging
 from pathlib import Path
 from typing import Any
 
 from dagster import ConfigurableResource
+
+logger = logging.getLogger(__name__)
 
 SET_WEIGHTS_DIR = "data/bittensor/set-weights-extrinsics"
 
@@ -40,13 +43,21 @@ class JsonLinesReader(ConfigurableResource):
 
         records = []
         current_line = 0
+        errors = 0
         with open(file_path, encoding="utf-8") as f:
             for raw_line in f:
                 if current_line >= start_line:
                     stripped = raw_line.strip()
                     if stripped:
-                        records.append(json.loads(stripped))
+                        try:
+                            records.append(json.loads(stripped))
+                        except json.JSONDecodeError:
+                            errors += 1
                 current_line += 1
+
+        if errors > 0:
+            logger.warning("Skipped %d malformed JSON lines in %s", errors, relative_path)
+
         return records, current_line
 
     def count_lines(self, relative_path: str) -> int:
@@ -98,14 +109,21 @@ class JsonLinesReader(ConfigurableResource):
 
         all_records = []
         total_lines = 0
+        errors = 0
 
         for jsonl_file in sorted(dir_path.glob("*.jsonl")):
             with jsonl_file.open(encoding="utf-8") as f:
                 for line in f:
                     stripped = line.strip()
                     if stripped:
-                        all_records.append(json.loads(stripped))
+                        try:
+                            all_records.append(json.loads(stripped))
+                        except json.JSONDecodeError:
+                            errors += 1
                     total_lines += 1
+
+        if errors > 0:
+            logger.warning("Skipped %d malformed JSON lines in %s", errors, relative_dir)
 
         return all_records, total_lines
 

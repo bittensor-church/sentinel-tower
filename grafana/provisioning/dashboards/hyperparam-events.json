@@ -1,7 +1,5 @@
 {
-  "annotations": {
-    "list": []
-  },
+  "annotations": { "list": [] },
   "editable": true,
   "fiscalYearStartMonth": 0,
   "graphTooltip": 0,
@@ -10,710 +8,413 @@
   "liveNow": false,
   "panels": [
     {
-      "datasource": {
-        "type": "postgres",
-        "uid": "postgresql"
-      },
+      "collapsed": false,
+      "gridPos": { "h": 1, "w": 24, "x": 0, "y": 0 },
+      "id": 200,
+      "panels": [],
+      "title": "Overview",
+      "type": "row"
+    },
+    {
+      "datasource": { "type": "postgres", "uid": "postgresql" },
       "fieldConfig": {
         "defaults": {
-          "color": {
-            "mode": "thresholds"
-          },
+          "color": { "mode": "thresholds" },
           "mappings": [],
-          "thresholds": {
-            "mode": "absolute",
-            "steps": [
-              {
-                "color": "green",
-                "value": null
-              },
-              {
-                "color": "yellow",
-                "value": 10
-              },
-              {
-                "color": "red",
-                "value": 50
-              }
-            ]
-          }
+          "thresholds": { "mode": "absolute", "steps": [{ "color": "green", "value": null }] }
         },
         "overrides": []
       },
-      "gridPos": {
-        "h": 4,
-        "w": 6,
-        "x": 0,
-        "y": 0
+      "gridPos": { "h": 4, "w": 4, "x": 0, "y": 1 },
+      "id": 50,
+      "options": { "colorMode": "value", "graphMode": "area", "justifyMode": "auto", "orientation": "auto", "reduceOptions": { "calcs": ["lastNotNull"], "fields": "", "values": false }, "textMode": "auto" },
+      "targets": [{ "datasource": { "type": "postgres", "uid": "postgresql" }, "rawQuery": true, "rawSql": "SELECT (SELECT COUNT(*) FROM core_hyperparamevent) + (SELECT COUNT(*) FROM core_setweightsevent) as value", "refId": "A", "format": "table" }],
+      "title": "Total Events",
+      "type": "stat"
+    },
+    {
+      "datasource": { "type": "postgres", "uid": "postgresql" },
+      "fieldConfig": {
+        "defaults": {
+          "color": { "mode": "thresholds" },
+          "mappings": [],
+          "thresholds": { "mode": "absolute", "steps": [{ "color": "blue", "value": null }] }
+        },
+        "overrides": []
       },
+      "gridPos": { "h": 4, "w": 4, "x": 4, "y": 1 },
+      "id": 51,
+      "options": { "colorMode": "value", "graphMode": "area", "justifyMode": "auto", "orientation": "auto", "reduceOptions": { "calcs": ["lastNotNull"], "fields": "", "values": false }, "textMode": "auto" },
+      "targets": [{ "datasource": { "type": "postgres", "uid": "postgresql" }, "rawQuery": true, "rawSql": "SELECT MAX(block_number) as value FROM (SELECT block_number FROM core_hyperparamevent UNION ALL SELECT block_number FROM core_setweightsevent) t", "refId": "A", "format": "table" }],
+      "title": "Latest Block",
+      "type": "stat"
+    },
+    {
+      "datasource": { "type": "postgres", "uid": "postgresql" },
+      "fieldConfig": {
+        "defaults": {
+          "color": { "mode": "thresholds" },
+          "mappings": [],
+          "thresholds": { "mode": "absolute", "steps": [{ "color": "purple", "value": null }] }
+        },
+        "overrides": []
+      },
+      "gridPos": { "h": 4, "w": 4, "x": 8, "y": 1 },
+      "id": 52,
+      "options": { "colorMode": "value", "graphMode": "area", "justifyMode": "auto", "orientation": "auto", "reduceOptions": { "calcs": ["lastNotNull"], "fields": "", "values": false }, "textMode": "auto" },
+      "targets": [{ "datasource": { "type": "postgres", "uid": "postgresql" }, "rawQuery": true, "rawSql": "SELECT COUNT(DISTINCT netuid) as value FROM (SELECT netuid FROM core_hyperparamevent WHERE netuid IS NOT NULL UNION SELECT netuid FROM core_setweightsevent WHERE netuid IS NOT NULL) t", "refId": "A", "format": "table" }],
+      "title": "Total Subnets",
+      "type": "stat"
+    },
+    {
+      "datasource": { "type": "postgres", "uid": "postgresql" },
+      "fieldConfig": {
+        "defaults": {
+          "color": { "mode": "thresholds" },
+          "mappings": [],
+          "thresholds": { "mode": "absolute", "steps": [{ "color": "orange", "value": null }] }
+        },
+        "overrides": []
+      },
+      "gridPos": { "h": 4, "w": 4, "x": 12, "y": 1 },
+      "id": 53,
+      "options": { "colorMode": "value", "graphMode": "area", "justifyMode": "auto", "orientation": "auto", "reduceOptions": { "calcs": ["lastNotNull"], "fields": "", "values": false }, "textMode": "auto" },
+      "targets": [{ "datasource": { "type": "postgres", "uid": "postgresql" }, "rawQuery": true, "rawSql": "SELECT COUNT(DISTINCT address) as value FROM (SELECT address FROM core_hyperparamevent UNION SELECT address FROM core_setweightsevent) t", "refId": "A", "format": "table" }],
+      "title": "Unique Addresses",
+      "type": "stat"
+    },
+    {
+      "datasource": { "type": "postgres", "uid": "postgresql" },
+      "fieldConfig": {
+        "defaults": {
+          "color": { "mode": "thresholds" },
+          "mappings": [],
+          "thresholds": { "mode": "absolute", "steps": [{ "color": "green", "value": null }, { "color": "red", "value": 0.1 }] },
+          "unit": "percentunit"
+        },
+        "overrides": []
+      },
+      "gridPos": { "h": 4, "w": 4, "x": 16, "y": 1 },
+      "id": 54,
+      "options": { "colorMode": "value", "graphMode": "area", "justifyMode": "auto", "orientation": "auto", "reduceOptions": { "calcs": ["lastNotNull"], "fields": "", "values": false }, "textMode": "auto" },
+      "targets": [{ "datasource": { "type": "postgres", "uid": "postgresql" }, "rawQuery": true, "rawSql": "SELECT COALESCE(SUM(CASE WHEN status != 'success' THEN 1 ELSE 0 END)::float / NULLIF(COUNT(*), 0), 0) as value FROM (SELECT status FROM core_hyperparamevent UNION ALL SELECT status FROM core_setweightsevent) t", "refId": "A", "format": "table" }],
+      "title": "Failure Rate",
+      "type": "stat"
+    },
+    {
+      "datasource": { "type": "postgres", "uid": "postgresql" },
+      "fieldConfig": {
+        "defaults": {
+          "color": { "mode": "thresholds" },
+          "mappings": [],
+          "thresholds": { "mode": "absolute", "steps": [{ "color": "yellow", "value": null }] }
+        },
+        "overrides": []
+      },
+      "gridPos": { "h": 4, "w": 4, "x": 20, "y": 1 },
+      "id": 55,
+      "options": { "colorMode": "value", "graphMode": "area", "justifyMode": "auto", "orientation": "auto", "reduceOptions": { "calcs": ["lastNotNull"], "fields": "", "values": false }, "textMode": "auto" },
+      "targets": [{ "datasource": { "type": "postgres", "uid": "postgresql" }, "rawQuery": true, "rawSql": "SELECT ((SELECT COUNT(*) FROM core_hyperparamevent WHERE timestamp >= NOW() - INTERVAL '24 hours') + (SELECT COUNT(*) FROM core_setweightsevent WHERE timestamp >= NOW() - INTERVAL '24 hours')) as value", "refId": "A", "format": "table" }],
+      "title": "Events (24h)",
+      "type": "stat"
+    },
+    {
+      "datasource": { "type": "postgres", "uid": "postgresql" },
+      "fieldConfig": {
+        "defaults": {
+          "color": { "mode": "palette-classic" },
+          "custom": { "axisBorderShow": false, "axisCenteredZero": false, "axisColorMode": "text", "axisLabel": "", "axisPlacement": "auto", "barAlignment": 0, "drawStyle": "line", "fillOpacity": 30, "gradientMode": "none", "hideFrom": { "legend": false, "tooltip": false, "viz": false }, "insertNulls": false, "lineInterpolation": "smooth", "lineWidth": 2, "pointSize": 5, "scaleDistribution": { "type": "linear" }, "showPoints": "never", "spanNulls": false, "stacking": { "group": "A", "mode": "none" }, "thresholdsStyle": { "mode": "off" } },
+          "mappings": [],
+          "thresholds": { "mode": "absolute", "steps": [{ "color": "green", "value": null }] }
+        },
+        "overrides": []
+      },
+      "gridPos": { "h": 8, "w": 24, "x": 0, "y": 5 },
+      "id": 56,
+      "options": { "legend": { "calcs": ["sum"], "displayMode": "table", "placement": "right", "showLegend": true }, "tooltip": { "mode": "multi", "sort": "desc" } },
+      "targets": [
+        { "datasource": { "type": "postgres", "uid": "postgresql" }, "rawQuery": true, "rawSql": "SELECT date_trunc('hour', timestamp) as time, 'Hyperparam' as metric, COUNT(*) as value FROM core_hyperparamevent WHERE timestamp >= NOW() - INTERVAL '7 days' GROUP BY 1 ORDER BY 1", "refId": "A", "format": "time_series" },
+        { "datasource": { "type": "postgres", "uid": "postgresql" }, "rawQuery": true, "rawSql": "SELECT date_trunc('hour', timestamp) as time, 'Set Weights' as metric, COUNT(*) as value FROM core_setweightsevent WHERE timestamp >= NOW() - INTERVAL '7 days' GROUP BY 1 ORDER BY 1", "refId": "B", "format": "time_series" }
+      ],
+      "title": "All Events Over Time",
+      "type": "timeseries"
+    },
+    {
+      "datasource": { "type": "postgres", "uid": "postgresql" },
+      "fieldConfig": {
+        "defaults": { "color": { "mode": "palette-classic" }, "custom": { "hideFrom": { "legend": false, "tooltip": false, "viz": false } }, "mappings": [] },
+        "overrides": []
+      },
+      "gridPos": { "h": 8, "w": 8, "x": 0, "y": 13 },
+      "id": 57,
+      "options": { "legend": { "displayMode": "list", "placement": "right", "showLegend": true }, "pieType": "donut", "reduceOptions": { "calcs": ["lastNotNull"], "fields": "/^value$/", "values": true }, "tooltip": { "mode": "single", "sort": "none" }, "displayLabels": ["name", "percent"] },
+      "targets": [{ "datasource": { "type": "postgres", "uid": "postgresql" }, "rawQuery": true, "rawSql": "SELECT 'Hyperparam' as metric, COUNT(*) as value FROM core_hyperparamevent UNION ALL SELECT 'Set Weights' as metric, COUNT(*) as value FROM core_setweightsevent", "refId": "A", "format": "table" }],
+      "title": "Event Type Distribution",
+      "type": "piechart"
+    },
+    {
+      "datasource": { "type": "postgres", "uid": "postgresql" },
+      "fieldConfig": {
+        "defaults": { "color": { "mode": "palette-classic" }, "custom": { "hideFrom": { "legend": false, "tooltip": false, "viz": false } }, "mappings": [] },
+        "overrides": []
+      },
+      "gridPos": { "h": 8, "w": 8, "x": 8, "y": 13 },
+      "id": 58,
+      "options": { "legend": { "displayMode": "list", "placement": "right", "showLegend": true }, "pieType": "donut", "reduceOptions": { "calcs": ["lastNotNull"], "fields": "/^value$/", "values": true }, "tooltip": { "mode": "single", "sort": "none" }, "displayLabels": ["name", "percent"] },
+      "targets": [{ "datasource": { "type": "postgres", "uid": "postgresql" }, "rawQuery": true, "rawSql": "SELECT status as metric, COUNT(*) as value FROM (SELECT status FROM core_hyperparamevent UNION ALL SELECT status FROM core_setweightsevent) t GROUP BY status ORDER BY value DESC", "refId": "A", "format": "table" }],
+      "title": "Status Distribution",
+      "type": "piechart"
+    },
+    {
+      "datasource": { "type": "postgres", "uid": "postgresql" },
+      "fieldConfig": {
+        "defaults": {
+          "color": { "mode": "thresholds" },
+          "custom": { "align": "auto", "cellOptions": { "type": "auto" }, "inspect": false },
+          "mappings": [],
+          "thresholds": { "mode": "absolute", "steps": [{ "color": "green", "value": null }] }
+        },
+        "overrides": [{ "matcher": { "id": "byName", "options": "events" }, "properties": [{ "id": "custom.cellOptions", "value": { "mode": "gradient", "type": "gauge" } }] }]
+      },
+      "gridPos": { "h": 8, "w": 8, "x": 16, "y": 13 },
+      "id": 59,
+      "options": { "cellHeight": "sm", "footer": { "countRows": false, "fields": "", "reducer": ["sum"], "show": true }, "showHeader": true, "sortBy": [{ "desc": true, "displayName": "events" }] },
+      "targets": [{ "datasource": { "type": "postgres", "uid": "postgresql" }, "rawQuery": true, "rawSql": "SELECT SUBSTRING(address, 1, 8) || '...' as address, COUNT(*) as events FROM (SELECT address FROM core_hyperparamevent UNION ALL SELECT address FROM core_setweightsevent) t GROUP BY address ORDER BY events DESC LIMIT 15", "refId": "A", "format": "table" }],
+      "title": "Most Active Addresses",
+      "type": "table"
+    },
+    {
+      "collapsed": false,
+      "gridPos": { "h": 1, "w": 24, "x": 0, "y": 21 },
+      "id": 100,
+      "panels": [],
+      "title": "Hyperparam Events",
+      "type": "row"
+    },
+    {
+      "datasource": { "type": "postgres", "uid": "postgresql" },
+      "fieldConfig": { "defaults": { "color": { "mode": "thresholds" }, "mappings": [], "thresholds": { "mode": "absolute", "steps": [{ "color": "green", "value": null }, { "color": "yellow", "value": 10 }, { "color": "red", "value": 50 }] } }, "overrides": [] },
+      "gridPos": { "h": 4, "w": 6, "x": 0, "y": 22 },
       "id": 1,
-      "options": {
-        "colorMode": "value",
-        "graphMode": "area",
-        "justifyMode": "auto",
-        "orientation": "auto",
-        "reduceOptions": {
-          "calcs": ["lastNotNull"],
-          "fields": "",
-          "values": false
-        },
-        "textMode": "auto"
-      },
-      "pluginVersion": "10.2.0",
-      "targets": [
-        {
-          "datasource": {
-            "type": "postgres",
-            "uid": "postgresql"
-          },
-          "editorMode": "code",
-          "format": "table",
-          "rawQuery": true,
-          "rawSql": "SELECT COUNT(*) as value FROM core_hyperparamevent WHERE created_at >= NOW() - INTERVAL '24 hours'",
-          "refId": "A"
-        }
-      ],
-      "title": "Changes (24h)",
+      "options": { "colorMode": "value", "graphMode": "area", "justifyMode": "auto", "orientation": "auto", "reduceOptions": { "calcs": ["lastNotNull"], "fields": "", "values": false }, "textMode": "auto" },
+      "targets": [{ "datasource": { "type": "postgres", "uid": "postgresql" }, "rawQuery": true, "rawSql": "SELECT COUNT(*) as value FROM core_hyperparamevent WHERE timestamp >= NOW() - INTERVAL '24 hours'", "refId": "A", "format": "table" }],
+      "title": "Hyperparam (24h)",
       "type": "stat"
     },
     {
-      "datasource": {
-        "type": "postgres",
-        "uid": "postgresql"
-      },
-      "fieldConfig": {
-        "defaults": {
-          "color": {
-            "mode": "thresholds"
-          },
-          "mappings": [],
-          "thresholds": {
-            "mode": "absolute",
-            "steps": [
-              {
-                "color": "blue",
-                "value": null
-              }
-            ]
-          }
-        },
-        "overrides": []
-      },
-      "gridPos": {
-        "h": 4,
-        "w": 6,
-        "x": 6,
-        "y": 0
-      },
+      "datasource": { "type": "postgres", "uid": "postgresql" },
+      "fieldConfig": { "defaults": { "color": { "mode": "thresholds" }, "mappings": [], "thresholds": { "mode": "absolute", "steps": [{ "color": "blue", "value": null }] } }, "overrides": [] },
+      "gridPos": { "h": 4, "w": 6, "x": 6, "y": 22 },
       "id": 2,
-      "options": {
-        "colorMode": "value",
-        "graphMode": "area",
-        "justifyMode": "auto",
-        "orientation": "auto",
-        "reduceOptions": {
-          "calcs": ["lastNotNull"],
-          "fields": "",
-          "values": false
-        },
-        "textMode": "auto"
-      },
-      "pluginVersion": "10.2.0",
-      "targets": [
-        {
-          "datasource": {
-            "type": "postgres",
-            "uid": "postgresql"
-          },
-          "editorMode": "code",
-          "format": "table",
-          "rawQuery": true,
-          "rawSql": "SELECT COUNT(*) as value FROM core_hyperparamevent WHERE created_at >= NOW() - INTERVAL '7 days'",
-          "refId": "A"
-        }
-      ],
-      "title": "Changes (7d)",
+      "options": { "colorMode": "value", "graphMode": "area", "justifyMode": "auto", "orientation": "auto", "reduceOptions": { "calcs": ["lastNotNull"], "fields": "", "values": false }, "textMode": "auto" },
+      "targets": [{ "datasource": { "type": "postgres", "uid": "postgresql" }, "rawQuery": true, "rawSql": "SELECT COUNT(*) as value FROM core_hyperparamevent WHERE timestamp >= NOW() - INTERVAL '7 days'", "refId": "A", "format": "table" }],
+      "title": "Hyperparam (7d)",
       "type": "stat"
     },
     {
-      "datasource": {
-        "type": "postgres",
-        "uid": "postgresql"
-      },
-      "fieldConfig": {
-        "defaults": {
-          "color": {
-            "mode": "thresholds"
-          },
-          "mappings": [],
-          "thresholds": {
-            "mode": "absolute",
-            "steps": [
-              {
-                "color": "purple",
-                "value": null
-              }
-            ]
-          }
-        },
-        "overrides": []
-      },
-      "gridPos": {
-        "h": 4,
-        "w": 6,
-        "x": 12,
-        "y": 0
-      },
+      "datasource": { "type": "postgres", "uid": "postgresql" },
+      "fieldConfig": { "defaults": { "color": { "mode": "thresholds" }, "mappings": [], "thresholds": { "mode": "absolute", "steps": [{ "color": "purple", "value": null }] } }, "overrides": [] },
+      "gridPos": { "h": 4, "w": 6, "x": 12, "y": 22 },
       "id": 3,
-      "options": {
-        "colorMode": "value",
-        "graphMode": "area",
-        "justifyMode": "auto",
-        "orientation": "auto",
-        "reduceOptions": {
-          "calcs": ["lastNotNull"],
-          "fields": "",
-          "values": false
-        },
-        "textMode": "auto"
-      },
-      "pluginVersion": "10.2.0",
-      "targets": [
-        {
-          "datasource": {
-            "type": "postgres",
-            "uid": "postgresql"
-          },
-          "editorMode": "code",
-          "format": "table",
-          "rawQuery": true,
-          "rawSql": "SELECT COUNT(DISTINCT netuid) as value FROM core_hyperparamevent WHERE created_at >= NOW() - INTERVAL '7 days'",
-          "refId": "A"
-        }
-      ],
+      "options": { "colorMode": "value", "graphMode": "area", "justifyMode": "auto", "orientation": "auto", "reduceOptions": { "calcs": ["lastNotNull"], "fields": "", "values": false }, "textMode": "auto" },
+      "targets": [{ "datasource": { "type": "postgres", "uid": "postgresql" }, "rawQuery": true, "rawSql": "SELECT COUNT(DISTINCT netuid) as value FROM core_hyperparamevent WHERE timestamp >= NOW() - INTERVAL '7 days'", "refId": "A", "format": "table" }],
       "title": "Subnets Affected (7d)",
       "type": "stat"
     },
     {
-      "datasource": {
-        "type": "postgres",
-        "uid": "postgresql"
-      },
-      "fieldConfig": {
-        "defaults": {
-          "color": {
-            "mode": "thresholds"
-          },
-          "mappings": [],
-          "thresholds": {
-            "mode": "absolute",
-            "steps": [
-              {
-                "color": "orange",
-                "value": null
-              }
-            ]
-          }
-        },
-        "overrides": []
-      },
-      "gridPos": {
-        "h": 4,
-        "w": 6,
-        "x": 18,
-        "y": 0
-      },
+      "datasource": { "type": "postgres", "uid": "postgresql" },
+      "fieldConfig": { "defaults": { "color": { "mode": "thresholds" }, "mappings": [], "thresholds": { "mode": "absolute", "steps": [{ "color": "orange", "value": null }] } }, "overrides": [] },
+      "gridPos": { "h": 4, "w": 6, "x": 18, "y": 22 },
       "id": 4,
-      "options": {
-        "colorMode": "value",
-        "graphMode": "area",
-        "justifyMode": "auto",
-        "orientation": "auto",
-        "reduceOptions": {
-          "calcs": ["lastNotNull"],
-          "fields": "",
-          "values": false
-        },
-        "textMode": "auto"
-      },
-      "pluginVersion": "10.2.0",
-      "targets": [
-        {
-          "datasource": {
-            "type": "postgres",
-            "uid": "postgresql"
-          },
-          "editorMode": "code",
-          "format": "table",
-          "rawQuery": true,
-          "rawSql": "SELECT COUNT(DISTINCT call_function) as value FROM core_hyperparamevent WHERE created_at >= NOW() - INTERVAL '7 days'",
-          "refId": "A"
-        }
-      ],
-      "title": "Param Types Changed (7d)",
+      "options": { "colorMode": "value", "graphMode": "area", "justifyMode": "auto", "orientation": "auto", "reduceOptions": { "calcs": ["lastNotNull"], "fields": "", "values": false }, "textMode": "auto" },
+      "targets": [{ "datasource": { "type": "postgres", "uid": "postgresql" }, "rawQuery": true, "rawSql": "SELECT COUNT(DISTINCT call_function) as value FROM core_hyperparamevent WHERE timestamp >= NOW() - INTERVAL '7 days'", "refId": "A", "format": "table" }],
+      "title": "Param Types (7d)",
       "type": "stat"
     },
     {
-      "datasource": {
-        "type": "postgres",
-        "uid": "postgresql"
-      },
+      "datasource": { "type": "postgres", "uid": "postgresql" },
       "fieldConfig": {
-        "defaults": {
-          "color": {
-            "mode": "palette-classic"
-          },
-          "custom": {
-            "axisBorderShow": false,
-            "axisCenteredZero": false,
-            "axisColorMode": "text",
-            "axisLabel": "",
-            "axisPlacement": "auto",
-            "barAlignment": 0,
-            "drawStyle": "bars",
-            "fillOpacity": 80,
-            "gradientMode": "none",
-            "hideFrom": {
-              "legend": false,
-              "tooltip": false,
-              "viz": false
-            },
-            "insertNulls": false,
-            "lineInterpolation": "linear",
-            "lineWidth": 1,
-            "pointSize": 5,
-            "scaleDistribution": {
-              "type": "linear"
-            },
-            "showPoints": "auto",
-            "spanNulls": false,
-            "stacking": {
-              "group": "A",
-              "mode": "normal"
-            },
-            "thresholdsStyle": {
-              "mode": "off"
-            }
-          },
-          "mappings": [],
-          "thresholds": {
-            "mode": "absolute",
-            "steps": [
-              {
-                "color": "green",
-                "value": null
-              }
-            ]
-          }
-        },
+        "defaults": { "color": { "mode": "palette-classic" }, "custom": { "axisBorderShow": false, "axisCenteredZero": false, "axisColorMode": "text", "axisLabel": "", "axisPlacement": "auto", "barAlignment": 0, "drawStyle": "bars", "fillOpacity": 80, "gradientMode": "none", "hideFrom": { "legend": false, "tooltip": false, "viz": false }, "insertNulls": false, "lineInterpolation": "linear", "lineWidth": 1, "pointSize": 5, "scaleDistribution": { "type": "linear" }, "showPoints": "auto", "spanNulls": false, "stacking": { "group": "A", "mode": "normal" }, "thresholdsStyle": { "mode": "off" } }, "mappings": [], "thresholds": { "mode": "absolute", "steps": [{ "color": "green", "value": null }] } },
         "overrides": []
       },
-      "gridPos": {
-        "h": 8,
-        "w": 24,
-        "x": 0,
-        "y": 4
-      },
+      "gridPos": { "h": 8, "w": 16, "x": 0, "y": 26 },
       "id": 5,
-      "options": {
-        "legend": {
-          "calcs": [],
-          "displayMode": "list",
-          "placement": "bottom",
-          "showLegend": true
-        },
-        "tooltip": {
-          "mode": "single",
-          "sort": "none"
-        }
-      },
-      "targets": [
-        {
-          "datasource": {
-            "type": "postgres",
-            "uid": "postgresql"
-          },
-          "editorMode": "code",
-          "format": "time_series",
-          "rawQuery": true,
-          "rawSql": "SELECT \n  date_trunc('hour', created_at) as time,\n  call_function as metric,\n  COUNT(*) as value\nFROM core_hyperparamevent\nWHERE created_at >= NOW() - INTERVAL '7 days'\nGROUP BY 1, 2\nORDER BY 1",
-          "refId": "A"
-        }
-      ],
+      "options": { "legend": { "calcs": [], "displayMode": "list", "placement": "bottom", "showLegend": true }, "tooltip": { "mode": "single", "sort": "none" } },
+      "targets": [{ "datasource": { "type": "postgres", "uid": "postgresql" }, "rawQuery": true, "rawSql": "SELECT date_trunc('hour', timestamp) as time, call_function as metric, COUNT(*) as value FROM core_hyperparamevent WHERE timestamp >= NOW() - INTERVAL '7 days' GROUP BY 1, 2 ORDER BY 1", "refId": "A", "format": "time_series" }],
       "title": "Hyperparam Changes Over Time",
       "type": "timeseries"
     },
     {
-      "datasource": {
-        "type": "postgres",
-        "uid": "postgresql"
-      },
-      "fieldConfig": {
-        "defaults": {
-          "color": {
-            "mode": "palette-classic"
-          },
-          "custom": {
-            "hideFrom": {
-              "legend": false,
-              "tooltip": false,
-              "viz": false
-            }
-          },
-          "mappings": []
-        },
-        "overrides": []
-      },
-      "gridPos": {
-        "h": 10,
-        "w": 8,
-        "x": 0,
-        "y": 12
-      },
+      "datasource": { "type": "postgres", "uid": "postgresql" },
+      "fieldConfig": { "defaults": { "color": { "mode": "palette-classic" }, "custom": { "hideFrom": { "legend": false, "tooltip": false, "viz": false } }, "mappings": [] }, "overrides": [] },
+      "gridPos": { "h": 8, "w": 8, "x": 16, "y": 26 },
       "id": 6,
-      "options": {
-        "legend": {
-          "displayMode": "list",
-          "placement": "right",
-          "showLegend": true
-        },
-        "pieType": "pie",
-        "reduceOptions": {
-          "calcs": ["lastNotNull"],
-          "fields": "/^value$/",
-          "values": true
-        },
-        "tooltip": {
-          "mode": "single",
-          "sort": "none"
-        },
-        "displayLabels": ["name", "value"]
-      },
-      "targets": [
-        {
-          "datasource": {
-            "type": "postgres",
-            "uid": "postgresql"
-          },
-          "editorMode": "code",
-          "format": "table",
-          "rawQuery": true,
-          "rawSql": "SELECT \n  call_function as metric,\n  COUNT(*) as value\nFROM core_hyperparamevent\nWHERE created_at >= NOW() - INTERVAL '7 days'\nGROUP BY call_function\nORDER BY value DESC\nLIMIT 10",
-          "refId": "A"
-        }
-      ],
+      "options": { "legend": { "displayMode": "list", "placement": "right", "showLegend": true }, "pieType": "pie", "reduceOptions": { "calcs": ["lastNotNull"], "fields": "/^value$/", "values": true }, "tooltip": { "mode": "single", "sort": "none" }, "displayLabels": ["name", "value"] },
+      "targets": [{ "datasource": { "type": "postgres", "uid": "postgresql" }, "rawQuery": true, "rawSql": "SELECT call_function as metric, COUNT(*) as value FROM core_hyperparamevent WHERE timestamp >= NOW() - INTERVAL '7 days' GROUP BY call_function ORDER BY value DESC LIMIT 10", "refId": "A", "format": "table" }],
       "title": "Changes by Parameter Type",
       "type": "piechart"
     },
     {
-      "datasource": {
-        "type": "postgres",
-        "uid": "postgresql"
-      },
+      "datasource": { "type": "postgres", "uid": "postgresql" },
       "fieldConfig": {
-        "defaults": {
-          "color": {
-            "mode": "palette-classic"
-          },
-          "custom": {
-            "hideFrom": {
-              "legend": false,
-              "tooltip": false,
-              "viz": false
-            }
-          },
-          "mappings": []
-        },
-        "overrides": []
+        "defaults": { "color": { "mode": "thresholds" }, "custom": { "align": "auto", "cellOptions": { "type": "auto" }, "inspect": false }, "mappings": [], "thresholds": { "mode": "absolute", "steps": [{ "color": "green", "value": null }] } },
+        "overrides": [{ "matcher": { "id": "byName", "options": "status" }, "properties": [{ "id": "mappings", "value": [{ "options": { "success": { "color": "green", "index": 0 }, "failed": { "color": "red", "index": 1 } }, "type": "value" }] }, { "id": "custom.cellOptions", "value": { "type": "color-background" } }] }, { "matcher": { "id": "byName", "options": "address" }, "properties": [{ "id": "custom.width", "value": 150 }] }, { "matcher": { "id": "byName", "options": "args" }, "properties": [{ "id": "custom.width", "value": 300 }] }]
       },
-      "gridPos": {
-        "h": 10,
-        "w": 8,
-        "x": 8,
-        "y": 12
-      },
-      "id": 7,
-      "options": {
-        "legend": {
-          "displayMode": "list",
-          "placement": "right",
-          "showLegend": true
-        },
-        "pieType": "pie",
-        "reduceOptions": {
-          "calcs": ["lastNotNull"],
-          "fields": "/^value$/",
-          "values": true
-        },
-        "tooltip": {
-          "mode": "single",
-          "sort": "none"
-        },
-        "displayLabels": ["name", "value"]
-      },
-      "targets": [
-        {
-          "datasource": {
-            "type": "postgres",
-            "uid": "postgresql"
-          },
-          "editorMode": "code",
-          "format": "table",
-          "rawQuery": true,
-          "rawSql": "SELECT \n  'Subnet ' || COALESCE(netuid::text, 'N/A') as metric,\n  COUNT(*) as value\nFROM core_hyperparamevent\nWHERE created_at >= NOW() - INTERVAL '7 days'\nGROUP BY netuid\nORDER BY value DESC\nLIMIT 10",
-          "refId": "A"
-        }
-      ],
-      "title": "Changes by Subnet",
-      "type": "piechart"
-    },
-    {
-      "datasource": {
-        "type": "postgres",
-        "uid": "postgresql"
-      },
-      "fieldConfig": {
-        "defaults": {
-          "color": {
-            "mode": "thresholds"
-          },
-          "custom": {
-            "align": "auto",
-            "cellOptions": {
-              "type": "auto"
-            },
-            "inspect": false
-          },
-          "mappings": [],
-          "thresholds": {
-            "mode": "absolute",
-            "steps": [
-              {
-                "color": "green",
-                "value": null
-              }
-            ]
-          }
-        },
-        "overrides": [
-          {
-            "matcher": {
-              "id": "byName",
-              "options": "changes"
-            },
-            "properties": [
-              {
-                "id": "custom.cellOptions",
-                "value": {
-                  "mode": "gradient",
-                  "type": "gauge"
-                }
-              }
-            ]
-          }
-        ]
-      },
-      "gridPos": {
-        "h": 10,
-        "w": 8,
-        "x": 16,
-        "y": 12
-      },
-      "id": 8,
-      "options": {
-        "cellHeight": "sm",
-        "footer": {
-          "countRows": false,
-          "fields": "",
-          "reducer": ["sum"],
-          "show": true
-        },
-        "showHeader": true,
-        "sortBy": [
-          {
-            "desc": true,
-            "displayName": "changes"
-          }
-        ]
-      },
-      "pluginVersion": "10.2.0",
-      "targets": [
-        {
-          "datasource": {
-            "type": "postgres",
-            "uid": "postgresql"
-          },
-          "editorMode": "code",
-          "format": "table",
-          "rawQuery": true,
-          "rawSql": "SELECT \n  netuid,\n  call_function as parameter,\n  COUNT(*) as changes\nFROM core_hyperparamevent\nWHERE created_at >= NOW() - INTERVAL '7 days'\nGROUP BY netuid, call_function\nORDER BY changes DESC\nLIMIT 20",
-          "refId": "A"
-        }
-      ],
-      "title": "Top Changes by Subnet & Parameter",
+      "gridPos": { "h": 10, "w": 24, "x": 0, "y": 34 },
+      "id": 9,
+      "options": { "cellHeight": "sm", "footer": { "countRows": false, "fields": "", "reducer": ["sum"], "show": false }, "showHeader": true },
+      "targets": [{ "datasource": { "type": "postgres", "uid": "postgresql" }, "rawQuery": true, "rawSql": "SELECT timestamp as time, netuid, call_function as parameter, call_args as args, SUBSTRING(address, 1, 8) || '...' || SUBSTRING(address, LENGTH(address)-5) as address, block_number, status FROM core_hyperparamevent ORDER BY timestamp DESC LIMIT 50", "refId": "A", "format": "table" }],
+      "title": "Recent Hyperparam Changes",
       "type": "table"
     },
     {
-      "datasource": {
-        "type": "postgres",
-        "uid": "postgresql"
-      },
+      "collapsed": false,
+      "gridPos": { "h": 1, "w": 24, "x": 0, "y": 44 },
+      "id": 101,
+      "panels": [],
+      "title": "Set Weights Events",
+      "type": "row"
+    },
+    {
+      "datasource": { "type": "postgres", "uid": "postgresql" },
+      "fieldConfig": { "defaults": { "color": { "mode": "thresholds" }, "mappings": [], "thresholds": { "mode": "absolute", "steps": [{ "color": "green", "value": null }, { "color": "yellow", "value": 1000 }, { "color": "red", "value": 5000 }] } }, "overrides": [] },
+      "gridPos": { "h": 4, "w": 6, "x": 0, "y": 45 },
+      "id": 10,
+      "options": { "colorMode": "value", "graphMode": "area", "justifyMode": "auto", "orientation": "auto", "reduceOptions": { "calcs": ["lastNotNull"], "fields": "", "values": false }, "textMode": "auto" },
+      "targets": [{ "datasource": { "type": "postgres", "uid": "postgresql" }, "rawQuery": true, "rawSql": "SELECT COUNT(*) as value FROM core_setweightsevent WHERE timestamp >= NOW() - INTERVAL '24 hours'", "refId": "A", "format": "table" }],
+      "title": "Set Weights (24h)",
+      "type": "stat"
+    },
+    {
+      "datasource": { "type": "postgres", "uid": "postgresql" },
+      "fieldConfig": { "defaults": { "color": { "mode": "thresholds" }, "mappings": [], "thresholds": { "mode": "absolute", "steps": [{ "color": "blue", "value": null }] } }, "overrides": [] },
+      "gridPos": { "h": 4, "w": 6, "x": 6, "y": 45 },
+      "id": 11,
+      "options": { "colorMode": "value", "graphMode": "area", "justifyMode": "auto", "orientation": "auto", "reduceOptions": { "calcs": ["lastNotNull"], "fields": "", "values": false }, "textMode": "auto" },
+      "targets": [{ "datasource": { "type": "postgres", "uid": "postgresql" }, "rawQuery": true, "rawSql": "SELECT COUNT(*) as value FROM core_setweightsevent WHERE timestamp >= NOW() - INTERVAL '7 days'", "refId": "A", "format": "table" }],
+      "title": "Set Weights (7d)",
+      "type": "stat"
+    },
+    {
+      "datasource": { "type": "postgres", "uid": "postgresql" },
+      "fieldConfig": { "defaults": { "color": { "mode": "thresholds" }, "mappings": [], "thresholds": { "mode": "absolute", "steps": [{ "color": "purple", "value": null }] } }, "overrides": [] },
+      "gridPos": { "h": 4, "w": 6, "x": 12, "y": 45 },
+      "id": 12,
+      "options": { "colorMode": "value", "graphMode": "area", "justifyMode": "auto", "orientation": "auto", "reduceOptions": { "calcs": ["lastNotNull"], "fields": "", "values": false }, "textMode": "auto" },
+      "targets": [{ "datasource": { "type": "postgres", "uid": "postgresql" }, "rawQuery": true, "rawSql": "SELECT COUNT(DISTINCT netuid) as value FROM core_setweightsevent WHERE timestamp >= NOW() - INTERVAL '7 days'", "refId": "A", "format": "table" }],
+      "title": "Active Subnets (7d)",
+      "type": "stat"
+    },
+    {
+      "datasource": { "type": "postgres", "uid": "postgresql" },
+      "fieldConfig": { "defaults": { "color": { "mode": "thresholds" }, "mappings": [], "thresholds": { "mode": "absolute", "steps": [{ "color": "orange", "value": null }] } }, "overrides": [] },
+      "gridPos": { "h": 4, "w": 6, "x": 18, "y": 45 },
+      "id": 13,
+      "options": { "colorMode": "value", "graphMode": "area", "justifyMode": "auto", "orientation": "auto", "reduceOptions": { "calcs": ["lastNotNull"], "fields": "", "values": false }, "textMode": "auto" },
+      "targets": [{ "datasource": { "type": "postgres", "uid": "postgresql" }, "rawQuery": true, "rawSql": "SELECT COUNT(DISTINCT address) as value FROM core_setweightsevent WHERE timestamp >= NOW() - INTERVAL '7 days'", "refId": "A", "format": "table" }],
+      "title": "Active Validators (7d)",
+      "type": "stat"
+    },
+    {
+      "datasource": { "type": "postgres", "uid": "postgresql" },
       "fieldConfig": {
-        "defaults": {
-          "color": {
-            "mode": "thresholds"
-          },
-          "custom": {
-            "align": "auto",
-            "cellOptions": {
-              "type": "auto"
-            },
-            "inspect": false
-          },
-          "mappings": [],
-          "thresholds": {
-            "mode": "absolute",
-            "steps": [
-              {
-                "color": "green",
-                "value": null
-              }
-            ]
-          }
-        },
-        "overrides": [
-          {
-            "matcher": {
-              "id": "byName",
-              "options": "status"
-            },
-            "properties": [
-              {
-                "id": "mappings",
-                "value": [
-                  {
-                    "options": {
-                      "success": {
-                        "color": "green",
-                        "index": 0
-                      },
-                      "failed": {
-                        "color": "red",
-                        "index": 1
-                      }
-                    },
-                    "type": "value"
-                  }
-                ]
-              },
-              {
-                "id": "custom.cellOptions",
-                "value": {
-                  "type": "color-background"
-                }
-              }
-            ]
-          },
-          {
-            "matcher": {
-              "id": "byName",
-              "options": "address"
-            },
-            "properties": [
-              {
-                "id": "custom.width",
-                "value": 150
-              }
-            ]
-          },
-          {
-            "matcher": {
-              "id": "byName",
-              "options": "args"
-            },
-            "properties": [
-              {
-                "id": "custom.width",
-                "value": 300
-              }
-            ]
-          }
-        ]
+        "defaults": { "color": { "mode": "palette-classic" }, "custom": { "axisBorderShow": false, "axisCenteredZero": false, "axisColorMode": "text", "axisLabel": "", "axisPlacement": "auto", "barAlignment": 0, "drawStyle": "bars", "fillOpacity": 80, "gradientMode": "none", "hideFrom": { "legend": false, "tooltip": false, "viz": false }, "insertNulls": false, "lineInterpolation": "linear", "lineWidth": 1, "pointSize": 5, "scaleDistribution": { "type": "linear" }, "showPoints": "auto", "spanNulls": false, "stacking": { "group": "A", "mode": "normal" }, "thresholdsStyle": { "mode": "off" } }, "mappings": [], "thresholds": { "mode": "absolute", "steps": [{ "color": "green", "value": null }] } },
+        "overrides": []
       },
-      "gridPos": {
-        "h": 12,
-        "w": 24,
-        "x": 0,
-        "y": 22
+      "gridPos": { "h": 8, "w": 24, "x": 0, "y": 49 },
+      "id": 14,
+      "options": { "legend": { "calcs": [], "displayMode": "list", "placement": "bottom", "showLegend": true }, "tooltip": { "mode": "single", "sort": "none" } },
+      "targets": [{ "datasource": { "type": "postgres", "uid": "postgresql" }, "rawQuery": true, "rawSql": "SELECT date_trunc('hour', timestamp) as time, 'Subnet ' || netuid::text as metric, COUNT(*) as value FROM core_setweightsevent WHERE timestamp >= NOW() - INTERVAL '7 days' GROUP BY 1, netuid ORDER BY 1", "refId": "A", "format": "time_series" }],
+      "title": "Set Weights Over Time by Subnet",
+      "type": "timeseries"
+    },
+    {
+      "datasource": { "type": "postgres", "uid": "postgresql" },
+      "fieldConfig": { "defaults": { "color": { "mode": "palette-classic" }, "custom": { "hideFrom": { "legend": false, "tooltip": false, "viz": false } }, "mappings": [] }, "overrides": [] },
+      "gridPos": { "h": 8, "w": 12, "x": 0, "y": 57 },
+      "id": 15,
+      "options": { "legend": { "displayMode": "list", "placement": "right", "showLegend": true }, "pieType": "pie", "reduceOptions": { "calcs": ["lastNotNull"], "fields": "/^value$/", "values": true }, "tooltip": { "mode": "single", "sort": "none" }, "displayLabels": ["name", "value"] },
+      "targets": [{ "datasource": { "type": "postgres", "uid": "postgresql" }, "rawQuery": true, "rawSql": "SELECT 'Subnet ' || netuid::text as metric, COUNT(*) as value FROM core_setweightsevent WHERE timestamp >= NOW() - INTERVAL '7 days' GROUP BY netuid ORDER BY value DESC LIMIT 10", "refId": "A", "format": "table" }],
+      "title": "Set Weights by Subnet",
+      "type": "piechart"
+    },
+    {
+      "datasource": { "type": "postgres", "uid": "postgresql" },
+      "fieldConfig": { "defaults": { "color": { "mode": "palette-classic" }, "custom": { "hideFrom": { "legend": false, "tooltip": false, "viz": false } }, "mappings": [] }, "overrides": [] },
+      "gridPos": { "h": 8, "w": 12, "x": 12, "y": 57 },
+      "id": 16,
+      "options": { "legend": { "displayMode": "list", "placement": "right", "showLegend": true }, "pieType": "pie", "reduceOptions": { "calcs": ["lastNotNull"], "fields": "/^value$/", "values": true }, "tooltip": { "mode": "single", "sort": "none" }, "displayLabels": ["name", "value"] },
+      "targets": [{ "datasource": { "type": "postgres", "uid": "postgresql" }, "rawQuery": true, "rawSql": "SELECT SUBSTRING(address, 1, 8) || '...' as metric, COUNT(*) as value FROM core_setweightsevent WHERE timestamp >= NOW() - INTERVAL '7 days' GROUP BY address ORDER BY value DESC LIMIT 10", "refId": "A", "format": "table" }],
+      "title": "Top Validators by Activity",
+      "type": "piechart"
+    },
+    {
+      "datasource": { "type": "postgres", "uid": "postgresql" },
+      "fieldConfig": {
+        "defaults": { "color": { "mode": "thresholds" }, "custom": { "align": "auto", "cellOptions": { "type": "auto" }, "inspect": false }, "mappings": [], "thresholds": { "mode": "absolute", "steps": [{ "color": "green", "value": null }] } },
+        "overrides": [{ "matcher": { "id": "byName", "options": "count" }, "properties": [{ "id": "custom.cellOptions", "value": { "mode": "gradient", "type": "gauge" } }] }]
       },
-      "id": 9,
-      "options": {
-        "cellHeight": "sm",
-        "footer": {
-          "countRows": false,
-          "fields": "",
-          "reducer": ["sum"],
-          "show": false
-        },
-        "showHeader": true
+      "gridPos": { "h": 8, "w": 12, "x": 0, "y": 65 },
+      "id": 60,
+      "options": { "cellHeight": "sm", "footer": { "countRows": false, "fields": "", "reducer": ["sum"], "show": true }, "showHeader": true, "sortBy": [{ "desc": true, "displayName": "count" }] },
+      "targets": [{ "datasource": { "type": "postgres", "uid": "postgresql" }, "rawQuery": true, "rawSql": "SELECT netuid, SUBSTRING(address, 1, 8) || '...' as validator, COUNT(*) as count FROM core_setweightsevent WHERE timestamp >= NOW() - INTERVAL '7 days' GROUP BY netuid, address ORDER BY count DESC LIMIT 20", "refId": "A", "format": "table" }],
+      "title": "Top Validators by Subnet",
+      "type": "table"
+    },
+    {
+      "datasource": { "type": "postgres", "uid": "postgresql" },
+      "fieldConfig": {
+        "defaults": { "color": { "mode": "thresholds" }, "custom": { "align": "auto", "cellOptions": { "type": "auto" }, "inspect": false }, "mappings": [], "thresholds": { "mode": "absolute", "steps": [{ "color": "green", "value": null }] } },
+        "overrides": [{ "matcher": { "id": "byName", "options": "avg_per_day" }, "properties": [{ "id": "custom.cellOptions", "value": { "mode": "gradient", "type": "gauge" } }] }]
       },
-      "pluginVersion": "10.2.0",
-      "targets": [
-        {
-          "datasource": {
-            "type": "postgres",
-            "uid": "postgresql"
-          },
-          "editorMode": "code",
-          "format": "table",
-          "rawQuery": true,
-          "rawSql": "SELECT \n  created_at as time,\n  netuid,\n  call_function as parameter,\n  call_args as args,\n  SUBSTRING(address, 1, 8) || '...' || SUBSTRING(address, LENGTH(address)-5) as address,\n  block_number,\n  status\nFROM core_hyperparamevent\nORDER BY created_at DESC\nLIMIT 50",
-          "refId": "A"
-        }
-      ],
-      "title": "Recent Hyperparam Changes",
+      "gridPos": { "h": 8, "w": 12, "x": 12, "y": 65 },
+      "id": 61,
+      "options": { "cellHeight": "sm", "footer": { "countRows": false, "fields": "", "reducer": ["sum"], "show": false }, "showHeader": true, "sortBy": [{ "desc": true, "displayName": "avg_per_day" }] },
+      "targets": [{ "datasource": { "type": "postgres", "uid": "postgresql" }, "rawQuery": true, "rawSql": "SELECT netuid, COUNT(*) as total, ROUND(COUNT(*)::numeric / 7, 1) as avg_per_day FROM core_setweightsevent WHERE timestamp >= NOW() - INTERVAL '7 days' GROUP BY netuid ORDER BY total DESC LIMIT 15", "refId": "A", "format": "table" }],
+      "title": "Subnet Activity (7d)",
+      "type": "table"
+    },
+    {
+      "datasource": { "type": "postgres", "uid": "postgresql" },
+      "fieldConfig": {
+        "defaults": { "color": { "mode": "thresholds" }, "custom": { "align": "auto", "cellOptions": { "type": "auto" }, "inspect": false }, "mappings": [], "thresholds": { "mode": "absolute", "steps": [{ "color": "green", "value": null }] } },
+        "overrides": [{ "matcher": { "id": "byName", "options": "status" }, "properties": [{ "id": "mappings", "value": [{ "options": { "success": { "color": "green", "index": 0 }, "failed": { "color": "red", "index": 1 } }, "type": "value" }] }, { "id": "custom.cellOptions", "value": { "type": "color-background" } }] }, { "matcher": { "id": "byName", "options": "address" }, "properties": [{ "id": "custom.width", "value": 150 }] }]
+      },
+      "gridPos": { "h": 10, "w": 24, "x": 0, "y": 73 },
+      "id": 17,
+      "options": { "cellHeight": "sm", "footer": { "countRows": false, "fields": "", "reducer": ["sum"], "show": false }, "showHeader": true },
+      "targets": [{ "datasource": { "type": "postgres", "uid": "postgresql" }, "rawQuery": true, "rawSql": "SELECT timestamp as time, netuid, SUBSTRING(address, 1, 8) || '...' || SUBSTRING(address, LENGTH(address)-5) as address, block_number, status FROM core_setweightsevent ORDER BY timestamp DESC LIMIT 50", "refId": "A", "format": "table" }],
+      "title": "Recent Set Weights Events",
       "type": "table"
     }
   ],
   "refresh": "1m",
   "schemaVersion": 38,
   "style": "dark",
-  "tags": ["bittensor", "hyperparams"],
+  "tags": ["bittensor", "hyperparams", "set-weights"],
   "templating": {
-    "list": [
-      {
-        "current": {
-          "selected": false,
-          "text": "All",
-          "value": "$__all"
-        },
-        "datasource": {
-          "type": "postgres",
-          "uid": "postgresql"
-        },
-        "definition": "SELECT DISTINCT netuid FROM core_hyperparamevent WHERE netuid IS NOT NULL ORDER BY netuid",
-        "hide": 0,
-        "includeAll": true,
-        "label": "Subnet",
-        "multi": true,
-        "name": "netuid",
-        "options": [],
-        "query": "SELECT DISTINCT netuid FROM core_hyperparamevent WHERE netuid IS NOT NULL ORDER BY netuid",
-        "refresh": 1,
-        "regex": "",
-        "skipUrlSync": false,
-        "sort": 1,
-        "type": "query"
-      }
-    ]
+    "list": [{
+      "current": { "selected": false, "text": "All", "value": "$__all" },
+      "datasource": { "type": "postgres", "uid": "postgresql" },
+      "definition": "SELECT DISTINCT netuid FROM (SELECT netuid FROM core_hyperparamevent WHERE netuid IS NOT NULL UNION SELECT netuid FROM core_setweightsevent WHERE netuid IS NOT NULL) t ORDER BY netuid",
+      "hide": 0,
+      "includeAll": true,
+      "label": "Subnet",
+      "multi": true,
+      "name": "netuid",
+      "options": [],
+      "query": "SELECT DISTINCT netuid FROM (SELECT netuid FROM core_hyperparamevent WHERE netuid IS NOT NULL UNION SELECT netuid FROM core_setweightsevent WHERE netuid IS NOT NULL) t ORDER BY netuid",
+      "refresh": 1,
+      "regex": "",
+      "skipUrlSync": false,
+      "sort": 1,
+      "type": "query"
+    }]
   },
-  "time": {
-    "from": "now-7d",
-    "to": "now"
-  },
+  "time": { "from": "now-7d", "to": "now" },
   "timepicker": {},
   "timezone": "",
-  "title": "Hyperparam Events",
+  "title": "Bittensor Events",
   "uid": "hyperparam-events",
   "version": 1,
   "weekStart": ""

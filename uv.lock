@@ -1961,6 +1961,7 @@ dependencies = [
     { name = "pydantic" },
     { name = "redis" },
     { name = "sentry-sdk" },
+    { name = "whitenoise" },
 ]
 
 [package.dev-dependencies]
@@ -2015,6 +2016,7 @@ requires-dist = [
     { name = "pydantic", specifier = "~=2.0" },
     { name = "redis", specifier = "~=4.6.0" },
     { name = "sentry-sdk", specifier = "==1.3.0" },
+    { name = "whitenoise", specifier = "~=6.6.0" },
 ]
 
 [package.metadata.requires-dev]
@@ -2489,6 +2491,15 @@ source = { registry = "https://pypi.org/simple" }
 sdist = { url = "https://files.pythonhosted.org/packages/8a/98/2d9906746cdc6a6ef809ae6338005b3f21bb568bea3165cfc6a243fdc25c/wheel-0.45.1.tar.gz", hash = "sha256:661e1abd9198507b1409a20c02106d9670b2576e916d58f520316666abca6729", size = 107545, upload-time = "2024-11-23T00:18:23.513Z" }
 wheels = [
     { url = "https://files.pythonhosted.org/packages/0b/2c/87f3254fd8ffd29e4c02732eee68a83a1d3c346ae39bc6822dcbcb697f2b/wheel-0.45.1-py3-none-any.whl", hash = "sha256:708e7481cc80179af0e556bbf0cc00b8444c7321e2700b8d8580231d13017248", size = 72494, upload-time = "2024-11-23T00:18:21.207Z" },
+]
+
+[[package]]
+name = "whitenoise"
+version = "6.6.0"
+source = { registry = "https://pypi.org/simple" }
+sdist = { url = "https://files.pythonhosted.org/packages/16/e3/adddb43cf8eb924e18eca677d4e40d47348566224b724cb8d1eaf6a48d1b/whitenoise-6.6.0.tar.gz", hash = "sha256:8998f7370973447fac1e8ef6e8ded2c5209a7b1f67c1012866dbcd09681c3251", size = 25078, upload-time = "2023-10-11T09:40:59.593Z" }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/67/16/bb488ac8230f1bce94943b6654f2aad566d18aae575c8b6d8a99c78c489e/whitenoise-6.6.0-py3-none-any.whl", hash = "sha256:b1f9db9bf67dc183484d760b99f4080185633136a273a03f6436034a41064146", size = 19870, upload-time = "2023-10-11T09:40:57.977Z" },
 ]
 
 [[package]]
