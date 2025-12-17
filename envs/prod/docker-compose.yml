@@ -90,8 +90,6 @@ services:
       context: .
       dockerfile: app/envs/prod/Dockerfile
     image: block_dumper/app
-    healthcheck:
-      test: wget -q --spider 127.0.0.1:8000/admin/login/ || exit 1
     init: true
     restart: unless-stopped
     env_file: ./.env
@@ -165,7 +163,7 @@ services:
   dagster:
     image: project/app
     healthcheck:
-      test: wget -qO- 127.0.0.1:3000/server_info > /dev/null || exit 1
+      test: wget -qO- 127.0.0.1:3000/dagster/server_info > /dev/null || exit 1
     init: true
     restart: unless-stopped
     env_file: ./.env
@@ -302,7 +300,7 @@ services:
     logging:
       <<: *logging
   watchtower:
-    image: containrrr/watchtower
+    image: containrrr/watchtower:1.7.1
     restart: unless-stopped
     volumes:
       - /var/run/docker.sock:/var/run/docker.sock:ro
@@ -331,10 +329,13 @@ services:
     image: prom/alertmanager:v0.26.0
     restart: unless-stopped
     volumes:
-      - ./prometheus/alertmanager.yml:/etc/alertmanager/alertmanager.yml:ro
+      - ./prometheus/alertmanager.yml:/etc/alertmanager/alertmanager.yml.template:ro
+    entrypoint: /bin/sh
     command:
-      - '--config.file=/etc/alertmanager/alertmanager.yml'
-      - '--storage.path=/alertmanager'
+      - -c
+      - |
+        cat /etc/alertmanager/alertmanager.yml.template | sed "s|\$${SLACK_WEBHOOK_URL}|$$SLACK_WEBHOOK_URL|g" > /etc/alertmanager/alertmanager.yml
+        exec /bin/alertmanager --config.file=/etc/alertmanager/alertmanager.yml --storage.path=/alertmanager
     environment:
       - SLACK_WEBHOOK_URL=${SLACK_WEBHOOK_URL}
     ports:
