@@ -126,8 +126,25 @@ def ingest_extrinsics_job() -> None:
 def extrinsics_sensor(
     context: dg.SensorEvaluationContext,
     jsonl_reader: JsonLinesReader,
-) -> Generator[dg.RunRequest, None, None]:
+) -> Generator[dg.RunRequest | dg.SkipReason, None, None]:
     """Sensor to detect new extrinsics and trigger ingestion to Extrinsic model."""
+    # Check if there's already a run in progress for this job
+    in_progress_runs = context.instance.get_runs(
+        filters=dg.RunsFilter(
+            job_name=ingest_extrinsics_job.name,
+            statuses=[
+                dg.DagsterRunStatus.STARTED,
+                dg.DagsterRunStatus.QUEUED,
+                dg.DagsterRunStatus.STARTING,
+            ],
+        ),
+        limit=1,
+    )
+
+    if in_progress_runs:
+        yield dg.SkipReason("Previous run still in progress, waiting for completion")
+        return
+
     current_lines = jsonl_reader.count_partitioned_lines(EXTRINSICS_DIR)
     last_cursor = int(context.cursor) if context.cursor else 0
 
