@@ -89,7 +89,8 @@ def ingest_extrinsics(context: dg.OpExecutionContext, jsonl_reader: JsonLinesRea
         context.log.info("No new extrinsic records to process")
         return {"processed": 0, "skipped": 0}
 
-    created_count = 0
+    # Parse all records first
+    parsed_records: dict[str, dict] = {}
     skipped_count = 0
 
     for record in records:
@@ -97,17 +98,38 @@ def ingest_extrinsics(context: dg.OpExecutionContext, jsonl_reader: JsonLinesRea
         if parsed is None:
             skipped_count += 1
             continue
-
         extrinsic_hash = parsed.pop("extrinsic_hash")
-        _, created = Extrinsic.objects.get_or_create(
-            extrinsic_hash=extrinsic_hash,
-            defaults=parsed,
-        )
+        parsed_records[extrinsic_hash] = parsed
 
-        if created:
-            created_count += 1
-        else:
-            skipped_count += 1
+    if not parsed_records:
+        context.log.info("No valid extrinsic records to process")
+        return {"processed": 0, "skipped": skipped_count}
+
+    # Get existing hashes in bulk
+    existing_hashes = set(
+        Extrinsic.objects.filter(extrinsic_hash__in=parsed_records.keys()).values_list(
+            "extrinsic_hash",
+            flat=True,
+        ),
+    )
+
+    # Filter to only new records
+    new_records = [
+        Extrinsic(extrinsic_hash=h, **data)
+        for h, data in parsed_records.items()
+        if h not in existing_hashes
+    ]
+
+    skipped_count += len(existing_hashes)
+
+    # Bulk create new records
+    if new_records:
+        batch_size = 1000
+        for i in range(0, len(new_records), batch_size):
+            batch = new_records[i : i + batch_size]
+            Extrinsic.objects.bulk_create(batch, ignore_conflicts=True)
+
+    created_count = len(new_records)
 
     checkpoint.last_processed_line = total_lines
     checkpoint.save()
