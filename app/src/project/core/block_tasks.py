@@ -46,17 +46,18 @@ def store_block_extrinsics(block_number: int) -> str:
     """
     Store extrinsics from the given block number that contain hyperparameter updates.
     """
-    provider = get_provider_for_block(block_number)
-    with provider:
+    with get_provider_for_block(block_number) as provider:
         service = sentinel_service(provider)
         block = service.ingest_block(block_number)
         extrinsics = block.extrinsics
-        if not extrinsics:
-            logger.info("No extrinsics found in block", block_number=block_number)
-            return ""
+        timestamp = block.timestamp
 
-        extrinsic_records = store_extrinsics(extrinsics, block_number, block.timestamp)
-        return f"Block {block_number} stored {extrinsic_records} extrinsics."
+    if not extrinsics:
+        logger.info("No extrinsics found in block", block_number=block_number)
+        return ""
+
+    extrinsic_records = store_extrinsics(extrinsics, block_number, timestamp)
+    return f"Block {block_number} stored {extrinsic_records} extrinsics."
 
 
 def store_extrinsics(extrinsics: list[ExtrinsicDTO], block_number: int, timestamp: int | None) -> int:
