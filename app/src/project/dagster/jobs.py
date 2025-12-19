@@ -115,9 +115,7 @@ def ingest_extrinsics(context: dg.OpExecutionContext, jsonl_reader: JsonLinesRea
 
     # Filter to only new records
     new_records = [
-        Extrinsic(extrinsic_hash=h, **data)
-        for h, data in parsed_records.items()
-        if h not in existing_hashes
+        Extrinsic(extrinsic_hash=h, **data) for h, data in parsed_records.items() if h not in existing_hashes
     ]
 
     skipped_count += len(existing_hashes)
@@ -181,4 +179,162 @@ def extrinsics_sensor(
 @dg.schedule(job=ingest_extrinsics_job, cron_schedule="0 * * * *")
 def hourly_ingest_schedule():
     """Hourly backup schedule to ensure all records are ingested."""
+    return {}
+
+
+# Metagraph Ingestion
+
+METAGRAPH_CHECKPOINT_PREFIX = "metagraph"
+
+
+def _get_metagraph_checkpoint_key(netuid: int, block_number: int) -> str:
+    """Generate a checkpoint key for a metagraph file."""
+    return f"{METAGRAPH_CHECKPOINT_PREFIX}:{netuid}:{block_number}"
+
+
+def _parse_metagraph_checkpoint_key(key: str) -> tuple[int, int] | None:
+    """Parse a metagraph checkpoint key into (netuid, block_number)."""
+    if not key.startswith(f"{METAGRAPH_CHECKPOINT_PREFIX}:"):
+        return None
+    parts = key.split(":")
+    if len(parts) != 3:
+        return None
+    try:
+        return int(parts[1]), int(parts[2])
+    except ValueError:
+        return None
+
+
+@dg.op
+def ingest_metagraph(context: dg.OpExecutionContext, jsonl_reader: JsonLinesReader) -> dict:
+    """Ingest all metagraph snapshots from JSONL files to Django models."""
+    from apps.metagraph.services.sync_service import MetagraphSyncService
+
+    all_files = jsonl_reader.list_all_metagraph_files()
+
+    if not all_files:
+        context.log.info("No metagraph files found")
+        return {"processed": 0, "skipped": 0}
+
+    # Get already processed files from checkpoints
+    processed_keys = set(
+        IngestionCheckpoint.objects.filter(
+            file_path__startswith=f"{METAGRAPH_CHECKPOINT_PREFIX}:",
+        ).values_list("file_path", flat=True),
+    )
+
+    # Filter to unprocessed files
+    files_to_process = []
+    for netuid, filename in all_files:
+        block_number = int(filename.replace(".jsonl", ""))
+        checkpoint_key = _get_metagraph_checkpoint_key(netuid, block_number)
+        if checkpoint_key not in processed_keys:
+            files_to_process.append((netuid, filename, block_number, checkpoint_key))
+
+    if not files_to_process:
+        context.log.info("No new metagraph files to process")
+        return {"processed": 0, "skipped": len(all_files)}
+
+    context.log.info("Found %d new metagraph files to process", len(files_to_process))
+
+    processed_count = 0
+    error_count = 0
+    total_stats: dict[str, int] = {}
+
+    for netuid, filename, block_number, checkpoint_key in files_to_process:
+        try:
+            data = jsonl_reader.read_metagraph_file(netuid, filename)
+            if not data:
+                context.log.warning("Empty metagraph file: %s/%s", netuid, filename)
+                error_count += 1
+                continue
+
+            # Sync to Django models
+            sync_service = MetagraphSyncService()
+            stats = sync_service.sync_metagraph(data)
+
+            # Aggregate stats
+            for key, value in stats.items():
+                total_stats[key] = total_stats.get(key, 0) + value
+
+            # Mark as processed
+            IngestionCheckpoint.objects.create(
+                file_path=checkpoint_key,
+                last_processed_line=1,
+            )
+
+            processed_count += 1
+            context.log.info(
+                "Processed metagraph netuid=%d block=%d: %s",
+                netuid,
+                block_number,
+                stats,
+            )
+
+        except Exception as e:
+            context.log.error(
+                "Error processing metagraph %s/%s: %s",
+                netuid,
+                filename,
+                str(e),
+            )
+            error_count += 1
+
+    context.log.info(
+        "Metagraph ingestion complete: processed=%d, errors=%d, stats=%s",
+        processed_count,
+        error_count,
+        total_stats,
+    )
+
+    return {
+        "processed": processed_count,
+        "errors": error_count,
+        "skipped": len(all_files) - len(files_to_process),
+        **total_stats,
+    }
+
+
+@dg.job(description="Ingest all metagraph snapshots from JSONL to Django models")
+def ingest_metagraph_job() -> None:
+    """Job to ingest all metagraph snapshots to Django models."""
+    ingest_metagraph()
+
+
+@dg.sensor(job=ingest_metagraph_job, minimum_interval_seconds=60)
+def metagraph_sensor(
+    context: dg.SensorEvaluationContext,
+    jsonl_reader: JsonLinesReader,
+) -> Generator[dg.RunRequest | dg.SkipReason, None, None]:
+    """Sensor to detect new metagraph files and trigger ingestion."""
+    # Check if there's already a run in progress for this job
+    in_progress_runs = context.instance.get_runs(
+        filters=dg.RunsFilter(
+            job_name=ingest_metagraph_job.name,
+            statuses=[
+                dg.DagsterRunStatus.STARTED,
+                dg.DagsterRunStatus.QUEUED,
+                dg.DagsterRunStatus.STARTING,
+            ],
+        ),
+        limit=1,
+    )
+
+    if in_progress_runs:
+        yield dg.SkipReason("Previous metagraph run still in progress")
+        return
+
+    current_file_count = jsonl_reader.count_metagraph_files()
+    last_cursor = int(context.cursor) if context.cursor else 0
+
+    new_count = current_file_count - last_cursor
+    if new_count > 0:
+        context.log.info("Found %d new metagraph files", new_count)
+        yield dg.RunRequest(run_key=f"metagraph-{current_file_count}")
+        context.update_cursor(str(current_file_count))
+
+
+@dg.schedule(job=ingest_metagraph_job, cron_schedule="0 * * * *")
+def hourly_metagraph_schedule():
+    """Hourly backup schedule to ensure all metagraph records are ingested."""
     return {}

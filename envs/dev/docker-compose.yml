@@ -36,6 +36,7 @@ services:
       - REDIS_HOST=redis
       - REDIS_PORT=6379
       - MEDIA_ROOT=${MEDIA_ROOT:-/root/src/media}
+      - CELERY_BROKER_URL=redis://redis:6379/0
     command: >
       sh -c "./prometheus-cleanup.sh &&
              PROMETHEUS_EXPORT_MIGRATIONS=0 ./manage.py wait_for_database --timeout 10 &&

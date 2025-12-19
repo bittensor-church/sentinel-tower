@@ -10,6 +10,7 @@ from dagster import ConfigurableResource
 logger = logging.getLogger(__name__)
 
 EXTRINSICS_DIR = "data/bittensor/extrinsics"
+METAGRAPH_DIR = "data/bittensor/metagraph"
 
 
 class JsonLinesReader(ConfigurableResource):
@@ -140,3 +141,65 @@ class JsonLinesReader(ConfigurableResource):
     ) -> tuple[list[dict[str, Any]], int]:
         """Read a specific partitioned file from start_line onwards."""
         return self.read_file(f"{relative_dir}/{filename}", start_line)
+
+    # Metagraph-specific methods
+
+    def list_metagraph_netuids(self) -> list[int]:
+        """List all netuid subdirectories in the metagraph directory."""
+        dir_path = self._get_file_path(METAGRAPH_DIR)
+        if not dir_path.exists():
+            return []
+        return sorted(int(subdir.name) for subdir in dir_path.iterdir() if subdir.is_dir() and subdir.name.isdigit())
+
+    def list_metagraph_files(self, netuid: int) -> list[str]:
+        """List all metagraph JSONL files for a specific netuid, sorted by block number."""
+        dir_path = self._get_file_path(f"{METAGRAPH_DIR}/{netuid}")
+        if not dir_path.exists():
+            return []
+        return sorted(f.name for f in dir_path.glob("*.jsonl"))
+
+    def list_all_metagraph_files(self) -> list[tuple[int, str]]:
+        """
+        List all metagraph files across all netuids.
+
+        Returns:
+            List of (netuid, filename) tuples sorted by netuid then block number.
+
+        """
+        return [
+            (netuid, filename)
+            for netuid in self.list_metagraph_netuids()
+            for filename in self.list_metagraph_files(netuid)
+        ]
+
+    def read_metagraph_file(self, netuid: int, filename: str) -> dict[str, Any] | None:
+        """
+        Read a single metagraph JSONL file.
+
+        Args:
+            netuid: The subnet ID
+            filename: The filename (e.g., "12345.jsonl")
+
+        Returns:
+            The parsed metagraph data or None if file doesn't exist/is empty.
+
+        """
+        records, _ = self.read_file(f"{METAGRAPH_DIR}/{netuid}/{filename}")
+        return records[0] if records else None
+
+    def count_metagraph_files(self) -> int:
+        """Count total metagraph files across all netuids."""
+        return len(self.list_all_metagraph_files())
+
+    def get_metagraph_block_numbers(self, netuid: int) -> list[int]:
+        """Get all block numbers that have metagraph dumps for a netuid."""
+        files = self.list_metagraph_files(netuid)
+        block_numbers = []
+        for f in files:
+            # Filename format: {block_number}.jsonl
+            try:
+                block_num = int(f.replace(".jsonl", ""))
+                block_numbers.append(block_num)
+            except ValueError:
+                continue
+        return sorted(block_numbers)

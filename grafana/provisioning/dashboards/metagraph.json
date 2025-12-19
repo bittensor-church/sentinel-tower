@@ -1,0 +1,653 @@
+{
+  "annotations": {
+    "list": [
+      {
+        "builtIn": 1,
+        "datasource": { "type": "grafana", "uid": "-- Grafana --" },
+        "enable": true,
+        "hide": true,
+        "iconColor": "rgba(0, 211, 255, 1)",
+        "name": "Annotations & Alerts",
+        "type": "dashboard"
+      }
+    ]
+  },
+  "editable": true,
+  "fiscalYearStartMonth": 0,
+  "graphTooltip": 1,
+  "id": null,
+  "links": [],
+  "panels": [
+    {
+      "gridPos": { "h": 2, "w": 24, "x": 0, "y": 0 },
+      "id": 1,
+      "options": {
+        "code": { "language": "plaintext", "showLineNumbers": false, "showMiniMap": false },
+        "content": "taostats: [metagraph](https://x.taostats.io/subnets/${subnet}#metagraph) | [hyperparams](https://x.taostats.io/subnets/${subnet}#hyperparams) | [registration](https://x.taostats.io/subnets/${subnet}#registration) | [distribution](https://x.taostats.io/subnets/${subnet}#distribution) || [taomarketcap](https://taomarketcap.com/subnet/${subnet})",
+        "mode": "markdown"
+      },
+      "title": "",
+      "transparent": true,
+      "type": "text"
+    },
+    {
+      "collapsed": false,
+      "gridPos": { "h": 1, "w": 24, "x": 0, "y": 2 },
+      "id": 100,
+      "panels": [],
+      "title": "Metagraph Dump Overview",
+      "type": "row"
+    },
+    {
+      "datasource": { "type": "postgres", "uid": "postgresql" },
+      "fieldConfig": {
+        "defaults": {
+          "color": { "mode": "thresholds" },
+          "mappings": [],
+          "thresholds": { "mode": "absolute", "steps": [{ "color": "green", "value": null }] },
+          "unit": "short"
+        },
+        "overrides": []
+      },
+      "gridPos": { "h": 4, "w": 4, "x": 0, "y": 3 },
+      "id": 101,
+      "options": { "colorMode": "value", "graphMode": "none", "justifyMode": "auto", "orientation": "auto", "reduceOptions": { "calcs": ["lastNotNull"], "fields": "", "values": false }, "textMode": "auto" },
+      "targets": [{
+        "datasource": { "type": "postgres", "uid": "postgresql" },
+        "rawQuery": true,
+        "rawSql": "SELECT COUNT(*) AS total_dumps FROM metagraph_dump WHERE netuid = ${subnet}",
+        "refId": "A",
+        "format": "table"
+      }],
+      "title": "Total Dumps",
+      "type": "stat"
+    },
+    {
+      "datasource": { "type": "postgres", "uid": "postgresql" },
+      "fieldConfig": {
+        "defaults": {
+          "color": { "mode": "thresholds" },
+          "mappings": [],
+          "thresholds": { "mode": "absolute", "steps": [{ "color": "green", "value": null }] },
+          "unit": "dateTimeAsIso"
+        },
+        "overrides": []
+      },
+      "gridPos": { "h": 4, "w": 5, "x": 4, "y": 3 },
+      "id": 102,
+      "options": { "colorMode": "value", "graphMode": "none", "justifyMode": "auto", "orientation": "auto", "reduceOptions": { "calcs": ["lastNotNull"], "fields": "", "values": false }, "textMode": "auto" },
+      "targets": [{
+        "datasource": { "type": "postgres", "uid": "postgresql" },
+        "rawQuery": true,
+        "rawSql": "SELECT EXTRACT(EPOCH FROM b.timestamp) * 1000 AS last_dump FROM metagraph_dump d JOIN metagraph_block b ON d.block_id = b.number WHERE d.netuid = ${subnet} ORDER BY b.number DESC LIMIT 1",
+        "refId": "A",
+        "format": "table"
+      }],
+      "title": "Last Dump (UTC)",
+      "type": "stat"
+    },
+    {
+      "datasource": { "type": "postgres", "uid": "postgresql" },
+      "fieldConfig": {
+        "defaults": {
+          "color": { "mode": "thresholds" },
+          "mappings": [],
+          "thresholds": { "mode": "absolute", "steps": [{ "color": "green", "value": null }] },
+          "unit": "none"
+        },
+        "overrides": []
+      },
+      "gridPos": { "h": 4, "w": 4, "x": 9, "y": 3 },
+      "id": 103,
+      "options": { "colorMode": "value", "graphMode": "none", "justifyMode": "auto", "orientation": "auto", "reduceOptions": { "calcs": ["lastNotNull"], "fields": "", "values": false }, "textMode": "auto" },
+      "targets": [{
+        "datasource": { "type": "postgres", "uid": "postgresql" },
+        "rawQuery": true,
+        "rawSql": "SELECT MAX(b.number) AS latest_block FROM metagraph_dump d JOIN metagraph_block b ON d.block_id = b.number WHERE d.netuid = ${subnet}",
+        "refId": "A",
+        "format": "table"
+      }],
+      "title": "Latest Block",
+      "type": "stat"
+    },
+    {
+      "datasource": { "type": "postgres", "uid": "postgresql" },
+      "fieldConfig": {
+        "defaults": {
+          "color": { "mode": "thresholds" },
+          "mappings": [],
+          "thresholds": { "mode": "absolute", "steps": [{ "color": "green", "value": null }] },
+          "unit": "dateTimeAsIso"
+        },
+        "overrides": []
+      },
+      "gridPos": { "h": 4, "w": 4, "x": 13, "y": 3 },
+      "id": 104,
+      "options": { "colorMode": "value", "graphMode": "none", "justifyMode": "auto", "orientation": "auto", "reduceOptions": { "calcs": ["lastNotNull"], "fields": "", "values": false }, "textMode": "auto" },
+      "targets": [{
+        "datasource": { "type": "postgres", "uid": "postgresql" },
+        "rawQuery": true,
+        "rawSql": "SELECT EXTRACT(EPOCH FROM MIN(b.timestamp)) * 1000 AS first_dump FROM metagraph_dump d JOIN metagraph_block b ON d.block_id = b.number WHERE d.netuid = ${subnet}",
+        "refId": "A",
+        "format": "table"
+      }],
+      "title": "First Dump (UTC)",
+      "type": "stat"
+    },
+    {
+      "datasource": { "type": "postgres", "uid": "postgresql" },
+      "fieldConfig": {
+        "defaults": {
+          "color": { "mode": "thresholds" },
+          "mappings": [],
+          "thresholds": { "mode": "absolute", "steps": [{ "color": "green", "value": null }] },
+          "unit": "short"
+        },
+        "overrides": []
+      },
+      "gridPos": { "h": 4, "w": 3, "x": 17, "y": 3 },
+      "id": 105,
+      "options": { "colorMode": "value", "graphMode": "none", "justifyMode": "auto", "orientation": "auto", "reduceOptions": { "calcs": ["lastNotNull"], "fields": "", "values": false }, "textMode": "auto" },
+      "targets": [{
+        "datasource": { "type": "postgres", "uid": "postgresql" },
+        "rawQuery": true,
+        "rawSql": "SELECT COUNT(DISTINCT ns.neuron_id) AS total_neurons FROM metagraph_neuron_snapshot ns JOIN metagraph_neuron n ON ns.neuron_id = n.id WHERE n.subnet_id = ${subnet} AND ns.block_id = (SELECT MAX(block_id) FROM metagraph_dump WHERE netuid = ${subnet})",
+        "refId": "A",
+        "format": "table"
+      }],
+      "title": "Total Neurons",
+      "type": "stat"
+    },
+    {
+      "datasource": { "type": "postgres", "uid": "postgresql" },
+      "fieldConfig": {
+        "defaults": {
+          "color": { "mode": "thresholds" },
+          "mappings": [],
+          "thresholds": { "mode": "absolute", "steps": [{ "color": "green", "value": null }] },
+          "unit": "short"
+        },
+        "overrides": []
+      },
+      "gridPos": { "h": 4, "w": 4, "x": 20, "y": 3 },
+      "id": 106,
+      "options": { "colorMode": "value", "graphMode": "none", "justifyMode": "auto", "orientation": "auto", "reduceOptions": { "calcs": ["lastNotNull"], "fields": "", "values": false }, "textMode": "auto" },
+      "targets": [{
+        "datasource": { "type": "postgres", "uid": "postgresql" },
+        "rawQuery": true,
+        "rawSql": "SELECT COUNT(DISTINCT ns.neuron_id) AS validators FROM metagraph_neuron_snapshot ns JOIN metagraph_neuron n ON ns.neuron_id = n.id WHERE n.subnet_id = ${subnet} AND ns.is_validator = true AND ns.block_id = (SELECT MAX(block_id) FROM metagraph_dump WHERE netuid = ${subnet})",
+        "refId": "A",
+        "format": "table"
+      }],
+      "title": "Validators",
+      "type": "stat"
+    },
+    {
+      "datasource": { "type": "postgres", "uid": "postgresql" },
+      "description": "Timeline of metagraph dumps showing block numbers over time",
+      "fieldConfig": {
+        "defaults": {
+          "color": { "mode": "palette-classic" },
+          "custom": { "axisBorderShow": false, "axisCenteredZero": false, "axisColorMode": "text", "axisLabel": "Block Number", "axisPlacement": "auto", "barAlignment": 0, "drawStyle": "points", "fillOpacity": 0, "gradientMode": "none", "hideFrom": { "legend": false, "tooltip": false, "viz": false }, "insertNulls": false, "lineInterpolation": "linear", "lineWidth": 1, "pointSize": 5, "scaleDistribution": { "type": "linear" }, "showPoints": "always", "spanNulls": false, "stacking": { "group": "A", "mode": "none" }, "thresholdsStyle": { "mode": "off" } },
+          "mappings": [],
+          "thresholds": { "mode": "absolute", "steps": [{ "color": "green", "value": null }] },
+          "unit": "short"
+        },
+        "overrides": []
+      },
+      "gridPos": { "h": 6, "w": 24, "x": 0, "y": 7 },
+      "id": 107,
+      "options": { "legend": { "calcs": ["count", "max"], "displayMode": "list", "placement": "bottom", "showLegend": true }, "tooltip": { "mode": "single", "sort": "none" } },
+      "targets": [{
+        "datasource": { "type": "postgres", "uid": "postgresql" },
+        "rawQuery": true,
+        "rawSql": "SELECT b.timestamp AS time, b.number AS \"Block Number\" FROM metagraph_dump d JOIN metagraph_block b ON d.block_id = b.number WHERE d.netuid = ${subnet} AND b.timestamp BETWEEN '${__from:date}' AND '${__to:date}' ORDER BY b.timestamp",
+        "refId": "A",
+        "format": "time_series"
+      }],
+      "title": "Dump Timeline for sn${subnet}",
+      "type": "timeseries"
+    },
+    {
+      "collapsed": false,
+      "gridPos": { "h": 1, "w": 24, "x": 0, "y": 13 },
+      "id": 108,
+      "panels": [],
+      "title": "Validator Metrics",
+      "type": "row"
+    },
+    {
+      "datasource": { "type": "postgres", "uid": "postgresql" },
+      "description": "Difference between current block and last block update for validators",
+      "fieldConfig": {
+        "defaults": {
+          "color": { "mode": "palette-classic" },
+          "custom": { "axisBorderShow": false, "axisCenteredZero": false, "axisColorMode": "text", "axisLabel": "", "axisPlacement": "auto", "barAlignment": 0, "drawStyle": "line", "fillOpacity": 0, "gradientMode": "none", "hideFrom": { "legend": false, "tooltip": false, "viz": false }, "insertNulls": false, "lineInterpolation": "linear", "lineWidth": 1, "pointSize": 5, "scaleDistribution": { "type": "linear" }, "showPoints": "never", "spanNulls": false, "stacking": { "group": "A", "mode": "none" }, "thresholdsStyle": { "mode": "area" } },
+          "mappings": [],
+          "max": 10000,
+          "min": 0,
+          "thresholds": { "mode": "absolute", "steps": [{ "color": "green", "value": null }, { "color": "#EAB839", "value": 1150 }, { "color": "red", "value": 2300 }] }
+        },
+        "overrides": []
+      },
+      "gridPos": { "h": 10, "w": 24, "x": 0, "y": 14 },
+      "id": 2,
+      "options": { "legend": { "calcs": [], "displayMode": "list", "placement": "bottom", "showLegend": true }, "tooltip": { "mode": "multi", "sort": "none" } },
+      "targets": [{
+        "datasource": { "type": "postgres", "uid": "postgresql" },
+        "rawQuery": true,
+        "rawSql": "SELECT h.hotkey AS validator, b.number - mm.last_update AS \" \", b.timestamp AS created_at FROM metagraph_neuron n JOIN metagraph_hotkey h ON n.hotkey_id = h.id JOIN metagraph_neuron_snapshot ns ON ns.neuron_id = n.id JOIN metagraph_block b ON ns.block_id = b.number LEFT JOIN metagraph_mechanism_metrics mm ON mm.snapshot_id = ns.id AND mm.mech_id = ${mech_id} WHERE n.subnet_id = ${subnet} AND ns.is_validator = true AND b.timestamp BETWEEN '${__from:date}' AND '${__to:date}' ORDER BY ns.total_stake DESC",
+        "refId": "A",
+        "format": "table"
+      }],
+      "title": "Blocks since last weight set on sn${subnet}",
+      "transformations": [{ "id": "prepareTimeSeries", "options": { "format": "multi" } }],
+      "type": "timeseries"
+    },
+    {
+      "datasource": { "type": "postgres", "uid": "postgresql" },
+      "fieldConfig": {
+        "defaults": {
+          "color": { "mode": "palette-classic" },
+          "custom": { "axisBorderShow": false, "axisCenteredZero": false, "axisColorMode": "text", "axisLabel": "", "axisPlacement": "auto", "barAlignment": 0, "drawStyle": "line", "fillOpacity": 0, "gradientMode": "none", "hideFrom": { "legend": false, "tooltip": false, "viz": false }, "insertNulls": false, "lineInterpolation": "linear", "lineWidth": 1, "pointSize": 5, "scaleDistribution": { "type": "linear" }, "showPoints": "never", "spanNulls": false, "stacking": { "group": "A", "mode": "none" }, "thresholdsStyle": { "mode": "off" } },
+          "mappings": [],
+          "thresholds": { "mode": "absolute", "steps": [{ "color": "green", "value": null }] }
+        },
+        "overrides": []
+      },
+      "gridPos": { "h": 10, "w": 24, "x": 0, "y": 24 },
+      "id": 3,
+      "options": { "legend": { "calcs": [], "displayMode": "list", "placement": "bottom", "showLegend": true }, "tooltip": { "mode": "multi", "sort": "none" } },
+      "targets": [{
+        "datasource": { "type": "postgres", "uid": "postgresql" },
+        "rawQuery": true,
+        "rawSql": "SELECT h.hotkey AS validator, mm.validator_trust AS \" \", b.timestamp AS created_at FROM metagraph_neuron n JOIN metagraph_hotkey h ON n.hotkey_id = h.id JOIN metagraph_neuron_snapshot ns ON ns.neuron_id = n.id JOIN metagraph_block b ON ns.block_id = b.number LEFT JOIN metagraph_mechanism_metrics mm ON mm.snapshot_id = ns.id AND mm.mech_id = ${mech_id} WHERE n.subnet_id = ${subnet} AND ns.is_validator = true AND b.timestamp BETWEEN '${__from:date}' AND '${__to:date}' ORDER BY ns.total_stake DESC",
+        "refId": "A",
+        "format": "table"
+      }],
+      "title": "Validators Trust for sn${subnet}",
+      "transformations": [{ "id": "prepareTimeSeries", "options": { "format": "multi" } }],
+      "type": "timeseries"
+    },
+    {
+      "datasource": { "type": "postgres", "uid": "postgresql" },
+      "fieldConfig": {
+        "defaults": {
+          "color": { "mode": "palette-classic" },
+          "custom": { "axisBorderShow": false, "axisCenteredZero": false, "axisColorMode": "text", "axisLabel": "", "axisPlacement": "auto", "barAlignment": 0, "drawStyle": "line", "fillOpacity": 0, "gradientMode": "none", "hideFrom": { "legend": false, "tooltip": false, "viz": false }, "insertNulls": false, "lineInterpolation": "linear", "lineWidth": 1, "pointSize": 5, "scaleDistribution": { "type": "linear" }, "showPoints": "never", "spanNulls": false, "stacking": { "group": "A", "mode": "none" }, "thresholdsStyle": { "mode": "off" } },
+          "mappings": [],
+          "thresholds": { "mode": "absolute", "steps": [{ "color": "green", "value": null }] }
+        },
+        "overrides": []
+      },
+      "gridPos": { "h": 10, "w": 24, "x": 0, "y": 34 },
+      "id": 4,
+      "options": { "legend": { "calcs": [], "displayMode": "list", "placement": "bottom", "showLegend": true }, "tooltip": { "mode": "multi", "sort": "none" } },
+      "targets": [{
+        "datasource": { "type": "postgres", "uid": "postgresql" },
+        "rawQuery": true,
+        "rawSql": "SELECT h.hotkey AS validator, CASE WHEN mm.validator_trust > 0 THEN mm.dividend / mm.validator_trust ELSE 0 END AS \" \", b.timestamp AS created_at FROM metagraph_neuron n JOIN metagraph_hotkey h ON n.hotkey_id = h.id JOIN metagraph_neuron_snapshot ns ON ns.neuron_id = n.id JOIN metagraph_block b ON ns.block_id = b.number LEFT JOIN metagraph_mechanism_metrics mm ON mm.snapshot_id = ns.id AND mm.mech_id = ${mech_id} WHERE n.subnet_id = ${subnet} AND ns.is_validator = true AND b.timestamp BETWEEN '${__from:date}' AND '${__to:date}' ORDER BY ns.total_stake DESC",
+        "refId": "A",
+        "format": "table"
+      }],
+      "title": "Dividends to vtrust ratio for sn${subnet} mechid ${mech_id}",
+      "transformations": [{ "id": "prepareTimeSeries", "options": { "format": "multi" } }],
+      "type": "timeseries"
+    },
+    {
+      "datasource": { "type": "postgres", "uid": "postgresql" },
+      "fieldConfig": {
+        "defaults": {
+          "color": { "mode": "palette-classic" },
+          "custom": { "axisBorderShow": false, "axisCenteredZero": false, "axisColorMode": "text", "axisLabel": "", "axisPlacement": "auto", "barAlignment": 0, "drawStyle": "line", "fillOpacity": 30, "gradientMode": "none", "hideFrom": { "legend": false, "tooltip": false, "viz": false }, "insertNulls": false, "lineInterpolation": "linear", "lineWidth": 1, "pointSize": 5, "scaleDistribution": { "type": "linear" }, "showPoints": "never", "spanNulls": false, "stacking": { "group": "A", "mode": "normal" }, "thresholdsStyle": { "mode": "off" } },
+          "mappings": [],
+          "thresholds": { "mode": "absolute", "steps": [{ "color": "green", "value": null }] }
+        },
+        "overrides": []
+      },
+      "gridPos": { "h": 10, "w": 24, "x": 0, "y": 44 },
+      "id": 5,
+      "options": { "legend": { "calcs": [], "displayMode": "list", "placement": "bottom", "showLegend": true }, "tooltip": { "mode": "multi", "sort": "none" } },
+      "targets": [{
+        "datasource": { "type": "postgres", "uid": "postgresql" },
+        "rawQuery": true,
+        "rawSql": "SELECT h.hotkey AS validator, mm.consensus AS \" \", b.timestamp AS created_at FROM metagraph_neuron n JOIN metagraph_hotkey h ON n.hotkey_id = h.id JOIN metagraph_neuron_snapshot ns ON ns.neuron_id = n.id JOIN metagraph_block b ON ns.block_id = b.number LEFT JOIN metagraph_mechanism_metrics mm ON mm.snapshot_id = ns.id AND mm.mech_id = ${mech_id} WHERE n.subnet_id = ${subnet} AND ns.is_validator = true AND b.timestamp BETWEEN '${__from:date}' AND '${__to:date}' ORDER BY ns.total_stake DESC",
+        "refId": "A",
+        "format": "table"
+      }],
+      "title": "Consensus sum for sn${subnet}",
+      "transformations": [{ "id": "prepareTimeSeries", "options": { "format": "multi" } }],
+      "type": "timeseries"
+    },
+    {
+      "datasource": { "type": "postgres", "uid": "postgresql" },
+      "fieldConfig": {
+        "defaults": {
+          "color": { "mode": "palette-classic" },
+          "custom": { "axisBorderShow": false, "axisCenteredZero": false, "axisColorMode": "text", "axisLabel": "", "axisPlacement": "auto", "barAlignment": 0, "drawStyle": "line", "fillOpacity": 0, "gradientMode": "none", "hideFrom": { "legend": false, "tooltip": false, "viz": false }, "insertNulls": false, "lineInterpolation": "linear", "lineWidth": 1, "pointSize": 5, "scaleDistribution": { "type": "linear" }, "showPoints": "never", "spanNulls": false, "stacking": { "group": "A", "mode": "none" }, "thresholdsStyle": { "mode": "off" } },
+          "mappings": [],
+          "thresholds": { "mode": "absolute", "steps": [{ "color": "green", "value": null }] }
+        },
+        "overrides": []
+      },
+      "gridPos": { "h": 10, "w": 24, "x": 0, "y": 54 },
+      "id": 6,
+      "options": { "legend": { "calcs": [], "displayMode": "list", "placement": "bottom", "showLegend": true }, "tooltip": { "mode": "multi", "sort": "none" } },
+      "targets": [{
+        "datasource": { "type": "postgres", "uid": "postgresql" },
+        "rawQuery": true,
+        "rawSql": "SELECT h.hotkey AS validator, CASE WHEN ns.total_stake > 0 THEN mm.dividend / (ns.total_stake / 1e9) ELSE 0 END AS \" \", b.timestamp AS created_at FROM metagraph_neuron n JOIN metagraph_hotkey h ON n.hotkey_id = h.id JOIN metagraph_neuron_snapshot ns ON ns.neuron_id = n.id JOIN metagraph_block b ON ns.block_id = b.number LEFT JOIN metagraph_mechanism_metrics mm ON mm.snapshot_id = ns.id AND mm.mech_id = ${mech_id} WHERE n.subnet_id = ${subnet} AND ns.is_validator = true AND b.timestamp BETWEEN '${__from:date}' AND '${__to:date}' ORDER BY ns.total_stake DESC",
+        "refId": "A",
+        "format": "table"
+      }],
+      "title": "Dividends to stake ratio sn${subnet} mechid ${mech_id}",
+      "transformations": [{ "id": "prepareTimeSeries", "options": { "format": "multi" } }],
+      "type": "timeseries"
+    },
+    {
+      "datasource": { "type": "postgres", "uid": "postgresql" },
+      "fieldConfig": {
+        "defaults": {
+          "color": { "mode": "palette-classic" },
+          "custom": { "axisBorderShow": false, "axisCenteredZero": false, "axisColorMode": "text", "axisLabel": "", "axisPlacement": "auto", "barAlignment": 0, "drawStyle": "line", "fillOpacity": 0, "gradientMode": "none", "hideFrom": { "legend": false, "tooltip": false, "viz": false }, "insertNulls": false, "lineInterpolation": "linear", "lineWidth": 1, "pointSize": 5, "scaleDistribution": { "type": "linear" }, "showPoints": "never", "spanNulls": false, "stacking": { "group": "A", "mode": "none" }, "thresholdsStyle": { "mode": "off" } },
+          "mappings": [],
+          "thresholds": { "mode": "absolute", "steps": [{ "color": "green", "value": null }] },
+          "unit": "short"
+        },
+        "overrides": []
+      },
+      "gridPos": { "h": 10, "w": 24, "x": 0, "y": 64 },
+      "id": 7,
+      "options": { "legend": { "calcs": [], "displayMode": "list", "placement": "bottom", "showLegend": true }, "tooltip": { "mode": "multi", "sort": "none" } },
+      "targets": [{
+        "datasource": { "type": "postgres", "uid": "postgresql" },
+        "rawQuery": true,
+        "rawSql": "SELECT h.hotkey AS validator, ns.emissions / 1e9 AS \" \", b.timestamp AS created_at FROM metagraph_neuron n JOIN metagraph_hotkey h ON n.hotkey_id = h.id JOIN metagraph_neuron_snapshot ns ON ns.neuron_id = n.id JOIN metagraph_block b ON ns.block_id = b.number WHERE n.subnet_id = ${subnet} AND ns.is_validator = true AND b.timestamp BETWEEN '${__from:date}' AND '${__to:date}' ORDER BY ns.total_stake DESC",
+        "refId": "A",
+        "format": "table"
+      }],
+      "title": "Emissions in sn${subnet} (TAO)",
+      "transformations": [{ "id": "prepareTimeSeries", "options": { "format": "multi" } }],
+      "type": "timeseries"
+    },
+    {
+      "datasource": { "type": "postgres", "uid": "postgresql" },
+      "fieldConfig": {
+        "defaults": {
+          "color": { "mode": "palette-classic" },
+          "custom": { "axisBorderShow": false, "axisCenteredZero": false, "axisColorMode": "text", "axisLabel": "", "axisPlacement": "auto", "barAlignment": 0, "drawStyle": "line", "fillOpacity": 0, "gradientMode": "none", "hideFrom": { "legend": false, "tooltip": false, "viz": false }, "insertNulls": false, "lineInterpolation": "linear", "lineWidth": 1, "pointSize": 5, "scaleDistribution": { "type": "linear" }, "showPoints": "never", "spanNulls": false, "stacking": { "group": "A", "mode": "none" }, "thresholdsStyle": { "mode": "off" } },
+          "mappings": [],
+          "thresholds": { "mode": "absolute", "steps": [{ "color": "green", "value": null }] },
+          "unit": "short"
+        },
+        "overrides": []
+      },
+      "gridPos": { "h": 10, "w": 24, "x": 0, "y": 74 },
+      "id": 8,
+      "options": { "legend": { "calcs": [], "displayMode": "list", "placement": "bottom", "showLegend": true }, "tooltip": { "mode": "multi", "sort": "none" } },
+      "targets": [{
+        "datasource": { "type": "postgres", "uid": "postgresql" },
+        "rawQuery": true,
+        "rawSql": "SELECT h.hotkey AS validator, ns.total_stake / 1e9 AS \" \", b.timestamp AS created_at FROM metagraph_neuron n JOIN metagraph_hotkey h ON n.hotkey_id = h.id JOIN metagraph_neuron_snapshot ns ON ns.neuron_id = n.id JOIN metagraph_block b ON ns.block_id = b.number WHERE n.subnet_id = ${subnet} AND ns.is_validator = true AND b.timestamp BETWEEN '${__from:date}' AND '${__to:date}' ORDER BY ns.total_stake DESC",
+        "refId": "A",
+        "format": "table"
+      }],
+      "title": "Total validator stake on sn${subnet} (TAO)",
+      "transformations": [{ "id": "prepareTimeSeries", "options": { "format": "multi" } }],
+      "type": "timeseries"
+    },
+    {
+      "datasource": { "type": "postgres", "uid": "postgresql" },
+      "fieldConfig": {
+        "defaults": {
+          "color": { "mode": "palette-classic" },
+          "custom": { "axisBorderShow": false, "axisCenteredZero": false, "axisColorMode": "text", "axisLabel": "", "axisPlacement": "auto", "barAlignment": 0, "drawStyle": "line", "fillOpacity": 30, "gradientMode": "none", "hideFrom": { "legend": false, "tooltip": false, "viz": false }, "insertNulls": false, "lineInterpolation": "linear", "lineWidth": 2, "pointSize": 5, "scaleDistribution": { "type": "linear" }, "showPoints": "never", "spanNulls": false, "stacking": { "group": "A", "mode": "none" }, "thresholdsStyle": { "mode": "off" } },
+          "mappings": [],
+          "thresholds": { "mode": "absolute", "steps": [{ "color": "green", "value": null }] },
+          "unit": "short"
+        },
+        "overrides": []
+      },
+      "gridPos": { "h": 10, "w": 24, "x": 0, "y": 84 },
+      "id": 9,
+      "options": { "legend": { "calcs": ["mean", "last"], "displayMode": "table", "placement": "right", "showLegend": true }, "tooltip": { "mode": "multi", "sort": "none" } },
+      "targets": [{
+        "datasource": { "type": "postgres", "uid": "postgresql" },
+        "rawQuery": true,
+        "rawSql": "SELECT b.timestamp AS time, SUM(ns.total_stake) / 1e9 AS value FROM metagraph_neuron n JOIN metagraph_neuron_snapshot ns ON ns.neuron_id = n.id JOIN metagraph_block b ON ns.block_id = b.number WHERE n.subnet_id = ${subnet} AND ns.is_validator = true AND b.timestamp BETWEEN '${__from:date}' AND '${__to:date}' GROUP BY b.timestamp ORDER BY b.timestamp",
+        "refId": "A",
+        "format": "time_series"
+      }],
+      "title": "Sum of validator stake on sn${subnet} (TAO)",
+      "type": "timeseries"
+    },
+    {
+      "datasource": { "type": "postgres", "uid": "postgresql" },
+      "fieldConfig": {
+        "defaults": {
+          "color": { "mode": "palette-classic" },
+          "custom": { "axisBorderShow": false, "axisCenteredZero": false, "axisColorMode": "text", "axisLabel": "", "axisPlacement": "auto", "fillOpacity": 80, "gradientMode": "none", "hideFrom": { "legend": false, "tooltip": false, "viz": false }, "lineWidth": 1, "scaleDistribution": { "type": "linear" }, "thresholdsStyle": { "mode": "off" } },
+          "mappings": [],
+          "thresholds": { "mode": "absolute", "steps": [{ "color": "green", "value": null }] }
+        },
+        "overrides": []
+      },
+      "gridPos": { "h": 10, "w": 24, "x": 0, "y": 94 },
+      "id": 10,
+      "options": { "barRadius": 0, "barWidth": 0.9, "fullHighlight": false, "groupWidth": 0.7, "legend": { "calcs": [], "displayMode": "list", "placement": "bottom", "showLegend": true }, "orientation": "auto", "showValue": "auto", "stacking": "none", "tooltip": { "mode": "multi", "sort": "none" }, "xTickLabelMaxLength": 0, "xTickLabelRotation": 0 },
+      "targets": [{
+        "datasource": { "type": "postgres", "uid": "postgresql" },
+        "rawQuery": true,
+        "rawSql": "SELECT ns.uid::text AS uid, mm.incentive AS incentive FROM metagraph_neuron n JOIN metagraph_neuron_snapshot ns ON ns.neuron_id = n.id JOIN metagraph_block b ON ns.block_id = b.number LEFT JOIN metagraph_mechanism_metrics mm ON mm.snapshot_id = ns.id AND mm.mech_id = ${mech_id} WHERE n.subnet_id = ${subnet} AND b.number = (SELECT MAX(block_id) FROM metagraph_dump WHERE netuid = ${subnet}) ORDER BY ns.uid",
+        "refId": "A",
+        "format": "table"
+      }],
+      "title": "Incentives by UID in sn${subnet} mechid ${mech_id}",
+      "type": "barchart"
+    },
+    {
+      "datasource": { "type": "postgres", "uid": "postgresql" },
+      "fieldConfig": {
+        "defaults": {
+          "color": { "mode": "palette-classic" },
+          "custom": { "axisBorderShow": false, "axisCenteredZero": false, "axisColorMode": "text", "axisLabel": "", "axisPlacement": "auto", "fillOpacity": 80, "gradientMode": "none", "hideFrom": { "legend": false, "tooltip": false, "viz": false }, "lineWidth": 1, "scaleDistribution": { "type": "linear" }, "thresholdsStyle": { "mode": "off" } },
+          "mappings": [],
+          "thresholds": { "mode": "absolute", "steps": [{ "color": "green", "value": null }] }
+        },
+        "overrides": []
+      },
+      "gridPos": { "h": 10, "w": 24, "x": 0, "y": 104 },
+      "id": 11,
+      "options": { "barRadius": 0, "barWidth": 0.9, "fullHighlight": false, "groupWidth": 0.7, "legend": { "calcs": [], "displayMode": "list", "placement": "bottom", "showLegend": true }, "orientation": "auto", "showValue": "auto", "stacking": "none", "tooltip": { "mode": "multi", "sort": "none" }, "xTickLabelMaxLength": 0, "xTickLabelRotation": 0 },
+      "targets": [{
+        "datasource": { "type": "postgres", "uid": "postgresql" },
+        "rawQuery": true,
+        "rawSql": "SELECT ns.uid::text AS uid, mm.dividend AS dividend FROM metagraph_neuron n JOIN metagraph_neuron_snapshot ns ON ns.neuron_id = n.id JOIN metagraph_block b ON ns.block_id = b.number LEFT JOIN metagraph_mechanism_metrics mm ON mm.snapshot_id = ns.id AND mm.mech_id = ${mech_id} WHERE n.subnet_id = ${subnet} AND b.number = (SELECT MAX(block_id) FROM metagraph_dump WHERE netuid = ${subnet}) ORDER BY ns.uid",
+        "refId": "A",
+        "format": "table"
+      }],
+      "title": "Dividends by UID in sn${subnet} mechid ${mech_id}",
+      "type": "barchart"
+    },
+    {
+      "datasource": { "type": "postgres", "uid": "postgresql" },
+      "fieldConfig": {
+        "defaults": {
+          "color": { "mode": "palette-classic" },
+          "custom": { "axisBorderShow": false, "axisCenteredZero": false, "axisColorMode": "text", "axisLabel": "", "axisPlacement": "auto", "barAlignment": 0, "drawStyle": "line", "fillOpacity": 0, "gradientMode": "none", "hideFrom": { "legend": false, "tooltip": false, "viz": false }, "insertNulls": false, "lineInterpolation": "linear", "lineWidth": 2, "pointSize": 5, "scaleDistribution": { "type": "linear" }, "showPoints": "never", "spanNulls": false, "stacking": { "group": "A", "mode": "none" }, "thresholdsStyle": { "mode": "off" } },
+          "mappings": [],
+          "thresholds": { "mode": "absolute", "steps": [{ "color": "green", "value": null }] }
+        },
+        "overrides": []
+      },
+      "gridPos": { "h": 8, "w": 12, "x": 0, "y": 114 },
+      "id": 12,
+      "options": { "legend": { "calcs": ["mean", "last"], "displayMode": "table", "placement": "right", "showLegend": true }, "tooltip": { "mode": "multi", "sort": "none" } },
+      "targets": [{
+        "datasource": { "type": "postgres", "uid": "postgresql" },
+        "rawQuery": true,
+        "rawSql": "SELECT b.timestamp AS time, COUNT(DISTINCT CASE WHEN ns.is_immune THEN n.id END) AS immune_neurons, COUNT(DISTINCT n.id) AS total_neurons FROM metagraph_neuron n JOIN metagraph_neuron_snapshot ns ON ns.neuron_id = n.id JOIN metagraph_block b ON ns.block_id = b.number WHERE n.subnet_id = ${subnet} AND b.timestamp BETWEEN '${__from:date}' AND '${__to:date}' GROUP BY b.timestamp ORDER BY b.timestamp",
+        "refId": "A",
+        "format": "time_series"
+      }],
+      "title": "Immune UIDs in sn${subnet}",
+      "type": "timeseries"
+    },
+    {
+      "datasource": { "type": "postgres", "uid": "postgresql" },
+      "fieldConfig": {
+        "defaults": {
+          "color": { "mode": "palette-classic" },
+          "custom": { "axisBorderShow": false, "axisCenteredZero": false, "axisColorMode": "text", "axisLabel": "", "axisPlacement": "auto", "barAlignment": 0, "drawStyle": "line", "fillOpacity": 0, "gradientMode": "none", "hideFrom": { "legend": false, "tooltip": false, "viz": false }, "insertNulls": false, "lineInterpolation": "linear", "lineWidth": 2, "pointSize": 5, "scaleDistribution": { "type": "linear" }, "showPoints": "never", "spanNulls": false, "stacking": { "group": "A", "mode": "none" }, "thresholdsStyle": { "mode": "off" } },
+          "mappings": [],
+          "thresholds": { "mode": "absolute", "steps": [{ "color": "green", "value": null }] }
+        },
+        "overrides": []
+      },
+      "gridPos": { "h": 8, "w": 12, "x": 12, "y": 114 },
+      "id": 13,
+      "options": { "legend": { "calcs": ["mean", "last"], "displayMode": "table", "placement": "right", "showLegend": true }, "tooltip": { "mode": "multi", "sort": "none" } },
+      "targets": [{
+        "datasource": { "type": "postgres", "uid": "postgresql" },
+        "rawQuery": true,
+        "rawSql": "SELECT b.timestamp AS time, COUNT(DISTINCT n.id) AS total_neurons, COUNT(DISTINCT CASE WHEN ns.is_validator THEN n.id END) AS validators, COUNT(DISTINCT CASE WHEN NOT ns.is_validator THEN n.id END) AS miners FROM metagraph_neuron n JOIN metagraph_neuron_snapshot ns ON ns.neuron_id = n.id JOIN metagraph_block b ON ns.block_id = b.number WHERE n.subnet_id = ${subnet} AND b.timestamp BETWEEN '${__from:date}' AND '${__to:date}' GROUP BY b.timestamp ORDER BY b.timestamp",
+        "refId": "A",
+        "format": "time_series"
+      }],
+      "title": "UIDs in use (uid pressure) in sn${subnet}",
+      "type": "timeseries"
+    },
+    {
+      "datasource": { "type": "postgres", "uid": "postgresql" },
+      "fieldConfig": {
+        "defaults": {
+          "color": { "mode": "thresholds" },
+          "custom": { "align": "auto", "cellOptions": { "type": "auto" }, "inspect": false },
+          "mappings": [],
+          "thresholds": { "mode": "absolute", "steps": [{ "color": "green", "value": null }] }
+        },
+        "overrides": [
+          { "matcher": { "id": "byName", "options": "weight" }, "properties": [{ "id": "custom.cellOptions", "value": { "mode": "gradient", "type": "gauge" } }] }
+        ]
+      },
+      "gridPos": { "h": 10, "w": 24, "x": 0, "y": 122 },
+      "id": 14,
+      "options": { "cellHeight": "sm", "footer": { "countRows": false, "fields": "", "reducer": ["sum"], "show": false }, "showHeader": true, "sortBy": [{ "desc": true, "displayName": "weight" }] },
+      "targets": [{
+        "datasource": { "type": "postgres", "uid": "postgresql" },
+        "rawQuery": true,
+        "rawSql": "SELECT sh.hotkey AS source_validator, sn.uid AS source_uid, th.hotkey AS target_miner, tn.uid AS target_uid, w.weight, b.number AS block FROM metagraph_weight w JOIN metagraph_neuron sn ON w.source_neuron_id = sn.id JOIN metagraph_hotkey sh ON sn.hotkey_id = sh.id JOIN metagraph_neuron tn ON w.target_neuron_id = tn.id JOIN metagraph_hotkey th ON tn.hotkey_id = th.id JOIN metagraph_block b ON w.block_id = b.number WHERE sn.subnet_id = ${subnet} AND w.mech_id = ${mech_id} AND b.number = (SELECT MAX(number) FROM metagraph_block WHERE timestamp <= '${__to:date}') ORDER BY w.weight DESC LIMIT 100",
+        "refId": "A",
+        "format": "table"
+      }],
+      "title": "Top 100 Weight Assignments in sn${subnet} mechid ${mech_id}",
+      "type": "table"
+    },
+    {
+      "datasource": { "type": "postgres", "uid": "postgresql" },
+      "fieldConfig": {
+        "defaults": {
+          "color": { "mode": "thresholds" },
+          "custom": { "align": "auto", "cellOptions": { "type": "auto" }, "inspect": false },
+          "mappings": [],
+          "thresholds": { "mode": "absolute", "steps": [{ "color": "green", "value": null }] }
+        },
+        "overrides": [
+          { "matcher": { "id": "byName", "options": "total_stake_tao" }, "properties": [{ "id": "custom.cellOptions", "value": { "mode": "gradient", "type": "gauge" } }] },
+          { "matcher": { "id": "byName", "options": "is_validator" }, "properties": [{ "id": "mappings", "value": [{ "options": { "true": { "color": "green", "index": 0, "text": "Yes" }, "false": { "color": "text", "index": 1, "text": "No" } }, "type": "value" }] }, { "id": "custom.cellOptions", "value": { "type": "color-text" } }] }
+        ]
+      },
+      "gridPos": { "h": 12, "w": 24, "x": 0, "y": 132 },
+      "id": 15,
+      "options": { "cellHeight": "sm", "footer": { "countRows": false, "fields": "", "reducer": ["sum"], "show": false }, "showHeader": true, "sortBy": [{ "desc": true, "displayName": "total_stake_tao" }] },
+      "targets": [{
+        "datasource": { "type": "postgres", "uid": "postgresql" },
+        "rawQuery": true,
+        "rawSql": "SELECT ns.uid, h.hotkey AS hotkey, ns.total_stake / 1e9 AS total_stake_tao, ns.normalized_stake, ns.rank, ns.trust, mm.incentive, mm.dividend, mm.consensus, mm.validator_trust, ns.is_validator, ns.is_active, ns.is_immune FROM metagraph_neuron n JOIN metagraph_hotkey h ON n.hotkey_id = h.id JOIN metagraph_neuron_snapshot ns ON ns.neuron_id = n.id LEFT JOIN metagraph_mechanism_metrics mm ON mm.snapshot_id = ns.id AND mm.mech_id = ${mech_id} WHERE n.subnet_id = ${subnet} AND ns.block_id = (SELECT MAX(number) FROM metagraph_block WHERE timestamp <= '${__to:date}') ORDER BY ns.total_stake DESC",
+        "refId": "A",
+        "format": "table"
+      }],
+      "title": "All Neurons in sn${subnet} (Latest Snapshot)",
+      "type": "table"
+    },
+    {
+      "datasource": { "type": "postgres", "uid": "postgresql" },
+      "description": "Neurons with dividends and incentives, sorted by dividends. Shows div2stake ratio for analysis.",
+      "fieldConfig": {
+        "defaults": {
+          "color": { "mode": "thresholds" },
+          "custom": { "align": "auto", "cellOptions": { "type": "auto" }, "inspect": false },
+          "mappings": [],
+          "thresholds": { "mode": "absolute", "steps": [{ "color": "green", "value": null }] }
+        },
+        "overrides": [
+          { "matcher": { "id": "byName", "options": "pos" }, "properties": [{ "id": "custom.width", "value": 40 }] },
+          { "matcher": { "id": "byName", "options": "uid" }, "properties": [{ "id": "custom.width", "value": 40 }] },
+          { "matcher": { "id": "byName", "options": "stake_tao" }, "properties": [{ "id": "custom.width", "value": 90 }, { "id": "displayName", "value": "Stake[TAO]" }] },
+          { "matcher": { "id": "byName", "options": "stake_pct" }, "properties": [{ "id": "custom.width", "value": 80 }, { "id": "unit", "value": "percentunit" }, { "id": "decimals", "value": 3 }, { "id": "displayName", "value": "Stake[%]" }] },
+          { "matcher": { "id": "byRegexp", "options": "/(dividends)|(incentives)/" }, "properties": [{ "id": "custom.width", "value": 90 }, { "id": "unit", "value": "percentunit" }] },
+          { "matcher": { "id": "byName", "options": "div2stake" }, "properties": [{ "id": "custom.cellOptions", "value": { "mode": "gradient", "type": "gauge", "valueDisplayMode": "color" } }, { "id": "fieldMinMax", "value": true }, { "id": "color", "value": { "fixedColor": "red", "mode": "continuous-GrYlRd" } }] },
+          { "matcher": { "id": "byName", "options": "is_validator" }, "properties": [{ "id": "custom.cellOptions", "value": { "mode": "gradient", "type": "color-background" } }, { "id": "custom.width", "value": 60 }, { "id": "displayName", "value": "Vali" }, { "id": "mappings", "value": [{ "options": { "true": { "color": "green", "index": 0, "text": "Yes" }, "false": { "color": "text", "index": 1, "text": "No" } }, "type": "value" }] }] },
+          { "matcher": { "id": "byName", "options": "is_immune" }, "properties": [{ "id": "custom.cellOptions", "value": { "mode": "gradient", "type": "color-background" } }, { "id": "custom.width", "value": 80 }, { "id": "mappings", "value": [{ "options": { "true": { "color": "yellow", "index": 0, "text": "Yes" }, "false": { "color": "text", "index": 1, "text": "No" } }, "type": "value" }] }] },
+          { "matcher": { "id": "byName", "options": "hotkey" }, "properties": [{ "id": "custom.inspect", "value": true }] },
+          { "matcher": { "id": "byName", "options": "coldkey" }, "properties": [{ "id": "custom.inspect", "value": true }] },
+          { "matcher": { "id": "byName", "options": "emissions_tao" }, "properties": [{ "id": "custom.width", "value": 100 }, { "id": "displayName", "value": "Emissions[TAO]" }] }
+        ]
+      },
+      "gridPos": { "h": 20, "w": 24, "x": 0, "y": 144 },
+      "id": 16,
+      "options": { "cellHeight": "sm", "footer": { "countRows": false, "enablePagination": false, "fields": ["emissions_tao", "stake_tao"], "reducer": ["sum"], "show": true }, "showHeader": true, "sortBy": [{ "desc": true, "displayName": "dividends" }] },
+      "targets": [{
+        "datasource": { "type": "postgres", "uid": "postgresql" },
+        "rawQuery": true,
+        "rawSql": "WITH stake_sum AS (SELECT SUM(ns.total_stake) / 1e9 AS total_stake_sum_tao FROM metagraph_neuron_snapshot ns JOIN metagraph_neuron n ON ns.neuron_id = n.id WHERE n.subnet_id = ${subnet} AND ns.block_id = (SELECT MAX(block_id) FROM metagraph_dump WHERE netuid = ${subnet})) SELECT ROW_NUMBER() OVER(ORDER BY ns.emissions DESC) AS pos, ns.uid, h.hotkey AS hotkey, c.coldkey AS coldkey, ns.emissions / 1e9 AS emissions_tao, mm.dividend AS dividends, mm.incentive AS incentives, ns.total_stake / 1e9 AS stake_tao, ns.total_stake / 1e9 / stake_sum.total_stake_sum_tao AS stake_pct, CASE WHEN ns.total_stake > 0 THEN 1e15 * COALESCE(mm.dividend, 0) / GREATEST(1, ns.total_stake / 1e9) / GREATEST(1, stake_sum.total_stake_sum_tao) ELSE 0 END AS div2stake, ns.is_validator, ns.is_immune, ns.neuron_version FROM metagraph_neuron n JOIN metagraph_hotkey h ON n.hotkey_id = h.id JOIN metagraph_coldkey c ON h.coldkey_id = c.id JOIN metagraph_neuron_snapshot ns ON ns.neuron_id = n.id LEFT JOIN metagraph_mechanism_metrics mm ON mm.snapshot_id = ns.id AND mm.mech_id = ${mech_id} CROSS JOIN stake_sum WHERE n.subnet_id = ${subnet} AND ns.block_id = (SELECT MAX(block_id) FROM metagraph_dump WHERE netuid = ${subnet}) ORDER BY ns.emissions DESC",
+        "refId": "A",
+        "format": "table"
+      }],
+      "title": "Neurons in sn${subnet} mechid ${mech_id} (sorted by dividends)",
+      "type": "table"
+    }
+  ],
+  "refresh": "1m",
+  "schemaVersion": 38,
+  "style": "dark",
+  "tags": ["bittensor", "metagraph", "subnet", "validators"],
+  "templating": {
+    "list": [
+      {
+        "current": { "text": "12", "value": "12" },
+        "datasource": { "type": "postgres", "uid": "postgresql" },
+        "definition": "SELECT CONCAT(netuid, ' - ', name) AS netuid FROM metagraph_subnet WHERE netuid != 0 ORDER BY netuid",
+        "description": "Subnet ID",
+        "includeAll": false,
+        "label": "subnet",
+        "name": "subnet",
+        "options": [],
+        "query": "SELECT CONCAT(netuid, ' - ', name) AS netuid FROM metagraph_subnet WHERE netuid != 0 ORDER BY netuid",
+        "refresh": 1,
+        "regex": "/^(?<text>(?<value>\\d+).*)/",
+        "type": "query"
+      },
+      {
+        "current": { "text": "0", "value": "0" },
+        "datasource": { "type": "postgres", "uid": "postgresql" },
+        "definition": "SELECT DISTINCT mm.mech_id FROM metagraph_mechanism_metrics mm JOIN metagraph_neuron_snapshot ns ON mm.snapshot_id = ns.id JOIN metagraph_neuron n ON ns.neuron_id = n.id WHERE n.subnet_id = ${subnet} ORDER BY mm.mech_id",
+        "description": "Mechanism ID",
+        "label": "mech_id",
+        "name": "mech_id",
+        "options": [],
+        "query": "SELECT DISTINCT mm.mech_id FROM metagraph_mechanism_metrics mm JOIN metagraph_neuron_snapshot ns ON mm.snapshot_id = ns.id JOIN metagraph_neuron n ON ns.neuron_id = n.id WHERE n.subnet_id = ${subnet} ORDER BY mm.mech_id",
+        "refresh": 2,
+        "regex": "",
+        "type": "query"
+      }
+    ]
+  },
+  "time": { "from": "now-7d", "to": "now" },
+  "timepicker": { "refresh_intervals": ["10m", "15m", "30m", "1h", "2h", "8h", "1d"] },
+  "timezone": "",
+  "title": "Metagraph Subnet",
+  "uid": "sentinel-metagraph-001",
+  "version": 1,
+  "weekStart": ""
+}

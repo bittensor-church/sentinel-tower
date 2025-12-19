@@ -18,7 +18,10 @@ from project.dagster.assets import extrinsics  # noqa: E402
 from project.dagster.jobs import (  # noqa: E402
     extrinsics_sensor,
     hourly_ingest_schedule,
+    hourly_metagraph_schedule,
     ingest_extrinsics_job,
+    ingest_metagraph_job,
+    metagraph_sensor,
 )
 from project.dagster.resources import JsonLinesReader  # noqa: E402
 
@@ -31,12 +34,15 @@ defs = dg.Definitions(
     ],
     jobs=[
         ingest_extrinsics_job,
+        ingest_metagraph_job,
     ],
     sensors=[
         extrinsics_sensor,
+        metagraph_sensor,
     ],
     schedules=[
         hourly_ingest_schedule,
+        hourly_metagraph_schedule,
     ],
     resources={
         "jsonl_reader": JsonLinesReader(base_path=MEDIA_ROOT),
