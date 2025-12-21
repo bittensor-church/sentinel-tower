@@ -6,7 +6,8 @@ set -eu
 # below we define two workers types (each may have any concurrency);
 # each worker may have its own settings
 WORKERS="master worker"
-OPTIONS="-A project -E -l ERROR --pidfile=/var/run/celery-%n.pid --logfile=/var/log/celery-%n.log"
+MAX_TASKS_PER_CHILD="${CELERY_WORKER_MAX_TASKS_PER_CHILD:-50}"
+OPTIONS="-A project -E -l ERROR --pidfile=/var/run/celery-%n.pid --logfile=/var/log/celery-%n.log --max-tasks-per-child=$MAX_TASKS_PER_CHILD"
 
 # set up settings for workers and run the latter;
 # here events from "celery" queue (default one, will be used if queue not specified)

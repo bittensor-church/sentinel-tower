@@ -6,4 +6,6 @@ class MetagraphConfig(AppConfig):
     name = "apps.metagraph"
 
     def ready(self) -> None:
-        from apps.metagraph import block_tasks  # noqa: F401
+        # from apps.metagraph import block_tasks  # noqa: F401
+        pass
+

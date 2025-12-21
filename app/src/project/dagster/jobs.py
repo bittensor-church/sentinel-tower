@@ -271,12 +271,12 @@ def ingest_metagraph(context: dg.OpExecutionContext, jsonl_reader: JsonLinesRead
                 stats,
             )
 
-        except Exception as e:
-            context.log.error(
+        except Exception:
+            context.log.exception(
                 "Error processing metagraph %s/%s: %s",
                 netuid,
                 filename,
-                str(e),
+                stack_info=True,
             )
             error_count += 1
 
