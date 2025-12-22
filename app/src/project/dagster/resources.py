@@ -133,6 +133,18 @@ class JsonLinesReader(ConfigurableResource):
                     total += 1
         return total
 
+    def get_partitioned_total_size(self, relative_dir: str) -> int:
+        """
+        Get total file size in bytes across all JSONL files in a partitioned directory.
+
+        This is much more efficient than counting lines for detecting changes in append-only files.
+        """
+        dir_path = self._get_file_path(relative_dir)
+        if not dir_path.exists():
+            return 0
+
+        return sum(jsonl_file.stat().st_size for jsonl_file in dir_path.glob("*.jsonl"))
+
     def read_partitioned_file(
         self,
         relative_dir: str,
@@ -190,6 +202,22 @@ class JsonLinesReader(ConfigurableResource):
     def count_metagraph_files(self) -> int:
         """Count total metagraph files across all netuids."""
         return len(self.list_all_metagraph_files())
+
+    def get_metagraph_total_size(self) -> int:
+        """
+        Get total file size in bytes across all metagraph JSONL files.
+
+        This is more efficient than counting files for detecting changes.
+        """
+        dir_path = self._get_file_path(METAGRAPH_DIR)
+        if not dir_path.exists():
+            return 0
+
+        total = 0
+        for netuid_dir in dir_path.iterdir():
+            if netuid_dir.is_dir() and netuid_dir.name.isdigit():
+                total += sum(f.stat().st_size for f in netuid_dir.glob("*.jsonl"))
+        return total
 
     def get_metagraph_block_numbers(self, netuid: int) -> list[int]:
         """Get all block numbers that have metagraph dumps for a netuid."""

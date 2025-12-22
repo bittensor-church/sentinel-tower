@@ -165,14 +165,14 @@ def extrinsics_sensor(
         yield dg.SkipReason("Previous run still in progress, waiting for completion")
         return
 
-    current_lines = jsonl_reader.count_partitioned_lines(EXTRINSICS_DIR)
+    # Use file size for efficient change detection (avoids counting all lines every minute)
+    current_size = jsonl_reader.get_partitioned_total_size(EXTRINSICS_DIR)
     last_cursor = int(context.cursor) if context.cursor else 0
 
-    new_count = current_lines - last_cursor
-    if new_count > 0:
-        context.log.info("Found %d new extrinsic records", new_count)
-        yield dg.RunRequest(run_key=f"extrinsics-{current_lines}")
-        context.update_cursor(str(current_lines))
+    if current_size > last_cursor:
+        context.log.info("Detected new extrinsic data (size: %d -> %d bytes)", last_cursor, current_size)
+        yield dg.RunRequest(run_key=f"extrinsics-{current_size}")
+        context.update_cursor(str(current_size))
 
 
 # Schedule for periodic full sync (runs every hour as backup)
@@ -324,14 +324,14 @@ def metagraph_sensor(
         yield dg.SkipReason("Previous metagraph run still in progress")
         return
 
-    current_file_count = jsonl_reader.count_metagraph_files()
+    # Use file size for efficient change detection (avoids listing all files every minute)
+    current_size = jsonl_reader.get_metagraph_total_size()
     last_cursor = int(context.cursor) if context.cursor else 0
 
-    new_count = current_file_count - last_cursor
-    if new_count > 0:
-        context.log.info("Found %d new metagraph files", new_count)
-        yield dg.RunRequest(run_key=f"metagraph-{current_file_count}")
-        context.update_cursor(str(current_file_count))
+    if current_size > last_cursor:
+        context.log.info("Detected new metagraph data (size: %d -> %d bytes)", last_cursor, current_size)
+        yield dg.RunRequest(run_key=f"metagraph-{current_size}")
+        context.update_cursor(str(current_size))
 
 
 @dg.schedule(job=ingest_metagraph_job, cron_schedule="0 * * * *")
