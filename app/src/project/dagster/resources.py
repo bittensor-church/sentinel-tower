@@ -73,9 +73,9 @@ class JsonLinesReader(ConfigurableResource):
                 count += 1
         return count
 
-    def read_extrinsics(self) -> tuple[list[dict[str, Any]], int]:
+    def read_extrinsics(self, start_line: int = 0) -> tuple[list[dict[str, Any]], int]:
         """Read extrinsics from all partitioned files in the extrinsics directory."""
-        return self.read_partitioned_dir(EXTRINSICS_DIR)
+        return self.read_partitioned_dir(EXTRINSICS_DIR, start_line=start_line)
 
     def get_extrinsics_line_count(self) -> int:
         """Get total line count across all partitioned extrinsics files."""
@@ -88,12 +88,20 @@ class JsonLinesReader(ConfigurableResource):
             return []
         return sorted(f.name for f in dir_path.glob("*.jsonl"))
 
-    def read_partitioned_dir(self, relative_dir: str) -> tuple[list[dict[str, Any]], int]:
+    def read_partitioned_dir(
+        self,
+        relative_dir: str,
+        start_line: int = 0,
+    ) -> tuple[list[dict[str, Any]], int]:
         """
-        Read all JSON objects from all JSONL files in a partitioned directory.
+        Read JSON objects from all JSONL files in a partitioned directory.
+
+        Args:
+            relative_dir: Path relative to base_path
+            start_line: Global line number to start reading from (0-indexed across all files)
 
         Returns:
-            Tuple of (list of all parsed JSON objects, total line count).
+            Tuple of (list of parsed JSON objects from start_line onwards, total line count).
 
         """
         dir_path = self._get_file_path(relative_dir)
@@ -107,12 +115,13 @@ class JsonLinesReader(ConfigurableResource):
         for jsonl_file in sorted(dir_path.glob("*.jsonl")):
             with jsonl_file.open(encoding="utf-8") as f:
                 for line in f:
-                    stripped = line.strip()
-                    if stripped:
-                        try:
-                            all_records.append(json.loads(stripped))
-                        except json.JSONDecodeError:
-                            errors += 1
+                    if total_lines >= start_line:
+                        stripped = line.strip()
+                        if stripped:
+                            try:
+                                all_records.append(json.loads(stripped))
+                            except json.JSONDecodeError:
+                                errors += 1
                     total_lines += 1
 
         if errors > 0:

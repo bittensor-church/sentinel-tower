@@ -79,14 +79,12 @@ def ingest_extrinsics(context: dg.OpExecutionContext, jsonl_reader: JsonLinesRea
         defaults={"last_processed_line": 0},
     )
 
-    records, total_lines = jsonl_reader.read_extrinsics()
+    # Only read new records from checkpoint onwards (avoids loading all data into memory)
+    start_line = checkpoint.last_processed_line
+    records, total_lines = jsonl_reader.read_extrinsics(start_line=start_line)
 
     if not records:
-        context.log.info("No extrinsic records found")
-        return {"processed": 0, "skipped": 0}
-
-    if total_lines <= checkpoint.last_processed_line:
-        context.log.info("No new extrinsic records to process")
+        context.log.info("No new extrinsic records to process (last checkpoint: %d)", start_line)
         return {"processed": 0, "skipped": 0}
 
     # Parse all records first
