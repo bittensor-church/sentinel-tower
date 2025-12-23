@@ -83,8 +83,22 @@ def ingest_extrinsics(context: dg.OpExecutionContext, jsonl_reader: JsonLinesRea
     start_line = checkpoint.last_processed_line
     records, total_lines = jsonl_reader.read_extrinsics(start_line=start_line)
 
+    if total_lines < start_line:
+        context.log.warning(
+            "Extrinsics data shrank (checkpoint=%d, available=%d). Resetting checkpoint and re-reading from start.",
+            start_line,
+            total_lines,
+        )
+        checkpoint.last_processed_line = 0
+        checkpoint.save(update_fields=["last_processed_line", "updated_at"])
+        start_line = 0
+        records, total_lines = jsonl_reader.read_extrinsics(start_line=start_line)
+
     if not records:
-        context.log.info("No new extrinsic records to process (last checkpoint: %d)", start_line)
+        if checkpoint.last_processed_line != total_lines:
+            checkpoint.last_processed_line = total_lines
+            checkpoint.save(update_fields=["last_processed_line", "updated_at"])
+        context.log.info("No new extrinsic records to process (last checkpoint: %d)", total_lines)
         return {"processed": 0, "skipped": 0}
 
     # Parse all records first
@@ -166,6 +180,16 @@ def extrinsics_sensor(
     # Use file size for efficient change detection (avoids counting all lines every minute)
     current_size = jsonl_reader.get_partitioned_total_size(EXTRINSICS_DIR)
     last_cursor = int(context.cursor) if context.cursor else 0
+
+    if current_size < last_cursor:
+        context.log.warning(
+            "Extrinsics data size decreased (cursor=%d -> current=%d). Resetting cursor and triggering re-ingest.",
+            last_cursor,
+            current_size,
+        )
+        context.update_cursor(str(current_size))
+        yield dg.RunRequest()
+        return
 
     if current_size > last_cursor:
         context.log.info("Detected new extrinsic data (size: %d -> %d bytes)", last_cursor, current_size)
@@ -325,6 +349,16 @@ def metagraph_sensor(
     # Use file size for efficient change detection (avoids listing all files every minute)
     current_size = jsonl_reader.get_metagraph_total_size()
     last_cursor = int(context.cursor) if context.cursor else 0
+
+    if current_size < last_cursor:
+        context.log.warning(
+            "Metagraph data size decreased (cursor=%d -> current=%d). Resetting cursor and triggering re-ingest.",
+            last_cursor,
+            current_size,
+        )
+        context.update_cursor(str(current_size))
+        yield dg.RunRequest()
+        return
 
     if current_size > last_cursor:
         context.log.info("Detected new metagraph data (size: %d -> %d bytes)", last_cursor, current_size)
