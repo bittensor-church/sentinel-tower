@@ -228,11 +228,14 @@ CELERY_BEAT_SCHEDULE = {
     },
 }
 CELERY_TASK_CREATE_MISSING_QUEUES = False
-CELERY_TASK_QUEUES = (Queue("celery"), Queue("worker"), Queue("dead_letter"))
+CELERY_TASK_QUEUES = (Queue("celery"), Queue("worker"), Queue("metagraph"), Queue("dead_letter"))
 CELERY_TASK_DEFAULT_EXCHANGE = "celery"
 CELERY_TASK_DEFAULT_ROUTING_KEY = "celery"
 CELERY_TASK_ANNOTATIONS = {"*": {"acks_late": True, "reject_on_worker_lost": True}}
-CELERY_TASK_ROUTES = {"*": {"queue": "celery"}}
+CELERY_TASK_ROUTES = {
+    "apps.metagraph.block_tasks.store_metagraph": {"queue": "metagraph"},
+    "*": {"queue": "celery"},
+}
 CELERY_TASK_TIME_LIMIT = int(timedelta(minutes=5).total_seconds())
 CELERY_TASK_ALWAYS_EAGER = env.bool("CELERY_TASK_ALWAYS_EAGER", default=False)
 CELERY_WORKER_SEND_TASK_EVENTS = True
