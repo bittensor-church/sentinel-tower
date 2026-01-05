@@ -73,6 +73,7 @@ services:
       # - PROMETHEUS_MULTIPROC_DIR=/prometheus-multiproc-dir/other-container
       # Don't forget to also mount the prometheus-metrics volume in other containers too.
       - PROMETHEUS_MULTIPROC_DIR=/prometheus-multiproc-dir
+      - MEDIA_ROOT=${MEDIA_ROOT:-/root/src/media}
     volumes:
       - backend-static:/root/src/static
       - gunicorn-socket:/var/run/gunicorn
@@ -117,6 +118,7 @@ services:
     environment:
       - DEBUG=off
       - PROMETHEUS_MULTIPROC_DIR=/prometheus-multiproc-dir/celery-worker
+      - MEDIA_ROOT=${MEDIA_ROOT:-/root/src/media}
     command: ./celery-entrypoint.sh
     volumes:
       - ./media:/root/src/media
@@ -170,6 +172,7 @@ services:
     environment:
       - DEBUG=off
       - DAGSTER_HOME=/root/src
+      - MEDIA_ROOT=${MEDIA_ROOT:-/root/src/media}
     command: ./dagster-entrypoint.sh
     volumes:
       - ./media:/root/src/media
@@ -190,6 +193,7 @@ services:
     environment:
       - DEBUG=off
       - DAGSTER_HOME=/root/src
+      - MEDIA_ROOT=${MEDIA_ROOT:-/root/src/media}
     command: dagster-daemon run -m project.dagster.definitions
     volumes:
       - ./media:/root/src/media

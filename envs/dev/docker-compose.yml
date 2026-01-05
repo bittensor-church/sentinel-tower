@@ -35,6 +35,7 @@ services:
       - POSTGRES_PORT=5432
       - REDIS_HOST=redis
       - REDIS_PORT=6379
+      - MEDIA_ROOT=${MEDIA_ROOT:-/root/src/media}
     command: >
       sh -c "./prometheus-cleanup.sh &&
              PROMETHEUS_EXPORT_MIGRATIONS=0 ./manage.py wait_for_database --timeout 10 &&
@@ -64,6 +65,7 @@ services:
       - POSTGRES_PORT=5432
       - REDIS_HOST=redis
       - REDIS_PORT=6379
+      - MEDIA_ROOT=${MEDIA_ROOT:-/root/src/media}
     command: ./dagster-entrypoint.sh
     volumes:
       - ./app/src/media:/root/src/media
@@ -90,6 +92,7 @@ services:
       - POSTGRES_PORT=5432
       - REDIS_HOST=redis
       - REDIS_PORT=6379
+      - MEDIA_ROOT=${MEDIA_ROOT:-/root/src/media}
     command: dagster-daemon run
     volumes:
       - ./app/src/media:/root/src/media
@@ -150,6 +153,7 @@ services:
       - REDIS_HOST=redis
       - REDIS_PORT=6379
       - CELERY_BROKER_URL=redis://redis:6379/0
+      - MEDIA_ROOT=${MEDIA_ROOT:-/root/src/media}
     command: ./celery-entrypoint.sh
     volumes:
       - ./app/src/media:/root/src/media
