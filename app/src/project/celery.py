@@ -72,6 +72,6 @@ def child_exit(pid, **kw):
 @celeryd_init.connect
 def on_worker_init(**kwargs) -> None:
     """Load block tasks when worker initializes."""
-    from abstract_block_dumper.v1.celery import setup_celery_tasks  # noqa: PLC0415
+    from abstract_block_dumper._internal.discovery import ensure_modules_loaded
 
-    setup_celery_tasks()
+    ensure_modules_loaded()

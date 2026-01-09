@@ -39,6 +39,16 @@ Start abstract block dumper
 uv run manage.py block_tasks_v1
 ```
 
+**Sentinel mode**
+
+```
+# Starting block number (required for backfill)
+BLOCK_START=1000000
+# Ending block number (required for backfill)
+BLOCK_END=2000000
+# Seconds between blocks in backfill mode
+BACKFILL_RATE_LIMIT=0.5
+```
 
 ## Sentinel Core
 

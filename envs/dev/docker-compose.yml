@@ -172,7 +172,7 @@ services:
       test: wget -q --spider 127.0.0.1:8000/admin/login/ || exit 1
     init: true
     env_file: ./.env
-    command: python manage.py block_tasks_v1
+    command: ./block-scheduler-entrypoint.sh
     environment:
       - DATABASE_URL=postgres://postgres:12345@db:5432/project
       - POSTGRES_HOST=db
@@ -180,6 +180,10 @@ services:
       - REDIS_HOST=redis
       - REDIS_PORT=6379
       - CELERY_BROKER_URL=redis://redis:6379/0
+      - SENTINEL_MODE=${SENTINEL_MODE:-live}
+      - BLOCK_START=${BLOCK_START:-}
+      - BLOCK_END=${BLOCK_END:-}
+      - BACKFILL_RATE_LIMIT=${BACKFILL_RATE_LIMIT:-1.0}
     volumes:
       - ./app/src/media:/root/src/media
     depends_on:

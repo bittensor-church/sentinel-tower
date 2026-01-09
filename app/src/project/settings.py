@@ -383,3 +383,6 @@ METAGRAPH_NETUIDS = None  # [12, 89]  # List of netuids to process for metagraph
 # TODO: replace hardcoded value with data from bittensor later
 TEMPO = 360  # Number of blocks per epoch
 NUM_BLOCK_DUMPS_PER_EPOCH = 3  # Number of block dumps to take per epoch
+
+# Sentinel modules are auto-discovered by abstract_block_dumper from all installed apps
+# that have a block_tasks.py module. See ensure_modules_loaded() in abstract_block_dumper.

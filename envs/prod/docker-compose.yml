@@ -94,9 +94,13 @@ services:
     init: true
     restart: unless-stopped
     env_file: ./.env
-    command: nice python manage.py block_tasks_v1
+    command: ./block-scheduler-entrypoint.sh
     environment:
       - PROMETHEUS_MULTIPROC_DIR=/prometheus-multiproc-dir
+      - SENTINEL_MODE=${SENTINEL_MODE:-live}
+      - BLOCK_START=${BLOCK_START:-}
+      - BLOCK_END=${BLOCK_END:-}
+      - BACKFILL_RATE_LIMIT=${BACKFILL_RATE_LIMIT:-1.0}
     volumes:
       - backend-static:/root/src/static
       - ./media:/root/src/media
