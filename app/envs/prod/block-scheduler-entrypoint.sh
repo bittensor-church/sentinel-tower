@@ -18,11 +18,17 @@ case "$SENTINEL_MODE" in
             exit 1
         fi
 
+        if [ -z "${BITTENSOR_ARCHIVE_NETWORK:-}" ]; then
+            echo "ERROR: BITTENSOR_ARCHIVE_NETWORK is required for backfill mode"
+            exit 1
+        fi
+
         BACKFILL_RATE_LIMIT="${BACKFILL_RATE_LIMIT:-1.0}"
 
         echo "Starting block scheduler in BACKFILL mode..."
         echo "  Block range: $BLOCK_START -> $BLOCK_END"
         echo "  Rate limit: $BACKFILL_RATE_LIMIT seconds"
+        echo "  Archive node: $BITTENSOR_ARCHIVE_NETWORK"
 
         exec nice python manage.py backfill_blocks_v1 \
             --from-block="$BLOCK_START" \

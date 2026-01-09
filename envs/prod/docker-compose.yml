@@ -123,6 +123,7 @@ services:
       - DEBUG=off
       - PROMETHEUS_MULTIPROC_DIR=/prometheus-multiproc-dir/celery-worker
       - MEDIA_ROOT=${MEDIA_ROOT:-/root/src/media}
+      - SENTINEL_MODE=${SENTINEL_MODE:-live}
     command: ./celery-entrypoint.sh
     volumes:
       - ./media:/root/src/media

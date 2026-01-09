@@ -155,6 +155,7 @@ services:
       - REDIS_PORT=6379
       - CELERY_BROKER_URL=redis://redis:6379/0
       - MEDIA_ROOT=${MEDIA_ROOT:-/root/src/media}
+      - SENTINEL_MODE=${SENTINEL_MODE:-live}
     command: ./celery-entrypoint.sh
     volumes:
       - ./app/src/media:/root/src/media

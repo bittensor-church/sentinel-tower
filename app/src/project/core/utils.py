@@ -9,13 +9,29 @@ logger = structlog.get_logger()
 ARCHIVE_THRESHOLD_BLOCKS = 300
 
 
-def get_provider_for_block(block_number: int) -> BittensorProvider:
+def get_provider_for_block(block_number: int, force_archive: bool = False) -> BittensorProvider:
     """
     Get the appropriate provider for a block.
 
-    Uses archive node for blocks older than ARCHIVE_THRESHOLD_BLOCKS.
+    Uses archive node for blocks older than ARCHIVE_THRESHOLD_BLOCKS,
+    or always if force_archive is True (e.g., in backfill mode).
     """
     archive_uri = os.getenv("BITTENSOR_ARCHIVE_NETWORK")
+
+    # Check if we should force archive mode (e.g., SENTINEL_MODE=backfill)
+    if not force_archive:
+        force_archive = os.getenv("SENTINEL_MODE") == "backfill"
+
+    if force_archive:
+        if not archive_uri:
+            msg = "BITTENSOR_ARCHIVE_NETWORK is required for backfill mode"
+            raise ValueError(msg)
+        logger.info(
+            "Using archive node (forced mode)",
+            block_number=block_number,
+        )
+        return bittensor_provider(archive_uri)
+
     if not archive_uri:
         return bittensor_provider()
 
