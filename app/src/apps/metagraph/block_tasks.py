@@ -3,6 +3,7 @@ from abstract_block_dumper.v1.decorators import block_task
 from sentinel.v1.services.sentinel import sentinel_service
 
 from apps.metagraph.services.metagraph_service import MetagraphService
+from apps.metagraph.services.sync_service import MetagraphSyncService
 from project.core.utils import get_provider_for_block
 
 logger = structlog.get_logger()
@@ -16,6 +17,9 @@ logger = structlog.get_logger()
 def store_metagraph(block_number: int, netuid: int) -> str:
     """
     Store the metagraph for the given netuid at the specified block number.
+
+    Fetches metagraph data from the blockchain, stores it as a JSONL artifact,
+    and syncs it to Django models.
     """
     with get_provider_for_block(block_number) as provider:
         service = sentinel_service(provider)
@@ -29,4 +33,21 @@ def store_metagraph(block_number: int, netuid: int) -> str:
             netuid=netuid,
         )
         return ""
-    return MetagraphService.store_metagraph_artifact(metagraph)
+
+    # Store artifact to JSONL
+    artifact_path = MetagraphService.store_metagraph_artifact(metagraph)
+
+    # TODO: Store directly from the provider to avoid double fetching
+    # Sync to Django models
+    data = metagraph.model_dump()
+    sync_service = MetagraphSyncService()
+    stats = sync_service.sync_metagraph(data)
+
+    logger.info(
+        "Synced metagraph to database",
+        block_number=block_number,
+        netuid=netuid,
+        stats=stats,
+    )
+
+    return artifact_path
