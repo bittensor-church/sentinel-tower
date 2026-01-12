@@ -4,7 +4,7 @@ requires-python = "==3.11.*"
 
 [[package]]
 name = "abstract-block-dumper"
-version = "0.1.1"
+version = "0.1.2"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
     { name = "bittensor" },
@@ -12,9 +12,9 @@ dependencies = [
     { name = "django" },
     { name = "structlog" },
 ]
-sdist = { url = "https://files.pythonhosted.org/packages/9d/a1/af6b71184d87d807152e933cf93b9433deef67424285a5994617390aecf7/abstract_block_dumper-0.1.1.tar.gz", hash = "sha256:aa381e13f65abac4b6171174ffbba971cd1d253ce37609663c0b3199dac049bd", size = 241225, upload-time = "2025-12-18T17:51:43.256Z" }
+sdist = { url = "https://files.pythonhosted.org/packages/c3/c1/08e0c12babc46bebaefc3d367a3473652fdcb68bb4c5b32ac7924cbedc65/abstract_block_dumper-0.1.2.tar.gz", hash = "sha256:cab14ca30cc111bf10d7177caeb00c4d3076ba8511917d106dec1ab47c663d44", size = 241280, upload-time = "2026-01-12T08:04:17.279Z" }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/82/81/a8893371bd04dce7f26a3734abe33a3953b5449d0c2f6612bd5a3436e368/abstract_block_dumper-0.1.1-py3-none-any.whl", hash = "sha256:f86bf55e6a48ab79b84171e2dd43681a793a486389a3fca0a955b9b56a5695f7", size = 35329, upload-time = "2025-12-18T17:51:41.885Z" },
+    { url = "https://files.pythonhosted.org/packages/e6/12/174df7aa527dc8b4c63660a37ba0d7112419bf6a378d898d021fee959305/abstract_block_dumper-0.1.2-py3-none-any.whl", hash = "sha256:3f0edc3af6e5520e8ae893214b6a8781d1f6a4780d945544f617634d477d0a52", size = 35363, upload-time = "2026-01-12T08:04:15.723Z" },
 ]
 
 [package.optional-dependencies]
@@ -2063,7 +2063,7 @@ type-check = [
 
 [package.metadata]
 requires-dist = [
-    { name = "abstract-block-dumper", extras = ["prometheus"], specifier = "~=0.1.1" },
+    { name = "abstract-block-dumper", extras = ["prometheus"], specifier = "~=0.1.2" },
     { name = "bittensor-pylon-client", specifier = ">=1.0.0" },
     { name = "bittensor-sentinel", specifier = "==0.1.4" },
     { name = "celery", specifier = "~=5.5.3" },
