@@ -86,8 +86,9 @@ class MetagraphSyncService:
         }
 
         with transaction.atomic():
-            # 1. Sync block
-            block = self._sync_block(data["block"])
+            # 1. Sync block (pass dump data for timestamps)
+            dump_data = data.get("dump") or {}
+            block = self._sync_block(data["block"], dump_data)
             stats["blocks"] = 1
 
             # 2. Sync subnet (and owner hotkey/coldkey if present)
@@ -145,7 +146,7 @@ class MetagraphSyncService:
                 stats["collaterals"] = self._sync_collaterals(collaterals_data, block, subnet)
 
             # 7. Sync metagraph dump record (always create one to track what's been synced)
-            dump_data = data.get("dump") or {}
+            # dump_data was already extracted above for block timestamps
             self._sync_metagraph_dump(dump_data, block, subnet)
             stats["dumps"] = 1
 
@@ -199,18 +200,41 @@ class MetagraphSyncService:
         self._evmkey_cache[evm_address] = evmkey
         return evmkey
 
-    def _sync_block(self, block_data: dict[str, Any]) -> Block:
+    def _sync_block(self, block_data: dict[str, Any], dump_data: dict[str, Any] | None = None) -> Block:
         """Sync a Block record."""
         block_number = block_data["block_number"]
         timestamp = _parse_datetime(block_data.get("timestamp"))
 
+        # Extract dump timestamps if available
+        dump_started_at = None
+        dump_finished_at = None
+        if dump_data:
+            dump_started_at = _parse_datetime(dump_data.get("started_at"))
+            dump_finished_at = _parse_datetime(dump_data.get("finished_at"))
+
         block, created = Block.objects.get_or_create(
             number=block_number,
-            defaults={"timestamp": timestamp},
+            defaults={
+                "timestamp": timestamp,
+                "dump_started_at": dump_started_at,
+                "dump_finished_at": dump_finished_at,
+            },
         )
-        if not created and timestamp and not block.timestamp:
-            block.timestamp = timestamp
-            block.save(update_fields=["timestamp"])
+
+        if not created:
+            # Update fields if they were missing
+            update_fields = []
+            if timestamp and not block.timestamp:
+                block.timestamp = timestamp
+                update_fields.append("timestamp")
+            if dump_started_at and not block.dump_started_at:
+                block.dump_started_at = dump_started_at
+                update_fields.append("dump_started_at")
+            if dump_finished_at and not block.dump_finished_at:
+                block.dump_finished_at = dump_finished_at
+                update_fields.append("dump_finished_at")
+            if update_fields:
+                block.save(update_fields=update_fields)
 
         return block
 

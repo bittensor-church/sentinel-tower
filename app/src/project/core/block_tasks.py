@@ -73,7 +73,7 @@ def _parse_extrinsic_record(record: dict) -> dict | None:
     }
 
 
-@block_task(celery_kwargs={"rate_limit": "10/m"})
+# @block_task(celery_kwargs={"rate_limit": "10/m"})
 def store_block_extrinsics(block_number: int) -> str:
     """
     Store extrinsics from the given block number.
