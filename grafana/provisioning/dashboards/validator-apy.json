@@ -12,7 +12,7 @@
     {
       "datasource": {
         "type": "postgres",
-        "uid": "${DS_POSTGRESQL}"
+        "uid": "postgresql"
       },
       "fieldConfig": {
         "defaults": {
@@ -103,7 +103,7 @@
         {
           "datasource": {
             "type": "postgres",
-            "uid": "${DS_POSTGRESQL}"
+            "uid": "postgresql"
           },
           "editorMode": "code",
           "format": "table",
@@ -135,7 +135,7 @@
     {
       "datasource": {
         "type": "postgres",
-        "uid": "${DS_POSTGRESQL}"
+        "uid": "postgresql"
       },
       "fieldConfig": {
         "defaults": {
@@ -210,7 +210,7 @@
         {
           "datasource": {
             "type": "postgres",
-            "uid": "${DS_POSTGRESQL}"
+            "uid": "postgresql"
           },
           "editorMode": "code",
           "format": "table",
@@ -242,7 +242,7 @@
     {
       "datasource": {
         "type": "postgres",
-        "uid": "${DS_POSTGRESQL}"
+        "uid": "postgresql"
       },
       "fieldConfig": {
         "defaults": {
@@ -319,7 +319,7 @@
         {
           "datasource": {
             "type": "postgres",
-            "uid": "${DS_POSTGRESQL}"
+            "uid": "postgresql"
           },
           "editorMode": "code",
           "format": "time_series",
@@ -351,7 +351,7 @@
     {
       "datasource": {
         "type": "postgres",
-        "uid": "${DS_POSTGRESQL}"
+        "uid": "postgresql"
       },
       "fieldConfig": {
         "defaults": {
@@ -398,7 +398,7 @@
         {
           "datasource": {
             "type": "postgres",
-            "uid": "${DS_POSTGRESQL}"
+            "uid": "postgresql"
           },
           "editorMode": "code",
           "format": "table",
@@ -430,7 +430,7 @@
     {
       "datasource": {
         "type": "postgres",
-        "uid": "${DS_POSTGRESQL}"
+        "uid": "postgresql"
       },
       "fieldConfig": {
         "defaults": {
@@ -477,7 +477,7 @@
         {
           "datasource": {
             "type": "postgres",
-            "uid": "${DS_POSTGRESQL}"
+            "uid": "postgresql"
           },
           "editorMode": "code",
           "format": "table",
@@ -509,7 +509,7 @@
     {
       "datasource": {
         "type": "postgres",
-        "uid": "${DS_POSTGRESQL}"
+        "uid": "postgresql"
       },
       "fieldConfig": {
         "defaults": {
@@ -556,7 +556,7 @@
         {
           "datasource": {
             "type": "postgres",
-            "uid": "${DS_POSTGRESQL}"
+            "uid": "postgresql"
           },
           "editorMode": "code",
           "format": "table",
@@ -588,7 +588,7 @@
     {
       "datasource": {
         "type": "postgres",
-        "uid": "${DS_POSTGRESQL}"
+        "uid": "postgresql"
       },
       "fieldConfig": {
         "defaults": {
@@ -635,7 +635,7 @@
         {
           "datasource": {
             "type": "postgres",
-            "uid": "${DS_POSTGRESQL}"
+            "uid": "postgresql"
           },
           "editorMode": "code",
           "format": "table",
