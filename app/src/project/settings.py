@@ -226,6 +226,10 @@ CELERY_BEAT_SCHEDULE = {
         "schedule": crontab(hour=2, minute=0),  # Daily at 2 AM
         "kwargs": {"days": 7},  # Customize retention period
     },
+    "refresh-apy-materialized-view": {
+        "task": "metagraph.refresh_apy_materialized_view",
+        "schedule": crontab(hour=3, minute=0),  # Daily at 3 AM (after cleanup)
+    },
 }
 CELERY_TASK_CREATE_MISSING_QUEUES = False
 CELERY_TASK_QUEUES = (Queue("celery"), Queue("worker"), Queue("metagraph"), Queue("dead_letter"))
