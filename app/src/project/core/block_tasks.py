@@ -5,6 +5,7 @@ from sentinel.v1.dto import ExtrinsicDTO
 from sentinel.v1.services.sentinel import sentinel_service
 
 from project.core.models import Extrinsic
+from project.core.notifications import send_discord_notification
 from project.core.services import JsonLinesStorage
 from project.core.utils import get_provider_for_block
 
@@ -72,7 +73,7 @@ def _parse_extrinsic_record(record: dict) -> dict | None:
     }
 
 
-# @block_task(celery_kwargs={"rate_limit": "10/m"})
+@block_task(celery_kwargs={"rate_limit": "10/m"})
 def store_block_extrinsics(block_number: int) -> str:
     """
     Store extrinsics from the given block number.
@@ -151,6 +152,9 @@ def sync_extrinsics_to_db(extrinsics: list[ExtrinsicDTO], block_number: int, tim
         # Skip if already exists
         if parsed["extrinsic_hash"] in existing_hashes:
             continue
+
+        # Send Discord notification for matching extrinsics (new only)
+        send_discord_notification(parsed)
 
         records_to_create.append(Extrinsic(**parsed))
 
