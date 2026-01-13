@@ -22,7 +22,7 @@ groups:
               rawSql: |
                 SELECT
                   COUNT(*) as count
-                FROM core_extrinsic
+                FROM extrinsics
                 WHERE call_module = 'Sudo'
                   AND created_at >= NOW() - INTERVAL '5 minutes'
               refId: A
