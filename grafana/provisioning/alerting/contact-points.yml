@@ -9,3 +9,21 @@ contactPoints:
         settings:
           url: ${DISCORD_SUDO_ALERTS_WEBHOOK_URL}
           use_discord_username: true
+
+  - orgId: 1
+    name: discord-subnet-registration-alerts
+    receivers:
+      - uid: discord-subnet-registration-webhook
+        type: discord
+        settings:
+          url: ${DISCORD_SUBNET_REGISTRATION_WEBHOOK_URL}
+          use_discord_username: true
+
+  - orgId: 1
+    name: discord-coldkey-swap-alerts
+    receivers:
+      - uid: discord-coldkey-swap-webhook
+        type: discord
+        settings:
+          url: ${DISCORD_COLDKEY_SWAP_WEBHOOK_URL}
+          use_discord_username: true

@@ -8,3 +8,12 @@ policies:
     group_wait: 30s
     group_interval: 5m
     repeat_interval: 4h
+    routes:
+      - receiver: discord-subnet-registration-alerts
+        matchers:
+          - alertname = SubnetRegistrationDetected
+        continue: false
+      - receiver: discord-coldkey-swap-alerts
+        matchers:
+          - alertname = ColdkeySwapDetected
+        continue: false
