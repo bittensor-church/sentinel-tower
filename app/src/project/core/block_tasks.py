@@ -1,7 +1,6 @@
 from datetime import UTC, datetime
 
 import structlog
-from abstract_block_dumper.v1.decorators import block_task
 from sentinel.v1.dto import ExtrinsicDTO
 from sentinel.v1.services.sentinel import sentinel_service
 
