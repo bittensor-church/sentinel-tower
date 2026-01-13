@@ -2,13 +2,13 @@ apiVersion: 1
 
 groups:
   - orgId: 1
-    name: Sudo Extrinsic Alerts
+    name: sudo-extrinsic-alerts
     folder: Bittensor Alerts
     interval: 1m
     rules:
       - uid: sudo-extrinsic-alert
         title: SudoExtrinsicDetected
-        condition: C
+        condition: B
         data:
           - refId: A
             relativeTimeRange:
@@ -21,18 +21,10 @@ groups:
               rawQuery: true
               rawSql: |
                 SELECT
-                  created_at as time,
-                  block_number,
-                  call_module,
-                  call_function,
-                  address,
-                  extrinsic_hash,
-                  success,
-                  to_timestamp(block_timestamp) as block_time
+                  COUNT(*) as count
                 FROM core_extrinsic
                 WHERE call_module = 'Sudo'
                   AND created_at >= NOW() - INTERVAL '5 minutes'
-                ORDER BY created_at DESC
               refId: A
           - refId: B
             relativeTimeRange:
@@ -40,62 +32,28 @@ groups:
               to: 0
             datasourceUid: __expr__
             model:
+              type: threshold
+              expression: A
               conditions:
                 - evaluator:
-                    params: []
                     type: gt
+                    params:
+                      - 0
                   operator:
                     type: and
                   query:
                     params:
                       - B
                   reducer:
-                    params: []
                     type: last
-                  type: query
-              datasource:
-                type: __expr__
-                uid: __expr__
-              expression: A
-              reducer: count
+                    params: []
               refId: B
-              type: reduce
-          - refId: C
-            relativeTimeRange:
-              from: 300
-              to: 0
-            datasourceUid: __expr__
-            model:
-              conditions:
-                - evaluator:
-                    params:
-                      - 0
-                    type: gt
-                  operator:
-                    type: and
-                  query:
-                    params:
-                      - C
-                  reducer:
-                    params: []
-                    type: last
-                  type: query
-              datasource:
-                type: __expr__
-                uid: __expr__
-              expression: B
-              refId: C
-              type: threshold
         noDataState: OK
         execErrState: Error
-        for: 0m
+        for: 0s
         annotations:
-          summary: "New Sudo extrinsic detected on Bittensor chain"
-          description: "A sudo call was made on the Bittensor network. This requires immediate attention."
-          block_number: "{{ index $values \"A\" }}"
-          call_function: "Sudo call detected"
-          address: "Check dashboard for details"
-          timestamp: "{{ $labels.time }}"
+          summary: New Sudo extrinsic detected on Bittensor chain
+          description: A sudo call was made on the Bittensor network. This requires immediate attention.
         labels:
           severity: critical
           type: sudo
