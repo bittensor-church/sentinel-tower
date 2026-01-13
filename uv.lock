@@ -4,7 +4,7 @@ requires-python = "==3.11.*"
 
 [[package]]
 name = "abstract-block-dumper"
-version = "0.1.1"
+version = "0.1.2"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
     { name = "bittensor" },
@@ -12,9 +12,9 @@ dependencies = [
     { name = "django" },
     { name = "structlog" },
 ]
-sdist = { url = "https://files.pythonhosted.org/packages/9d/a1/af6b71184d87d807152e933cf93b9433deef67424285a5994617390aecf7/abstract_block_dumper-0.1.1.tar.gz", hash = "sha256:aa381e13f65abac4b6171174ffbba971cd1d253ce37609663c0b3199dac049bd", size = 241225, upload-time = "2025-12-18T17:51:43.256Z" }
+sdist = { url = "https://files.pythonhosted.org/packages/c3/c1/08e0c12babc46bebaefc3d367a3473652fdcb68bb4c5b32ac7924cbedc65/abstract_block_dumper-0.1.2.tar.gz", hash = "sha256:cab14ca30cc111bf10d7177caeb00c4d3076ba8511917d106dec1ab47c663d44", size = 241280, upload-time = "2026-01-12T08:04:17.279Z" }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/82/81/a8893371bd04dce7f26a3734abe33a3953b5449d0c2f6612bd5a3436e368/abstract_block_dumper-0.1.1-py3-none-any.whl", hash = "sha256:f86bf55e6a48ab79b84171e2dd43681a793a486389a3fca0a955b9b56a5695f7", size = 35329, upload-time = "2025-12-18T17:51:41.885Z" },
+    { url = "https://files.pythonhosted.org/packages/e6/12/174df7aa527dc8b4c63660a37ba0d7112419bf6a378d898d021fee959305/abstract_block_dumper-0.1.2-py3-none-any.whl", hash = "sha256:3f0edc3af6e5520e8ae893214b6a8781d1f6a4780d945544f617634d477d0a52", size = 35363, upload-time = "2026-01-12T08:04:15.723Z" },
 ]
 
 [package.optional-dependencies]
@@ -310,8 +310,24 @@ wheels = [
 ]
 
 [[package]]
+name = "bittensor-pylon-client"
+version = "1.0.0"
+source = { registry = "https://pypi.org/simple" }
+dependencies = [
+    { name = "docker" },
+    { name = "httpx" },
+    { name = "pydantic" },
+    { name = "pydantic-settings" },
+    { name = "tenacity" },
+]
+sdist = { url = "https://files.pythonhosted.org/packages/d9/4d/289d9eaab03a845677c4e9ecd480b25a954e1464462482d6128ca9c9be97/bittensor_pylon_client-1.0.0.tar.gz", hash = "sha256:e951a7502a89e5ee934d62dcc3ee8fc0afc3c99daba81c7f7c20d63dcb6140b3", size = 154189, upload-time = "2025-12-23T12:45:25.282Z" }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/8b/b1/c29cad65c6775f3fe92319b08e3ea0f9ce567054d122952919b5f67f6e7e/bittensor_pylon_client-1.0.0-py3-none-any.whl", hash = "sha256:c90cb0cd618e8a6954469525da72d2e9219f03cd86dbb79756337d2f94fa3067", size = 29961, upload-time = "2025-12-23T12:45:23.77Z" },
+]
+
+[[package]]
 name = "bittensor-sentinel"
-version = "0.1.0"
+version = "0.1.6"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
     { name = "asgiref" },
@@ -320,9 +336,9 @@ dependencies = [
     { name = "structlog" },
     { name = "typer" },
 ]
-sdist = { url = "https://files.pythonhosted.org/packages/de/bc/756f7090a575cd252678e4825085f1fc5fb5094dfa74afbd7db79282666f/bittensor_sentinel-0.1.0.tar.gz", hash = "sha256:47062223d7b63d322fdb9a5274118b591c057545a6060f4efec8f7e8a440d80f", size = 169405, upload-time = "2025-12-10T12:34:26.537Z" }
+sdist = { url = "https://files.pythonhosted.org/packages/07/fc/a5adce168e2fc04ee81e6194cd9196b827d0a7a7694a9077cb6c3e844ac4/bittensor_sentinel-0.1.6.tar.gz", hash = "sha256:c52d08e114b01eb712a66d13e76e8a3f2adb007e10bb132f28a1b891f2c88b62", size = 177213, upload-time = "2026-01-12T09:02:17.761Z" }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/ce/e4/5024263ad6f08e9b29b1bb221756f1d395fd0c59d9b8e6e9eacb2bb9dd92/bittensor_sentinel-0.1.0-py3-none-any.whl", hash = "sha256:a5cfcef0bb02aeabac65745d6103308b23b396364ae576984d1a1fe8eb1af29d", size = 32883, upload-time = "2025-12-10T12:34:25.364Z" },
+    { url = "https://files.pythonhosted.org/packages/de/d5/7f3a1d0e6e8a707f88ab714e982f664a9c9f7924f7929dce8b324cb40699/bittensor_sentinel-0.1.6-py3-none-any.whl", hash = "sha256:41575f8d7c2eff1f50ff82ce8bfd802f010a019f80590e481f7bf2be12be64f2", size = 41351, upload-time = "2026-01-12T09:02:15.35Z" },
 ]
 
 [[package]]
@@ -822,6 +838,20 @@ compatible-mypy = [
 ]
 
 [[package]]
+name = "docker"
+version = "7.1.0"
+source = { registry = "https://pypi.org/simple" }
+dependencies = [
+    { name = "pywin32", marker = "sys_platform == 'win32'" },
+    { name = "requests" },
+    { name = "urllib3" },
+]
+sdist = { url = "https://files.pythonhosted.org/packages/91/9b/4a2ea29aeba62471211598dac5d96825bb49348fa07e906ea930394a83ce/docker-7.1.0.tar.gz", hash = "sha256:ad8c70e6e3f8926cb8a92619b832b4ea5299e2831c14284663184e200546fa6c", size = 117834, upload-time = "2024-05-23T11:13:57.216Z" }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/e3/26/57c6fb270950d476074c087527a558ccb6f4436657314bfb6cdf484114c4/docker-7.1.0-py3-none-any.whl", hash = "sha256:c96b93b7f0a746f9e77d325bcfb87422a3d8bd4f03136ae8a85b37f1898d5fc0", size = 147774, upload-time = "2024-05-23T11:13:55.01Z" },
+]
+
+[[package]]
 name = "docstring-parser"
 version = "0.17.0"
 source = { registry = "https://pypi.org/simple" }
@@ -1062,6 +1092,19 @@ wheels = [
 ]
 
 [[package]]
+name = "httpcore"
+version = "1.0.9"
+source = { registry = "https://pypi.org/simple" }
+dependencies = [
+    { name = "certifi" },
+    { name = "h11" },
+]
+sdist = { url = "https://files.pythonhosted.org/packages/06/94/82699a10bca87a5556c9c59b5963f2d039dbd239f25bc2a63907a05a14cb/httpcore-1.0.9.tar.gz", hash = "sha256:6e34463af53fd2ab5d807f399a9b45ea31c3dfa2276f15a2c3f00afff6e176e8", size = 85484, upload-time = "2025-04-24T22:06:22.219Z" }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/7e/f5/f66802a942d491edb555dd61e3a9961140fd64c90bce1eafd741609d334d/httpcore-1.0.9-py3-none-any.whl", hash = "sha256:2d400746a40668fc9dec9810239072b40b4484b640a8c38fd654a024c7a1bf55", size = 78784, upload-time = "2025-04-24T22:06:20.566Z" },
+]
+
+[[package]]
 name = "httptools"
 version = "0.7.1"
 source = { registry = "https://pypi.org/simple" }
@@ -1074,6 +1117,21 @@ wheels = [
     { url = "https://files.pythonhosted.org/packages/30/e1/44f89b280f7e46c0b1b2ccee5737d46b3bb13136383958f20b580a821ca0/httptools-0.7.1-cp311-cp311-musllinux_1_2_aarch64.whl", hash = "sha256:eb844698d11433d2139bbeeb56499102143beb582bd6c194e3ba69c22f25c274", size = 440175, upload-time = "2025-10-10T03:54:35.942Z" },
     { url = "https://files.pythonhosted.org/packages/6f/7e/b9287763159e700e335028bc1824359dc736fa9b829dacedace91a39b37e/httptools-0.7.1-cp311-cp311-musllinux_1_2_x86_64.whl", hash = "sha256:f65744d7a8bdb4bda5e1fa23e4ba16832860606fcc09d674d56e425e991539ec", size = 440310, upload-time = "2025-10-10T03:54:37.1Z" },
     { url = "https://files.pythonhosted.org/packages/b3/07/5b614f592868e07f5c94b1f301b5e14a21df4e8076215a3bccb830a687d8/httptools-0.7.1-cp311-cp311-win_amd64.whl", hash = "sha256:135fbe974b3718eada677229312e97f3b31f8a9c8ffa3ae6f565bf808d5b6bcb", size = 86875, upload-time = "2025-10-10T03:54:38.421Z" },
+]
+
+[[package]]
+name = "httpx"
+version = "0.28.1"
+source = { registry = "https://pypi.org/simple" }
+dependencies = [
+    { name = "anyio" },
+    { name = "certifi" },
+    { name = "httpcore" },
+    { name = "idna" },
+]
+sdist = { url = "https://files.pythonhosted.org/packages/b1/df/48c586a5fe32a0f01324ee087459e112ebb7224f646c0b5023f5e79e9956/httpx-0.28.1.tar.gz", hash = "sha256:75e98c5f16b0f35b567856f597f06ff2270a374470a5c2392242528e3e3e42fc", size = 141406, upload-time = "2024-12-06T15:37:23.222Z" }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/2a/39/e50c7c3a983047577ee07d2a9e53faf5a69493943ec3f6a384bdc792deb2/httpx-0.28.1-py3-none-any.whl", hash = "sha256:d909fcccc110f8c7faf814ca82a9a4d816bc5a6dbfea25d6591d6985b8ba59ad", size = 73517, upload-time = "2024-12-06T15:37:21.509Z" },
 ]
 
 [[package]]
@@ -1692,6 +1750,20 @@ wheels = [
 ]
 
 [[package]]
+name = "pydantic-settings"
+version = "2.12.0"
+source = { registry = "https://pypi.org/simple" }
+dependencies = [
+    { name = "pydantic" },
+    { name = "python-dotenv" },
+    { name = "typing-inspection" },
+]
+sdist = { url = "https://files.pythonhosted.org/packages/43/4b/ac7e0aae12027748076d72a8764ff1c9d82ca75a7a52622e67ed3f765c54/pydantic_settings-2.12.0.tar.gz", hash = "sha256:005538ef951e3c2a68e1c08b292b5f2e71490def8589d4221b95dab00dafcfd0", size = 194184, upload-time = "2025-11-10T14:25:47.013Z" }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/c1/60/5d4751ba3f4a40a6891f24eec885f51afd78d208498268c734e256fb13c4/pydantic_settings-2.12.0-py3-none-any.whl", hash = "sha256:fddb9fd99a5b18da837b29710391e945b1e30c135477f484084ee513adb93809", size = 51880, upload-time = "2025-11-10T14:25:45.546Z" },
+]
+
+[[package]]
 name = "pygments"
 version = "2.19.2"
 source = { registry = "https://pypi.org/simple" }
@@ -1936,6 +2008,7 @@ version = "0"
 source = { editable = "." }
 dependencies = [
     { name = "abstract-block-dumper", extra = ["prometheus"] },
+    { name = "bittensor-pylon-client" },
     { name = "bittensor-sentinel" },
     { name = "celery" },
     { name = "dagster" },
@@ -1990,8 +2063,9 @@ type-check = [
 
 [package.metadata]
 requires-dist = [
-    { name = "abstract-block-dumper", extras = ["prometheus"], specifier = "~=0.1.1" },
-    { name = "bittensor-sentinel", specifier = "~=0.1.0" },
+    { name = "abstract-block-dumper", extras = ["prometheus"], specifier = "~=0.1.2" },
+    { name = "bittensor-pylon-client", specifier = ">=1.0.0" },
+    { name = "bittensor-sentinel", specifier = "==0.1.6" },
     { name = "celery", specifier = "~=5.5.3" },
     { name = "dagster", specifier = ">=1.9.0" },
     { name = "dagster-webserver", specifier = ">=1.9.0" },
@@ -2153,6 +2227,15 @@ source = { registry = "https://pypi.org/simple" }
 sdist = { url = "https://files.pythonhosted.org/packages/ec/fe/802052aecb21e3797b8f7902564ab6ea0d60ff8ca23952079064155d1ae1/tabulate-0.9.0.tar.gz", hash = "sha256:0095b12bf5966de529c0feb1fa08671671b3368eec77d7ef7ab114be2c068b3c", size = 81090, upload-time = "2022-10-06T17:21:48.54Z" }
 wheels = [
     { url = "https://files.pythonhosted.org/packages/40/44/4a5f08c96eb108af5cb50b41f76142f0afa346dfa99d5296fe7202a11854/tabulate-0.9.0-py3-none-any.whl", hash = "sha256:024ca478df22e9340661486f85298cff5f6dcdba14f3813e8830015b9ed1948f", size = 35252, upload-time = "2022-10-06T17:21:44.262Z" },
+]
+
+[[package]]
+name = "tenacity"
+version = "9.1.2"
+source = { registry = "https://pypi.org/simple" }
+sdist = { url = "https://files.pythonhosted.org/packages/0a/d4/2b0cd0fe285e14b36db076e78c93766ff1d529d70408bd1d2a5a84f1d929/tenacity-9.1.2.tar.gz", hash = "sha256:1169d376c297e7de388d18b4481760d478b0e99a777cad3a9c86e556f4b697cb", size = 48036, upload-time = "2025-04-02T08:25:09.966Z" }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/e5/30/643397144bfbfec6f6ef821f36f33e57d35946c44a2352d3c9f0ae847619/tenacity-9.1.2-py3-none-any.whl", hash = "sha256:f77bf36710d8b73a50b2dd155c97b870017ad21afe6ab300326b0371b3b05138", size = 28248, upload-time = "2025-04-02T08:25:07.678Z" },
 ]
 
 [[package]]

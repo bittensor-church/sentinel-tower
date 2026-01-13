@@ -73,6 +73,7 @@ services:
       # - PROMETHEUS_MULTIPROC_DIR=/prometheus-multiproc-dir/other-container
       # Don't forget to also mount the prometheus-metrics volume in other containers too.
       - PROMETHEUS_MULTIPROC_DIR=/prometheus-multiproc-dir
+      - MEDIA_ROOT=${MEDIA_ROOT:-/root/src/media}
     volumes:
       - backend-static:/root/src/static
       - gunicorn-socket:/var/run/gunicorn
@@ -93,9 +94,13 @@ services:
     init: true
     restart: unless-stopped
     env_file: ./.env
-    command: nice python manage.py block_tasks_v1
+    command: ./block-scheduler-entrypoint.sh
     environment:
       - PROMETHEUS_MULTIPROC_DIR=/prometheus-multiproc-dir
+      - SENTINEL_MODE=${SENTINEL_MODE:-live}
+      - BLOCK_START=${BLOCK_START:-}
+      - BLOCK_END=${BLOCK_END:-}
+      - BACKFILL_RATE_LIMIT=${BACKFILL_RATE_LIMIT:-1.0}
     volumes:
       - backend-static:/root/src/static
       - ./media:/root/src/media
@@ -117,6 +122,8 @@ services:
     environment:
       - DEBUG=off
       - PROMETHEUS_MULTIPROC_DIR=/prometheus-multiproc-dir/celery-worker
+      - MEDIA_ROOT=${MEDIA_ROOT:-/root/src/media}
+      - SENTINEL_MODE=${SENTINEL_MODE:-live}
     command: ./celery-entrypoint.sh
     volumes:
       - ./media:/root/src/media
@@ -170,6 +177,7 @@ services:
     environment:
       - DEBUG=off
       - DAGSTER_HOME=/root/src
+      - MEDIA_ROOT=${MEDIA_ROOT:-/root/src/media}
     command: ./dagster-entrypoint.sh
     volumes:
       - ./media:/root/src/media
@@ -190,6 +198,7 @@ services:
     environment:
       - DEBUG=off
       - DAGSTER_HOME=/root/src
+      - MEDIA_ROOT=${MEDIA_ROOT:-/root/src/media}
     command: dagster-daemon run -m project.dagster.definitions
     volumes:
       - ./media:/root/src/media
@@ -307,6 +316,18 @@ services:
     volumes:
       - /var/run/docker.sock:/var/run/docker.sock:ro
     command: --interval 7200 vulnrelay
+    logging:
+      <<: *logging
+
+  pylon:
+    image: docker.io/backenddevelopersltd/bittensor-pylon:git-169a0e490aa92b7d0ca6392d65eb0d322c5b700c
+    platform: linux/amd64
+    restart: unless-stopped
+    env_file: ./.env
+    ports:
+      - 127.0.0.1:${PYLON_PORT:-8001}:8000
+    volumes:
+      - ~/.bittensor/wallets/:/root/.bittensor/wallets
     logging:
       <<: *logging
 

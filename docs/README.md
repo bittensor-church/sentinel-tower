@@ -40,26 +40,26 @@ Use `ssh-keygen` to generate a key pair for the server, then add read-only acces
 # remote server
 mkdir -p ~/repos
 cd ~/repos
-git init --bare --initial-branch=master bittensor_sentinel.git
+git init --bare --initial-branch=master sentinel_tower.git
 
-mkdir -p ~/domains/bittensor_sentinel
+mkdir -p ~/domains/sentinel_tower
 ```
 
 ```sh
 # locally
-git remote add production root@<server>:~/repos/bittensor_sentinel.git
+git remote add production root@<server>:~/repos/sentinel_tower.git
 git push production master
 ```
 
 ```sh
 # remote server
-cd ~/repos/bittensor_sentinel.git
+cd ~/repos/sentinel_tower.git
 
 cat <<'EOT' > hooks/post-receive
 #!/bin/bash
 unset GIT_INDEX_FILE
 export ROOT=/root
-export REPO=bittensor_sentinel
+export REPO=sentinel_tower
 while read oldrev newrev ref
 do
     if [[ $ref =~ .*/master$ ]]; then
@@ -76,7 +76,7 @@ EOT
 
 chmod +x hooks/post-receive
 ./hooks/post-receive
-cd ~/domains/bittensor_sentinel
+cd ~/domains/sentinel_tower
 sudo bin/prepare-os.sh
 ./setup-prod.sh
 
@@ -217,7 +217,7 @@ docker compose run --rm -e EMAIL_TARGET=youremail@domain.com backups ./backup-db
 First, create a Backblaze B2 account and a bucket for backups (with [lifecycle rules](https://www.backblaze.com/docs/cloud-storage-configure-and-manage-lifecycle-rules)):
 
 ```sh
-b2 bucket create --lifecycle-rule '{"daysFromHidingToDeleting": 30, "daysFromUploadingToHiding": 30, "fileNamePrefix": "folder/"}' "bittensor_sentinel-backups" allPrivate
+b2 bucket create --lifecycle-rule '{"daysFromHidingToDeleting": 30, "daysFromUploadingToHiding": 30, "fileNamePrefix": "folder/"}' "sentinel_tower-backups" allPrivate
 ```
 
 > If you want to add backups to already existing bucket, use `b2 bucket update` command and don't forget to list all previous lifecycle rules as well as adding the new one.
@@ -225,11 +225,11 @@ b2 bucket create --lifecycle-rule '{"daysFromHidingToDeleting": 30, "daysFromUpl
 Create an application key with restricted access to a single bucket:
 
 ```sh
-b2 key create --bucket "bittensor_sentinel-backups" --namePrefix "folder/" "bittensor_sentinel-backups-key" listBuckets,listFiles,readFiles,writeFiles
+b2 key create --bucket "sentinel_tower-backups" --namePrefix "folder/" "sentinel_tower-backups-key" listBuckets,listFiles,readFiles,writeFiles
 ```
 
 Fill in `.env` file:
-- `BACKUP_B2_BUCKET=bittensor_sentinel-backups`
+- `BACKUP_B2_BUCKET=sentinel_tower-backups`
 - `BACKUP_B2_FOLDER=folder`
 - `BACKUP_B2_APPLICATION_KEY_ID=0012345abcdefgh0000000000`
 - `BACKUP_B2_APPLICATION_KEY=A001bcdefgHIJKLMNOPQRSTUxx11x22`

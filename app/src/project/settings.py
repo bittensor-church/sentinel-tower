@@ -69,6 +69,7 @@ INSTALLED_APPS = [
     "abstract_block_dumper",
     "constance",
     "project.core",
+    "apps.metagraph",
 ]
 
 PROMETHEUS_EXPORT_MIGRATIONS = env.bool("PROMETHEUS_EXPORT_MIGRATIONS", default=True)
@@ -93,11 +94,11 @@ if DEBUG_TOOLBAR := env.bool("DEBUG_TOOLBAR", default=False):
 
     DEBUG_TOOLBAR_CONFIG = {"SHOW_TOOLBAR_CALLBACK": lambda _request: True}
     INSTALLED_APPS.append("debug_toolbar")
-    MIDDLEWARE = ["debug_toolbar.middleware.DebugToolbarMiddleware"] + MIDDLEWARE
+    MIDDLEWARE = ["debug_toolbar.middleware.DebugToolbarMiddleware", *MIDDLEWARE]
 
 if CORS_ENABLED := env.bool("CORS_ENABLED", default=True):
     INSTALLED_APPS.append("corsheaders")
-    MIDDLEWARE = ["corsheaders.middleware.CorsMiddleware"] + MIDDLEWARE
+    MIDDLEWARE = ["corsheaders.middleware.CorsMiddleware", *MIDDLEWARE]
     CORS_ALLOWED_ORIGINS = env.list("CORS_ALLOWED_ORIGINS", default=[])
     CORS_ALLOWED_ORIGIN_REGEXES = env.list("CORS_ALLOWED_ORIGIN_REGEXES", default=[])
     CORS_ALLOW_ALL_ORIGINS = env.bool("CORS_ALLOW_ALL_ORIGINS", default=False)
@@ -212,9 +213,6 @@ REDIS_PORT = env.int("REDIS_PORT")
 REDIS_URL = f"redis://{REDIS_HOST}:{REDIS_PORT}"
 
 CONSTANCE_BACKEND = "constance.backends.database.DatabaseBackend"
-CONSTANCE_CONFIG = {
-    # "PARAMETER": (default-value, "Help text", type),
-}
 
 CELERY_BROKER_URL = env("CELERY_BROKER_URL", default="")
 CELERY_RESULT_BACKEND = env("CELERY_BROKER_URL", default="")  # store results in Redis
@@ -228,13 +226,20 @@ CELERY_BEAT_SCHEDULE = {
         "schedule": crontab(hour=2, minute=0),  # Daily at 2 AM
         "kwargs": {"days": 7},  # Customize retention period
     },
+    "refresh-apy-materialized-view": {
+        "task": "metagraph.refresh_apy_materialized_view",
+        "schedule": crontab(hour=3, minute=0),  # Daily at 3 AM (after cleanup)
+    },
 }
 CELERY_TASK_CREATE_MISSING_QUEUES = False
-CELERY_TASK_QUEUES = (Queue("celery"), Queue("worker"), Queue("dead_letter"))
+CELERY_TASK_QUEUES = (Queue("celery"), Queue("worker"), Queue("metagraph"), Queue("dead_letter"))
 CELERY_TASK_DEFAULT_EXCHANGE = "celery"
 CELERY_TASK_DEFAULT_ROUTING_KEY = "celery"
 CELERY_TASK_ANNOTATIONS = {"*": {"acks_late": True, "reject_on_worker_lost": True}}
-CELERY_TASK_ROUTES = {"*": {"queue": "celery"}}
+CELERY_TASK_ROUTES = {
+    "apps.metagraph.block_tasks.store_metagraph": {"queue": "metagraph"},
+    "*": {"queue": "celery"},
+}
 CELERY_TASK_TIME_LIMIT = int(timedelta(minutes=5).total_seconds())
 CELERY_TASK_ALWAYS_EAGER = env.bool("CELERY_TASK_ALWAYS_EAGER", default=False)
 CELERY_WORKER_SEND_TASK_EVENTS = True
@@ -244,6 +249,8 @@ CELERY_TASK_SERIALIZER = "json"
 CELERY_RESULT_SERIALIZER = "json"
 CELERY_WORKER_PREFETCH_MULTIPLIER = env.int("CELERY_WORKER_PREFETCH_MULTIPLIER", default=1)
 CELERY_BROKER_POOL_LIMIT = env.int("CELERY_BROKER_POOL_LIMIT", default=50)
+# Recycle workers after N tasks to prevent memory leaks from accumulating
+CELERY_WORKER_MAX_TASKS_PER_CHILD = env.int("CELERY_WORKER_MAX_TASKS_PER_CHILD", default=50)
 
 DJANGO_STRUCTLOG_CELERY_ENABLED = True
 
@@ -342,7 +349,7 @@ configure_structlog()
 
 # Sentry
 SENTRY_DSN = env("SENTRY_DSN", default="")
-if SENTRY_DSN and SENTRY_DSN.strip():
+if SENTRY_DSN is not None and isinstance(SENTRY_DSN, str) and SENTRY_DSN.strip():
     import sentry_sdk
     from sentry_sdk.integrations.celery import CeleryIntegration
     from sentry_sdk.integrations.django import DjangoIntegration
@@ -374,3 +381,12 @@ BLOCK_DUMPER_REALTIME_HEAD_ONLY = True  # Only process current head block, no ca
 BLOCK_TASK_RETRY_BACKOFF = 1  # minutes for retry backoff base
 BLOCK_DUMPER_MAX_ATTEMPTS = 3  # maximum retry attempts
 BLOCK_TASK_MAX_RETRY_DELAY_MINUTES = 1440  # maximum retry delay (24 hours)
+
+# Metagraph Dumper specific settings
+METAGRAPH_NETUIDS = None  # [12, 89]  # List of netuids to process for metagraph dumps
+# TODO: replace hardcoded value with data from bittensor later
+TEMPO = 360  # Number of blocks per epoch
+NUM_BLOCK_DUMPS_PER_EPOCH = 3  # Number of block dumps to take per epoch
+
+# Sentinel modules are auto-discovered by abstract_block_dumper from all installed apps
+# that have a block_tasks.py module. See ensure_modules_loaded() in abstract_block_dumper.

@@ -3,10 +3,11 @@ set -eu
 
 ./prometheus-cleanup.sh
 
-# below we define two workers types (each may have any concurrency);
+# below we define three worker types (each may have any concurrency);
 # each worker may have its own settings
-WORKERS="master worker"
-OPTIONS="-A project -E -l ERROR --pidfile=/var/run/celery-%n.pid --logfile=/var/log/celery-%n.log"
+WORKERS="master worker metagraph"
+MAX_TASKS_PER_CHILD="${CELERY_WORKER_MAX_TASKS_PER_CHILD:-50}"
+OPTIONS="-A project -E -l ERROR --pidfile=/var/run/celery-%n.pid --logfile=/var/log/celery-%n.log --max-tasks-per-child=$MAX_TASKS_PER_CHILD"
 
 # set up settings for workers and run the latter;
 # here events from "celery" queue (default one, will be used if queue not specified)
@@ -16,7 +17,8 @@ OPTIONS="-A project -E -l ERROR --pidfile=/var/run/celery-%n.pid --logfile=/var/
 # shellcheck disable=2086
 C_FORCE_ROOT=1 nice celery multi start $WORKERS $OPTIONS \
     -Q:master celery --autoscale:master=$CELERY_MASTER_CONCURRENCY,0 \
-    -Q:worker worker --autoscale:worker=$CELERY_WORKER_CONCURRENCY,0
+    -Q:worker worker --autoscale:worker=$CELERY_WORKER_CONCURRENCY,0 \
+    -Q:metagraph metagraph --autoscale:metagraph=${CELERY_METAGRAPH_CONCURRENCY:-2},0
 
 # shellcheck disable=2064
 trap "celery multi stop $WORKERS $OPTIONS; exit 0" INT TERM
