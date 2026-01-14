@@ -1,13 +1,14 @@
+from django.apps import apps
 from django_business_metrics.v0 import BusinessMetricsManager, active_users, users
 
-from project.core.models import Extrinsic
-
-
-def extrinsics_total():
-    """Return total count of extrinsics."""
-    return Extrinsic.objects.count()
-
-
 metrics_manager = BusinessMetricsManager()
+metrics_manager.add(users).add(active_users)
 
-metrics_manager.add(users).add(active_users).add(extrinsics_total)
+if apps.is_installed("apps.extrinsics"):
+    from apps.extrinsics.models import Extrinsic
+
+    def extrinsics_total():
+        """Return total count of extrinsics."""
+        return Extrinsic.objects.count()
+
+    metrics_manager.add(extrinsics_total)

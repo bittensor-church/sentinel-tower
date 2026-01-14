@@ -7,5 +7,7 @@ class MetagraphConfig(AppConfig):
 
     def ready(self):
         # Import block_tasks and tasks to register Celery tasks with the app
-        from apps.metagraph import block_tasks  # noqa: F401
-        from apps.metagraph import tasks  # noqa: F401
+        from apps.metagraph import (
+            block_tasks,  # noqa: F401
+            tasks,  # noqa: F401
+        )

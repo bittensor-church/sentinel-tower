@@ -9,6 +9,7 @@ class Coldkey(models.Model):
 
     coldkey = models.CharField(max_length=66, unique=True)
     created_at = models.DateTimeField(auto_now_add=True)
+    label = models.CharField(max_length=255, blank=True)
 
     class Meta:
         db_table = "metagraph_coldkey"
@@ -26,6 +27,7 @@ class Hotkey(models.Model):
         on_delete=models.CASCADE,
         related_name="hotkeys",
     )
+    label = models.CharField(max_length=255, blank=True)
     created_at = models.DateTimeField(auto_now_add=True)
     last_seen = models.DateTimeField(null=True, blank=True)
 

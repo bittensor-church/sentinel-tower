@@ -63,12 +63,14 @@ def store_metagraph(block_number: int, netuid: int) -> str:
     if "dump" not in data or not data["dump"]:
         data["dump"] = {}
 
-    data["dump"].update({
-        "netuid": netuid,
-        "epoch_position": _get_epoch_position(block_number, netuid),
-        "started_at": started_at.isoformat(),
-        "finished_at": finished_at.isoformat(),
-    })
+    data["dump"].update(
+        {
+            "netuid": netuid,
+            "epoch_position": _get_epoch_position(block_number, netuid),
+            "started_at": started_at.isoformat(),
+            "finished_at": finished_at.isoformat(),
+        }
+    )
 
     sync_service = MetagraphSyncService()
     stats = sync_service.sync_metagraph(data)
