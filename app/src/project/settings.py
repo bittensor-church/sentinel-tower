@@ -1,5 +1,6 @@
 import inspect
 import logging
+import os
 from datetime import timedelta
 from functools import wraps
 
@@ -55,6 +56,18 @@ AUTHENTICATION_BACKENDS = [
     "django.contrib.auth.backends.ModelBackend",
 ]
 
+# Sentinel Plugins - control which block task plugins are loaded
+# Comma-separated list of plugin names: "extrinsics", "metagraph"
+# Empty or unset means all plugins are enabled
+_sentinel_plugins_str = os.environ.get("SENTINEL_PLUGINS", "")
+SENTINEL_PLUGINS: list[str] = [p.strip() for p in _sentinel_plugins_str.split(",") if p.strip()]
+
+# Map plugin names to Django app paths
+_PLUGIN_APPS = {
+    "extrinsics": "apps.extrinsics",
+    "metagraph": "apps.metagraph",
+}
+
 INSTALLED_APPS = [
     "django_prometheus",
     "django.contrib.admin",
@@ -69,8 +82,15 @@ INSTALLED_APPS = [
     "abstract_block_dumper",
     "constance",
     "project.core",
-    "apps.metagraph",
 ]
+
+# Add enabled plugins to INSTALLED_APPS
+if not SENTINEL_PLUGINS:
+    # No plugins specified = all enabled
+    INSTALLED_APPS.extend(_PLUGIN_APPS.values())
+else:
+    # Only add specified plugins
+    INSTALLED_APPS.extend(_PLUGIN_APPS[p] for p in SENTINEL_PLUGINS if p in _PLUGIN_APPS)
 
 PROMETHEUS_EXPORT_MIGRATIONS = env.bool("PROMETHEUS_EXPORT_MIGRATIONS", default=True)
 
@@ -388,5 +408,3 @@ METAGRAPH_NETUIDS = None  # [12, 89]  # List of netuids to process for metagraph
 TEMPO = 360  # Number of blocks per epoch
 NUM_BLOCK_DUMPS_PER_EPOCH = 3  # Number of block dumps to take per epoch
 
-# Sentinel modules are auto-discovered by abstract_block_dumper from all installed apps
-# that have a block_tasks.py module. See ensure_modules_loaded() in abstract_block_dumper.

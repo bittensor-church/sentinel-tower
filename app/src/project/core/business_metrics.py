@@ -1,6 +1,6 @@
 from django_business_metrics.v0 import BusinessMetricsManager, active_users, users
 
-from project.core.models import Extrinsic
+from apps.extrinsics.models import Extrinsic
 
 
 def extrinsics_total():

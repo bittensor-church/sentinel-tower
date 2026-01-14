@@ -5,8 +5,8 @@ from abstract_block_dumper.v1.decorators import block_task
 from sentinel.v1.dto import ExtrinsicDTO
 from sentinel.v1.services.sentinel import sentinel_service
 
-from project.core.models import Extrinsic
-from project.core.notifications import send_discord_notification
+from apps.extrinsics.models import Extrinsic
+from apps.extrinsics.notifications import send_discord_notification
 from project.core.services import JsonLinesStorage
 from project.core.utils import get_provider_for_block
 
@@ -74,7 +74,7 @@ def _parse_extrinsic_record(record: dict) -> dict | None:
     }
 
 
-# @block_task(celery_kwargs={"rate_limit": "10/m"})
+@block_task(celery_kwargs={"rate_limit": "10/m"})
 def store_block_extrinsics(block_number: int) -> str:
     """
     Store extrinsics from the given block number.

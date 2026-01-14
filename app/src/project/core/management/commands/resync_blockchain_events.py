@@ -2,7 +2,8 @@
 
 from django.core.management.base import BaseCommand, CommandParser
 
-from project.core.models import Extrinsic, IngestionCheckpoint
+from apps.extrinsics.models import Extrinsic
+from project.core.models import IngestionCheckpoint
 
 
 class Command(BaseCommand):

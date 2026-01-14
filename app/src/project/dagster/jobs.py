@@ -4,7 +4,8 @@ from collections.abc import Generator
 
 import dagster as dg
 
-from project.core.models import Extrinsic, IngestionCheckpoint
+from apps.extrinsics.models import Extrinsic
+from project.core.models import IngestionCheckpoint
 from project.dagster.resources import JsonLinesReader
 
 EXTRINSICS_DIR = "data/bittensor/extrinsics"
