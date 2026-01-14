@@ -4,20 +4,19 @@ from django.db import migrations, models
 
 
 class Migration(migrations.Migration):
-
     dependencies = [
-        ('metagraph', '0002_create_validator_apy_materialized_view'),
+        ("metagraph", "0002_create_validator_apy_materialized_view"),
     ]
 
     operations = [
         migrations.AddField(
-            model_name='coldkey',
-            name='label',
+            model_name="coldkey",
+            name="label",
             field=models.CharField(blank=True, max_length=255),
         ),
         migrations.AddField(
-            model_name='hotkey',
-            name='label',
+            model_name="hotkey",
+            name="label",
             field=models.CharField(blank=True, max_length=255),
         ),
     ]

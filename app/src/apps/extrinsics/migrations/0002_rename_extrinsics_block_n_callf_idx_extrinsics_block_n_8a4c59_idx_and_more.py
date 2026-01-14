@@ -10,23 +10,22 @@ from django.db import migrations
 
 
 class Migration(migrations.Migration):
-
     dependencies = [
-        ('extrinsics', '0001_initial'),
+        ("extrinsics", "0001_initial"),
     ]
 
     operations = [
         migrations.SeparateDatabaseAndState(
             state_operations=[
                 migrations.RenameIndex(
-                    model_name='extrinsic',
-                    new_name='extrinsics_block_n_8a4c59_idx',
-                    old_name='extrinsics_block_n_callf_idx',
+                    model_name="extrinsic",
+                    new_name="extrinsics_block_n_8a4c59_idx",
+                    old_name="extrinsics_block_n_callf_idx",
                 ),
                 migrations.RenameIndex(
-                    model_name='extrinsic',
-                    new_name='extrinsics_address_5b3b9b_idx',
-                    old_name='extrinsics_address_callf_idx',
+                    model_name="extrinsic",
+                    new_name="extrinsics_address_5b3b9b_idx",
+                    old_name="extrinsics_address_callf_idx",
                 ),
             ],
             database_operations=[],  # No database changes - indexes may not exist with these names

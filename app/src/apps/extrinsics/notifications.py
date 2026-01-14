@@ -82,10 +82,12 @@ def format_extrinsic_message(extrinsic: dict[str, Any]) -> dict[str, Any]:
     else:
         hash_display = extrinsic_hash or "N/A"
 
-    fields.extend([
-        {"name": "Signer", "value": f"`{address_display}`", "inline": False},
-        {"name": "Hash", "value": f"`{hash_display}`", "inline": False},
-    ])
+    fields.extend(
+        [
+            {"name": "Signer", "value": f"`{address_display}`", "inline": False},
+            {"name": "Hash", "value": f"`{hash_display}`", "inline": False},
+        ]
+    )
 
     return {
         "embeds": [
