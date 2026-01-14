@@ -62,7 +62,7 @@
         "refId": "A",
         "format": "table"
       }],
-      "title": "Blocks since last weight set on sn${subnet}",
+      "title": "Blocks since last weight set/reveal on sn${subnet}",
       "transformations": [{ "id": "prepareTimeSeries", "options": { "format": "multi" } }],
       "type": "timeseries"
     },
