@@ -58,7 +58,7 @@
       "targets": [{
         "datasource": { "type": "postgres", "uid": "postgresql" },
         "rawQuery": true,
-        "rawSql": "SELECT COALESCE(NULLIF(h.label, ''), LEFT(h.hotkey, 8) || '...') AS validator, b.number - mm.last_update AS \" \", b.timestamp AS created_at FROM metagraph_neuron n JOIN metagraph_hotkey h ON n.hotkey_id = h.id JOIN metagraph_neuron_snapshot ns ON ns.neuron_id = n.id JOIN metagraph_block b ON ns.block_id = b.number LEFT JOIN metagraph_mechanism_metrics mm ON mm.snapshot_id = ns.id AND mm.mech_id = ${mech_id} WHERE n.subnet_id = ${subnet} AND ns.is_validator = true AND b.timestamp BETWEEN '${__from:date}' AND '${__to:date}' ORDER BY ns.total_stake DESC",
+        "rawSql": "SELECT COALESCE(NULLIF(h.label, ''), LEFT(h.hotkey, 8) || '...') AS validator, b.number - mm.last_update AS \" \", b.timestamp AS time FROM metagraph_neuron n JOIN metagraph_hotkey h ON n.hotkey_id = h.id JOIN metagraph_neuron_snapshot ns ON ns.neuron_id = n.id JOIN metagraph_block b ON ns.block_id = b.number LEFT JOIN metagraph_mechanism_metrics mm ON mm.snapshot_id = ns.id AND mm.mech_id = ${mech_id} WHERE n.subnet_id = ${subnet} AND ns.is_validator = true AND b.timestamp BETWEEN '${__from:date}' AND '${__to:date}' ORDER BY ns.total_stake DESC",
         "refId": "A",
         "format": "table"
       }],
@@ -83,7 +83,7 @@
       "targets": [{
         "datasource": { "type": "postgres", "uid": "postgresql" },
         "rawQuery": true,
-        "rawSql": "SELECT COALESCE(NULLIF(h.label, ''), LEFT(h.hotkey, 8) || '...') AS validator, mm.validator_trust AS \" \", b.timestamp AS created_at FROM metagraph_neuron n JOIN metagraph_hotkey h ON n.hotkey_id = h.id JOIN metagraph_neuron_snapshot ns ON ns.neuron_id = n.id JOIN metagraph_block b ON ns.block_id = b.number LEFT JOIN metagraph_mechanism_metrics mm ON mm.snapshot_id = ns.id AND mm.mech_id = ${mech_id} WHERE n.subnet_id = ${subnet} AND ns.is_validator = true AND b.timestamp BETWEEN '${__from:date}' AND '${__to:date}' ORDER BY ns.total_stake DESC",
+        "rawSql": "SELECT COALESCE(NULLIF(h.label, ''), LEFT(h.hotkey, 8) || '...') AS validator, mm.validator_trust AS \" \", b.timestamp AS time FROM metagraph_neuron n JOIN metagraph_hotkey h ON n.hotkey_id = h.id JOIN metagraph_neuron_snapshot ns ON ns.neuron_id = n.id JOIN metagraph_block b ON ns.block_id = b.number LEFT JOIN metagraph_mechanism_metrics mm ON mm.snapshot_id = ns.id AND mm.mech_id = ${mech_id} WHERE n.subnet_id = ${subnet} AND ns.is_validator = true AND b.timestamp BETWEEN '${__from:date}' AND '${__to:date}' ORDER BY ns.total_stake DESC",
         "refId": "A",
         "format": "table"
       }],
@@ -108,7 +108,7 @@
       "targets": [{
         "datasource": { "type": "postgres", "uid": "postgresql" },
         "rawQuery": true,
-        "rawSql": "SELECT COALESCE(NULLIF(h.label, ''), LEFT(h.hotkey, 8) || '...') AS validator, CASE WHEN mm.validator_trust > 0 THEN mm.dividend / mm.validator_trust ELSE 0 END AS \" \", b.timestamp AS created_at FROM metagraph_neuron n JOIN metagraph_hotkey h ON n.hotkey_id = h.id JOIN metagraph_neuron_snapshot ns ON ns.neuron_id = n.id JOIN metagraph_block b ON ns.block_id = b.number LEFT JOIN metagraph_mechanism_metrics mm ON mm.snapshot_id = ns.id AND mm.mech_id = ${mech_id} WHERE n.subnet_id = ${subnet} AND ns.is_validator = true AND b.timestamp BETWEEN '${__from:date}' AND '${__to:date}' ORDER BY ns.total_stake DESC",
+        "rawSql": "SELECT COALESCE(NULLIF(h.label, ''), LEFT(h.hotkey, 8) || '...') AS validator, CASE WHEN mm.validator_trust > 0 THEN mm.dividend / mm.validator_trust ELSE 0 END AS \" \", b.timestamp AS time FROM metagraph_neuron n JOIN metagraph_hotkey h ON n.hotkey_id = h.id JOIN metagraph_neuron_snapshot ns ON ns.neuron_id = n.id JOIN metagraph_block b ON ns.block_id = b.number LEFT JOIN metagraph_mechanism_metrics mm ON mm.snapshot_id = ns.id AND mm.mech_id = ${mech_id} WHERE n.subnet_id = ${subnet} AND ns.is_validator = true AND b.timestamp BETWEEN '${__from:date}' AND '${__to:date}' ORDER BY ns.total_stake DESC",
         "refId": "A",
         "format": "table"
       }],
@@ -133,7 +133,7 @@
       "targets": [{
         "datasource": { "type": "postgres", "uid": "postgresql" },
         "rawQuery": true,
-        "rawSql": "SELECT COALESCE(NULLIF(h.label, ''), LEFT(h.hotkey, 8) || '...') AS validator, mm.consensus AS \" \", b.timestamp AS created_at FROM metagraph_neuron n JOIN metagraph_hotkey h ON n.hotkey_id = h.id JOIN metagraph_neuron_snapshot ns ON ns.neuron_id = n.id JOIN metagraph_block b ON ns.block_id = b.number LEFT JOIN metagraph_mechanism_metrics mm ON mm.snapshot_id = ns.id AND mm.mech_id = ${mech_id} WHERE n.subnet_id = ${subnet} AND ns.is_validator = true AND b.timestamp BETWEEN '${__from:date}' AND '${__to:date}' ORDER BY ns.total_stake DESC",
+        "rawSql": "SELECT COALESCE(NULLIF(h.label, ''), LEFT(h.hotkey, 8) || '...') AS validator, mm.consensus AS \" \", b.timestamp AS time FROM metagraph_neuron n JOIN metagraph_hotkey h ON n.hotkey_id = h.id JOIN metagraph_neuron_snapshot ns ON ns.neuron_id = n.id JOIN metagraph_block b ON ns.block_id = b.number LEFT JOIN metagraph_mechanism_metrics mm ON mm.snapshot_id = ns.id AND mm.mech_id = ${mech_id} WHERE n.subnet_id = ${subnet} AND ns.is_validator = true AND b.timestamp BETWEEN '${__from:date}' AND '${__to:date}' ORDER BY ns.total_stake DESC",
         "refId": "A",
         "format": "table"
       }],
@@ -158,7 +158,7 @@
       "targets": [{
         "datasource": { "type": "postgres", "uid": "postgresql" },
         "rawQuery": true,
-        "rawSql": "SELECT COALESCE(NULLIF(h.label, ''), LEFT(h.hotkey, 8) || '...') AS validator, CASE WHEN ns.total_stake > 0 THEN mm.dividend / (ns.total_stake / 1e9) ELSE 0 END AS \" \", b.timestamp AS created_at FROM metagraph_neuron n JOIN metagraph_hotkey h ON n.hotkey_id = h.id JOIN metagraph_neuron_snapshot ns ON ns.neuron_id = n.id JOIN metagraph_block b ON ns.block_id = b.number LEFT JOIN metagraph_mechanism_metrics mm ON mm.snapshot_id = ns.id AND mm.mech_id = ${mech_id} WHERE n.subnet_id = ${subnet} AND ns.is_validator = true AND b.timestamp BETWEEN '${__from:date}' AND '${__to:date}' ORDER BY ns.total_stake DESC",
+        "rawSql": "SELECT COALESCE(NULLIF(h.label, ''), LEFT(h.hotkey, 8) || '...') AS validator, CASE WHEN ns.total_stake > 0 THEN mm.dividend / (ns.total_stake / 1e9) ELSE 0 END AS \" \", b.timestamp AS time FROM metagraph_neuron n JOIN metagraph_hotkey h ON n.hotkey_id = h.id JOIN metagraph_neuron_snapshot ns ON ns.neuron_id = n.id JOIN metagraph_block b ON ns.block_id = b.number LEFT JOIN metagraph_mechanism_metrics mm ON mm.snapshot_id = ns.id AND mm.mech_id = ${mech_id} WHERE n.subnet_id = ${subnet} AND ns.is_validator = true AND b.timestamp BETWEEN '${__from:date}' AND '${__to:date}' ORDER BY ns.total_stake DESC",
         "refId": "A",
         "format": "table"
       }],
@@ -184,7 +184,7 @@
       "targets": [{
         "datasource": { "type": "postgres", "uid": "postgresql" },
         "rawQuery": true,
-        "rawSql": "SELECT COALESCE(NULLIF(h.label, ''), LEFT(h.hotkey, 8) || '...') AS validator, ns.emissions / 1e9 AS \" \", b.timestamp AS created_at FROM metagraph_neuron n JOIN metagraph_hotkey h ON n.hotkey_id = h.id JOIN metagraph_neuron_snapshot ns ON ns.neuron_id = n.id JOIN metagraph_block b ON ns.block_id = b.number WHERE n.subnet_id = ${subnet} AND ns.is_validator = true AND b.timestamp BETWEEN '${__from:date}' AND '${__to:date}' ORDER BY ns.total_stake DESC",
+        "rawSql": "SELECT COALESCE(NULLIF(h.label, ''), LEFT(h.hotkey, 8) || '...') AS validator, ns.emissions / 1e9 AS \" \", b.timestamp AS time FROM metagraph_neuron n JOIN metagraph_hotkey h ON n.hotkey_id = h.id JOIN metagraph_neuron_snapshot ns ON ns.neuron_id = n.id JOIN metagraph_block b ON ns.block_id = b.number WHERE n.subnet_id = ${subnet} AND ns.is_validator = true AND b.timestamp BETWEEN '${__from:date}' AND '${__to:date}' ORDER BY ns.total_stake DESC",
         "refId": "A",
         "format": "table"
       }],
@@ -210,7 +210,7 @@
       "targets": [{
         "datasource": { "type": "postgres", "uid": "postgresql" },
         "rawQuery": true,
-        "rawSql": "SELECT COALESCE(NULLIF(h.label, ''), LEFT(h.hotkey, 8) || '...') AS validator, ns.total_stake / 1e9 AS \" \", b.timestamp AS created_at FROM metagraph_neuron n JOIN metagraph_hotkey h ON n.hotkey_id = h.id JOIN metagraph_neuron_snapshot ns ON ns.neuron_id = n.id JOIN metagraph_block b ON ns.block_id = b.number WHERE n.subnet_id = ${subnet} AND ns.is_validator = true AND b.timestamp BETWEEN '${__from:date}' AND '${__to:date}' ORDER BY ns.total_stake DESC",
+        "rawSql": "SELECT COALESCE(NULLIF(h.label, ''), LEFT(h.hotkey, 8) || '...') AS validator, ns.total_stake / 1e9 AS \" \", b.timestamp AS time FROM metagraph_neuron n JOIN metagraph_hotkey h ON n.hotkey_id = h.id JOIN metagraph_neuron_snapshot ns ON ns.neuron_id = n.id JOIN metagraph_block b ON ns.block_id = b.number WHERE n.subnet_id = ${subnet} AND ns.is_validator = true AND b.timestamp BETWEEN '${__from:date}' AND '${__to:date}' ORDER BY ns.total_stake DESC",
         "refId": "A",
         "format": "table"
       }],
