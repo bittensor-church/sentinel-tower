@@ -29,34 +29,6 @@ services:
     logging:
       <<: *logging
 
-  backups:
-    build:
-      context: backups/
-      dockerfile: Dockerfile
-    init: true
-    restart: unless-stopped
-    environment:
-      - DATABASE_URL=${DATABASE_URL}
-      - BACKUP_LOCAL_DIR=/var/backups
-      - BACKUP_LOCAL_ROTATE_KEEP_LAST=${BACKUP_LOCAL_ROTATE_KEEP_LAST}
-      - B2_BUCKET=${BACKUP_B2_BUCKET}
-      - B2_FOLDER=${BACKUP_B2_FOLDER}
-      - B2_APPLICATION_KEY_ID=${BACKUP_B2_APPLICATION_KEY_ID}
-      - B2_APPLICATION_KEY=${BACKUP_B2_APPLICATION_KEY}
-      - EMAIL_HOST=${EMAIL_HOST}
-      - EMAIL_PORT=${EMAIL_PORT}
-      - EMAIL_HOST_USER=${EMAIL_HOST_USER}
-      - EMAIL_HOST_PASSWORD=${EMAIL_HOST_PASSWORD}
-      - EMAIL_TARGET=${EMAIL_TARGET}
-      - DEFAULT_FROM_EMAIL=${DEFAULT_FROM_EMAIL}
-      - SENTRY_DSN=${SENTRY_DSN}
-    volumes:
-      - backups:/var/backups
-    depends_on:
-      - db
-    logging:
-      <<: *logging
-
   app:
     build:
       context: .
@@ -319,18 +291,6 @@ services:
     logging:
       <<: *logging
 
-  pylon:
-    image: docker.io/backenddevelopersltd/bittensor-pylon:git-169a0e490aa92b7d0ca6392d65eb0d322c5b700c
-    platform: linux/amd64
-    restart: unless-stopped
-    env_file: ./.env
-    ports:
-      - 127.0.0.1:${PYLON_PORT:-8001}:8000
-    volumes:
-      - ~/.bittensor/wallets/:/root/.bittensor/wallets
-    logging:
-      <<: *logging
-
   prometheus:
     image: prom/prometheus:v2.47.0
     restart: unless-stopped
@@ -393,7 +353,6 @@ services:
 
 volumes:
   backend-static:
-  backups:
   gunicorn-socket:
   nodeexporter_collectors:
   alloy-data:

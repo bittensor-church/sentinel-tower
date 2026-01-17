@@ -199,17 +199,7 @@ services:
       db:
         condition: service_healthy
 
-  pylon:
-    image: docker.io/backenddevelopersltd/bittensor-pylon:git-169a0e490aa92b7d0ca6392d65eb0d322c5b700c
-    platform: linux/amd64
-    env_file: ./.env
-    ports:
-      - ${PYLON_PORT:-8001}:8000
-    volumes:
-      - ~/.bittensor/wallets/:/root/.bittensor/wallets
-
 volumes:
-  # backups:
   dagster-storage:
   prometheus-data:
   grafana-data:
