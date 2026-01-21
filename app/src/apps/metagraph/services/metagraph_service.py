@@ -1,3 +1,5 @@
+from typing import Optional
+
 import structlog
 from django.conf import settings
 from sentinel.v1.providers.bittensor import bittensor_provider
@@ -38,14 +40,7 @@ class MetagraphService:
         if settings.METAGRAPH_NETUIDS:
             return settings.METAGRAPH_NETUIDS
 
-        with bittensor_provider(network_uri=settings.BITTENSOR_NETWORK) as provider:
-            excluded_subnets = [0]  # Exclude root subnet
-            netuids = provider.get_all_subnets_netuids(exclude_netuids=excluded_subnets)
-
-        if not netuids:
-            logger.warning("No netuids found to sync")
-
-        return netuids
+        return list(range(1, 129))
 
     @classmethod
     def store_metagraph_artifact(cls, metagraph: FullSubnetSnapshot) -> str:

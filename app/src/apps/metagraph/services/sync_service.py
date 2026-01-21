@@ -146,7 +146,7 @@ class MetagraphSyncService:
                 stats["collaterals"] = self._sync_collaterals(collaterals_data, block, subnet)
 
             # 7. Sync metagraph dump record (always create one to track what's been synced)
-            # dump_data was already extracted above for block timestamps
+            # dump_data was already extracted above for block timestamp
             self._sync_metagraph_dump(dump_data, block, subnet)
             stats["dumps"] = 1
 
@@ -203,7 +203,6 @@ class MetagraphSyncService:
     def _sync_block(self, block_data: dict[str, Any], dump_data: dict[str, Any] | None = None) -> Block:
         """Sync a Block record."""
         block_number = block_data["block_number"]
-        timestamp = _parse_datetime(block_data.get("timestamp"))
 
         # Extract dump timestamps if available
         dump_started_at = None
@@ -215,7 +214,7 @@ class MetagraphSyncService:
         block, created = Block.objects.get_or_create(
             number=block_number,
             defaults={
-                "timestamp": timestamp,
+                "timestamp": block_data.get("timestamp"),
                 "dump_started_at": dump_started_at,
                 "dump_finished_at": dump_finished_at,
             },
@@ -224,8 +223,8 @@ class MetagraphSyncService:
         if not created:
             # Update fields if they were missing
             update_fields = []
-            if timestamp and not block.timestamp:
-                block.timestamp = timestamp
+            if block_data.get("timestamp") and not block.timestamp:
+                block.timestamp = block_data.get("timestamp")
                 update_fields.append("timestamp")
             if dump_started_at and not block.dump_started_at:
                 block.dump_started_at = dump_started_at

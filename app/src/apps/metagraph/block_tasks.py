@@ -52,7 +52,6 @@ def store_metagraph(block_number: int, netuid: int) -> str:
             netuid=netuid,
         )
         return ""
-
     # Store artifact to JSONL
     artifact_path = MetagraphService.store_metagraph_artifact(metagraph)
 
@@ -69,7 +68,7 @@ def store_metagraph(block_number: int, netuid: int) -> str:
             "epoch_position": _get_epoch_position(block_number, netuid),
             "started_at": started_at.isoformat(),
             "finished_at": finished_at.isoformat(),
-        }
+        },
     )
 
     sync_service = MetagraphSyncService()
