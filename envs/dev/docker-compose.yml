@@ -18,7 +18,7 @@ services:
       - POSTGRES_USER=${POSTGRES_USER}
       - POSTGRES_PASSWORD=${POSTGRES_PASSWORD}
     volumes:
-      - ./db/data:/var/lib/postgresql/data
+      - ${POSTGRES_DATA_PATH:-./db/data}:/var/lib/postgresql/data
     ports:
       - ${POSTGRES_PORT}:5432
 
@@ -43,7 +43,7 @@ services:
              PROMETHEUS_EXPORT_MIGRATIONS=0 ./manage.py migrate &&
              gunicorn -b 0.0.0.0:8000 project.wsgi:application"
     volumes:
-      - ./app/src/media:/root/src/media
+      - ${MEDIA_VOLUME_PATH:-./app/src/media}:/root/src/media
     depends_on:
       db:
         condition: service_healthy
@@ -69,7 +69,7 @@ services:
       - MEDIA_ROOT=${MEDIA_ROOT:-/root/src/media}
     command: ./dagster-entrypoint.sh
     volumes:
-      - ./app/src/media:/root/src/media
+      - ${MEDIA_VOLUME_PATH:-./app/src/media}:/root/src/media
       - dagster-storage:/root/src/.dagster
     depends_on:
       db:
@@ -96,7 +96,7 @@ services:
       - MEDIA_ROOT=${MEDIA_ROOT:-/root/src/media}
     command: dagster-daemon run
     volumes:
-      - ./app/src/media:/root/src/media
+      - ${MEDIA_VOLUME_PATH:-./app/src/media}:/root/src/media
       - dagster-storage:/root/src/.dagster
     depends_on:
       dagster-webserver:
@@ -159,7 +159,7 @@ services:
       - SENTINEL_MODE=${SENTINEL_MODE:-live}
     command: ./celery-entrypoint.sh
     volumes:
-      - ./app/src/media:/root/src/media
+      - ${MEDIA_VOLUME_PATH:-./app/src/media}:/root/src/media
     tmpfs: /run
     depends_on:
       redis:
@@ -187,7 +187,7 @@ services:
       - BLOCK_END=${BLOCK_END:-}
       - BACKFILL_RATE_LIMIT=${BACKFILL_RATE_LIMIT:-1.0}
     volumes:
-      - ./app/src/media:/root/src/media
+      - ${MEDIA_VOLUME_PATH:-./app/src/media}:/root/src/media
     depends_on:
       celery-worker:
         condition: service_healthy

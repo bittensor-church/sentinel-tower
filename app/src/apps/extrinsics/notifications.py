@@ -115,7 +115,6 @@ def format_extrinsic_message(extrinsic: dict[str, Any]) -> dict[str, Any]:
 
     # Add call arguments if present
     call_args = extrinsic.get("call_args")
-    import pdb; pdb.set_trace()
     if call_args:
         fields.append({
             "name": "Parameters",
