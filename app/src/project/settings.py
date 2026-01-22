@@ -376,9 +376,10 @@ if SENTRY_DSN is not None and isinstance(SENTRY_DSN, str) and SENTRY_DSN.strip()
     from sentry_sdk.integrations.logging import LoggingIntegration, ignore_logger
     from sentry_sdk.integrations.redis import RedisIntegration
 
+    SENTRY_ENVIRONMENT = env("SENTRY_ENVIRONMENT", default=ENV)
     sentry_sdk.init(  # type: ignore
         dsn=SENTRY_DSN,
-        environment=ENV,
+        environment=SENTRY_ENVIRONMENT,
         integrations=[
             DjangoIntegration(),
             CeleryIntegration(),
