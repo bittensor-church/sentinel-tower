@@ -378,6 +378,7 @@ if SENTRY_DSN is not None and isinstance(SENTRY_DSN, str) and SENTRY_DSN.strip()
     from sentry_sdk.integrations.redis import RedisIntegration
 
     SENTRY_ENVIRONMENT = env("SENTRY_ENVIRONMENT", default=ENV)
+    # noinspection PyAbstractClass
     sentry_sdk.init(  # type: ignore
         dsn=SENTRY_DSN,
         environment=SENTRY_ENVIRONMENT,
@@ -452,3 +453,13 @@ DISCORD_ALERT_CONFIGS: list[AlertConfig] = [
     AlertConfig("SubtensorModule:schedule_coldkey_swap", "DISCORD_COLDKEY_SWAP_WEBHOOK_URL"),
     AlertConfig("SubtensorModule:swap_coldkey", "DISCORD_COLDKEY_SWAP_WEBHOOK_URL"),
 ]
+
+
+# Sentinel Storage Settings
+# SENTINEL_STORAGE_BACKEND: "filesystem" or "s3"
+# SENTINEL_STORAGE_OPTIONS: dict with backend-specific options
+# available options:
+# filesystem: base_path
+# s3: bucket, prefix, region_name, endpoint_url, aws_access_key_id, aws_secret_access_key
+SENTINEL_STORAGE_BACKEND = env("SENTINEL_STORAGE_BACKEND", default="filesystem")
+SENTINEL_STORAGE_OPTIONS = env.json("SENTINEL_STORAGE_OPTIONS", default={"base_path": str(root("storage"))})
