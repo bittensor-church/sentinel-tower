@@ -25,7 +25,7 @@ services:
       - POSTGRES_USER=${POSTGRES_USER}
       - POSTGRES_PASSWORD=${POSTGRES_PASSWORD}
     volumes:
-      - ./db/data:/var/lib/postgresql/data
+      - ${POSTGRES_DATA_PATH:-./db/data}:/var/lib/postgresql/data
     logging:
       <<: *logging
 
@@ -49,7 +49,7 @@ services:
     volumes:
       - backend-static:/root/src/static
       - gunicorn-socket:/var/run/gunicorn
-      - ./media:/root/src/media
+      - ${MEDIA_VOLUME_PATH:-./media}:/root/src/media
       # Add this mount to each container that should dump Prometheus metrics.
       - ./prometheus-metrics:/prometheus-multiproc-dir
     depends_on:
@@ -75,7 +75,7 @@ services:
       - BACKFILL_RATE_LIMIT=${BACKFILL_RATE_LIMIT:-1.0}
     volumes:
       - backend-static:/root/src/static
-      - ./media:/root/src/media
+      - ${MEDIA_VOLUME_PATH:-./media}:/root/src/media
       - ./prometheus-metrics:/prometheus-multiproc-dir
     depends_on:
       - celery-worker
@@ -98,7 +98,7 @@ services:
       - SENTINEL_MODE=${SENTINEL_MODE:-live}
     command: ./celery-entrypoint.sh
     volumes:
-      - ./media:/root/src/media
+      - ${MEDIA_VOLUME_PATH:-./media}:/root/src/media
       - ./prometheus-metrics:/prometheus-multiproc-dir
     tmpfs: /run
     depends_on:
@@ -152,7 +152,7 @@ services:
       - MEDIA_ROOT=${MEDIA_ROOT:-/root/src/media}
     command: ./dagster-entrypoint.sh
     volumes:
-      - ./media:/root/src/media
+      - ${MEDIA_VOLUME_PATH:-./media}:/root/src/media
       - dagster-storage:/root/src/.dagster
     depends_on:
       - redis
@@ -173,7 +173,7 @@ services:
       - MEDIA_ROOT=${MEDIA_ROOT:-/root/src/media}
     command: dagster-daemon run -m project.dagster.definitions
     volumes:
-      - ./media:/root/src/media
+      - ${MEDIA_VOLUME_PATH:-./media}:/root/src/media
       - dagster-storage:/root/src/.dagster
     depends_on:
       - dagster
@@ -198,7 +198,7 @@ services:
       - ./nginx/templates:/etc/nginx/templates
       - ./nginx/config_helpers:/etc/nginx/config_helpers
       - backend-static:/srv/static:ro
-      - ./media:/srv/media:ro
+      - ${MEDIA_VOLUME_PATH:-./media}:/srv/media:ro
       - ./letsencrypt/etc:/etc/letsencrypt
       - ./nginx/monitoring_certs:/etc/monitoring_certs
       - gunicorn-socket:/var/run/gunicorn:ro
