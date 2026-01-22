@@ -1,5 +1,3 @@
-"""Discord notification service for chain alerts."""
-
 import os
 from typing import Any
 
@@ -8,13 +6,51 @@ import structlog
 
 logger = structlog.get_logger()
 
+# Constants for string truncation
+MIN_LENGTH_FOR_TRUNCATION = 20
+MAX_CALL_ARGS_LENGTH = 1000
+MAX_LIST_ITEMS_DISPLAY = 3
+
+
+def _format_call_args(call_args: list[dict[str, Any]] | None) -> str:
+    """Format call arguments for display, truncating long values."""
+    if not call_args:
+        return "None"
+
+    lines = []
+    for arg in call_args:
+        name = arg.get("name", "unknown")
+        value = arg.get("value")
+
+        # Format value based on type
+        if isinstance(value, str) and len(value) > MIN_LENGTH_FOR_TRUNCATION:
+            value_display = f"{value[:10]}...{value[-8:]}"
+        elif isinstance(value, dict):
+            value_display = "{...}"
+        elif isinstance(value, list) and len(value) > MAX_LIST_ITEMS_DISPLAY:
+            value_display = f"[{len(value)} items]"
+        else:
+            value_display = str(value)
+
+        lines.append(f"**{name}**: `{value_display}`")
+
+    result = "\n".join(lines)
+    if len(result) > MAX_CALL_ARGS_LENGTH:
+        result = result[:MAX_CALL_ARGS_LENGTH] + "..."
+    return result
+
 # Alert configurations: (call_module, call_function or None for all) -> env var name
 ALERT_CONFIGS = {
     ("Sudo", None): "DISCORD_SUDO_ALERTS_WEBHOOK_URL",
+    ("AdminUtils", None): "DISCORD_ADMIN_UTILS_ALERTS_WEBHOOK_URL",
     ("SubtensorModule", "register_network"): "DISCORD_SUBNET_REGISTRATION_WEBHOOK_URL",
     ("SubtensorModule", "schedule_coldkey_swap"): "DISCORD_COLDKEY_SWAP_WEBHOOK_URL",
     ("SubtensorModule", "swap_coldkey"): "DISCORD_COLDKEY_SWAP_WEBHOOK_URL",
 }
+
+def is_disabled_url(url: str) -> bool:
+    """Check if a webhook URL is disabled or a placeholder."""
+    return not url or "disabled" in url or url == "https://discord.com/api/webhooks/0/disabled"
 
 
 def get_webhook_url(call_module: str, call_function: str) -> str | None:
@@ -31,7 +67,7 @@ def get_webhook_url(call_module: str, call_function: str) -> str | None:
     url = os.environ.get(env_var, "")
 
     # Skip disabled/placeholder URLs
-    if not url or "disabled" in url or url == "https://discord.com/api/webhooks/0/disabled":
+    if is_disabled_url(url):
         return None
 
     return url
@@ -46,11 +82,17 @@ def format_extrinsic_message(extrinsic: dict[str, Any]) -> dict[str, Any]:
     extrinsic_hash = extrinsic.get("extrinsic_hash", "N/A")
     success = extrinsic.get("success", False)
     netuid = extrinsic.get("netuid")
+    extrinsic_index = extrinsic.get("extrinsic_index", 0)
+    extrinsic_index_formatted = f"{extrinsic_index:04d}" if isinstance(extrinsic_index, int) else "0000"
+    tao_stats_link = f"https://taostats.io/extrinsic/{block_number}-{extrinsic_index_formatted}?network=finney"
 
     # Determine alert type and color
     if call_module == "Sudo":
         title = "Sudo Extrinsic Detected"
         color = 0xFF0000  # Red
+    elif call_module == "AdminUtils":
+        title = "AdminUtils Extrinsic Detected"
+        color = 0xFF4500  # Orange Red
     elif call_function == "register_network":
         title = "Subnet Registration Detected"
         color = 0x0099FF  # Blue
@@ -71,13 +113,24 @@ def format_extrinsic_message(extrinsic: dict[str, Any]) -> dict[str, Any]:
     if netuid is not None:
         fields.append({"name": "Netuid", "value": f"`{netuid}`", "inline": True})
 
-    # Truncate address and hash for display
-    if address and len(address) > 20:
-        address_display = f"{address[:10]}...{address[-8:]}"
-    else:
-        address_display = address or "N/A"
+    # Add call arguments if present
+    call_args = extrinsic.get("call_args")
+    import pdb; pdb.set_trace()
+    if call_args:
+        fields.append({
+            "name": "Parameters",
+            "value": _format_call_args(call_args),
+            "inline": False,
+        })
 
-    if extrinsic_hash and len(extrinsic_hash) > 20:
+    # Truncate address and hash for display
+    address_display = (
+        f"{address[:10]}...{address[-8:]}"
+        if address and len(address) > MIN_LENGTH_FOR_TRUNCATION
+        else address or "N/A"
+    )
+
+    if extrinsic_hash and len(extrinsic_hash) > MIN_LENGTH_FOR_TRUNCATION:
         hash_display = f"{extrinsic_hash[:10]}...{extrinsic_hash[-8:]}"
     else:
         hash_display = extrinsic_hash or "N/A"
@@ -86,17 +139,19 @@ def format_extrinsic_message(extrinsic: dict[str, Any]) -> dict[str, Any]:
         [
             {"name": "Signer", "value": f"`{address_display}`", "inline": False},
             {"name": "Hash", "value": f"`{hash_display}`", "inline": False},
-        ]
+            {"name": "TaoStats", "value": f"[View on TaoStats]({tao_stats_link})", "inline": False},
+        ],
     )
 
     return {
         "embeds": [
             {
                 "title": title,
+                "url": tao_stats_link,
                 "color": color,
                 "fields": fields,
-            }
-        ]
+            },
+        ],
     }
 
 
@@ -122,8 +177,6 @@ def send_discord_notification(extrinsic: dict[str, Any]) -> bool:
             call_function=call_function,
             block_number=extrinsic.get("block_number"),
         )
-        return True
-
     except httpx.HTTPStatusError as e:
         logger.warning(
             "Discord notification failed",
@@ -132,7 +185,7 @@ def send_discord_notification(extrinsic: dict[str, Any]) -> bool:
             call_function=call_function,
         )
         return False
-    except Exception as e:
+    except Exception as e:  # noqa: BLE001
         logger.warning(
             "Discord notification error",
             error=str(e),
@@ -140,6 +193,8 @@ def send_discord_notification(extrinsic: dict[str, Any]) -> bool:
             call_function=call_function,
         )
         return False
+    else:
+        return True
 
 
 def notify_matching_extrinsics(extrinsics: list[dict[str, Any]]) -> int:
