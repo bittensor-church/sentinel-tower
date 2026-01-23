@@ -405,17 +405,18 @@
           "thresholds": { "mode": "absolute", "steps": [{ "color": "green", "value": null }] }
         },
         "overrides": [
-          { "matcher": { "id": "byName", "options": "pos" }, "properties": [{ "id": "custom.width", "value": 40 }] },
-          { "matcher": { "id": "byRegexp", "options": "/(dividends)|(incentives)/" }, "properties": [{ "id": "custom.width", "value": 90 }, { "id": "unit", "value": "percentunit" }] },
-          { "matcher": { "id": "byName", "options": "alias" }, "properties": [{ "id": "custom.width", "value": 120 }] },
-          { "matcher": { "id": "byName", "options": "hotkey" }, "properties": [{ "id": "custom.inspect", "value": true }, { "id": "custom.width", "value": 100 }] },
-          { "matcher": { "id": "byName", "options": "coldkey" }, "properties": [{ "id": "custom.inspect", "value": true }, { "id": "custom.width", "value": 100 }] },
-          { "matcher": { "id": "byName", "options": "uid" }, "properties": [{ "id": "custom.width", "value": 40 }] },
-          { "matcher": { "id": "byName", "options": "stake" }, "properties": [{ "id": "custom.width", "value": 90 }, { "id": "displayName", "value": "Stake[TAO]" }] },
-          { "matcher": { "id": "byName", "options": "stake_normalized" }, "properties": [{ "id": "custom.width", "value": 80 }, { "id": "unit", "value": "percentunit" }, { "id": "decimals", "value": 3 }, { "id": "displayName", "value": "Stake[%]" }] },
+          { "matcher": { "id": "byName", "options": "pos" }, "properties": [{ "id": "custom.width", "value": 50 }] },
+          { "matcher": { "id": "byRegexp", "options": "/(dividends)|(incentives)/" }, "properties": [{ "id": "custom.width", "value": 100 }, { "id": "unit", "value": "percentunit" }] },
+          { "matcher": { "id": "byName", "options": "alias" }, "properties": [{ "id": "custom.width", "value": 180 }] },
+          { "matcher": { "id": "byName", "options": "hotkey" }, "properties": [{ "id": "custom.inspect", "value": true }, { "id": "custom.width", "value": 400 }] },
+          { "matcher": { "id": "byName", "options": "coldkey" }, "properties": [{ "id": "custom.inspect", "value": true }, { "id": "custom.width", "value": 400 }] },
+          { "matcher": { "id": "byName", "options": "uid" }, "properties": [{ "id": "custom.width", "value": 50 }] },
+          { "matcher": { "id": "byName", "options": "stake" }, "properties": [{ "id": "custom.width", "value": 120 }, { "id": "displayName", "value": "Stake[TAO]" }] },
+          { "matcher": { "id": "byName", "options": "stake_normalized" }, "properties": [{ "id": "custom.width", "value": 100 }, { "id": "unit", "value": "percentunit" }, { "id": "decimals", "value": 3 }, { "id": "displayName", "value": "Stake[%]" }] },
+          { "matcher": { "id": "byName", "options": "div2stake" }, "properties": [{ "id": "custom.width", "value": 100 }, { "id": "custom.cellOptions", "value": { "mode": "gradient", "type": "gauge" } }, { "id": "min", "value": 0 }, { "id": "max", "value": 300 }, { "id": "thresholds", "value": { "mode": "absolute", "steps": [{ "color": "red", "value": null }, { "color": "yellow", "value": 100 }, { "color": "green", "value": 200 }] } }] },
           { "matcher": { "id": "byName", "options": "is_validator" }, "properties": [{ "id": "custom.cellOptions", "value": { "mode": "gradient", "type": "color-background" } }, { "id": "custom.width", "value": 60 }, { "id": "displayName", "value": "Vali" }, { "id": "mappings", "value": [{ "options": { "true": { "color": "green", "index": 0, "text": "Yes" }, "false": { "color": "text", "index": 1, "text": "No" } }, "type": "value" }] }] },
           { "matcher": { "id": "byName", "options": "is_immune" }, "properties": [{ "id": "custom.cellOptions", "value": { "mode": "gradient", "type": "color-background" } }, { "id": "custom.width", "value": 80 }, { "id": "mappings", "value": [{ "options": { "true": { "color": "yellow", "index": 0, "text": "Yes" }, "false": { "color": "text", "index": 1, "text": "No" } }, "type": "value" }] }] },
-          { "matcher": { "id": "byName", "options": "neuron_version" }, "properties": [{ "id": "custom.width", "value": 100 }] }
+          { "matcher": { "id": "byName", "options": "neuron_version" }, "properties": [{ "id": "custom.width", "value": 120 }] }
         ]
       },
       "gridPos": { "h": 20, "w": 24, "x": 0, "y": 133 },
@@ -424,7 +425,7 @@
       "targets": [{
         "datasource": { "type": "postgres", "uid": "postgresql" },
         "rawQuery": true,
-        "rawSql": "WITH stake_sum AS (SELECT SUM(ns.total_stake) / 1e9 AS total_stake_sum_tao FROM metagraph_neuron_snapshot ns JOIN metagraph_neuron n ON ns.neuron_id = n.id WHERE n.subnet_id = ${subnet} AND ns.block_id = (SELECT MAX(block_id) FROM metagraph_dump WHERE netuid = ${subnet})) SELECT ROW_NUMBER() OVER(ORDER BY ns.emissions DESC) AS pos, mm.dividend AS dividends, mm.incentive AS incentives, COALESCE(NULLIF(h.label, ''), LEFT(h.hotkey, 8) || '...') AS alias, h.hotkey AS hotkey, c.coldkey AS coldkey, ns.uid, ns.total_stake / 1e9 AS stake, ns.total_stake / 1e9 / stake_sum.total_stake_sum_tao AS stake_normalized, ns.is_validator, ns.is_immune, ns.neuron_version FROM metagraph_neuron n JOIN metagraph_hotkey h ON n.hotkey_id = h.id JOIN metagraph_coldkey c ON h.coldkey_id = c.id JOIN metagraph_neuron_snapshot ns ON ns.neuron_id = n.id LEFT JOIN metagraph_mechanism_metrics mm ON mm.snapshot_id = ns.id AND mm.mech_id = ${mech_id} CROSS JOIN stake_sum WHERE n.subnet_id = ${subnet} AND ns.block_id = (SELECT MAX(block_id) FROM metagraph_dump WHERE netuid = ${subnet}) ORDER BY ns.emissions DESC",
+        "rawSql": "WITH stake_sum AS (SELECT SUM(ns.total_stake) AS total_stake_sum, SUM(ns.total_stake) / 1e9 AS total_stake_sum_tao FROM metagraph_neuron_snapshot ns JOIN metagraph_neuron n ON ns.neuron_id = n.id WHERE n.subnet_id = ${subnet} AND ns.block_id = (SELECT MAX(block_id) FROM metagraph_dump WHERE netuid = ${subnet})) SELECT ROW_NUMBER() OVER(ORDER BY ns.emissions DESC) AS pos, mm.dividend AS dividends, mm.incentive AS incentives, COALESCE(NULLIF(h.label, ''), LEFT(h.hotkey, 8) || '...') AS alias, h.hotkey AS hotkey, c.coldkey AS coldkey, ns.uid, ns.total_stake / 1e9 AS stake, ns.total_stake / 1e9 / stake_sum.total_stake_sum_tao AS stake_normalized, (1e33 * mm.dividend / GREATEST(1.0, ns.total_stake::numeric) / GREATEST(1.0, stake_sum.total_stake_sum::numeric))::bigint AS div2stake, ns.is_validator, ns.is_immune, ns.neuron_version FROM metagraph_neuron n JOIN metagraph_hotkey h ON n.hotkey_id = h.id JOIN metagraph_coldkey c ON h.coldkey_id = c.id JOIN metagraph_neuron_snapshot ns ON ns.neuron_id = n.id LEFT JOIN metagraph_mechanism_metrics mm ON mm.snapshot_id = ns.id AND mm.mech_id = ${mech_id} CROSS JOIN stake_sum WHERE n.subnet_id = ${subnet} AND ns.block_id = (SELECT MAX(block_id) FROM metagraph_dump WHERE netuid = ${subnet}) ORDER BY ns.emissions DESC",
         "refId": "A",
         "format": "table"
       }],
