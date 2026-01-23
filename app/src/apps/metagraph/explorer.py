@@ -15,7 +15,7 @@ from django.http import JsonResponse
 from django.template.response import TemplateResponse
 from django.urls import path
 
-from .models import Block, MechanismMetrics, NeuronSnapshot, Subnet
+from .models import Block, MechanismMetrics, MetagraphDump, NeuronSnapshot, Subnet
 
 
 class MetagraphExplorerAdmin(admin.ModelAdmin):
@@ -82,26 +82,25 @@ class MetagraphExplorer:
         if not subnet_id:
             return JsonResponse({"error": "subnet_id required"}, status=400)
 
-        # Get blocks that have snapshots for this subnet
-        blocks = (
-            NeuronSnapshot.objects.filter(neuron__subnet_id=subnet_id)
-            .values("block_id", "block__timestamp")
-            .distinct()
-            .order_by("-block_id")[:100]
+        # Use MetagraphDump for fast block lookup (indexed by netuid)
+        dumps = (
+            MetagraphDump.objects.filter(netuid=subnet_id)
+            .select_related("block")
+            .order_by("-block__number")[:100]
         )
 
         return JsonResponse(
             {
                 "blocks": [
                     {
-                        "number": b["block_id"],
+                        "number": d.block.number,
                         "timestamp": (
-                            b["block__timestamp"].isoformat()
-                            if b["block__timestamp"]
+                            d.block.timestamp.isoformat()
+                            if d.block.timestamp
                             else None
                         ),
                     }
-                    for b in blocks
+                    for d in dumps
                 ]
             }
         )
