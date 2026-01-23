@@ -1,5 +1,6 @@
 from django.contrib import admin
 
+from .explorer import get_explorer_urls
 from .models import (
     Block,
     Bond,
@@ -14,6 +15,16 @@ from .models import (
     Subnet,
     Weight,
 )
+
+_original_get_urls = admin.site.__class__.get_urls
+
+
+def _patched_get_urls(self):  # type: ignore[no-untyped-def]
+    urls = _original_get_urls(self)
+    return get_explorer_urls(self) + urls
+
+
+admin.site.__class__.get_urls = _patched_get_urls
 
 
 @admin.register(Coldkey)
@@ -93,7 +104,7 @@ class NeuronSnapshotAdmin(admin.ModelAdmin):
         "is_validator",
     )
     search_fields = ("neuron__hotkey__hotkey", "uid")
-    list_filter = ("is_active", "is_validator", "is_immune", "has_any_weights", "block")
+    list_filter = ("is_active", "is_validator", "is_immune", "has_any_weights")
     raw_id_fields = ("neuron", "block")
     inlines = [MechanismMetricsInline]
 
