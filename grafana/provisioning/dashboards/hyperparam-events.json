@@ -210,11 +210,11 @@
       "targets": [{
         "datasource": { "type": "postgres", "uid": "postgresql" },
         "rawQuery": true,
-        "rawSql": "SELECT param_name, value, last_block_number, updated_at FROM subnet_hyperparams WHERE netuid = ${netuid:raw} ORDER BY param_name",
+        "rawSql": "SELECT param_name, value, last_block_number, updated_at FROM subnet_hyperparams WHERE netuid IN (${netuid:raw}) ORDER BY param_name",
         "refId": "A",
         "format": "table"
       }],
-      "title": "Current Hyperparam Values (Subnet ${netuid:raw})",
+      "title": "Current Hyperparam Values",
       "type": "table"
     },
     {
@@ -237,11 +237,11 @@
       "targets": [{
         "datasource": { "type": "postgres", "uid": "postgresql" },
         "rawQuery": true,
-        "rawSql": "SELECT created_at as time, param_name, COALESCE(old_value::text, 'N/A') || ' → ' || new_value::text as change, block_number, SUBSTRING(address, 1, 8) || '...' as signer, success FROM subnet_hyperparam_history WHERE netuid = ${netuid:raw} ORDER BY created_at DESC LIMIT 30",
+        "rawSql": "SELECT created_at as time, param_name, COALESCE(old_value::text, 'N/A') || ' → ' || new_value::text as change, block_number, SUBSTRING(address, 1, 8) || '...' as signer, success FROM subnet_hyperparam_history WHERE netuid IN (${netuid:raw}) ORDER BY created_at DESC LIMIT 30",
         "refId": "A",
         "format": "table"
       }],
-      "title": "Recent Changes (Subnet ${netuid:raw})",
+      "title": "Recent Changes",
       "type": "table"
     },
     {
@@ -261,11 +261,11 @@
       "targets": [{
         "datasource": { "type": "postgres", "uid": "postgresql" },
         "rawQuery": true,
-        "rawSql": "SELECT created_at as time, param_name as metric, CASE WHEN jsonb_typeof(new_value) = 'number' THEN new_value::text::numeric ELSE NULL END as value FROM subnet_hyperparam_history WHERE netuid = ${netuid:raw} AND param_name IN ('tempo', 'weights_rate_limit', 'activity_cutoff', 'immunity_period') AND created_at >= NOW() - INTERVAL '30 days' ORDER BY created_at",
+        "rawSql": "SELECT created_at as time, param_name as metric, CASE WHEN jsonb_typeof(new_value) = 'number' THEN new_value::text::numeric ELSE NULL END as value FROM subnet_hyperparam_history WHERE netuid IN (${netuid:raw}) AND param_name IN ('tempo', 'weights_rate_limit', 'activity_cutoff', 'immunity_period') AND created_at >= NOW() - INTERVAL '30 days' ORDER BY created_at",
         "refId": "A",
         "format": "time_series"
       }],
-      "title": "Key Hyperparams Over Time (Subnet ${netuid:raw})",
+      "title": "Key Hyperparams Over Time",
       "type": "timeseries"
     },
     {
@@ -285,11 +285,11 @@
       "targets": [{
         "datasource": { "type": "postgres", "uid": "postgresql" },
         "rawQuery": true,
-        "rawSql": "SELECT date_trunc('day', created_at) as time, param_name as metric, COUNT(*) as value FROM subnet_hyperparam_history WHERE netuid = ${netuid:raw} AND created_at >= NOW() - INTERVAL '30 days' GROUP BY 1, 2 ORDER BY 1",
+        "rawSql": "SELECT date_trunc('day', created_at) as time, param_name as metric, COUNT(*) as value FROM subnet_hyperparam_history WHERE netuid IN (${netuid:raw}) AND created_at >= NOW() - INTERVAL '30 days' GROUP BY 1, 2 ORDER BY 1",
         "refId": "A",
         "format": "time_series"
       }],
-      "title": "Changes Per Day by Param (Subnet ${netuid:raw})",
+      "title": "Changes Per Day by Param",
       "type": "timeseries"
     },
     {
