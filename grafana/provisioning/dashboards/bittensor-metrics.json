@@ -184,7 +184,10 @@
       },
       "fieldConfig": {
         "defaults": { "color": { "mode": "palette-classic" }, "custom": { "hideFrom": { "legend": false, "tooltip": false, "viz": false } }, "mappings": [] },
-        "overrides": []
+        "overrides": [
+          { "matcher": { "id": "byName", "options": "Success" }, "properties": [{ "id": "color", "value": { "fixedColor": "green", "mode": "fixed" } }] },
+          { "matcher": { "id": "byName", "options": "Failed" }, "properties": [{ "id": "color", "value": { "fixedColor": "red", "mode": "fixed" } }] }
+        ]
       },
       "gridPos": { "h": 8, "w": 8, "x": 8, "y": 13 },
       "id": 9,
@@ -205,12 +208,12 @@
           "mappings": [],
           "thresholds": { "mode": "absolute", "steps": [{ "color": "green", "value": null }] }
         },
-        "overrides": [{ "matcher": { "id": "byName", "options": "count" }, "properties": [{ "id": "custom.cellOptions", "value": { "mode": "gradient", "type": "gauge" } }] }]
+        "overrides": [{ "matcher": { "id": "byName", "options": "count" }, "properties": [{ "id": "custom.cellOptions", "value": { "mode": "gradient", "type": "gauge" } }] }, { "matcher": { "id": "byName", "options": "address" }, "properties": [{ "id": "custom.width", "value": 120 }, { "id": "custom.inspect", "value": true }] }]
       },
       "gridPos": { "h": 8, "w": 8, "x": 16, "y": 13 },
       "id": 10,
       "options": { "cellHeight": "sm", "footer": { "countRows": false, "fields": "", "reducer": ["sum"], "show": true }, "showHeader": true, "sortBy": [{ "desc": true, "displayName": "count" }] },
-      "targets": [{ "datasource": { "type": "postgres", "uid": "postgresql" }, "rawQuery": true, "rawSql": "SELECT SUBSTRING(address, 1, 8) || '...' as address, COUNT(*) as count FROM extrinsics WHERE address != '' GROUP BY address ORDER BY count DESC LIMIT 15", "refId": "A", "format": "table" }],
+      "targets": [{ "datasource": { "type": "postgres", "uid": "postgresql" }, "rawQuery": true, "rawSql": "SELECT address, COUNT(*) as count FROM extrinsics WHERE address != '' GROUP BY address ORDER BY count DESC LIMIT 15", "refId": "A", "format": "table" }],
       "title": "Most Active Addresses",
       "type": "table"
     },
@@ -344,13 +347,13 @@
         },
         "overrides": [
           { "matcher": { "id": "byName", "options": "success" }, "properties": [{ "id": "mappings", "value": [{ "options": { "true": { "color": "green", "index": 0, "text": "Success" }, "false": { "color": "red", "index": 1, "text": "Failed" } }, "type": "value" }] }, { "id": "custom.cellOptions", "value": { "type": "color-background" } }] },
-          { "matcher": { "id": "byName", "options": "address" }, "properties": [{ "id": "custom.width", "value": 150 }] }
+          { "matcher": { "id": "byName", "options": "address" }, "properties": [{ "id": "custom.width", "value": 150 }, { "id": "custom.inspect", "value": true }] }
         ]
       },
       "gridPos": { "h": 10, "w": 12, "x": 12, "y": 41 },
       "id": 15,
       "options": { "cellHeight": "sm", "footer": { "countRows": false, "fields": "", "reducer": ["sum"], "show": false }, "showHeader": true },
-      "targets": [{ "datasource": { "type": "postgres", "uid": "postgresql" }, "rawQuery": true, "rawSql": "SELECT created_at as time, call_module, call_function, netuid, SUBSTRING(address, 1, 8) || '...' as address, success, block_number FROM extrinsics ORDER BY created_at DESC LIMIT 50", "refId": "A", "format": "table" }],
+      "targets": [{ "datasource": { "type": "postgres", "uid": "postgresql" }, "rawQuery": true, "rawSql": "SELECT created_at as time, call_module, call_function, netuid, address, success, block_number FROM extrinsics ORDER BY created_at DESC LIMIT 50", "refId": "A", "format": "table" }],
       "title": "Recent Extrinsics",
       "type": "table"
     }
@@ -364,18 +367,18 @@
       {
         "current": { "selected": false, "text": "All", "value": "$__all" },
         "datasource": { "type": "postgres", "uid": "postgresql" },
-        "definition": "SELECT DISTINCT netuid FROM extrinsics WHERE netuid IS NOT NULL ORDER BY netuid",
+        "definition": "SELECT netuid AS __value, netuid || ' - ' || COALESCE(name, 'Unknown') AS __text FROM metagraph_subnet WHERE netuid != 0 ORDER BY netuid",
         "hide": 0,
         "includeAll": true,
         "label": "Subnet",
         "multi": true,
         "name": "netuid",
         "options": [],
-        "query": "SELECT DISTINCT netuid FROM extrinsics WHERE netuid IS NOT NULL ORDER BY netuid",
+        "query": "SELECT netuid AS __value, netuid || ' - ' || COALESCE(name, 'Unknown') AS __text FROM metagraph_subnet WHERE netuid != 0 ORDER BY netuid",
         "refresh": 1,
         "regex": "",
         "skipUrlSync": false,
-        "sort": 1,
+        "sort": 0,
         "type": "query"
       }
     ]

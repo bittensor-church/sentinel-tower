@@ -8,6 +8,99 @@
   "liveNow": false,
   "panels": [
     {
+      "collapsed": false,
+      "gridPos": { "h": 1, "w": 24, "x": 0, "y": 0 },
+      "id": 200,
+      "panels": [],
+      "title": "Overview (All Subnets)",
+      "type": "row"
+    },
+    {
+      "datasource": { "type": "postgres", "uid": "postgresql" },
+      "fieldConfig": { "defaults": { "color": { "mode": "thresholds" }, "mappings": [], "thresholds": { "mode": "absolute", "steps": [{ "color": "green", "value": null }] } }, "overrides": [] },
+      "gridPos": { "h": 4, "w": 4, "x": 0, "y": 1 },
+      "id": 201,
+      "options": { "colorMode": "value", "graphMode": "area", "justifyMode": "auto", "orientation": "auto", "reduceOptions": { "calcs": ["lastNotNull"], "fields": "", "values": false }, "textMode": "auto" },
+      "targets": [{ "datasource": { "type": "postgres", "uid": "postgresql" }, "rawQuery": true, "rawSql": "SELECT COUNT(*) as value FROM extrinsics WHERE call_module IN ('AdminUtils', 'Sudo') AND created_at >= NOW() - INTERVAL '24 hours'", "refId": "A", "format": "table" }],
+      "title": "Changes (24h)",
+      "type": "stat"
+    },
+    {
+      "datasource": { "type": "postgres", "uid": "postgresql" },
+      "fieldConfig": { "defaults": { "color": { "mode": "thresholds" }, "mappings": [], "thresholds": { "mode": "absolute", "steps": [{ "color": "blue", "value": null }] } }, "overrides": [] },
+      "gridPos": { "h": 4, "w": 4, "x": 4, "y": 1 },
+      "id": 202,
+      "options": { "colorMode": "value", "graphMode": "area", "justifyMode": "auto", "orientation": "auto", "reduceOptions": { "calcs": ["lastNotNull"], "fields": "", "values": false }, "textMode": "auto" },
+      "targets": [{ "datasource": { "type": "postgres", "uid": "postgresql" }, "rawQuery": true, "rawSql": "SELECT COUNT(*) as value FROM extrinsics WHERE call_module IN ('AdminUtils', 'Sudo') AND created_at >= NOW() - INTERVAL '7 days'", "refId": "A", "format": "table" }],
+      "title": "Changes (7d)",
+      "type": "stat"
+    },
+    {
+      "datasource": { "type": "postgres", "uid": "postgresql" },
+      "fieldConfig": { "defaults": { "color": { "mode": "thresholds" }, "mappings": [], "thresholds": { "mode": "absolute", "steps": [{ "color": "red", "value": null }] } }, "overrides": [] },
+      "gridPos": { "h": 4, "w": 4, "x": 8, "y": 1 },
+      "id": 203,
+      "options": { "colorMode": "value", "graphMode": "area", "justifyMode": "auto", "orientation": "auto", "reduceOptions": { "calcs": ["lastNotNull"], "fields": "", "values": false }, "textMode": "auto" },
+      "targets": [{ "datasource": { "type": "postgres", "uid": "postgresql" }, "rawQuery": true, "rawSql": "SELECT COUNT(*) as value FROM extrinsics WHERE call_module = 'Sudo' AND created_at >= NOW() - INTERVAL '7 days'", "refId": "A", "format": "table" }],
+      "title": "Sudo Calls (7d)",
+      "type": "stat"
+    },
+    {
+      "datasource": { "type": "postgres", "uid": "postgresql" },
+      "fieldConfig": { "defaults": { "color": { "mode": "thresholds" }, "mappings": [], "thresholds": { "mode": "absolute", "steps": [{ "color": "orange", "value": null }] } }, "overrides": [] },
+      "gridPos": { "h": 4, "w": 4, "x": 12, "y": 1 },
+      "id": 204,
+      "options": { "colorMode": "value", "graphMode": "area", "justifyMode": "auto", "orientation": "auto", "reduceOptions": { "calcs": ["lastNotNull"], "fields": "", "values": false }, "textMode": "auto" },
+      "targets": [{ "datasource": { "type": "postgres", "uid": "postgresql" }, "rawQuery": true, "rawSql": "SELECT COUNT(*) as value FROM extrinsics WHERE call_module = 'AdminUtils' AND created_at >= NOW() - INTERVAL '7 days'", "refId": "A", "format": "table" }],
+      "title": "AdminUtils (7d)",
+      "type": "stat"
+    },
+    {
+      "datasource": { "type": "postgres", "uid": "postgresql" },
+      "fieldConfig": { "defaults": { "color": { "mode": "thresholds" }, "mappings": [], "thresholds": { "mode": "absolute", "steps": [{ "color": "purple", "value": null }] } }, "overrides": [] },
+      "gridPos": { "h": 4, "w": 4, "x": 16, "y": 1 },
+      "id": 205,
+      "options": { "colorMode": "value", "graphMode": "area", "justifyMode": "auto", "orientation": "auto", "reduceOptions": { "calcs": ["lastNotNull"], "fields": "", "values": false }, "textMode": "auto" },
+      "targets": [{ "datasource": { "type": "postgres", "uid": "postgresql" }, "rawQuery": true, "rawSql": "SELECT COUNT(DISTINCT netuid) as value FROM extrinsics WHERE call_module IN ('AdminUtils', 'Sudo') AND created_at >= NOW() - INTERVAL '7 days'", "refId": "A", "format": "table" }],
+      "title": "Subnets Affected (7d)",
+      "type": "stat"
+    },
+    {
+      "datasource": { "type": "postgres", "uid": "postgresql" },
+      "fieldConfig": { "defaults": { "color": { "mode": "thresholds" }, "mappings": [], "thresholds": { "mode": "absolute", "steps": [{ "color": "yellow", "value": null }] } }, "overrides": [] },
+      "gridPos": { "h": 4, "w": 4, "x": 20, "y": 1 },
+      "id": 206,
+      "options": { "colorMode": "value", "graphMode": "area", "justifyMode": "auto", "orientation": "auto", "reduceOptions": { "calcs": ["lastNotNull"], "fields": "", "values": false }, "textMode": "auto" },
+      "targets": [{ "datasource": { "type": "postgres", "uid": "postgresql" }, "rawQuery": true, "rawSql": "SELECT COUNT(DISTINCT call_function) as value FROM extrinsics WHERE call_module IN ('AdminUtils', 'Sudo') AND created_at >= NOW() - INTERVAL '7 days'", "refId": "A", "format": "table" }],
+      "title": "Functions Used (7d)",
+      "type": "stat"
+    },
+    {
+      "datasource": { "type": "postgres", "uid": "postgresql" },
+      "fieldConfig": {
+        "defaults": { "color": { "mode": "thresholds" }, "custom": { "align": "auto", "cellOptions": { "type": "auto" }, "inspect": false }, "mappings": [], "thresholds": { "mode": "absolute", "steps": [{ "color": "green", "value": null }] } },
+        "overrides": [
+          { "matcher": { "id": "byName", "options": "success" }, "properties": [{ "id": "mappings", "value": [{ "options": { "true": { "color": "green", "index": 0, "text": "Success" }, "false": { "color": "red", "index": 1, "text": "Failed" } }, "type": "value" }] }, { "id": "custom.cellOptions", "value": { "type": "color-background" } }] },
+          { "matcher": { "id": "byName", "options": "address" }, "properties": [{ "id": "custom.width", "value": 150 }, { "id": "custom.inspect", "value": true }] },
+          { "matcher": { "id": "byName", "options": "call_args" }, "properties": [{ "id": "custom.width", "value": 250 }, { "id": "custom.inspect", "value": true }] }
+        ]
+      },
+      "gridPos": { "h": 10, "w": 24, "x": 0, "y": 5 },
+      "id": 207,
+      "options": { "cellHeight": "sm", "footer": { "countRows": false, "fields": "", "reducer": ["sum"], "show": false }, "showHeader": true },
+      "targets": [{ "datasource": { "type": "postgres", "uid": "postgresql" }, "rawQuery": true, "rawSql": "SELECT created_at as time, call_module, call_function, netuid, call_args, address, block_number, success FROM extrinsics WHERE call_module IN ('AdminUtils', 'Sudo') ORDER BY created_at DESC LIMIT 30", "refId": "A", "format": "table" }],
+      "title": "Recent Sudo & AdminUtils Calls (All Subnets)",
+      "type": "table"
+    },
+    {
+      "collapsed": false,
+      "gridPos": { "h": 1, "w": 24, "x": 0, "y": 15 },
+      "id": 208,
+      "panels": [],
+      "title": "Subnet ${netuid} Details",
+      "type": "row"
+    },
+    {
       "datasource": { "type": "postgres", "uid": "postgresql" },
       "fieldConfig": {
         "defaults": {
@@ -21,7 +114,7 @@
           { "matcher": { "id": "byName", "options": "value" }, "properties": [{ "id": "custom.width", "value": 150 }] }
         ]
       },
-      "gridPos": { "h": 14, "w": 12, "x": 0, "y": 0 },
+      "gridPos": { "h": 14, "w": 12, "x": 0, "y": 16 },
       "id": 1,
       "options": { "cellHeight": "sm", "footer": { "countRows": false, "fields": "", "reducer": ["sum"], "show": false }, "showHeader": true, "sortBy": [{ "desc": false, "displayName": "param_name" }] },
       "targets": [{
@@ -31,7 +124,7 @@
         "refId": "A",
         "format": "table"
       }],
-      "title": "Current Hyperparam Values (Subnet ${netuid})",
+      "title": "Current Hyperparam Values",
       "type": "table"
     },
     {
@@ -48,7 +141,7 @@
           { "matcher": { "id": "byName", "options": "change" }, "properties": [{ "id": "custom.width", "value": 200 }] }
         ]
       },
-      "gridPos": { "h": 14, "w": 12, "x": 12, "y": 0 },
+      "gridPos": { "h": 14, "w": 12, "x": 12, "y": 16 },
       "id": 2,
       "options": { "cellHeight": "sm", "footer": { "countRows": false, "fields": "", "reducer": ["sum"], "show": false }, "showHeader": true },
       "targets": [{
@@ -58,7 +151,7 @@
         "refId": "A",
         "format": "table"
       }],
-      "title": "Recent Changes (Subnet ${netuid})",
+      "title": "Recent Changes",
       "type": "table"
     },
     {
@@ -72,7 +165,7 @@
         },
         "overrides": []
       },
-      "gridPos": { "h": 10, "w": 12, "x": 0, "y": 14 },
+      "gridPos": { "h": 10, "w": 12, "x": 0, "y": 30 },
       "id": 3,
       "options": { "legend": { "calcs": ["last"], "displayMode": "table", "placement": "right", "showLegend": true }, "tooltip": { "mode": "multi", "sort": "desc" } },
       "targets": [{
@@ -96,7 +189,7 @@
         },
         "overrides": []
       },
-      "gridPos": { "h": 10, "w": 12, "x": 12, "y": 14 },
+      "gridPos": { "h": 10, "w": 12, "x": 12, "y": 30 },
       "id": 4,
       "options": { "legend": { "calcs": ["sum"], "displayMode": "table", "placement": "right", "showLegend": true }, "tooltip": { "mode": "multi", "sort": "desc" } },
       "targets": [{
@@ -111,16 +204,16 @@
     },
     {
       "collapsed": false,
-      "gridPos": { "h": 1, "w": 24, "x": 0, "y": 24 },
+      "gridPos": { "h": 1, "w": 24, "x": 0, "y": 40 },
       "id": 100,
       "panels": [],
-      "title": "AdminUtils Extrinsics",
+      "title": "AdminUtils Extrinsics (Subnet ${netuid})",
       "type": "row"
     },
     {
       "datasource": { "type": "postgres", "uid": "postgresql" },
       "fieldConfig": { "defaults": { "color": { "mode": "thresholds" }, "mappings": [], "thresholds": { "mode": "absolute", "steps": [{ "color": "green", "value": null }, { "color": "yellow", "value": 5 }, { "color": "red", "value": 20 }] } }, "overrides": [] },
-      "gridPos": { "h": 4, "w": 6, "x": 0, "y": 25 },
+      "gridPos": { "h": 4, "w": 6, "x": 0, "y": 41 },
       "id": 5,
       "options": { "colorMode": "value", "graphMode": "area", "justifyMode": "auto", "orientation": "auto", "reduceOptions": { "calcs": ["lastNotNull"], "fields": "", "values": false }, "textMode": "auto" },
       "targets": [{ "datasource": { "type": "postgres", "uid": "postgresql" }, "rawQuery": true, "rawSql": "SELECT COUNT(*) as value FROM extrinsics WHERE call_module = 'AdminUtils' AND netuid = ${netuid} AND created_at >= NOW() - INTERVAL '24 hours'", "refId": "A", "format": "table" }],
@@ -130,7 +223,7 @@
     {
       "datasource": { "type": "postgres", "uid": "postgresql" },
       "fieldConfig": { "defaults": { "color": { "mode": "thresholds" }, "mappings": [], "thresholds": { "mode": "absolute", "steps": [{ "color": "blue", "value": null }] } }, "overrides": [] },
-      "gridPos": { "h": 4, "w": 6, "x": 6, "y": 25 },
+      "gridPos": { "h": 4, "w": 6, "x": 6, "y": 41 },
       "id": 6,
       "options": { "colorMode": "value", "graphMode": "area", "justifyMode": "auto", "orientation": "auto", "reduceOptions": { "calcs": ["lastNotNull"], "fields": "", "values": false }, "textMode": "auto" },
       "targets": [{ "datasource": { "type": "postgres", "uid": "postgresql" }, "rawQuery": true, "rawSql": "SELECT COUNT(*) as value FROM extrinsics WHERE call_module = 'AdminUtils' AND netuid = ${netuid} AND created_at >= NOW() - INTERVAL '7 days'", "refId": "A", "format": "table" }],
@@ -140,7 +233,7 @@
     {
       "datasource": { "type": "postgres", "uid": "postgresql" },
       "fieldConfig": { "defaults": { "color": { "mode": "thresholds" }, "mappings": [], "thresholds": { "mode": "absolute", "steps": [{ "color": "purple", "value": null }] } }, "overrides": [] },
-      "gridPos": { "h": 4, "w": 6, "x": 12, "y": 25 },
+      "gridPos": { "h": 4, "w": 6, "x": 12, "y": 41 },
       "id": 7,
       "options": { "colorMode": "value", "graphMode": "area", "justifyMode": "auto", "orientation": "auto", "reduceOptions": { "calcs": ["lastNotNull"], "fields": "", "values": false }, "textMode": "auto" },
       "targets": [{ "datasource": { "type": "postgres", "uid": "postgresql" }, "rawQuery": true, "rawSql": "SELECT COUNT(*) as value FROM extrinsics WHERE call_module = 'AdminUtils' AND netuid = ${netuid}", "refId": "A", "format": "table" }],
@@ -150,7 +243,7 @@
     {
       "datasource": { "type": "postgres", "uid": "postgresql" },
       "fieldConfig": { "defaults": { "color": { "mode": "thresholds" }, "mappings": [], "thresholds": { "mode": "absolute", "steps": [{ "color": "orange", "value": null }] } }, "overrides": [] },
-      "gridPos": { "h": 4, "w": 6, "x": 18, "y": 25 },
+      "gridPos": { "h": 4, "w": 6, "x": 18, "y": 41 },
       "id": 8,
       "options": { "colorMode": "value", "graphMode": "area", "justifyMode": "auto", "orientation": "auto", "reduceOptions": { "calcs": ["lastNotNull"], "fields": "", "values": false }, "textMode": "auto" },
       "targets": [{ "datasource": { "type": "postgres", "uid": "postgresql" }, "rawQuery": true, "rawSql": "SELECT COUNT(DISTINCT call_function) as value FROM extrinsics WHERE call_module = 'AdminUtils' AND netuid = ${netuid}", "refId": "A", "format": "table" }],
@@ -163,7 +256,7 @@
         "defaults": { "color": { "mode": "palette-classic" }, "custom": { "axisBorderShow": false, "axisCenteredZero": false, "axisColorMode": "text", "axisLabel": "", "axisPlacement": "auto", "barAlignment": 0, "drawStyle": "bars", "fillOpacity": 80, "gradientMode": "none", "hideFrom": { "legend": false, "tooltip": false, "viz": false }, "insertNulls": false, "lineInterpolation": "linear", "lineWidth": 1, "pointSize": 5, "scaleDistribution": { "type": "linear" }, "showPoints": "auto", "spanNulls": false, "stacking": { "group": "A", "mode": "normal" }, "thresholdsStyle": { "mode": "off" } }, "mappings": [], "thresholds": { "mode": "absolute", "steps": [{ "color": "green", "value": null }] } },
         "overrides": []
       },
-      "gridPos": { "h": 8, "w": 16, "x": 0, "y": 29 },
+      "gridPos": { "h": 8, "w": 16, "x": 0, "y": 45 },
       "id": 9,
       "options": { "legend": { "calcs": [], "displayMode": "list", "placement": "bottom", "showLegend": true }, "tooltip": { "mode": "single", "sort": "none" } },
       "targets": [{ "datasource": { "type": "postgres", "uid": "postgresql" }, "rawQuery": true, "rawSql": "SELECT date_trunc('day', created_at) as time, call_function as metric, COUNT(*) as value FROM extrinsics WHERE call_module = 'AdminUtils' AND netuid = ${netuid} AND created_at >= NOW() - INTERVAL '30 days' GROUP BY 1, 2 ORDER BY 1", "refId": "A", "format": "time_series" }],
@@ -173,7 +266,7 @@
     {
       "datasource": { "type": "postgres", "uid": "postgresql" },
       "fieldConfig": { "defaults": { "color": { "mode": "palette-classic" }, "custom": { "hideFrom": { "legend": false, "tooltip": false, "viz": false } }, "mappings": [] }, "overrides": [] },
-      "gridPos": { "h": 8, "w": 8, "x": 16, "y": 29 },
+      "gridPos": { "h": 8, "w": 8, "x": 16, "y": 45 },
       "id": 10,
       "options": { "legend": { "displayMode": "list", "placement": "right", "showLegend": true }, "pieType": "pie", "reduceOptions": { "calcs": ["lastNotNull"], "fields": "/^value$/", "values": true }, "tooltip": { "mode": "single", "sort": "none" }, "displayLabels": ["name", "value"] },
       "targets": [{ "datasource": { "type": "postgres", "uid": "postgresql" }, "rawQuery": true, "rawSql": "SELECT call_function as metric, COUNT(*) as value FROM extrinsics WHERE call_module = 'AdminUtils' AND netuid = ${netuid} GROUP BY call_function ORDER BY value DESC LIMIT 10", "refId": "A", "format": "table" }],
@@ -184,12 +277,12 @@
       "datasource": { "type": "postgres", "uid": "postgresql" },
       "fieldConfig": {
         "defaults": { "color": { "mode": "thresholds" }, "custom": { "align": "auto", "cellOptions": { "type": "auto" }, "inspect": false }, "mappings": [], "thresholds": { "mode": "absolute", "steps": [{ "color": "green", "value": null }] } },
-        "overrides": [{ "matcher": { "id": "byName", "options": "success" }, "properties": [{ "id": "mappings", "value": [{ "options": { "true": { "color": "green", "index": 0, "text": "Success" }, "false": { "color": "red", "index": 1, "text": "Failed" } }, "type": "value" }] }, { "id": "custom.cellOptions", "value": { "type": "color-background" } }] }, { "matcher": { "id": "byName", "options": "address" }, "properties": [{ "id": "custom.width", "value": 150 }] }, { "matcher": { "id": "byName", "options": "call_args" }, "properties": [{ "id": "custom.width", "value": 300 }] }]
+        "overrides": [{ "matcher": { "id": "byName", "options": "success" }, "properties": [{ "id": "mappings", "value": [{ "options": { "true": { "color": "green", "index": 0, "text": "Success" }, "false": { "color": "red", "index": 1, "text": "Failed" } }, "type": "value" }] }, { "id": "custom.cellOptions", "value": { "type": "color-background" } }] }, { "matcher": { "id": "byName", "options": "address" }, "properties": [{ "id": "custom.width", "value": 150 }, { "id": "custom.inspect", "value": true }] }, { "matcher": { "id": "byName", "options": "call_args" }, "properties": [{ "id": "custom.width", "value": 300 }, { "id": "custom.inspect", "value": true }] }]
       },
-      "gridPos": { "h": 10, "w": 24, "x": 0, "y": 37 },
+      "gridPos": { "h": 10, "w": 24, "x": 0, "y": 53 },
       "id": 11,
       "options": { "cellHeight": "sm", "footer": { "countRows": false, "fields": "", "reducer": ["sum"], "show": false }, "showHeader": true },
-      "targets": [{ "datasource": { "type": "postgres", "uid": "postgresql" }, "rawQuery": true, "rawSql": "SELECT created_at as time, call_function as parameter, call_args, SUBSTRING(address, 1, 8) || '...' || SUBSTRING(address, LENGTH(address)-5) as address, block_number, success FROM extrinsics WHERE call_module = 'AdminUtils' AND netuid = ${netuid} ORDER BY created_at DESC LIMIT 50", "refId": "A", "format": "table" }],
+      "targets": [{ "datasource": { "type": "postgres", "uid": "postgresql" }, "rawQuery": true, "rawSql": "SELECT created_at as time, call_function as parameter, call_args, address, block_number, success FROM extrinsics WHERE call_module = 'AdminUtils' AND netuid = ${netuid} ORDER BY created_at DESC LIMIT 50", "refId": "A", "format": "table" }],
       "title": "Recent AdminUtils Changes",
       "type": "table"
     }
@@ -202,18 +295,18 @@
     "list": [{
       "current": { "selected": true, "text": "1", "value": "1" },
       "datasource": { "type": "postgres", "uid": "postgresql" },
-      "definition": "SELECT DISTINCT netuid FROM subnet_hyperparams ORDER BY netuid",
+      "definition": "SELECT netuid AS __value, netuid || ' - ' || COALESCE(name, 'Unknown') AS __text FROM metagraph_subnet WHERE netuid != 0 ORDER BY netuid",
       "hide": 0,
       "includeAll": false,
       "label": "Subnet",
       "multi": false,
       "name": "netuid",
       "options": [],
-      "query": "SELECT DISTINCT netuid FROM subnet_hyperparams ORDER BY netuid",
+      "query": "SELECT netuid AS __value, netuid || ' - ' || COALESCE(name, 'Unknown') AS __text FROM metagraph_subnet WHERE netuid != 0 ORDER BY netuid",
       "refresh": 1,
       "regex": "",
       "skipUrlSync": false,
-      "sort": 1,
+      "sort": 0,
       "type": "query"
     }]
   },
