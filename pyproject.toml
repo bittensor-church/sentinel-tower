@@ -27,7 +27,7 @@ dependencies = [
     "django-prometheus==2.3.1",
     "django-business-metrics>=1.0.1,<2",
     "abstract-block-dumper[prometheus]~=0.1.2",
-    "bittensor-sentinel==0.1.6",
+    "bittensor-sentinel==0.1.7",
     "dagster>=1.9.0",
     "dagster-webserver>=1.9.0",
     "bittensor-pylon-client>=1.0.0",

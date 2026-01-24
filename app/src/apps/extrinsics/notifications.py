@@ -1,8 +1,9 @@
-import os
 from typing import Any
 
 import httpx
 import structlog
+
+from project.settings import DISCORD_ALERT_CONFIGS, AlertConfig
 
 logger = structlog.get_logger()
 
@@ -39,38 +40,12 @@ def _format_call_args(call_args: list[dict[str, Any]] | None) -> str:
         result = result[:MAX_CALL_ARGS_LENGTH] + "..."
     return result
 
-# Alert configurations: (call_module, call_function or None for all) -> env var name
-ALERT_CONFIGS = {
-    ("Sudo", None): "DISCORD_SUDO_ALERTS_WEBHOOK_URL",
-    ("AdminUtils", None): "DISCORD_ADMIN_UTILS_ALERTS_WEBHOOK_URL",
-    ("SubtensorModule", "register_network"): "DISCORD_SUBNET_REGISTRATION_WEBHOOK_URL",
-    ("SubtensorModule", "schedule_coldkey_swap"): "DISCORD_COLDKEY_SWAP_WEBHOOK_URL",
-    ("SubtensorModule", "swap_coldkey"): "DISCORD_COLDKEY_SWAP_WEBHOOK_URL",
-}
-
-def is_disabled_url(url: str) -> bool:
-    """Check if a webhook URL is disabled or a placeholder."""
-    return not url or "disabled" in url or url == "https://discord.com/api/webhooks/0/disabled"
-
-
-def get_webhook_url(call_module: str, call_function: str) -> str | None:
-    """Get Discord webhook URL for the given call module/function."""
-    # Check specific module+function first
-    env_var = ALERT_CONFIGS.get((call_module, call_function))
-    if not env_var:
-        # Check module-only match (for Sudo)
-        env_var = ALERT_CONFIGS.get((call_module, None))
-
-    if not env_var:
-        return None
-
-    url = os.environ.get(env_var, "")
-
-    # Skip disabled/placeholder URLs
-    if is_disabled_url(url):
-        return None
-
-    return url
+def get_alert_config(call_module: str, call_function: str) -> AlertConfig | None:
+    """Get the AlertConfig for the given call module/function."""
+    for config in DISCORD_ALERT_CONFIGS:
+        if config.matches(call_module, call_function):
+            return config
+    return None
 
 
 def format_extrinsic_message(extrinsic: dict[str, Any]) -> dict[str, Any]:
@@ -86,22 +61,19 @@ def format_extrinsic_message(extrinsic: dict[str, Any]) -> dict[str, Any]:
     extrinsic_index_formatted = f"{extrinsic_index:04d}" if isinstance(extrinsic_index, int) else "0000"
     tao_stats_link = f"https://taostats.io/extrinsic/{block_number}-{extrinsic_index_formatted}?network=finney"
 
-    # Determine alert type and color
+    # Determine alert title
     if call_module == "Sudo":
         title = "Sudo Extrinsic Detected"
-        color = 0xFF0000  # Red
     elif call_module == "AdminUtils":
         title = "AdminUtils Extrinsic Detected"
-        color = 0xFF4500  # Orange Red
     elif call_function == "register_network":
         title = "Subnet Registration Detected"
-        color = 0x0099FF  # Blue
     elif call_function in ("schedule_coldkey_swap", "swap_coldkey"):
         title = "Coldkey Swap Detected"
-        color = 0xFFA500  # Orange
     else:
         title = "Chain Event Detected"
-        color = 0x808080  # Gray
+
+    color = 0x00FF00 if success else 0xFF0000  # Green for success, red for failure
 
     fields = [
         {"name": "Module", "value": f"`{call_module}`", "inline": True},
@@ -122,22 +94,10 @@ def format_extrinsic_message(extrinsic: dict[str, Any]) -> dict[str, Any]:
             "inline": False,
         })
 
-    # Truncate address and hash for display
-    address_display = (
-        f"{address[:10]}...{address[-8:]}"
-        if address and len(address) > MIN_LENGTH_FOR_TRUNCATION
-        else address or "N/A"
-    )
-
-    if extrinsic_hash and len(extrinsic_hash) > MIN_LENGTH_FOR_TRUNCATION:
-        hash_display = f"{extrinsic_hash[:10]}...{extrinsic_hash[-8:]}"
-    else:
-        hash_display = extrinsic_hash or "N/A"
-
     fields.extend(
         [
-            {"name": "Signer", "value": f"`{address_display}`", "inline": False},
-            {"name": "Hash", "value": f"`{hash_display}`", "inline": False},
+            {"name": "Signer", "value": f"`{address or 'N/A'}`", "inline": False},
+            {"name": "Hash", "value": f"`{extrinsic_hash}`", "inline": False},
             {"name": "TaoStats", "value": f"[View on TaoStats]({tao_stats_link})", "inline": False},
         ],
     )
@@ -159,8 +119,10 @@ def send_discord_notification(extrinsic: dict[str, Any]) -> bool:
     call_module = extrinsic.get("call_module", "")
     call_function = extrinsic.get("call_function", "")
 
-    webhook_url = get_webhook_url(call_module, call_function)
-    if not webhook_url:
+    if not (config := get_alert_config(call_module, call_function)):
+        return False
+
+    if not (webhook_url := config.get_webhook_url()):
         return False
 
     try:
@@ -203,3 +165,150 @@ def notify_matching_extrinsics(extrinsics: list[dict[str, Any]]) -> int:
         if send_discord_notification(extrinsic):
             notified += 1
     return notified
+
+
+def _format_extrinsic_line(extrinsic: dict[str, Any]) -> str:
+    """Format a single extrinsic as a text line with old → new value format."""
+    previous_values = extrinsic.get("previous_values", {})
+
+    # Get the new value from call_args (skip netuid)
+    call_args = extrinsic.get("call_args", [])
+    new_value = None
+    param_name = None
+    for arg in call_args:
+        name = arg.get("name", "")
+        if name == "netuid":
+            continue
+        new_value = arg.get("value")
+        param_name = name
+        break
+
+    # Format value for display
+    def format_value(value: Any) -> str:
+        if value is None:
+            return "N/A"
+        if isinstance(value, str) and len(value) > MIN_LENGTH_FOR_TRUNCATION:
+            return f"{value[:8]}...{value[-6:]}"
+        if isinstance(value, list) and len(value) > MAX_LIST_ITEMS_DISPLAY:
+            return f"[{len(value)} items]"
+        return str(value)
+
+    # Get previous value from enriched data
+    old_value = previous_values.get(param_name) if param_name and previous_values else None
+
+    old_display = format_value(old_value)
+    new_display = format_value(new_value)
+
+    # Format: **hyperparam_name**: `prev_value` → `new_value`
+    return f"**{param_name}**: `{old_display}` → `{new_display}`"
+
+
+def _group_by_netuid(extrinsics: list[dict[str, Any]]) -> dict[int | None, list[dict[str, Any]]]:
+    """Group extrinsics by netuid."""
+    groups: dict[int | None, list[dict[str, Any]]] = {}
+    for ext in extrinsics:
+        netuid = ext.get("netuid")
+        if netuid not in groups:
+            groups[netuid] = []
+        groups[netuid].append(ext)
+    return groups
+
+
+def format_block_notification(extrinsics: list[dict[str, Any]]) -> dict[str, Any]:
+    """Format multiple extrinsics from a block into a single Discord text message."""
+    if not extrinsics:
+        return {"content": "No extrinsics to report."}
+
+    block_number = extrinsics[0].get("block_number", "N/A")
+    extrinsic_index = extrinsics[0].get("extrinsic_index", 0)
+    extrinsic_index_formatted = f"{extrinsic_index:04d}" if isinstance(extrinsic_index, int) else "0000"
+    taostats_link = f"https://taostats.io/extrinsic/{block_number}-{extrinsic_index_formatted}?network=finney"
+
+    lines = [f"**Block #{block_number}**", ""]
+
+    # Group extrinsics by subnet
+    netuid_groups = _group_by_netuid(extrinsics)
+    for netuid in sorted(netuid_groups.keys(), key=lambda x: (x is None, x)):
+        if netuid is None:
+            lines.append("**Global**")
+        else:
+            lines.append(f"**Subnet {netuid}**")
+        lines.extend(_format_extrinsic_line(ext) for ext in netuid_groups[netuid])
+        lines.append("")
+
+    lines.append(f"[View on TaoStats]({taostats_link})")
+
+    return {
+        "content": "\n".join(lines),
+        "flags": 1 << 2,  # SUPPRESS_EMBEDS - disable link previews
+    }
+
+
+def _group_extrinsics_by_webhook(extrinsics: list[dict[str, Any]]) -> dict[str, list[dict[str, Any]]]:
+    """Group extrinsics by webhook URL, filtering to only successful extrinsics."""
+    webhook_groups: dict[str, list[dict[str, Any]]] = {}
+
+    for extrinsic in extrinsics:
+        # Only show successful extrinsics
+        if not extrinsic.get("success", False):
+            continue
+
+        call_module = extrinsic.get("call_module", "")
+        call_function = extrinsic.get("call_function", "")
+
+        if not (config := get_alert_config(call_module, call_function)):
+            continue
+
+        if not (webhook_url := config.get_webhook_url()):
+            continue
+
+        if webhook_url not in webhook_groups:
+            webhook_groups[webhook_url] = []
+        webhook_groups[webhook_url].append(extrinsic)
+
+    return webhook_groups
+
+
+def send_block_notifications(block_number: int, extrinsics: list[dict[str, Any]]) -> int:
+    """
+    Send aggregated Discord notifications for all matching extrinsics in a block.
+
+    Groups extrinsics by webhook URL and sends a single message per webhook.
+    Returns the number of extrinsics that were notified.
+    """
+    if not extrinsics:
+        return 0
+
+    if not (webhook_groups := _group_extrinsics_by_webhook(extrinsics)):
+        return 0
+
+    notified_count = 0
+
+    for webhook_url, grouped_extrinsics in webhook_groups.items():
+        try:
+            payload = format_block_notification(grouped_extrinsics)
+
+            with httpx.Client(timeout=10.0) as client:
+                response = client.post(webhook_url, json=payload)
+                response.raise_for_status()
+
+            notified_count += len(grouped_extrinsics)
+            logger.info(
+                "Sent aggregated Discord notification",
+                block_number=block_number,
+                extrinsic_count=len(grouped_extrinsics),
+            )
+        except httpx.HTTPStatusError as e:
+            logger.warning(
+                "Discord block notification failed",
+                status_code=e.response.status_code,
+                block_number=block_number,
+            )
+        except Exception as e:  # noqa: BLE001
+            logger.warning(
+                "Discord block notification error",
+                error=str(e),
+                block_number=block_number,
+            )
+
+    return notified_count

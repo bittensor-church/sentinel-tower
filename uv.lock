@@ -327,7 +327,7 @@ wheels = [
 
 [[package]]
 name = "bittensor-sentinel"
-version = "0.1.6"
+version = "0.1.7"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
     { name = "asgiref" },
@@ -336,9 +336,9 @@ dependencies = [
     { name = "structlog" },
     { name = "typer" },
 ]
-sdist = { url = "https://files.pythonhosted.org/packages/07/fc/a5adce168e2fc04ee81e6194cd9196b827d0a7a7694a9077cb6c3e844ac4/bittensor_sentinel-0.1.6.tar.gz", hash = "sha256:c52d08e114b01eb712a66d13e76e8a3f2adb007e10bb132f28a1b891f2c88b62", size = 177213, upload-time = "2026-01-12T09:02:17.761Z" }
+sdist = { url = "https://files.pythonhosted.org/packages/84/0f/56caeb735a63cee66a3792ea6ff414c96589f0d19eb304faebab8fc01fde/bittensor_sentinel-0.1.7.tar.gz", hash = "sha256:e72f132c48922a8d6836e69c0b12b639caf7fe821d443d73d2dade09a4133b0d", size = 177264, upload-time = "2026-01-24T18:57:50.328Z" }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/de/d5/7f3a1d0e6e8a707f88ab714e982f664a9c9f7924f7929dce8b324cb40699/bittensor_sentinel-0.1.6-py3-none-any.whl", hash = "sha256:41575f8d7c2eff1f50ff82ce8bfd802f010a019f80590e481f7bf2be12be64f2", size = 41351, upload-time = "2026-01-12T09:02:15.35Z" },
+    { url = "https://files.pythonhosted.org/packages/48/9f/af11dea2b44fe8c8f7cd98171940c70cff116f4253a8ecb9f47ee6015b36/bittensor_sentinel-0.1.7-py3-none-any.whl", hash = "sha256:18baf876b055b8deb28419fcdd330c0a4c13dde2b57c742d70c946643cba0573", size = 41409, upload-time = "2026-01-24T18:57:48.637Z" },
 ]
 
 [[package]]
@@ -2065,7 +2065,7 @@ type-check = [
 requires-dist = [
     { name = "abstract-block-dumper", extras = ["prometheus"], specifier = "~=0.1.2" },
     { name = "bittensor-pylon-client", specifier = ">=1.0.0" },
-    { name = "bittensor-sentinel", specifier = "==0.1.6" },
+    { name = "bittensor-sentinel", specifier = "==0.1.7" },
     { name = "celery", specifier = "~=5.5.3" },
     { name = "dagster", specifier = ">=1.9.0" },
     { name = "dagster-webserver", specifier = ">=1.9.0" },

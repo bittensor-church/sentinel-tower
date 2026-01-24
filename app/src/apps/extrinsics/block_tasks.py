@@ -5,8 +5,9 @@ from abstract_block_dumper.v1.decorators import block_task
 from sentinel.v1.dto import ExtrinsicDTO
 from sentinel.v1.services.sentinel import sentinel_service
 
+from apps.extrinsics.hyperparam_service import enrich_extrinsics_with_previous_values
 from apps.extrinsics.models import Extrinsic
-from apps.extrinsics.notifications import send_discord_notification
+from apps.extrinsics.notifications import send_block_notifications
 from project.core.services import JsonLinesStorage
 from project.core.utils import get_provider_for_block
 
@@ -136,6 +137,7 @@ def sync_extrinsics_to_db(extrinsics: list[ExtrinsicDTO], block_number: int, tim
 
     # Build records for database
     records_to_create = []
+    parsed_for_notifications = []
     existing_hashes = set(
         Extrinsic.objects.filter(block_number=block_number).values_list("extrinsic_hash", flat=True),
     )
@@ -154,12 +156,14 @@ def sync_extrinsics_to_db(extrinsics: list[ExtrinsicDTO], block_number: int, tim
         if parsed["extrinsic_hash"] in existing_hashes:
             continue
 
-        # Send Discord notification for matching extrinsics (new only)
-        send_discord_notification(parsed)
-
+        parsed_for_notifications.append(parsed)
         records_to_create.append(Extrinsic(**parsed))
 
     if records_to_create:
         Extrinsic.objects.bulk_create(records_to_create, ignore_conflicts=True)
+
+    # Enrich with previous hyperparam values and send aggregated Discord notification
+    enriched = enrich_extrinsics_with_previous_values(parsed_for_notifications)
+    send_block_notifications(block_number, enriched)
 
     return len(records_to_create)

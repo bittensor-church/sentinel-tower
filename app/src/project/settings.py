@@ -408,3 +408,47 @@ METAGRAPH_NETUIDS = None  # [12, 89]  # List of netuids to process for metagraph
 # TODO: replace hardcoded value with data from bittensor later
 TEMPO = 360  # Number of blocks per epoch
 NUM_BLOCK_DUMPS_PER_EPOCH = 3  # Number of block dumps to take per epoch
+
+
+# Discord Alert Configurations
+from dataclasses import dataclass
+
+_DISABLED_WEBHOOK_PATTERNS = ("disabled", "https://discord.com/api/webhooks/0/disabled")
+
+
+@dataclass
+class AlertConfig:
+    """Configuration for a Discord alert.
+
+    Args:
+        call_pattern: Pattern to match, e.g. "Sudo" (all functions) or "SubtensorModule:register_network"
+        env_var: Environment variable name for the webhook URL
+        success_only: If True, only notify on successful extrinsics
+    """
+
+    call_pattern: str
+    env_var: str
+    success_only: bool = False
+
+    def matches(self, call_module: str, call_function: str) -> bool:
+        """Check if this config matches the given module/function."""
+        if ":" in self.call_pattern:
+            pattern_module, pattern_function = self.call_pattern.split(":", 1)
+            return call_module == pattern_module and call_function == pattern_function
+        return call_module == self.call_pattern
+
+    def get_webhook_url(self) -> str | None:
+        """Get the webhook URL from environment, or None if disabled."""
+        url = os.environ.get(self.env_var, "")
+        if not url or any(pattern in url for pattern in _DISABLED_WEBHOOK_PATTERNS):
+            return None
+        return url
+
+
+DISCORD_ALERT_CONFIGS: list[AlertConfig] = [
+    AlertConfig("Sudo", "DISCORD_SUDO_ALERTS_WEBHOOK_URL", success_only=True),
+    AlertConfig("AdminUtils", "DISCORD_ADMIN_UTILS_ALERTS_WEBHOOK_URL"),
+    AlertConfig("SubtensorModule:register_network", "DISCORD_SUBNET_REGISTRATION_WEBHOOK_URL"),
+    AlertConfig("SubtensorModule:schedule_coldkey_swap", "DISCORD_COLDKEY_SWAP_WEBHOOK_URL"),
+    AlertConfig("SubtensorModule:swap_coldkey", "DISCORD_COLDKEY_SWAP_WEBHOOK_URL"),
+]
