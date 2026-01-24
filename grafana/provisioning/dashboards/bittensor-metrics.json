@@ -377,23 +377,6 @@
         "skipUrlSync": false,
         "sort": 1,
         "type": "query"
-      },
-      {
-        "current": { "selected": false, "text": "All", "value": "$__all" },
-        "datasource": { "type": "postgres", "uid": "postgresql" },
-        "definition": "SELECT DISTINCT call_module FROM extrinsics ORDER BY call_module",
-        "hide": 0,
-        "includeAll": true,
-        "label": "Module",
-        "multi": true,
-        "name": "call_module",
-        "options": [],
-        "query": "SELECT DISTINCT call_module FROM extrinsics ORDER BY call_module",
-        "refresh": 1,
-        "regex": "",
-        "skipUrlSync": false,
-        "sort": 1,
-        "type": "query"
       }
     ]
   },
