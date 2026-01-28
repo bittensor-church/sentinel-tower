@@ -2,6 +2,7 @@ from datetime import UTC, datetime
 
 import structlog
 from abstract_block_dumper.v1.decorators import block_task
+from django.conf import settings
 from sentinel.v1.services.sentinel import sentinel_service
 
 import apps.metagraph.utils as metagraph_utils
@@ -40,7 +41,7 @@ def store_metagraph(block_number: int, netuid: int) -> str:
 
     with get_provider_for_block(block_number) as provider:
         service = sentinel_service(provider)
-        subnet = service.ingest_subnet(netuid, block_number)
+        subnet = service.ingest_subnet(netuid, block_number, lite=settings.METAGRAPH_LITE)
         metagraph = subnet.metagraph
 
     finished_at = datetime.now(UTC)

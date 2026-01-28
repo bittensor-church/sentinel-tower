@@ -88,7 +88,7 @@
       "gridPos": { "h": 10, "w": 24, "x": 0, "y": 5 },
       "id": 207,
       "options": { "cellHeight": "sm", "footer": { "countRows": false, "fields": "", "reducer": ["sum"], "show": false }, "showHeader": true },
-      "targets": [{ "datasource": { "type": "postgres", "uid": "postgresql" }, "rawQuery": true, "rawSql": "SELECT created_at as time, call_module, call_function, netuid, call_args, address, block_number, success FROM extrinsics WHERE call_module IN ('AdminUtils', 'Sudo') ORDER BY created_at DESC LIMIT 30", "refId": "A", "format": "table" }],
+      "targets": [{ "datasource": { "type": "postgres", "uid": "postgresql" }, "rawQuery": true, "rawSql": "SELECT created_at as time, call_module, call_function, netuid, address, call_args, block_number, success FROM extrinsics WHERE call_module IN ('AdminUtils', 'Sudo') ORDER BY created_at DESC LIMIT 30", "refId": "A", "format": "table" }],
       "title": "Recent Sudo & AdminUtils Calls (All Subnets)",
       "type": "table"
     },

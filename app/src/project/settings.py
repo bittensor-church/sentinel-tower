@@ -408,6 +408,8 @@ METAGRAPH_NETUIDS = None  # [12, 89]  # List of netuids to process for metagraph
 # TODO: replace hardcoded value with data from bittensor later
 TEMPO = 360  # Number of blocks per epoch
 NUM_BLOCK_DUMPS_PER_EPOCH = 3  # Number of block dumps to take per epoch
+# Metagraph mode: False = full (includes weights/bonds), True = lite (excludes weights/bonds)
+METAGRAPH_LITE = env.bool("METAGRAPH_LITE", default=False)
 
 
 # Discord Alert Configurations
