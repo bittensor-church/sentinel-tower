@@ -32,22 +32,57 @@
         "defaults": {
           "color": { "mode": "thresholds" },
           "mappings": [],
-          "thresholds": { "mode": "absolute", "steps": [{ "color": "green", "value": null }] },
-          "unit": "short"
+          "thresholds": { "mode": "absolute", "steps": [{ "color": "blue", "value": null }] },
+          "unit": "none"
         },
         "overrides": []
       },
       "gridPos": { "h": 4, "w": 4, "x": 0, "y": 1 },
-      "id": 1,
-      "options": { "colorMode": "value", "graphMode": "area", "justifyMode": "auto", "orientation": "auto", "reduceOptions": { "calcs": ["lastNotNull"], "fields": "", "values": false }, "textMode": "auto" },
+      "id": 19,
+      "options": { "colorMode": "value", "graphMode": "none", "justifyMode": "auto", "orientation": "auto", "reduceOptions": { "calcs": ["lastNotNull"], "fields": "", "values": false }, "textMode": "auto" },
       "targets": [{
         "datasource": { "type": "postgres", "uid": "postgresql" },
         "rawQuery": true,
-        "rawSql": "SELECT COUNT(*) AS total_dumps FROM metagraph_dump",
+        "rawSql": "SELECT MIN(number) AS from_block FROM metagraph_block",
         "refId": "A",
         "format": "table"
       }],
-      "title": "Total Dumps",
+      "title": "From Block",
+      "type": "stat"
+    },
+    {
+      "gridPos": { "h": 4, "w": 4, "x": 4, "y": 1 },
+      "id": 20,
+      "options": {
+        "code": { "language": "plaintext", "showLineNumbers": false, "showMiniMap": false },
+        "content": "<div style=\"text-align: center; font-size: 40px; color: #5794F2; padding-top: 20px;\">${to_block}</div>",
+        "mode": "html"
+      },
+      "title": "To Block",
+      "type": "text"
+    },
+    {
+      "datasource": { "type": "postgres", "uid": "postgresql" },
+      "fieldConfig": {
+        "defaults": {
+          "color": { "mode": "thresholds" },
+          "mappings": [],
+          "thresholds": { "mode": "absolute", "steps": [{ "color": "green", "value": null }] },
+          "unit": "none"
+        },
+        "overrides": []
+      },
+      "gridPos": { "h": 4, "w": 4, "x": 8, "y": 1 },
+      "id": 4,
+      "options": { "colorMode": "value", "graphMode": "none", "justifyMode": "auto", "orientation": "auto", "reduceOptions": { "calcs": ["lastNotNull"], "fields": "", "values": false }, "textMode": "auto" },
+      "targets": [{
+        "datasource": { "type": "postgres", "uid": "postgresql" },
+        "rawQuery": true,
+        "rawSql": "SELECT MAX(number) AS latest_block FROM metagraph_block",
+        "refId": "A",
+        "format": "table"
+      }],
+      "title": "Current Block",
       "type": "stat"
     },
     {
@@ -61,7 +96,7 @@
         },
         "overrides": []
       },
-      "gridPos": { "h": 4, "w": 4, "x": 4, "y": 1 },
+      "gridPos": { "h": 4, "w": 4, "x": 12, "y": 1 },
       "id": 2,
       "options": { "colorMode": "value", "graphMode": "area", "justifyMode": "auto", "orientation": "auto", "reduceOptions": { "calcs": ["lastNotNull"], "fields": "", "values": false }, "textMode": "auto" },
       "targets": [{
@@ -80,84 +115,12 @@
         "defaults": {
           "color": { "mode": "thresholds" },
           "mappings": [],
-          "thresholds": { "mode": "absolute", "steps": [{ "color": "green", "value": null }] },
-          "unit": "short"
-        },
-        "overrides": []
-      },
-      "gridPos": { "h": 4, "w": 4, "x": 8, "y": 1 },
-      "id": 3,
-      "options": { "colorMode": "value", "graphMode": "none", "justifyMode": "auto", "orientation": "auto", "reduceOptions": { "calcs": ["lastNotNull"], "fields": "", "values": false }, "textMode": "auto" },
-      "targets": [{
-        "datasource": { "type": "postgres", "uid": "postgresql" },
-        "rawQuery": true,
-        "rawSql": "SELECT COUNT(DISTINCT netuid) AS subnets_tracked FROM metagraph_dump",
-        "refId": "A",
-        "format": "table"
-      }],
-      "title": "Subnets Tracked",
-      "type": "stat"
-    },
-    {
-      "datasource": { "type": "postgres", "uid": "postgresql" },
-      "fieldConfig": {
-        "defaults": {
-          "color": { "mode": "thresholds" },
-          "mappings": [],
-          "thresholds": { "mode": "absolute", "steps": [{ "color": "green", "value": null }] },
-          "unit": "none"
-        },
-        "overrides": []
-      },
-      "gridPos": { "h": 4, "w": 4, "x": 12, "y": 1 },
-      "id": 4,
-      "options": { "colorMode": "value", "graphMode": "none", "justifyMode": "auto", "orientation": "auto", "reduceOptions": { "calcs": ["lastNotNull"], "fields": "", "values": false }, "textMode": "auto" },
-      "targets": [{
-        "datasource": { "type": "postgres", "uid": "postgresql" },
-        "rawQuery": true,
-        "rawSql": "SELECT MAX(number) AS latest_block FROM metagraph_block",
-        "refId": "A",
-        "format": "table"
-      }],
-      "title": "Latest Block",
-      "type": "stat"
-    },
-    {
-      "datasource": { "type": "postgres", "uid": "postgresql" },
-      "fieldConfig": {
-        "defaults": {
-          "color": { "mode": "thresholds" },
-          "mappings": [],
-          "thresholds": { "mode": "absolute", "steps": [{ "color": "green", "value": null }] },
-          "unit": "dateTimeAsIso"
-        },
-        "overrides": []
-      },
-      "gridPos": { "h": 4, "w": 4, "x": 16, "y": 1 },
-      "id": 5,
-      "options": { "colorMode": "value", "graphMode": "none", "justifyMode": "auto", "orientation": "auto", "reduceOptions": { "calcs": ["lastNotNull"], "fields": "", "values": false }, "textMode": "auto" },
-      "targets": [{
-        "datasource": { "type": "postgres", "uid": "postgresql" },
-        "rawQuery": true,
-        "rawSql": "SELECT EXTRACT(EPOCH FROM MAX(finished_at)) * 1000 AS last_dump FROM metagraph_dump WHERE finished_at IS NOT NULL",
-        "refId": "A",
-        "format": "table"
-      }],
-      "title": "Last Dump Finished (UTC)",
-      "type": "stat"
-    },
-    {
-      "datasource": { "type": "postgres", "uid": "postgresql" },
-      "fieldConfig": {
-        "defaults": {
-          "color": { "mode": "thresholds" },
-          "mappings": [],
           "thresholds": { "mode": "absolute", "steps": [{ "color": "green", "value": null }, { "color": "yellow", "value": 1 }, { "color": "red", "value": 5 }] },
           "unit": "short"
         },
         "overrides": []
       },
-      "gridPos": { "h": 4, "w": 4, "x": 20, "y": 1 },
+      "gridPos": { "h": 4, "w": 4, "x": 16, "y": 1 },
       "id": 6,
       "options": { "colorMode": "value", "graphMode": "none", "justifyMode": "auto", "orientation": "auto", "reduceOptions": { "calcs": ["lastNotNull"], "fields": "", "values": false }, "textMode": "auto" },
       "targets": [{
@@ -171,8 +134,135 @@
       "type": "stat"
     },
     {
+      "datasource": { "type": "postgres", "uid": "postgresql" },
+      "fieldConfig": {
+        "defaults": {
+          "color": { "mode": "thresholds" },
+          "mappings": [],
+          "thresholds": { "mode": "absolute", "steps": [{ "color": "green", "value": null }] },
+          "unit": "dateTimeAsIso"
+        },
+        "overrides": []
+      },
+      "gridPos": { "h": 4, "w": 4, "x": 20, "y": 1 },
+      "id": 5,
+      "options": { "colorMode": "value", "graphMode": "none", "justifyMode": "auto", "orientation": "auto", "reduceOptions": { "calcs": ["lastNotNull"], "fields": "", "values": false }, "textMode": "auto" },
+      "targets": [{
+        "datasource": { "type": "postgres", "uid": "postgresql" },
+        "rawQuery": true,
+        "rawSql": "SELECT EXTRACT(EPOCH FROM MAX(finished_at)) * 1000 AS last_dump FROM metagraph_dump WHERE finished_at IS NOT NULL",
+        "refId": "A",
+        "format": "table"
+      }],
+      "title": "Last Dump (UTC)",
+      "type": "stat"
+    },
+    {
+      "datasource": { "type": "postgres", "uid": "postgresql" },
+      "description": "Percentage of blocks processed toward target",
+      "fieldConfig": {
+        "defaults": {
+          "color": { "mode": "thresholds" },
+          "mappings": [],
+          "max": 100,
+          "min": 0,
+          "thresholds": { "mode": "absolute", "steps": [{ "color": "red", "value": null }, { "color": "yellow", "value": 50 }, { "color": "green", "value": 80 }] },
+          "unit": "percent"
+        },
+        "overrides": []
+      },
+      "gridPos": { "h": 6, "w": 6, "x": 0, "y": 5 },
+      "id": 21,
+      "options": { "minVizHeight": 75, "minVizWidth": 75, "orientation": "auto", "reduceOptions": { "calcs": ["lastNotNull"], "fields": "", "values": false }, "showThresholdLabels": false, "showThresholdMarkers": true, "sizing": "auto" },
+      "targets": [{
+        "datasource": { "type": "postgres", "uid": "postgresql" },
+        "rawQuery": true,
+        "rawSql": "SELECT CASE WHEN ${to_block} - MIN(number) > 0 THEN (MAX(number) - MIN(number))::float / (${to_block} - MIN(number)) * 100 ELSE 0 END AS completion FROM metagraph_block",
+        "refId": "A",
+        "format": "table"
+      }],
+      "title": "Completion",
+      "type": "gauge"
+    },
+    {
+      "datasource": { "type": "postgres", "uid": "postgresql" },
+      "description": "Estimated time to complete backfill based on recent processing rate",
+      "fieldConfig": {
+        "defaults": {
+          "color": { "mode": "thresholds" },
+          "mappings": [{ "options": { "match": "null", "result": { "text": "N/A" } }, "type": "special" }],
+          "thresholds": { "mode": "absolute", "steps": [{ "color": "green", "value": null }, { "color": "yellow", "value": 86400 }, { "color": "red", "value": 604800 }] },
+          "unit": "s"
+        },
+        "overrides": []
+      },
+      "gridPos": { "h": 6, "w": 6, "x": 6, "y": 5 },
+      "id": 22,
+      "options": { "colorMode": "value", "graphMode": "none", "justifyMode": "auto", "orientation": "auto", "reduceOptions": { "calcs": ["lastNotNull"], "fields": "", "values": false }, "textMode": "auto" },
+      "targets": [{
+        "datasource": { "type": "postgres", "uid": "postgresql" },
+        "rawQuery": true,
+        "rawSql": "WITH rate AS (SELECT COUNT(*)::float / NULLIF(EXTRACT(EPOCH FROM (MAX(finished_at) - MIN(finished_at))), 0) AS blocks_per_sec FROM metagraph_dump WHERE finished_at > NOW() - INTERVAL '1 hour'), remaining AS (SELECT ${to_block} - MAX(number) AS blocks_left FROM metagraph_block) SELECT CASE WHEN rate.blocks_per_sec > 0 THEN remaining.blocks_left / rate.blocks_per_sec ELSE NULL END AS eta FROM rate, remaining",
+        "refId": "A",
+        "format": "table"
+      }],
+      "title": "ETA",
+      "type": "stat"
+    },
+    {
+      "datasource": { "type": "postgres", "uid": "postgresql" },
+      "description": "Blocks processed per second (1h rate)",
+      "fieldConfig": {
+        "defaults": {
+          "color": { "mode": "thresholds" },
+          "decimals": 3,
+          "mappings": [],
+          "thresholds": { "mode": "absolute", "steps": [{ "color": "red", "value": null }, { "color": "yellow", "value": 0.01 }, { "color": "green", "value": 0.1 }] },
+          "unit": "short"
+        },
+        "overrides": []
+      },
+      "gridPos": { "h": 6, "w": 6, "x": 12, "y": 5 },
+      "id": 23,
+      "options": { "colorMode": "value", "graphMode": "area", "justifyMode": "auto", "orientation": "auto", "reduceOptions": { "calcs": ["lastNotNull"], "fields": "", "values": false }, "textMode": "auto" },
+      "targets": [{
+        "datasource": { "type": "postgres", "uid": "postgresql" },
+        "rawQuery": true,
+        "rawSql": "SELECT COUNT(*)::float / NULLIF(EXTRACT(EPOCH FROM (MAX(finished_at) - MIN(finished_at))), 0) AS blocks_per_sec FROM metagraph_dump WHERE finished_at > NOW() - INTERVAL '1 hour'",
+        "refId": "A",
+        "format": "table"
+      }],
+      "title": "Blocks/sec",
+      "type": "stat"
+    },
+    {
+      "datasource": { "type": "postgres", "uid": "postgresql" },
+      "description": "Remaining blocks to process",
+      "fieldConfig": {
+        "defaults": {
+          "color": { "mode": "thresholds" },
+          "mappings": [],
+          "thresholds": { "mode": "absolute", "steps": [{ "color": "green", "value": null }, { "color": "yellow", "value": 10000 }, { "color": "red", "value": 100000 }] },
+          "unit": "short"
+        },
+        "overrides": []
+      },
+      "gridPos": { "h": 6, "w": 6, "x": 18, "y": 5 },
+      "id": 24,
+      "options": { "colorMode": "value", "graphMode": "none", "justifyMode": "auto", "orientation": "auto", "reduceOptions": { "calcs": ["lastNotNull"], "fields": "", "values": false }, "textMode": "auto" },
+      "targets": [{
+        "datasource": { "type": "postgres", "uid": "postgresql" },
+        "rawQuery": true,
+        "rawSql": "SELECT ${to_block} - MAX(number) AS remaining FROM metagraph_block",
+        "refId": "A",
+        "format": "table"
+      }],
+      "title": "Remaining Blocks",
+      "type": "stat"
+    },
+    {
       "collapsed": false,
-      "gridPos": { "h": 1, "w": 24, "x": 0, "y": 5 },
+      "gridPos": { "h": 1, "w": 24, "x": 0, "y": 11 },
       "id": 101,
       "panels": [],
       "title": "Processing Rate",
@@ -183,209 +273,62 @@
       "description": "Number of dumps completed per hour",
       "fieldConfig": {
         "defaults": {
-          "color": { "mode": "palette-classic" },
-          "custom": { "axisBorderShow": false, "axisCenteredZero": false, "axisColorMode": "text", "axisLabel": "Dumps/hour", "axisPlacement": "auto", "barAlignment": 0, "drawStyle": "bars", "fillOpacity": 80, "gradientMode": "none", "hideFrom": { "legend": false, "tooltip": false, "viz": false }, "insertNulls": false, "lineInterpolation": "linear", "lineWidth": 1, "pointSize": 5, "scaleDistribution": { "type": "linear" }, "showPoints": "never", "spanNulls": false, "stacking": { "group": "A", "mode": "normal" }, "thresholdsStyle": { "mode": "off" } },
+          "color": { "fixedColor": "green", "mode": "fixed" },
+          "custom": { "axisBorderShow": false, "axisCenteredZero": false, "axisColorMode": "text", "axisLabel": "Dumps/hour", "axisPlacement": "auto", "barAlignment": 0, "drawStyle": "bars", "fillOpacity": 80, "gradientMode": "none", "hideFrom": { "legend": false, "tooltip": false, "viz": false }, "insertNulls": false, "lineInterpolation": "linear", "lineWidth": 1, "pointSize": 5, "scaleDistribution": { "type": "linear" }, "showPoints": "never", "spanNulls": false, "stacking": { "group": "A", "mode": "none" }, "thresholdsStyle": { "mode": "off" } },
           "mappings": [],
           "thresholds": { "mode": "absolute", "steps": [{ "color": "green", "value": null }] },
           "unit": "short"
         },
         "overrides": []
       },
-      "gridPos": { "h": 8, "w": 12, "x": 0, "y": 6 },
+      "gridPos": { "h": 8, "w": 12, "x": 0, "y": 12 },
       "id": 7,
-      "options": { "legend": { "calcs": ["sum", "mean"], "displayMode": "table", "placement": "right", "showLegend": true }, "tooltip": { "mode": "multi", "sort": "desc" } },
+      "options": { "legend": { "calcs": ["sum", "mean"], "displayMode": "table", "placement": "right", "showLegend": false }, "tooltip": { "mode": "single", "sort": "none" } },
       "targets": [{
         "datasource": { "type": "postgres", "uid": "postgresql" },
         "rawQuery": true,
-        "rawSql": "SELECT date_trunc('hour', finished_at) AS time, netuid::text AS subnet, COUNT(*) AS dumps FROM metagraph_dump WHERE finished_at IS NOT NULL AND finished_at BETWEEN '${__from:date}' AND '${__to:date}' GROUP BY date_trunc('hour', finished_at), netuid ORDER BY time",
+        "rawSql": "SELECT date_trunc('hour', finished_at) AS time, COUNT(*) AS dumps FROM metagraph_dump WHERE finished_at IS NOT NULL AND finished_at BETWEEN '${__from:date}' AND '${__to:date}' GROUP BY date_trunc('hour', finished_at) ORDER BY time",
         "refId": "A",
-        "format": "table"
+        "format": "time_series"
       }],
-      "title": "Dumps per Hour by Subnet",
-      "transformations": [{ "id": "prepareTimeSeries", "options": { "format": "multi" } }],
+      "title": "Dumps per Hour",
       "type": "timeseries"
     },
     {
       "datasource": { "type": "postgres", "uid": "postgresql" },
-      "description": "Average dump duration in seconds",
+      "description": "Dump duration percentiles per hour",
       "fieldConfig": {
         "defaults": {
           "color": { "mode": "palette-classic" },
-          "custom": { "axisBorderShow": false, "axisCenteredZero": false, "axisColorMode": "text", "axisLabel": "Duration (seconds)", "axisPlacement": "auto", "barAlignment": 0, "drawStyle": "line", "fillOpacity": 10, "gradientMode": "none", "hideFrom": { "legend": false, "tooltip": false, "viz": false }, "insertNulls": false, "lineInterpolation": "smooth", "lineWidth": 2, "pointSize": 5, "scaleDistribution": { "type": "linear" }, "showPoints": "never", "spanNulls": false, "stacking": { "group": "A", "mode": "none" }, "thresholdsStyle": { "mode": "line+area" } },
+          "custom": { "axisBorderShow": false, "axisCenteredZero": false, "axisColorMode": "text", "axisLabel": "Duration (seconds)", "axisPlacement": "auto", "barAlignment": 0, "drawStyle": "line", "fillOpacity": 0, "gradientMode": "none", "hideFrom": { "legend": false, "tooltip": false, "viz": false }, "insertNulls": false, "lineInterpolation": "smooth", "lineWidth": 2, "pointSize": 5, "scaleDistribution": { "type": "linear" }, "showPoints": "never", "spanNulls": false, "stacking": { "group": "A", "mode": "none" }, "thresholdsStyle": { "mode": "off" } },
           "mappings": [],
-          "thresholds": { "mode": "absolute", "steps": [{ "color": "green", "value": null }, { "color": "yellow", "value": 60 }, { "color": "red", "value": 120 }] },
+          "thresholds": { "mode": "absolute", "steps": [{ "color": "green", "value": null }] },
           "unit": "s"
         },
-        "overrides": []
-      },
-      "gridPos": { "h": 8, "w": 12, "x": 12, "y": 6 },
-      "id": 8,
-      "options": { "legend": { "calcs": ["mean", "max"], "displayMode": "table", "placement": "right", "showLegend": true }, "tooltip": { "mode": "multi", "sort": "desc" } },
-      "targets": [{
-        "datasource": { "type": "postgres", "uid": "postgresql" },
-        "rawQuery": true,
-        "rawSql": "SELECT finished_at AS time, netuid::text AS subnet, EXTRACT(EPOCH FROM (finished_at - started_at)) AS duration FROM metagraph_dump WHERE finished_at IS NOT NULL AND started_at IS NOT NULL AND finished_at BETWEEN '${__from:date}' AND '${__to:date}' ORDER BY finished_at",
-        "refId": "A",
-        "format": "table"
-      }],
-      "title": "Dump Duration by Subnet",
-      "transformations": [{ "id": "prepareTimeSeries", "options": { "format": "multi" } }],
-      "type": "timeseries"
-    },
-    {
-      "collapsed": false,
-      "gridPos": { "h": 1, "w": 24, "x": 0, "y": 14 },
-      "id": 102,
-      "panels": [],
-      "title": "Subnet Coverage",
-      "type": "row"
-    },
-    {
-      "datasource": { "type": "postgres", "uid": "postgresql" },
-      "description": "Dumps per subnet with time since last dump",
-      "fieldConfig": {
-        "defaults": {
-          "color": { "mode": "thresholds" },
-          "custom": { "align": "auto", "cellOptions": { "type": "auto" }, "inspect": false },
-          "mappings": [],
-          "thresholds": { "mode": "absolute", "steps": [{ "color": "green", "value": null }] }
-        },
         "overrides": [
-          { "matcher": { "id": "byName", "options": "total_dumps" }, "properties": [{ "id": "custom.cellOptions", "value": { "mode": "gradient", "type": "gauge" } }, { "id": "fieldMinMax", "value": true }] },
-          { "matcher": { "id": "byName", "options": "hours_since_last" }, "properties": [{ "id": "thresholds", "value": { "mode": "absolute", "steps": [{ "color": "green", "value": null }, { "color": "yellow", "value": 1 }, { "color": "red", "value": 6 }] } }, { "id": "custom.cellOptions", "value": { "mode": "gradient", "type": "color-background" } }] },
-          { "matcher": { "id": "byName", "options": "subnet" }, "properties": [{ "id": "custom.width", "value": 200 }] }
+          { "matcher": { "id": "byName", "options": "p99" }, "properties": [{ "id": "color", "value": { "fixedColor": "red", "mode": "fixed" } }] },
+          { "matcher": { "id": "byName", "options": "p95" }, "properties": [{ "id": "color", "value": { "fixedColor": "orange", "mode": "fixed" } }] },
+          { "matcher": { "id": "byName", "options": "avg" }, "properties": [{ "id": "color", "value": { "fixedColor": "green", "mode": "fixed" } }] },
+          { "matcher": { "id": "byName", "options": "p50" }, "properties": [{ "id": "color", "value": { "fixedColor": "blue", "mode": "fixed" } }] }
         ]
       },
-      "gridPos": { "h": 10, "w": 12, "x": 0, "y": 15 },
-      "id": 9,
-      "options": { "cellHeight": "sm", "footer": { "countRows": false, "fields": "", "reducer": ["sum"], "show": false }, "showHeader": true, "sortBy": [{ "desc": true, "displayName": "total_dumps" }] },
+      "gridPos": { "h": 8, "w": 12, "x": 12, "y": 12 },
+      "id": 8,
+      "options": { "legend": { "calcs": [], "displayMode": "list", "placement": "bottom", "showLegend": true }, "tooltip": { "mode": "multi", "sort": "desc" } },
       "targets": [{
         "datasource": { "type": "postgres", "uid": "postgresql" },
         "rawQuery": true,
-        "rawSql": "SELECT CONCAT('SN', d.netuid, ' - ', COALESCE(s.name, 'Unknown')) AS subnet, COUNT(*) AS total_dumps, MAX(b.number) AS latest_block, ROUND(EXTRACT(EPOCH FROM (NOW() - MAX(d.finished_at))) / 3600, 1) AS hours_since_last, MIN(b.number) AS first_block FROM metagraph_dump d JOIN metagraph_block b ON d.block_id = b.number LEFT JOIN metagraph_subnet s ON d.netuid = s.netuid GROUP BY d.netuid, s.name ORDER BY COUNT(*) DESC",
+        "rawSql": "SELECT date_trunc('hour', finished_at) AS time, AVG(EXTRACT(EPOCH FROM (finished_at - started_at))) AS avg, PERCENTILE_CONT(0.5) WITHIN GROUP (ORDER BY EXTRACT(EPOCH FROM (finished_at - started_at))) AS p50, PERCENTILE_CONT(0.95) WITHIN GROUP (ORDER BY EXTRACT(EPOCH FROM (finished_at - started_at))) AS p95, PERCENTILE_CONT(0.99) WITHIN GROUP (ORDER BY EXTRACT(EPOCH FROM (finished_at - started_at))) AS p99 FROM metagraph_dump WHERE finished_at IS NOT NULL AND started_at IS NOT NULL AND finished_at BETWEEN '${__from:date}' AND '${__to:date}' GROUP BY date_trunc('hour', finished_at) ORDER BY time",
         "refId": "A",
         "format": "table"
       }],
-      "title": "Subnet Coverage Summary",
-      "type": "table"
-    },
-    {
-      "datasource": { "type": "postgres", "uid": "postgresql" },
-      "description": "Total dumps per subnet",
-      "fieldConfig": {
-        "defaults": {
-          "color": { "mode": "palette-classic" },
-          "custom": { "axisBorderShow": false, "axisCenteredZero": false, "axisColorMode": "text", "axisLabel": "", "axisPlacement": "auto", "fillOpacity": 80, "gradientMode": "none", "hideFrom": { "legend": false, "tooltip": false, "viz": false }, "lineWidth": 1, "scaleDistribution": { "type": "linear" }, "thresholdsStyle": { "mode": "off" } },
-          "mappings": [],
-          "thresholds": { "mode": "absolute", "steps": [{ "color": "green", "value": null }] }
-        },
-        "overrides": []
-      },
-      "gridPos": { "h": 10, "w": 12, "x": 12, "y": 15 },
-      "id": 10,
-      "options": { "barRadius": 0.1, "barWidth": 0.8, "fullHighlight": false, "groupWidth": 0.7, "legend": { "calcs": [], "displayMode": "list", "placement": "right", "showLegend": false }, "orientation": "horizontal", "showValue": "always", "stacking": "none", "tooltip": { "mode": "single", "sort": "none" }, "xTickLabelMaxLength": 0, "xTickLabelRotation": 0 },
-      "targets": [{
-        "datasource": { "type": "postgres", "uid": "postgresql" },
-        "rawQuery": true,
-        "rawSql": "SELECT CONCAT('SN', d.netuid) AS subnet, COUNT(*) AS dumps FROM metagraph_dump d GROUP BY d.netuid ORDER BY d.netuid",
-        "refId": "A",
-        "format": "table"
-      }],
-      "title": "Dumps by Subnet",
-      "type": "barchart"
-    },
-    {
-      "collapsed": false,
-      "gridPos": { "h": 1, "w": 24, "x": 0, "y": 25 },
-      "id": 103,
-      "panels": [],
-      "title": "Block Timeline",
-      "type": "row"
-    },
-    {
-      "datasource": { "type": "postgres", "uid": "postgresql" },
-      "description": "Block numbers processed over time",
-      "fieldConfig": {
-        "defaults": {
-          "color": { "mode": "palette-classic" },
-          "custom": { "axisBorderShow": false, "axisCenteredZero": false, "axisColorMode": "text", "axisLabel": "Block Number", "axisPlacement": "auto", "barAlignment": 0, "drawStyle": "points", "fillOpacity": 0, "gradientMode": "none", "hideFrom": { "legend": false, "tooltip": false, "viz": false }, "insertNulls": false, "lineInterpolation": "linear", "lineWidth": 1, "pointSize": 4, "scaleDistribution": { "type": "linear" }, "showPoints": "always", "spanNulls": false, "stacking": { "group": "A", "mode": "none" }, "thresholdsStyle": { "mode": "off" } },
-          "mappings": [],
-          "thresholds": { "mode": "absolute", "steps": [{ "color": "green", "value": null }] },
-          "unit": "none"
-        },
-        "overrides": []
-      },
-      "gridPos": { "h": 8, "w": 24, "x": 0, "y": 26 },
-      "id": 11,
-      "options": { "legend": { "calcs": ["count", "min", "max"], "displayMode": "table", "placement": "right", "showLegend": true }, "tooltip": { "mode": "multi", "sort": "desc" } },
-      "targets": [{
-        "datasource": { "type": "postgres", "uid": "postgresql" },
-        "rawQuery": true,
-        "rawSql": "SELECT b.timestamp AS time, d.netuid::text AS subnet, b.number AS block FROM metagraph_dump d JOIN metagraph_block b ON d.block_id = b.number WHERE b.timestamp BETWEEN '${__from:date}' AND '${__to:date}' ORDER BY b.timestamp",
-        "refId": "A",
-        "format": "table"
-      }],
-      "title": "Block Numbers by Subnet Over Time",
-      "transformations": [{ "id": "prepareTimeSeries", "options": { "format": "multi" } }],
-      "type": "timeseries"
-    },
-    {
-      "datasource": { "type": "postgres", "uid": "postgresql" },
-      "description": "Cumulative dumps over time",
-      "fieldConfig": {
-        "defaults": {
-          "color": { "mode": "palette-classic" },
-          "custom": { "axisBorderShow": false, "axisCenteredZero": false, "axisColorMode": "text", "axisLabel": "Total Dumps", "axisPlacement": "auto", "barAlignment": 0, "drawStyle": "line", "fillOpacity": 30, "gradientMode": "none", "hideFrom": { "legend": false, "tooltip": false, "viz": false }, "insertNulls": false, "lineInterpolation": "smooth", "lineWidth": 2, "pointSize": 5, "scaleDistribution": { "type": "linear" }, "showPoints": "never", "spanNulls": false, "stacking": { "group": "A", "mode": "none" }, "thresholdsStyle": { "mode": "off" } },
-          "mappings": [],
-          "thresholds": { "mode": "absolute", "steps": [{ "color": "green", "value": null }] },
-          "unit": "short"
-        },
-        "overrides": []
-      },
-      "gridPos": { "h": 8, "w": 12, "x": 0, "y": 34 },
-      "id": 12,
-      "options": { "legend": { "calcs": ["last"], "displayMode": "table", "placement": "right", "showLegend": true }, "tooltip": { "mode": "multi", "sort": "desc" } },
-      "targets": [{
-        "datasource": { "type": "postgres", "uid": "postgresql" },
-        "rawQuery": true,
-        "rawSql": "SELECT finished_at AS time, SUM(COUNT(*)) OVER (PARTITION BY netuid ORDER BY finished_at) AS cumulative_dumps, netuid::text AS subnet FROM metagraph_dump WHERE finished_at IS NOT NULL AND finished_at BETWEEN '${__from:date}' AND '${__to:date}' GROUP BY finished_at, netuid ORDER BY finished_at",
-        "refId": "A",
-        "format": "table"
-      }],
-      "title": "Cumulative Dumps Over Time",
-      "transformations": [{ "id": "prepareTimeSeries", "options": { "format": "multi" } }],
-      "type": "timeseries"
-    },
-    {
-      "datasource": { "type": "postgres", "uid": "postgresql" },
-      "description": "Daily dump count per subnet",
-      "fieldConfig": {
-        "defaults": {
-          "color": { "fixedColor": "green", "mode": "palette-classic" },
-          "custom": { "axisBorderShow": false, "axisCenteredZero": false, "axisColorMode": "text", "axisLabel": "Dumps/day", "axisPlacement": "auto", "barAlignment": 0, "drawStyle": "bars", "fillOpacity": 80, "gradientMode": "none", "hideFrom": { "legend": false, "tooltip": false, "viz": false }, "insertNulls": false, "lineInterpolation": "linear", "lineWidth": 1, "pointSize": 5, "scaleDistribution": { "type": "linear" }, "showPoints": "never", "spanNulls": false, "stacking": { "group": "A", "mode": "normal" }, "thresholdsStyle": { "mode": "off" } },
-          "mappings": [],
-          "thresholds": { "mode": "absolute", "steps": [{ "color": "green", "value": null }] },
-          "unit": "short"
-        },
-        "overrides": []
-      },
-      "gridPos": { "h": 8, "w": 12, "x": 12, "y": 34 },
-      "id": 13,
-      "options": { "legend": { "calcs": ["sum", "mean"], "displayMode": "table", "placement": "right", "showLegend": true }, "tooltip": { "mode": "multi", "sort": "desc" } },
-      "targets": [{
-        "datasource": { "type": "postgres", "uid": "postgresql" },
-        "rawQuery": true,
-        "rawSql": "SELECT date_trunc('day', finished_at) AS time, netuid::text AS subnet, COUNT(*) AS dumps FROM metagraph_dump WHERE finished_at IS NOT NULL AND finished_at BETWEEN '${__from:date}' AND '${__to:date}' GROUP BY date_trunc('day', finished_at), netuid ORDER BY time",
-        "refId": "A",
-        "format": "table"
-      }],
-      "title": "Daily Dumps by Subnet",
+      "title": "Dump Duration",
       "transformations": [{ "id": "prepareTimeSeries", "options": { "format": "multi" } }],
       "type": "timeseries"
     },
     {
       "collapsed": false,
-      "gridPos": { "h": 1, "w": 24, "x": 0, "y": 42 },
+      "gridPos": { "h": 1, "w": 24, "x": 0, "y": 20 },
       "id": 104,
       "panels": [],
       "title": "Recent Activity",
@@ -408,7 +351,7 @@
           { "matcher": { "id": "byName", "options": "block" }, "properties": [{ "id": "custom.width", "value": 100 }] }
         ]
       },
-      "gridPos": { "h": 12, "w": 24, "x": 0, "y": 43 },
+      "gridPos": { "h": 12, "w": 24, "x": 0, "y": 21 },
       "id": 14,
       "options": { "cellHeight": "sm", "footer": { "countRows": false, "fields": "", "reducer": ["sum"], "show": false }, "showHeader": true, "sortBy": [{ "desc": true, "displayName": "created_at" }] },
       "targets": [{
@@ -420,122 +363,6 @@
       }],
       "title": "Recent Dump Operations",
       "type": "table"
-    },
-    {
-      "collapsed": false,
-      "gridPos": { "h": 1, "w": 24, "x": 0, "y": 55 },
-      "id": 105,
-      "panels": [],
-      "title": "Data Quality",
-      "type": "row"
-    },
-    {
-      "datasource": { "type": "postgres", "uid": "postgresql" },
-      "description": "Neurons and snapshots created over time",
-      "fieldConfig": {
-        "defaults": {
-          "color": { "mode": "palette-classic" },
-          "custom": { "axisBorderShow": false, "axisCenteredZero": false, "axisColorMode": "text", "axisLabel": "", "axisPlacement": "auto", "barAlignment": 0, "drawStyle": "line", "fillOpacity": 10, "gradientMode": "none", "hideFrom": { "legend": false, "tooltip": false, "viz": false }, "insertNulls": false, "lineInterpolation": "smooth", "lineWidth": 2, "pointSize": 5, "scaleDistribution": { "type": "linear" }, "showPoints": "never", "spanNulls": false, "stacking": { "group": "A", "mode": "none" }, "thresholdsStyle": { "mode": "off" } },
-          "mappings": [],
-          "thresholds": { "mode": "absolute", "steps": [{ "color": "green", "value": null }] },
-          "unit": "short"
-        },
-        "overrides": []
-      },
-      "gridPos": { "h": 8, "w": 12, "x": 0, "y": 56 },
-      "id": 15,
-      "options": { "legend": { "calcs": ["sum", "mean"], "displayMode": "table", "placement": "right", "showLegend": true }, "tooltip": { "mode": "multi", "sort": "desc" } },
-      "targets": [{
-        "datasource": { "type": "postgres", "uid": "postgresql" },
-        "rawQuery": true,
-        "rawSql": "SELECT b.timestamp AS time, COUNT(DISTINCT ns.id) AS snapshots FROM metagraph_neuron_snapshot ns JOIN metagraph_block b ON ns.block_id = b.number WHERE b.timestamp BETWEEN '${__from:date}' AND '${__to:date}' GROUP BY b.timestamp ORDER BY b.timestamp",
-        "refId": "A",
-        "format": "time_series"
-      }],
-      "title": "Neuron Snapshots per Block",
-      "type": "timeseries"
-    },
-    {
-      "datasource": { "type": "postgres", "uid": "postgresql" },
-      "description": "Weight records created over time",
-      "fieldConfig": {
-        "defaults": {
-          "color": { "mode": "palette-classic" },
-          "custom": { "axisBorderShow": false, "axisCenteredZero": false, "axisColorMode": "text", "axisLabel": "", "axisPlacement": "auto", "barAlignment": 0, "drawStyle": "line", "fillOpacity": 10, "gradientMode": "none", "hideFrom": { "legend": false, "tooltip": false, "viz": false }, "insertNulls": false, "lineInterpolation": "smooth", "lineWidth": 2, "pointSize": 5, "scaleDistribution": { "type": "linear" }, "showPoints": "never", "spanNulls": false, "stacking": { "group": "A", "mode": "none" }, "thresholdsStyle": { "mode": "off" } },
-          "mappings": [],
-          "thresholds": { "mode": "absolute", "steps": [{ "color": "green", "value": null }] },
-          "unit": "short"
-        },
-        "overrides": []
-      },
-      "gridPos": { "h": 8, "w": 12, "x": 12, "y": 56 },
-      "id": 16,
-      "options": { "legend": { "calcs": ["sum", "mean"], "displayMode": "table", "placement": "right", "showLegend": true }, "tooltip": { "mode": "multi", "sort": "desc" } },
-      "targets": [{
-        "datasource": { "type": "postgres", "uid": "postgresql" },
-        "rawQuery": true,
-        "rawSql": "SELECT b.timestamp AS time, COUNT(DISTINCT w.id) AS weights FROM metagraph_weight w JOIN metagraph_block b ON w.block_id = b.number WHERE b.timestamp BETWEEN '${__from:date}' AND '${__to:date}' GROUP BY b.timestamp ORDER BY b.timestamp",
-        "refId": "A",
-        "format": "time_series"
-      }],
-      "title": "Weight Records per Block",
-      "type": "timeseries"
-    },
-    {
-      "datasource": { "type": "postgres", "uid": "postgresql" },
-      "description": "Total data volume in the system",
-      "fieldConfig": {
-        "defaults": {
-          "color": { "mode": "thresholds" },
-          "custom": { "align": "auto", "cellOptions": { "type": "auto" }, "inspect": false },
-          "mappings": [],
-          "thresholds": { "mode": "absolute", "steps": [{ "color": "green", "value": null }] }
-        },
-        "overrides": [
-          { "matcher": { "id": "byName", "options": "count" }, "properties": [{ "id": "custom.cellOptions", "value": { "mode": "gradient", "type": "gauge" } }, { "id": "fieldMinMax", "value": true }] }
-        ]
-      },
-      "gridPos": { "h": 8, "w": 12, "x": 0, "y": 64 },
-      "id": 17,
-      "options": { "cellHeight": "md", "footer": { "countRows": false, "fields": "", "reducer": ["sum"], "show": true }, "showHeader": true, "sortBy": [{ "desc": true, "displayName": "count" }] },
-      "targets": [{
-        "datasource": { "type": "postgres", "uid": "postgresql" },
-        "rawQuery": true,
-        "rawSql": "SELECT 'Blocks' AS entity, COUNT(*) AS count FROM metagraph_block UNION ALL SELECT 'Dumps' AS entity, COUNT(*) AS count FROM metagraph_dump UNION ALL SELECT 'Neurons' AS entity, COUNT(*) AS count FROM metagraph_neuron UNION ALL SELECT 'Neuron Snapshots' AS entity, COUNT(*) AS count FROM metagraph_neuron_snapshot UNION ALL SELECT 'Weights' AS entity, COUNT(*) AS count FROM metagraph_weight UNION ALL SELECT 'Bonds' AS entity, COUNT(*) AS count FROM metagraph_bond UNION ALL SELECT 'Mechanism Metrics' AS entity, COUNT(*) AS count FROM metagraph_mechanism_metrics ORDER BY count DESC",
-        "refId": "A",
-        "format": "table"
-      }],
-      "title": "Data Volume Summary",
-      "type": "table"
-    },
-    {
-      "datasource": { "type": "postgres", "uid": "postgresql" },
-      "description": "Average processing time statistics",
-      "fieldConfig": {
-        "defaults": {
-          "color": { "mode": "thresholds" },
-          "custom": { "align": "auto", "cellOptions": { "type": "auto" }, "inspect": false },
-          "mappings": [],
-          "thresholds": { "mode": "absolute", "steps": [{ "color": "green", "value": null }] },
-          "unit": "s"
-        },
-        "overrides": [
-          { "matcher": { "id": "byRegexp", "options": "/(avg|min|max|p95)_duration/" }, "properties": [{ "id": "unit", "value": "s" }, { "id": "decimals", "value": 1 }] },
-          { "matcher": { "id": "byName", "options": "avg_duration" }, "properties": [{ "id": "thresholds", "value": { "mode": "absolute", "steps": [{ "color": "green", "value": null }, { "color": "yellow", "value": 30 }, { "color": "red", "value": 60 }] } }, { "id": "custom.cellOptions", "value": { "mode": "gradient", "type": "color-background" } }] }
-        ]
-      },
-      "gridPos": { "h": 8, "w": 12, "x": 12, "y": 64 },
-      "id": 18,
-      "options": { "cellHeight": "md", "footer": { "countRows": false, "fields": "", "reducer": ["sum"], "show": false }, "showHeader": true, "sortBy": [{ "desc": false, "displayName": "subnet" }] },
-      "targets": [{
-        "datasource": { "type": "postgres", "uid": "postgresql" },
-        "rawQuery": true,
-        "rawSql": "SELECT CONCAT('SN', d.netuid) AS subnet, COUNT(*) AS total_dumps, ROUND(AVG(EXTRACT(EPOCH FROM (d.finished_at - d.started_at)))::numeric, 1) AS avg_duration, ROUND(MIN(EXTRACT(EPOCH FROM (d.finished_at - d.started_at)))::numeric, 1) AS min_duration, ROUND(MAX(EXTRACT(EPOCH FROM (d.finished_at - d.started_at)))::numeric, 1) AS max_duration, ROUND(PERCENTILE_CONT(0.95) WITHIN GROUP (ORDER BY EXTRACT(EPOCH FROM (d.finished_at - d.started_at)))::numeric, 1) AS p95_duration FROM metagraph_dump d WHERE d.finished_at IS NOT NULL AND d.started_at IS NOT NULL GROUP BY d.netuid ORDER BY d.netuid",
-        "refId": "A",
-        "format": "table"
-      }],
-      "title": "Processing Time Statistics by Subnet",
-      "type": "table"
     }
   ],
   "refresh": "1m",
@@ -543,7 +370,19 @@
   "style": "dark",
   "tags": ["bittensor", "backfilling", "metagraph", "operations"],
   "templating": {
-    "list": []
+    "list": [
+      {
+        "current": { "selected": true, "text": "5500116", "value": "5500116" },
+        "description": "Target block number for backfill completion",
+        "hide": 0,
+        "label": "To Block",
+        "name": "to_block",
+        "options": [{ "selected": true, "text": "5500116", "value": "5500116" }],
+        "query": "5500116",
+        "skipUrlSync": false,
+        "type": "textbox"
+      }
+    ]
   },
   "time": { "from": "now-24h", "to": "now" },
   "timepicker": { "refresh_intervals": ["1m", "5m", "15m", "30m", "1h"] },

@@ -42,3 +42,9 @@ scrape_configs:
     static_configs:
       - targets: ['cadvisor:8080']
     scrape_interval: 30s
+
+  - job_name: 'block-scheduler'
+    metrics_path: /metrics
+    static_configs:
+      - targets: ['block-scheduler:8000']
+    scrape_interval: 60s

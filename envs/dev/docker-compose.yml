@@ -130,6 +130,7 @@ services:
       - POSTGRES_DB=${POSTGRES_DB}
       - POSTGRES_USER=${POSTGRES_USER}
       - POSTGRES_PASSWORD=${POSTGRES_PASSWORD}
+      - BLOCK_END=${BLOCK_END:-5000000}
     volumes:
       - ./grafana/provisioning:/etc/grafana/provisioning:ro
       - grafana-data:/var/lib/grafana
@@ -138,6 +139,20 @@ services:
     depends_on:
       - prometheus
       - db
+
+  #pylon:
+  #  image: backenddevelopersltd/bittensor-pylon:latest
+  #  platform: linux/amd64
+  #  env_file: ./.env
+  #  volumes:
+  #    - ~/.bittensor/wallets:/root/.bittensor/wallets
+  #  ports:
+  #    - ${PYLON_PORT:-8090}:8000
+  #  healthcheck:
+  #    test: wget -q --spider http://127.0.0.1:8000/alive || exit 1
+  #    interval: 10s
+  #    timeout: 5s
+  #    retries: 3
 
   celery-worker:
     build:
@@ -157,6 +172,7 @@ services:
       - CELERY_BROKER_URL=redis://redis:6379/0
       - MEDIA_ROOT=${MEDIA_ROOT:-/root/src/media}
       - SENTINEL_MODE=${SENTINEL_MODE:-live}
+      - PYLON_URL=http://pylon:8000
     command: ./celery-entrypoint.sh
     volumes:
       - ${MEDIA_VOLUME_PATH:-./app/src/media}:/root/src/media
@@ -164,6 +180,8 @@ services:
     depends_on:
       redis:
         condition: service_healthy
+      #pylon:
+      #  condition: service_healthy
 
   block-scheduler:
     build:
