@@ -2,8 +2,8 @@
 set -eu
 
 # Block Scheduler Entrypoint
-# Runs either live mode (block_tasks_v1) or backfill mode (backfill_blocks_v1)
-# based on SENTINEL_MODE environment variable
+# Runs either live mode (block_tasks_v1), backfill mode (backfill_blocks_v1),
+# or fast_backfill mode (fast_backfill) based on SENTINEL_MODE environment variable
 
 SENTINEL_MODE="${SENTINEL_MODE:-live}"
 
@@ -35,8 +35,52 @@ case "$SENTINEL_MODE" in
             --to-block="$BLOCK_END" \
             --rate-limit="$BACKFILL_RATE_LIMIT"
         ;;
+    fast_backfill)
+        if [ -z "${BLOCK_START:-}" ] || [ -z "${BLOCK_END:-}" ]; then
+            echo "ERROR: BLOCK_START and BLOCK_END are required for fast_backfill mode"
+            exit 1
+        fi
+
+        if [ -z "${BITTENSOR_ARCHIVE_NETWORK:-}" ]; then
+            echo "ERROR: BITTENSOR_ARCHIVE_NETWORK is required for fast_backfill mode"
+            exit 1
+        fi
+
+        BACKFILL_STEP="${BACKFILL_STEP:-1}"
+        BACKFILL_BATCH_SIZE="${BACKFILL_BATCH_SIZE:-10}"
+        BACKFILL_BATCH_DELAY="${BACKFILL_BATCH_DELAY:-1.0}"
+        STORE_ARTIFACT="${STORE_ARTIFACT:-false}"
+
+        echo "Starting block scheduler in FAST BACKFILL mode..."
+        echo "  Block range: $BLOCK_START -> $BLOCK_END"
+        echo "  Netuid: ${NETUID:-all configured}"
+        echo "  Step: $BACKFILL_STEP"
+        echo "  Batch size: $BACKFILL_BATCH_SIZE"
+        echo "  Batch delay: $BACKFILL_BATCH_DELAY seconds"
+        echo "  Archive node: $BITTENSOR_ARCHIVE_NETWORK"
+        echo "  Store artifacts: $STORE_ARTIFACT"
+
+        EXTRA_ARGS=""
+        if [ "$STORE_ARTIFACT" = "true" ]; then
+            EXTRA_ARGS="$EXTRA_ARGS --store-artifact"
+        fi
+        if [ -n "${NETUID:-}" ]; then
+            EXTRA_ARGS="$EXTRA_ARGS --netuid=$NETUID"
+        fi
+
+        exec nice python manage.py fast_backfill \
+            --from-block="$BLOCK_START" \
+            --to-block="$BLOCK_END" \
+            --network="$BITTENSOR_ARCHIVE_NETWORK" \
+            --step="$BACKFILL_STEP" \
+            --batch-size="$BACKFILL_BATCH_SIZE" \
+            --batch-delay="$BACKFILL_BATCH_DELAY" \
+            --lite \
+            --use-celery \
+            $EXTRA_ARGS
+        ;;
     *)
-        echo "ERROR: Invalid SENTINEL_MODE '$SENTINEL_MODE'. Use 'live' or 'backfill'"
+        echo "ERROR: Invalid SENTINEL_MODE '$SENTINEL_MODE'. Use 'live', 'backfill', or 'fast_backfill'"
         exit 1
         ;;
 esac

@@ -1,8 +1,9 @@
 """Service for syncing metagraph JSONL data to Django models."""
 
+from dataclasses import dataclass
 from datetime import datetime
 from decimal import Decimal
-from typing import Any
+from typing import TYPE_CHECKING, Any
 
 import structlog
 from django.db import transaction
@@ -23,10 +24,33 @@ from apps.metagraph.models import (
     Weight,
 )
 
+if TYPE_CHECKING:
+    from sentinel.v1.services.extractors.metagraph.dto import (
+        Block as BlockDTO,
+        Bond as BondDTO,
+        Collateral as CollateralDTO,
+        FullSubnetSnapshot,
+        MechanismMetrics as MechMetricsDTO,
+        NeuronSnapshotFull,
+        NeuronWithRelations,
+        SubnetWithOwner,
+        Weight as WeightDTO,
+    )
+
 logger = structlog.get_logger()
 
 # Conversion factor from TAO to rao (1 TAO = 10^9 rao)
 TAO_TO_RAO = 10**9
+
+
+@dataclass
+class DumpMetadata:
+    """Metadata for metagraph dump tracking."""
+
+    netuid: int
+    epoch_position: str  # "start", "inside", "end"
+    started_at: datetime
+    finished_at: datetime
 
 
 def _parse_datetime(value: str | None) -> datetime | None:
@@ -148,6 +172,99 @@ class MetagraphSyncService:
             # 7. Sync metagraph dump record (always create one to track what's been synced)
             # dump_data was already extracted above for block timestamp
             self._sync_metagraph_dump(dump_data, block, subnet)
+            stats["dumps"] = 1
+
+        return stats
+
+    def sync_from_model(
+        self,
+        metagraph: "FullSubnetSnapshot",
+        dump_metadata: DumpMetadata,
+    ) -> dict[str, int]:
+        """
+        Sync a FullSubnetSnapshot Pydantic model directly to Django models.
+
+        This avoids the overhead of model_dump() by working with the Pydantic
+        model's attributes directly.
+
+        Args:
+            metagraph: FullSubnetSnapshot from sentinel SDK
+            dump_metadata: Metadata for tracking the dump
+
+        Returns:
+            Dict with counts of created/updated records
+
+        """
+        stats = {
+            "coldkeys": 0,
+            "hotkeys": 0,
+            "evmkeys": 0,
+            "subnets": 0,
+            "blocks": 0,
+            "neurons": 0,
+            "snapshots": 0,
+            "mechanism_metrics": 0,
+            "weights": 0,
+            "bonds": 0,
+            "collaterals": 0,
+            "dumps": 0,
+        }
+
+        with transaction.atomic():
+            # 1. Sync block
+            block = self._sync_block_from_model(metagraph.block, dump_metadata)
+            stats["blocks"] = 1
+
+            # 2. Sync subnet
+            subnet = self._sync_subnet_from_model(metagraph.subnet)
+            stats["subnets"] = 1
+
+            # 3. Sync neurons and their snapshots
+            for neuron_snapshot in metagraph.neurons:
+                # Sync hotkey/coldkey from neuron relations
+                neuron_rel = neuron_snapshot.neuron
+                if neuron_rel.hotkey:
+                    if neuron_rel.hotkey.coldkey:
+                        self._get_or_create_coldkey(neuron_rel.hotkey.coldkey.coldkey)
+                        stats["coldkeys"] += 1
+                    self._get_or_create_hotkey(
+                        neuron_rel.hotkey.hotkey,
+                        {"coldkey": neuron_rel.hotkey.coldkey.coldkey} if neuron_rel.hotkey.coldkey else None,
+                    )
+                    stats["hotkeys"] += 1
+
+                # Sync EVM key if present
+                if neuron_rel.evm_key:
+                    self._get_or_create_evmkey(neuron_rel.evm_key.evm_address)
+                    stats["evmkeys"] += 1
+
+                # Sync neuron
+                neuron = self._sync_neuron_from_model(neuron_rel, subnet)
+                stats["neurons"] += 1
+
+                # Sync neuron snapshot
+                snapshot = self._sync_neuron_snapshot_from_model(neuron_snapshot, neuron, block)
+                stats["snapshots"] += 1
+
+                # Sync mechanism metrics
+                for mech in neuron_snapshot.mechanisms:
+                    self._sync_mechanism_metrics_from_model(mech, snapshot)
+                    stats["mechanism_metrics"] += 1
+
+            # 4. Sync weights (if present)
+            if metagraph.weights:
+                stats["weights"] = self._sync_weights_from_model(metagraph.weights, block, subnet)
+
+            # 5. Sync bonds (if present)
+            if metagraph.bonds:
+                stats["bonds"] = self._sync_bonds_from_model(metagraph.bonds, block, subnet)
+
+            # 6. Sync collaterals (if present)
+            if metagraph.collaterals:
+                stats["collaterals"] = self._sync_collaterals_from_model(metagraph.collaterals, block, subnet)
+
+            # 7. Sync metagraph dump record
+            self._sync_metagraph_dump_from_metadata(dump_metadata, block, subnet)
             stats["dumps"] = 1
 
         return stats
@@ -537,6 +654,320 @@ class MetagraphSyncService:
                 "epoch_position": epoch_position,
                 "started_at": _parse_datetime(dump_data.get("started_at")),
                 "finished_at": _parse_datetime(dump_data.get("finished_at")),
+            },
+        )
+        return dump
+
+    # Model-based sync methods (avoid model_dump() overhead)
+
+    def _sync_block_from_model(
+        self,
+        block_model: "BlockDTO",
+        dump_metadata: DumpMetadata,
+    ) -> Block:
+        """Sync a Block record from Pydantic model."""
+        block_number = block_model.block_number
+
+        block, created = Block.objects.get_or_create(
+            number=block_number,
+            defaults={
+                "timestamp": block_model.timestamp,
+                "dump_started_at": dump_metadata.started_at,
+                "dump_finished_at": dump_metadata.finished_at,
+            },
+        )
+
+        if not created:
+            update_fields = []
+            if block_model.timestamp and not block.timestamp:
+                block.timestamp = block_model.timestamp
+                update_fields.append("timestamp")
+            if dump_metadata.started_at and not block.dump_started_at:
+                block.dump_started_at = dump_metadata.started_at
+                update_fields.append("dump_started_at")
+            if dump_metadata.finished_at and not block.dump_finished_at:
+                block.dump_finished_at = dump_metadata.finished_at
+                update_fields.append("dump_finished_at")
+            if update_fields:
+                block.save(update_fields=update_fields)
+
+        return block
+
+    def _sync_subnet_from_model(self, subnet_model: "SubnetWithOwner") -> Subnet:
+        """Sync a Subnet record from Pydantic model."""
+        netuid = subnet_model.netuid
+
+        # Get owner hotkey if present
+        owner_hotkey = None
+        if subnet_model.owner_hotkey:
+            coldkey_data = None
+            if subnet_model.owner_hotkey.coldkey:
+                self._get_or_create_coldkey(subnet_model.owner_hotkey.coldkey.coldkey)
+                coldkey_data = {"coldkey": subnet_model.owner_hotkey.coldkey.coldkey}
+            owner_hotkey = self._get_or_create_hotkey(
+                subnet_model.owner_hotkey.hotkey,
+                coldkey_data,
+            )
+
+        subnet, created = Subnet.objects.get_or_create(
+            netuid=netuid,
+            defaults={
+                "name": subnet_model.name or "",
+                "owner_hotkey": owner_hotkey,
+                "registered_at": subnet_model.registered_at,
+            },
+        )
+
+        if not created:
+            updated = False
+            if subnet_model.name and subnet.name != subnet_model.name:
+                subnet.name = subnet_model.name
+                updated = True
+            if owner_hotkey and subnet.owner_hotkey_id != owner_hotkey.id:
+                subnet.owner_hotkey = owner_hotkey
+                updated = True
+            if updated:
+                subnet.save()
+
+        return subnet
+
+    def _sync_neuron_from_model(
+        self,
+        neuron_model: "NeuronWithRelations",
+        subnet: Subnet,
+    ) -> Neuron:
+        """Sync a Neuron record from Pydantic model."""
+        hotkey = self._hotkey_cache.get(neuron_model.hotkey.hotkey)
+        if not hotkey:
+            coldkey_data = None
+            if neuron_model.hotkey.coldkey:
+                coldkey_data = {"coldkey": neuron_model.hotkey.coldkey.coldkey}
+            hotkey = self._get_or_create_hotkey(neuron_model.hotkey.hotkey, coldkey_data)
+
+        cache_key = (hotkey.id, subnet.netuid)
+        if cache_key in self._neuron_cache:
+            return self._neuron_cache[cache_key]
+
+        evm_key = None
+        if neuron_model.evm_key:
+            evm_key = self._get_or_create_evmkey(neuron_model.evm_key.evm_address)
+
+        neuron, _ = Neuron.objects.get_or_create(
+            hotkey=hotkey,
+            subnet=subnet,
+            defaults={
+                "uid": neuron_model.uid,
+                "evm_key": evm_key,
+            },
+        )
+
+        # Update uid and evm_key if changed
+        updated = False
+        if neuron.uid != neuron_model.uid:
+            neuron.uid = neuron_model.uid
+            updated = True
+        if evm_key and neuron.evm_key_id != evm_key.id:
+            neuron.evm_key = evm_key
+            updated = True
+        if updated:
+            neuron.save()
+
+        self._neuron_cache[cache_key] = neuron
+        return neuron
+
+    def _sync_neuron_snapshot_from_model(
+        self,
+        snapshot_model: "NeuronSnapshotFull",
+        neuron: Neuron,
+        block: Block,
+    ) -> NeuronSnapshot:
+        """Sync a NeuronSnapshot record from Pydantic model."""
+        snapshot, _ = NeuronSnapshot.objects.update_or_create(
+            neuron=neuron,
+            block=block,
+            defaults={
+                "uid": snapshot_model.uid,
+                "axon_address": snapshot_model.axon_address or "",
+                "total_stake": _to_rao(snapshot_model.total_stake),
+                "normalized_stake": snapshot_model.normalized_stake,
+                "rank": snapshot_model.rank,
+                "trust": snapshot_model.trust,
+                "emissions": _to_rao(snapshot_model.emissions),
+                "is_active": snapshot_model.is_active,
+                "is_validator": snapshot_model.is_validator,
+                "is_immune": snapshot_model.is_immune,
+                "has_any_weights": snapshot_model.has_any_weights,
+                "neuron_version": snapshot_model.neuron_version,
+                "block_at_registration": snapshot_model.block_at_registration,
+            },
+        )
+        return snapshot
+
+    def _sync_mechanism_metrics_from_model(
+        self,
+        mech_model: "MechMetricsDTO",
+        snapshot: NeuronSnapshot,
+    ) -> MechanismMetrics:
+        """Sync a MechanismMetrics record from Pydantic model."""
+        metrics, _ = MechanismMetrics.objects.update_or_create(
+            snapshot=snapshot,
+            mech_id=mech_model.mech_id,
+            defaults={
+                "incentive": mech_model.incentive,
+                "dividend": mech_model.dividend,
+                "consensus": mech_model.consensus,
+                "validator_trust": mech_model.validator_trust,
+                "weights_sum": mech_model.weights_sum,
+                "last_update": mech_model.last_update,
+            },
+        )
+        return metrics
+
+    def _sync_weights_from_model(
+        self,
+        weights: list["WeightDTO"],
+        block: Block,
+        subnet: Subnet,
+    ) -> int:
+        """Sync Weight records from Pydantic models in bulk."""
+        if not weights:
+            return 0
+
+        # Build UID to neuron mapping
+        uid_to_neuron: dict[int, Neuron] = {}
+        for (_, subnet_netuid), neuron in self._neuron_cache.items():
+            if subnet_netuid == subnet.netuid:
+                uid_to_neuron[neuron.uid] = neuron
+
+        weights_to_create = []
+        for w in weights:
+            source_neuron = uid_to_neuron.get(w.source_neuron_uid)
+            target_neuron = uid_to_neuron.get(w.target_neuron_uid)
+
+            if not source_neuron or not target_neuron:
+                continue
+
+            weights_to_create.append(
+                Weight(
+                    source_neuron=source_neuron,
+                    target_neuron=target_neuron,
+                    block=block,
+                    mech_id=w.mech_id,
+                    weight=w.weight,
+                ),
+            )
+
+        if weights_to_create:
+            Weight.objects.bulk_create(
+                weights_to_create,
+                ignore_conflicts=True,
+                batch_size=1000,
+            )
+
+        return len(weights_to_create)
+
+    def _sync_bonds_from_model(
+        self,
+        bonds: list["BondDTO"],
+        block: Block,
+        subnet: Subnet,
+    ) -> int:
+        """Sync Bond records from Pydantic models in bulk."""
+        if not bonds:
+            return 0
+
+        # Build UID to neuron mapping
+        uid_to_neuron: dict[int, Neuron] = {}
+        for (_, subnet_netuid), neuron in self._neuron_cache.items():
+            if subnet_netuid == subnet.netuid:
+                uid_to_neuron[neuron.uid] = neuron
+
+        bonds_to_create = []
+        for b in bonds:
+            source_neuron = uid_to_neuron.get(b.source_neuron_uid)
+            target_neuron = uid_to_neuron.get(b.target_neuron_uid)
+
+            if not source_neuron or not target_neuron:
+                continue
+
+            bonds_to_create.append(
+                Bond(
+                    source_neuron=source_neuron,
+                    target_neuron=target_neuron,
+                    block=block,
+                    mech_id=b.mech_id,
+                    bond=b.bond,
+                ),
+            )
+
+        if bonds_to_create:
+            Bond.objects.bulk_create(
+                bonds_to_create,
+                ignore_conflicts=True,
+                batch_size=1000,
+            )
+
+        return len(bonds_to_create)
+
+    def _sync_collaterals_from_model(
+        self,
+        collaterals: list["CollateralDTO"],
+        block: Block,
+        subnet: Subnet,
+    ) -> int:
+        """Sync Collateral records from Pydantic models in bulk."""
+        if not collaterals:
+            return 0
+
+        # Build UID to neuron mapping
+        uid_to_neuron: dict[int, Neuron] = {}
+        for (_, subnet_netuid), neuron in self._neuron_cache.items():
+            if subnet_netuid == subnet.netuid:
+                uid_to_neuron[neuron.uid] = neuron
+
+        collaterals_to_create = []
+        for c in collaterals:
+            source_neuron = uid_to_neuron.get(c.source_neuron_uid)
+            target_neuron = uid_to_neuron.get(c.target_neuron_uid)
+
+            if not source_neuron or not target_neuron:
+                continue
+
+            collaterals_to_create.append(
+                Collateral(
+                    source_neuron=source_neuron,
+                    target_neuron=target_neuron,
+                    block=block,
+                    amount=_to_rao(c.amount),
+                ),
+            )
+
+        if collaterals_to_create:
+            Collateral.objects.bulk_create(
+                collaterals_to_create,
+                ignore_conflicts=True,
+                batch_size=1000,
+            )
+
+        return len(collaterals_to_create)
+
+    def _sync_metagraph_dump_from_metadata(
+        self,
+        dump_metadata: DumpMetadata,
+        block: Block,
+        subnet: Subnet,
+    ) -> MetagraphDump:
+        """Sync a MetagraphDump record from DumpMetadata."""
+        epoch_position_map = {"start": 0, "inside": 1, "end": 2}
+        epoch_position = epoch_position_map.get(dump_metadata.epoch_position)
+
+        dump, _ = MetagraphDump.objects.update_or_create(
+            netuid=dump_metadata.netuid,
+            block=block,
+            defaults={
+                "epoch_position": epoch_position,
+                "started_at": dump_metadata.started_at,
+                "finished_at": dump_metadata.finished_at,
             },
         )
         return dump

@@ -1,8 +1,16 @@
 """Celery tasks for metagraph data processing."""
 
+import time
+from datetime import UTC, datetime
+
 import structlog
 from celery import shared_task
 from django.db import connection
+from sentinel.v1.providers.bittensor import bittensor_provider
+from sentinel.v1.services.sentinel import sentinel_service
+
+from apps.metagraph.services.metagraph_service import MetagraphService
+from apps.metagraph.services.sync_service import DumpMetadata, MetagraphSyncService
 
 logger = structlog.get_logger()
 
@@ -107,3 +115,175 @@ def get_top_validators_by_apy(limit: int = 5) -> list[dict]:
     )
 
     return results
+
+
+def _get_epoch_position_str(block_number: int, netuid: int) -> str:
+    """Determine the position of a block within its epoch (start, inside, end)."""
+    from apps.metagraph.utils import get_dumpable_blocks, get_epoch_containing_block
+
+    epoch = get_epoch_containing_block(block_number, netuid)
+    dumpable_blocks = get_dumpable_blocks(epoch)
+
+    if block_number == dumpable_blocks[0]:
+        return "start"
+    if block_number == dumpable_blocks[-1]:
+        return "end"
+    return "inside"
+
+
+@shared_task(
+    name="metagraph.fast_backfill_batch",
+    bind=True,
+    autoretry_for=(Exception,),
+    retry_backoff=True,
+    retry_kwargs={"max_retries": 3},
+    queue="metagraph",
+)
+def fast_backfill_batch(
+    self,
+    blocks: list[tuple[int, int]],
+    network: str,
+    lite: bool = True,
+    store_artifact: bool = False,
+) -> dict:
+    """
+    Fast backfill a batch of blocks using a single connection.
+
+    This task processes multiple blocks with a shared WebSocket connection,
+    significantly reducing connection overhead compared to one task per block.
+
+    Args:
+        blocks: List of (block_number, netuid) tuples to process
+        network: Bittensor network URI (archive node)
+        lite: Use lite metagraph mode (default: True)
+        store_artifact: Whether to store JSONL artifacts (default: False)
+
+    Returns:
+        Dict with batch processing stats
+    """
+    start_time = time.time()
+    processed = 0
+    errors = 0
+    total_neurons = 0
+    total_weights = 0
+    results: list[dict] = []
+
+    try:
+        with bittensor_provider(network) as provider:
+            service = sentinel_service(provider)
+
+            for block_number, netuid in blocks:
+                block_start = time.time()
+                started_at = datetime.now(UTC)
+
+                try:
+                    # Fetch metagraph (skip_timestamp for faster backfill)
+                    t1 = time.time()
+                    subnet = service.ingest_subnet(netuid, block_number, lite=lite, skip_timestamp=True)
+                    metagraph = subnet.metagraph
+                    fetch_time = time.time() - t1
+
+                    finished_at = datetime.now(UTC)
+
+                    if not metagraph:
+                        logger.warning(
+                            "No metagraph data for block",
+                            block_number=block_number,
+                            netuid=netuid,
+                        )
+                        results.append({
+                            "status": "no_data",
+                            "block_number": block_number,
+                            "netuid": netuid,
+                        })
+                        continue
+
+                    # Optionally store artifact
+                    artifact_path = None
+                    if store_artifact:
+                        artifact_path = MetagraphService.store_metagraph_artifact(metagraph)
+
+                    # Sync to database
+                    t2 = time.time()
+                    dump_metadata = DumpMetadata(
+                        netuid=netuid,
+                        epoch_position=_get_epoch_position_str(block_number, netuid),
+                        started_at=started_at,
+                        finished_at=finished_at,
+                    )
+                    sync_service = MetagraphSyncService()
+                    stats = sync_service.sync_from_model(metagraph, dump_metadata)
+                    sync_time = time.time() - t2
+
+                    block_time = time.time() - block_start
+                    processed += 1
+                    total_neurons += stats["neurons"]
+                    total_weights += stats["weights"]
+
+                    logger.info(
+                        "Batch: processed block",
+                        block_number=block_number,
+                        netuid=netuid,
+                        fetch_time=round(fetch_time, 2),
+                        sync_time=round(sync_time, 2),
+                        block_time=round(block_time, 2),
+                    )
+
+                    results.append({
+                        "status": "success",
+                        "block_number": block_number,
+                        "netuid": netuid,
+                        "fetch_time": round(fetch_time, 2),
+                        "sync_time": round(sync_time, 2),
+                        "neurons": stats["neurons"],
+                        "weights": stats["weights"],
+                        "artifact_path": artifact_path,
+                    })
+
+                except Exception as e:
+                    errors += 1
+                    logger.exception(
+                        "Batch: failed to process block",
+                        block_number=block_number,
+                        netuid=netuid,
+                        error=str(e),
+                    )
+                    results.append({
+                        "status": "error",
+                        "block_number": block_number,
+                        "netuid": netuid,
+                        "error": str(e),
+                    })
+
+        total_time = time.time() - start_time
+        avg_time = total_time / len(blocks) if blocks else 0
+
+        logger.info(
+            "Fast backfill batch completed",
+            total_blocks=len(blocks),
+            processed=processed,
+            errors=errors,
+            total_time=round(total_time, 2),
+            avg_time_per_block=round(avg_time, 2),
+            total_neurons=total_neurons,
+        )
+
+        return {
+            "status": "completed",
+            "total_blocks": len(blocks),
+            "processed": processed,
+            "errors": errors,
+            "total_time": round(total_time, 2),
+            "avg_time_per_block": round(avg_time, 2),
+            "total_neurons": total_neurons,
+            "total_weights": total_weights,
+            "results": results,
+        }
+
+    except Exception as e:
+        logger.exception(
+            "Fast backfill batch failed",
+            blocks_count=len(blocks),
+            error=str(e),
+        )
+        raise

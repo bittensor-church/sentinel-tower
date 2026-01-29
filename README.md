@@ -41,13 +41,56 @@ uv run manage.py block_tasks_v1
 
 **Sentinel mode**
 
+The block scheduler supports three modes controlled by `SENTINEL_MODE` environment variable:
+
+### Live mode (default)
+
+Runs the block scheduler in live mode, processing new blocks as they appear on the chain.
+
+```bash
+SENTINEL_MODE=live  # or omit (default)
 ```
-# Starting block number (required for backfill)
-BLOCK_START=1000000
-# Ending block number (required for backfill)
-BLOCK_END=2000000
-# Seconds between blocks in backfill mode
-BACKFILL_RATE_LIMIT=0.5
+
+### Backfill mode
+
+Backfills historical blocks sequentially with rate limiting.
+
+```bash
+SENTINEL_MODE=backfill
+
+# Required
+BLOCK_START=1000000              # Starting block number
+BLOCK_END=2000000                # Ending block number
+BITTENSOR_ARCHIVE_NETWORK=wss://archive.node.url  # Archive node URI
+
+# Optional
+BACKFILL_RATE_LIMIT=0.5          # Seconds between blocks (default: 1.0)
+```
+
+### Fast backfill mode
+
+Fast backfilling using Celery for parallel processing. Recommended for large block ranges.
+
+```bash
+SENTINEL_MODE=fast_backfill
+
+# Required
+BLOCK_START=1000000              # Starting block number
+BLOCK_END=2000000                # Ending block number
+BITTENSOR_ARCHIVE_NETWORK=wss://archive.node.url  # Archive node URI
+
+# Optional
+NETUID=1                         # Specific subnet (default: all configured netuids)
+BACKFILL_STEP=1                  # Block step size (default: 1)
+BACKFILL_BATCH_SIZE=10           # Blocks per Celery task (default: 10)
+BACKFILL_BATCH_DELAY=1.0         # Seconds between batch spawns (default: 1.0)
+STORE_ARTIFACT=false             # Store JSONL artifacts (default: false)
+```
+
+Fast backfill uses batch processing - each Celery task processes multiple blocks using a single WebSocket connection, significantly reducing connection overhead. Monitor progress with:
+
+```bash
+celery -A project inspect active
 ```
 
 ## Sentinel Core

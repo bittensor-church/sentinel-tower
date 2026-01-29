@@ -204,6 +204,9 @@ services:
       - BLOCK_START=${BLOCK_START:-}
       - BLOCK_END=${BLOCK_END:-}
       - BACKFILL_RATE_LIMIT=${BACKFILL_RATE_LIMIT:-1.0}
+      - NETUID=${NETUID:-}
+      - BACKFILL_STEP=${BACKFILL_STEP:-1}
+      - STORE_ARTIFACT=${STORE_ARTIFACT:-false}
     volumes:
       - ${MEDIA_VOLUME_PATH:-./app/src/media}:/root/src/media
     depends_on:
