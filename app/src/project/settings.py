@@ -454,12 +454,16 @@ DISCORD_ALERT_CONFIGS: list[AlertConfig] = [
     AlertConfig("SubtensorModule:swap_coldkey", "DISCORD_COLDKEY_SWAP_WEBHOOK_URL"),
 ]
 
-
-# Sentinel Storage Settings
-# SENTINEL_STORAGE_BACKEND: "filesystem" or "s3"
-# SENTINEL_STORAGE_OPTIONS: dict with backend-specific options
-# available options:
-# filesystem: base_path
-# s3: bucket, prefix, region_name, endpoint_url, aws_access_key_id, aws_secret_access_key
-SENTINEL_STORAGE_BACKEND = env("SENTINEL_STORAGE_BACKEND", default="filesystem")
-SENTINEL_STORAGE_OPTIONS = env.json("SENTINEL_STORAGE_OPTIONS", default={"base_path": str(root("storage"))})
+# sentinel storage configuration. each entry requires 'BACKEND_NAME' and 'OPTIONS'.
+# Available backends: 'fsspec-local', 'fsspec-s3'
+# Backend options:
+# fsspec-local: 'base_path'
+# fsspec-s3: 'bucket', 'base_path' (optional), 'aws_region' (optional),
+#            'aws_access_key_id' (optional), 'aws_secret_access_key' (optional)
+# if optional params are not provided, boto3 will read them from env or ~/.aws/credentials
+SENTINEL_STORAGES = {
+    "default": {
+        "BACKEND_NAME": "fsspec-local",
+        "OPTIONS": {"base_path": str(MEDIA_ROOT)},
+    }
+}

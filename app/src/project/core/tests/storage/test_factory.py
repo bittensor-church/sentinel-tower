@@ -2,70 +2,130 @@ from unittest.mock import patch
 
 import pytest
 from django.core.exceptions import ImproperlyConfigured
+from fsspec.implementations.local import LocalFileSystem
 
-from project.core.storage import get_storage_backend, get_storage_writer
-from project.core.storage.filesystem import FileSystemStorageBackend
-from project.core.storage.s3 import S3StorageBackend
-from project.core.storage.writer import StorageWriter
-
-
-def test_filesystem_backend(settings, tmp_path):
-    settings.SENTINEL_STORAGE_BACKEND = "filesystem"
-    settings.SENTINEL_STORAGE_OPTIONS = {"base_path": str(tmp_path)}
-
-    backend = get_storage_backend()
-
-    assert isinstance(backend, FileSystemStorageBackend)
+from project.core.storage import (
+    _storages,
+    fsspec_local_backend_factory,
+    fsspec_s3_backend_factory,
+    get_default_storage,
+    get_storage,
+)
+from project.core.storage.fsspec import FSSpecStorageBackend
 
 
-def test_filesystem_missing_base_path(settings):
-    settings.SENTINEL_STORAGE_BACKEND = "filesystem"
-    settings.SENTINEL_STORAGE_OPTIONS = {}
+@pytest.fixture(autouse=True)
+def clear_storage_cache():
+    _storages.clear()
+    yield
+    _storages.clear()
 
-    with pytest.raises(ImproperlyConfigured, match="base_path"):
-        get_storage_backend()
 
-
-@patch("project.core.storage.boto3")
-def test_s3_backend(mock_boto3, settings):
-    settings.SENTINEL_STORAGE_BACKEND = "s3"
-    settings.SENTINEL_STORAGE_OPTIONS = {
-        "bucket": "test-bucket",
-        "prefix": "test-prefix",
-        "endpoint_url": "http://localhost:9000",
-        "region_name": "us-east-1",
+def test_get_storage(settings, tmp_path):
+    settings.SENTINEL_STORAGES = {
+        "default": {
+            "BACKEND_NAME": "fsspec-local",
+            "OPTIONS": {"base_path": str(tmp_path)},
+        }
     }
 
-    backend = get_storage_backend()
+    storage = get_storage("default")
 
-    assert isinstance(backend, S3StorageBackend)
-    assert backend.bucket == "test-bucket"
-    assert backend.prefix == "test-prefix"
-
-    mock_boto3.client.assert_called_once_with("s3", endpoint_url="http://localhost:9000", region_name="us-east-1")
+    assert isinstance(storage, FSSpecStorageBackend)
 
 
-def test_s3_missing_bucket(settings):
-    settings.SENTINEL_STORAGE_BACKEND = "s3"
-    settings.SENTINEL_STORAGE_OPTIONS = {}
+def test_get_storage_cache(settings, tmp_path):
+    settings.SENTINEL_STORAGES = {
+        "default": {
+            "BACKEND_NAME": "fsspec-local",
+            "OPTIONS": {"base_path": str(tmp_path)},
+        }
+    }
 
-    with pytest.raises(ImproperlyConfigured, match="bucket"):
-        get_storage_backend()
+    storage1 = get_storage("default")
+    storage2 = get_storage("default")
 
-
-def test_unknown_backend(settings):
-    settings.SENTINEL_STORAGE_BACKEND = "unknown"
-    settings.SENTINEL_STORAGE_OPTIONS = {}
-
-    with pytest.raises(ImproperlyConfigured, match="not supported"):
-        get_storage_backend()
+    assert storage1 is storage2
 
 
-def test_get_storage_writer(settings, tmp_path):
-    settings.SENTINEL_STORAGE_BACKEND = "filesystem"
-    settings.SENTINEL_STORAGE_OPTIONS = {"base_path": str(tmp_path)}
+def test_get_storage_no_configured(settings):
+    settings.SENTINEL_STORAGES = None
 
-    backend = get_storage_backend()
-    writer = get_storage_writer("test-key", backend)
+    with pytest.raises(ImproperlyConfigured, match="'SENTINEL_STORAGES' setting is not configured."):
+        get_storage("default")
 
-    assert isinstance(writer, StorageWriter)
+
+def test_get_storage_unknown(settings, tmp_path):
+    settings.SENTINEL_STORAGES = {
+        "default": {
+            "BACKEND_NAME": "fsspec-local",
+            "OPTIONS": {"base_path": str(tmp_path)},
+        }
+    }
+
+    with pytest.raises(ImproperlyConfigured, match="Storage 'unknown' is not configured."):
+        get_storage("unknown")
+
+
+def test_get_storage_multiple_backends(settings, tmp_path):
+    settings.SENTINEL_STORAGES = {
+        "default": {
+            "BACKEND_NAME": "fsspec-local",
+            "OPTIONS": {"base_path": str(tmp_path)},
+        },
+        "extrinsics": {
+            "BACKEND_NAME": "fsspec-local",
+            "OPTIONS": {"base_path": str(tmp_path / "extrinsics")},
+        },
+    }
+
+    default_storage = get_storage("default")
+    artifacts_storage = get_storage("extrinsics")
+
+    assert default_storage is not artifacts_storage
+    assert isinstance(default_storage, FSSpecStorageBackend)
+    assert isinstance(artifacts_storage, FSSpecStorageBackend)
+
+
+def test_get_default_storage(settings, tmp_path):
+    settings.SENTINEL_STORAGES = {
+        "default": {
+            "BACKEND_NAME": "fsspec-local",
+            "OPTIONS": {"base_path": str(tmp_path)},
+        }
+    }
+
+    storage = get_default_storage()
+
+    assert storage is get_storage("default")
+
+
+def test_fsspec_local_backend_factory(tmp_path):
+    result = fsspec_local_backend_factory(base_path=str(tmp_path))
+
+    assert isinstance(result, FSSpecStorageBackend)
+    assert isinstance(result._fs, LocalFileSystem)
+
+
+def test_fsspec_local_backend_factory_missing_base_path():
+    with pytest.raises(ImproperlyConfigured, match="'base_path' is a required option for fsspec-local backends."):
+        fsspec_local_backend_factory()
+
+
+@patch("project.core.storage.S3FileSystem")
+def test_fsspec_s3_backend_factory(s3_file_system_mock):
+    result = fsspec_s3_backend_factory(
+        bucket="test-bucket",
+        aws_region="region",
+        aws_access_key_id="key",
+        aws_secret_access_key="secret",
+    )
+
+    assert isinstance(result, FSSpecStorageBackend)
+    assert s3_file_system_mock.called
+    s3_file_system_mock.assert_called_once_with(key="key", secret="secret", client_kwargs={"region_name": "region"})
+
+
+def test_fsspec_s3_backend_factory_missing_bucket_name():
+    with pytest.raises(ImproperlyConfigured, match="'bucket' is a required option for fsspec-s3 backends."):
+        fsspec_s3_backend_factory()

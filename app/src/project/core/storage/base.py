@@ -63,19 +63,6 @@ class StorageBackend(ABC):
         """
         pass
 
-    @abstractmethod
-    def append(self, key: str, data: bytes) -> None:
-        """
-        Append data to the given key.
-
-        If the key does not exist, it will be created.
-
-        Args:
-            key: Storage key/path to append to.
-            data: Raw data to append.
-        """
-        pass
-
     def resolve_key(self, key: str) -> str:
         """
         Validates and resolve a key to an implementation-specific key. Subclasses can

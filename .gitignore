@@ -24,6 +24,5 @@ logs/
 .DS_Store
 .dagster/
 app/src/.dagster/
-app/src/storage
 .env.history
 .env.live
