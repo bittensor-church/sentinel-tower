@@ -40,6 +40,7 @@ def _format_call_args(call_args: list[dict[str, Any]] | None) -> str:
         result = result[:MAX_CALL_ARGS_LENGTH] + "..."
     return result
 
+
 def get_alert_config(call_module: str, call_function: str) -> AlertConfig | None:
     """Get the AlertConfig for the given call module/function."""
     for config in DISCORD_ALERT_CONFIGS:
@@ -88,11 +89,13 @@ def format_extrinsic_message(extrinsic: dict[str, Any]) -> dict[str, Any]:
     # Add call arguments if present
     call_args = extrinsic.get("call_args")
     if call_args:
-        fields.append({
-            "name": "Parameters",
-            "value": _format_call_args(call_args),
-            "inline": False,
-        })
+        fields.append(
+            {
+                "name": "Parameters",
+                "value": _format_call_args(call_args),
+                "inline": False,
+            }
+        )
 
     fields.extend(
         [

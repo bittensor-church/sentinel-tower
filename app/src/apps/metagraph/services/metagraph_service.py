@@ -1,8 +1,5 @@
-from typing import Optional
-
 import structlog
 from django.conf import settings
-from sentinel.v1.providers.bittensor import bittensor_provider
 from sentinel.v1.services.extractors.metagraph.dto import FullSubnetSnapshot
 
 import apps.metagraph.utils as metagraph_utils

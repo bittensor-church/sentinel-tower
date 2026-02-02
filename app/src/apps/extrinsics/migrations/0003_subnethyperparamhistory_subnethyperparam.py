@@ -4,46 +4,57 @@ from django.db import migrations, models
 
 
 class Migration(migrations.Migration):
-
     dependencies = [
-        ('extrinsics', '0002_rename_extrinsics_block_n_callf_idx_extrinsics_block_n_8a4c59_idx_and_more'),
+        ("extrinsics", "0002_rename_extrinsics_block_n_callf_idx_extrinsics_block_n_8a4c59_idx_and_more"),
     ]
 
     operations = [
         migrations.CreateModel(
-            name='SubnetHyperparamHistory',
+            name="SubnetHyperparamHistory",
             fields=[
-                ('id', models.BigAutoField(auto_created=True, primary_key=True, serialize=False, verbose_name='ID')),
-                ('netuid', models.PositiveIntegerField(db_index=True)),
-                ('param_name', models.CharField(db_index=True, max_length=100)),
-                ('old_value', models.JSONField(blank=True, help_text='Previous value before change (null if first recorded value)', null=True)),
-                ('new_value', models.JSONField(help_text='New value after change')),
-                ('block_number', models.PositiveBigIntegerField(db_index=True)),
-                ('extrinsic_hash', models.CharField(blank=True, db_index=True, max_length=66)),
-                ('address', models.CharField(blank=True, help_text='Address that made the change', max_length=66)),
-                ('success', models.BooleanField(default=True, help_text='Whether the extrinsic succeeded')),
-                ('created_at', models.DateTimeField(auto_now_add=True, db_index=True)),
+                ("id", models.BigAutoField(auto_created=True, primary_key=True, serialize=False, verbose_name="ID")),
+                ("netuid", models.PositiveIntegerField(db_index=True)),
+                ("param_name", models.CharField(db_index=True, max_length=100)),
+                (
+                    "old_value",
+                    models.JSONField(
+                        blank=True, help_text="Previous value before change (null if first recorded value)", null=True
+                    ),
+                ),
+                ("new_value", models.JSONField(help_text="New value after change")),
+                ("block_number", models.PositiveBigIntegerField(db_index=True)),
+                ("extrinsic_hash", models.CharField(blank=True, db_index=True, max_length=66)),
+                ("address", models.CharField(blank=True, help_text="Address that made the change", max_length=66)),
+                ("success", models.BooleanField(default=True, help_text="Whether the extrinsic succeeded")),
+                ("created_at", models.DateTimeField(auto_now_add=True, db_index=True)),
             ],
             options={
-                'db_table': 'subnet_hyperparam_history',
-                'ordering': ['-block_number'],
-                'indexes': [models.Index(fields=['netuid', 'param_name', 'block_number'], name='subnet_hype_netuid_964e5a_idx'), models.Index(fields=['netuid', 'created_at'], name='subnet_hype_netuid_64f13f_idx'), models.Index(fields=['param_name', 'created_at'], name='subnet_hype_param_n_c2e413_idx')],
+                "db_table": "subnet_hyperparam_history",
+                "ordering": ["-block_number"],
+                "indexes": [
+                    models.Index(fields=["netuid", "param_name", "block_number"], name="subnet_hype_netuid_964e5a_idx"),
+                    models.Index(fields=["netuid", "created_at"], name="subnet_hype_netuid_64f13f_idx"),
+                    models.Index(fields=["param_name", "created_at"], name="subnet_hype_param_n_c2e413_idx"),
+                ],
             },
         ),
         migrations.CreateModel(
-            name='SubnetHyperparam',
+            name="SubnetHyperparam",
             fields=[
-                ('id', models.BigAutoField(auto_created=True, primary_key=True, serialize=False, verbose_name='ID')),
-                ('netuid', models.PositiveIntegerField(db_index=True)),
-                ('param_name', models.CharField(db_index=True, max_length=100)),
-                ('value', models.JSONField(help_text='Current value of the hyperparam')),
-                ('last_block_number', models.PositiveBigIntegerField(help_text='Block number when this value was last set')),
-                ('updated_at', models.DateTimeField(auto_now=True)),
+                ("id", models.BigAutoField(auto_created=True, primary_key=True, serialize=False, verbose_name="ID")),
+                ("netuid", models.PositiveIntegerField(db_index=True)),
+                ("param_name", models.CharField(db_index=True, max_length=100)),
+                ("value", models.JSONField(help_text="Current value of the hyperparam")),
+                (
+                    "last_block_number",
+                    models.PositiveBigIntegerField(help_text="Block number when this value was last set"),
+                ),
+                ("updated_at", models.DateTimeField(auto_now=True)),
             ],
             options={
-                'db_table': 'subnet_hyperparams',
-                'indexes': [models.Index(fields=['netuid', 'param_name'], name='subnet_hype_netuid_0e2616_idx')],
-                'unique_together': {('netuid', 'param_name')},
+                "db_table": "subnet_hyperparams",
+                "indexes": [models.Index(fields=["netuid", "param_name"], name="subnet_hype_netuid_0e2616_idx")],
+                "unique_together": {("netuid", "param_name")},
             },
         ),
     ]

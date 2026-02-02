@@ -77,7 +77,7 @@ case "$SENTINEL_MODE" in
             --batch-delay="$BACKFILL_BATCH_DELAY" \
             --lite \
             --use-celery \
-            $EXTRA_ARGS
+            "$EXTRA_ARGS"
         ;;
     *)
         echo "ERROR: Invalid SENTINEL_MODE '$SENTINEL_MODE'. Use 'live', 'backfill', or 'fast_backfill'"

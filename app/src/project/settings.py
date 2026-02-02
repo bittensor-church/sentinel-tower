@@ -1,6 +1,7 @@
 import inspect
 import logging
 import os
+from dataclasses import dataclass
 from datetime import timedelta
 from functools import wraps
 
@@ -247,7 +248,7 @@ CELERY_BEAT_SCHEDULE = {
         "kwargs": {"days": 7},  # Customize retention period
     },
     "refresh-apy-materialized-view": {
-        "task": "metagraph.refresh_apy_materialized_view",
+        "task": "apps.metagraph.tasks.refresh_apy_materialized_view",
         "schedule": crontab(hour=3, minute=0),  # Daily at 3 AM (after cleanup)
     },
 }
@@ -411,9 +412,6 @@ NUM_BLOCK_DUMPS_PER_EPOCH = 3  # Number of block dumps to take per epoch
 # Metagraph mode: False = full (includes weights/bonds), True = lite (excludes weights/bonds)
 METAGRAPH_LITE = env.bool("METAGRAPH_LITE", default=False)
 
-
-# Discord Alert Configurations
-from dataclasses import dataclass
 
 _DISABLED_WEBHOOK_PATTERNS = ("disabled", "https://discord.com/api/webhooks/0/disabled")
 

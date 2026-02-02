@@ -191,11 +191,13 @@ def fast_backfill_batch(
                             block_number=block_number,
                             netuid=netuid,
                         )
-                        results.append({
-                            "status": "no_data",
-                            "block_number": block_number,
-                            "netuid": netuid,
-                        })
+                        results.append(
+                            {
+                                "status": "no_data",
+                                "block_number": block_number,
+                                "netuid": netuid,
+                            }
+                        )
                         continue
 
                     # Optionally store artifact
@@ -229,16 +231,18 @@ def fast_backfill_batch(
                         block_time=round(block_time, 2),
                     )
 
-                    results.append({
-                        "status": "success",
-                        "block_number": block_number,
-                        "netuid": netuid,
-                        "fetch_time": round(fetch_time, 2),
-                        "sync_time": round(sync_time, 2),
-                        "neurons": stats["neurons"],
-                        "weights": stats["weights"],
-                        "artifact_path": artifact_path,
-                    })
+                    results.append(
+                        {
+                            "status": "success",
+                            "block_number": block_number,
+                            "netuid": netuid,
+                            "fetch_time": round(fetch_time, 2),
+                            "sync_time": round(sync_time, 2),
+                            "neurons": stats["neurons"],
+                            "weights": stats["weights"],
+                            "artifact_path": artifact_path,
+                        }
+                    )
 
                 except Exception as e:
                     errors += 1
@@ -248,12 +252,14 @@ def fast_backfill_batch(
                         netuid=netuid,
                         error=str(e),
                     )
-                    results.append({
-                        "status": "error",
-                        "block_number": block_number,
-                        "netuid": netuid,
-                        "error": str(e),
-                    })
+                    results.append(
+                        {
+                            "status": "error",
+                            "block_number": block_number,
+                            "netuid": netuid,
+                            "error": str(e),
+                        }
+                    )
 
         total_time = time.time() - start_time
         avg_time = total_time / len(blocks) if blocks else 0

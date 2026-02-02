@@ -15,7 +15,7 @@ from django.http import JsonResponse
 from django.template.response import TemplateResponse
 from django.urls import path
 
-from .models import Block, MechanismMetrics, MetagraphDump, NeuronSnapshot, Subnet
+from .models import Block, MetagraphDump, NeuronSnapshot, Subnet
 
 
 class MetagraphExplorerAdmin(admin.ModelAdmin):
@@ -72,9 +72,7 @@ class MetagraphExplorer:
             "subnets": subnets,
             "latest_block": latest_block,
         }
-        return TemplateResponse(
-            request, "admin/metagraph/explorer.html", context
-        )
+        return TemplateResponse(request, "admin/metagraph/explorer.html", context)
 
     def api_blocks(self, request):
         """API endpoint to get available blocks for a subnet."""
@@ -83,22 +81,14 @@ class MetagraphExplorer:
             return JsonResponse({"error": "subnet_id required"}, status=400)
 
         # Use MetagraphDump for fast block lookup (indexed by netuid)
-        dumps = (
-            MetagraphDump.objects.filter(netuid=subnet_id)
-            .select_related("block")
-            .order_by("-block__number")[:100]
-        )
+        dumps = MetagraphDump.objects.filter(netuid=subnet_id).select_related("block").order_by("-block__number")[:100]
 
         return JsonResponse(
             {
                 "blocks": [
                     {
                         "number": d.block.number,
-                        "timestamp": (
-                            d.block.timestamp.isoformat()
-                            if d.block.timestamp
-                            else None
-                        ),
+                        "timestamp": (d.block.timestamp.isoformat() if d.block.timestamp else None),
                     }
                     for d in dumps
                 ]
@@ -112,9 +102,7 @@ class MetagraphExplorer:
         mech_id = request.GET.get("mech_id", "0")
 
         if not subnet_id or not block_number:
-            return JsonResponse(
-                {"error": "subnet_id and block_number required"}, status=400
-            )
+            return JsonResponse({"error": "subnet_id and block_number required"}, status=400)
 
         try:
             mech_id = int(mech_id)
@@ -126,9 +114,7 @@ class MetagraphExplorer:
             block_number = Block.objects.aggregate(max_block=Max("number"))["max_block"]
 
         snapshots = (
-            NeuronSnapshot.objects.filter(
-                neuron__subnet_id=subnet_id, block_id=block_number
-            )
+            NeuronSnapshot.objects.filter(neuron__subnet_id=subnet_id, block_id=block_number)
             .select_related("neuron", "neuron__hotkey", "block")
             .prefetch_related("mechanism_metrics")
             .order_by("-total_stake")
@@ -167,11 +153,7 @@ class MetagraphExplorer:
             {
                 "block": {
                     "number": block_number,
-                    "timestamp": (
-                        block_info.timestamp.isoformat()
-                        if block_info and block_info.timestamp
-                        else None
-                    ),
+                    "timestamp": (block_info.timestamp.isoformat() if block_info and block_info.timestamp else None),
                 },
                 "mech_id": mech_id,
                 "neurons": data,

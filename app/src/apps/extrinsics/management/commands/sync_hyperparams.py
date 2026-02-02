@@ -110,9 +110,7 @@ class Command(BaseCommand):
                             )
                             params_synced += 1
 
-                    self.stdout.write(
-                        self.style.SUCCESS(f"  Synced {params_synced} params for subnet {netuid}")
-                    )
+                    self.stdout.write(self.style.SUCCESS(f"  Synced {params_synced} params for subnet {netuid}"))
                     synced_count += 1
 
                 except Exception as e:
@@ -120,6 +118,4 @@ class Command(BaseCommand):
                     error_count += 1
 
             self.stdout.write("")
-            self.stdout.write(
-                self.style.SUCCESS(f"Sync complete: {synced_count} subnets synced, {error_count} errors")
-            )
+            self.stdout.write(self.style.SUCCESS(f"Sync complete: {synced_count} subnets synced, {error_count} errors"))

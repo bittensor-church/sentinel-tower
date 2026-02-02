@@ -137,8 +137,4 @@ class Command(BaseCommand):
                 self.style.SUCCESS(f"Notification sent successfully! ({notified_count} extrinsics notified)")
             )
         else:
-            self.stdout.write(
-                self.style.ERROR(
-                    "Failed to send notification. Check webhook URL configuration."
-                )
-            )
+            self.stdout.write(self.style.ERROR("Failed to send notification. Check webhook URL configuration."))

@@ -114,7 +114,9 @@ class APYSyncService:
                 emission = float(metagraph.emission[i])
 
                 # Determine if validator (has validator_permit)
-                is_validator = bool(metagraph.validator_permit[i]) if hasattr(metagraph, "validator_permit") else stake > 0
+                is_validator = (
+                    bool(metagraph.validator_permit[i]) if hasattr(metagraph, "validator_permit") else stake > 0
+                )
 
                 # Skip non-validators - we only need validator data for APY calculation
                 if not is_validator:

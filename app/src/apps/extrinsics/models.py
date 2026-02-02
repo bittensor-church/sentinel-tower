@@ -13,9 +13,7 @@ class SubnetHyperparam(models.Model):
     netuid = models.PositiveIntegerField(db_index=True)
     param_name = models.CharField(max_length=100, db_index=True)
     value = models.JSONField(help_text="Current value of the hyperparam")
-    last_block_number = models.PositiveBigIntegerField(
-        help_text="Block number when this value was last set"
-    )
+    last_block_number = models.PositiveBigIntegerField(help_text="Block number when this value was last set")
     updated_at = models.DateTimeField(auto_now=True)
 
     class Meta:

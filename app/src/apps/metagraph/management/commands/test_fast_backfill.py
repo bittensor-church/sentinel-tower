@@ -85,16 +85,16 @@ class Command(BaseCommand):
 
             for block_num, netuid in blocks:
                 try:
-                    self.stdout.write(f"{'='*60}")
+                    self.stdout.write(f"{'=' * 60}")
                     self.stdout.write(f"Processing block {block_num}, netuid {netuid}")
-                    self.stdout.write(f"{'='*60}")
+                    self.stdout.write(f"{'=' * 60}")
 
                     block_start = time.time()
                     started_at = datetime.now(UTC)
 
                     # Step 1: Fetch metagraph
                     t1 = time.time()
-                    self.stdout.write(f"[FETCH] Fetching metagraph...")
+                    self.stdout.write("[FETCH] Fetching metagraph...")
                     metagraph = _get_metagraph_with_fallback(subtensor, netuid, block_num, lite=lite)
                     fetch_time = time.time() - t1
                     self.stdout.write(f"[FETCH] Done in {fetch_time:.2f}s")
@@ -102,7 +102,7 @@ class Command(BaseCommand):
                     finished_at = datetime.now(UTC)
 
                     if metagraph is None or len(metagraph.uids) == 0:
-                        self.stderr.write(f"[ERROR] No metagraph data")
+                        self.stderr.write("[ERROR] No metagraph data")
                         errors += 1
                         continue
 
@@ -131,6 +131,7 @@ class Command(BaseCommand):
                     errors += 1
                     self.stderr.write(self.style.ERROR(f"[ERROR] {e}"))
                     import traceback
+
                     traceback.print_exc()
 
         except KeyboardInterrupt:
@@ -140,9 +141,9 @@ class Command(BaseCommand):
         avg_time = total_time / len(blocks) if blocks else 0
 
         self.stdout.write("")
-        self.stdout.write(self.style.SUCCESS("="*60))
+        self.stdout.write(self.style.SUCCESS("=" * 60))
         self.stdout.write(self.style.SUCCESS("SUMMARY"))
-        self.stdout.write(self.style.SUCCESS("="*60))
+        self.stdout.write(self.style.SUCCESS("=" * 60))
         self.stdout.write(f"Processed: {processed}/{len(blocks)}")
         self.stdout.write(f"Errors: {errors}")
         self.stdout.write(f"Total time: {total_time:.2f}s")
@@ -184,7 +185,7 @@ class Command(BaseCommand):
         with transaction.atomic():
             # Step 2a: Sync block
             t = time.time()
-            self.stdout.write(f"[SYNC] Creating/updating block...")
+            self.stdout.write("[SYNC] Creating/updating block...")
             block, _ = Block.objects.get_or_create(
                 number=block_number,
                 defaults={
@@ -194,17 +195,17 @@ class Command(BaseCommand):
                 },
             )
             timings["block_sync"] = time.time() - t
-            self.stdout.write(f"[SYNC] Block sync: {timings['block_sync']*1000:.1f}ms")
+            self.stdout.write(f"[SYNC] Block sync: {timings['block_sync'] * 1000:.1f}ms")
 
             # Step 2b: Sync subnet
             t = time.time()
-            self.stdout.write(f"[SYNC] Creating/updating subnet...")
+            self.stdout.write("[SYNC] Creating/updating subnet...")
             subnet, _ = Subnet.objects.get_or_create(
                 netuid=netuid,
                 defaults={"name": f"Subnet {netuid}"},
             )
             timings["subnet_sync"] = time.time() - t
-            self.stdout.write(f"[SYNC] Subnet sync: {timings['subnet_sync']*1000:.1f}ms")
+            self.stdout.write(f"[SYNC] Subnet sync: {timings['subnet_sync'] * 1000:.1f}ms")
 
             # Step 2c: Process validators only (skip miners)
             self.stdout.write(f"[SYNC] Processing {n_neurons} neurons (validators only)...")
@@ -217,7 +218,9 @@ class Command(BaseCommand):
                 coldkey_str = str(metagraph.coldkeys[i])
                 stake = float(metagraph.stake[i])
                 emission = float(metagraph.emission[i])
-                is_validator = bool(metagraph.validator_permit[i]) if hasattr(metagraph, "validator_permit") else stake > 0
+                is_validator = (
+                    bool(metagraph.validator_permit[i]) if hasattr(metagraph, "validator_permit") else stake > 0
+                )
                 timings["data_extraction"] += time.time() - t
 
                 # Skip non-validators - we only need validator data for APY calculation
@@ -313,7 +316,7 @@ class Command(BaseCommand):
 
             # Step 2d: Sync dump record
             t = time.time()
-            self.stdout.write(f"[SYNC] Creating metagraph dump record...")
+            self.stdout.write("[SYNC] Creating metagraph dump record...")
             epoch_position_map = {"start": 0, "inside": 1, "end": 2}
             MetagraphDump.objects.update_or_create(
                 netuid=dump_metadata.netuid,
@@ -325,7 +328,7 @@ class Command(BaseCommand):
                 },
             )
             timings["dump_sync"] = time.time() - t
-            self.stdout.write(f"[SYNC] Dump sync: {timings['dump_sync']*1000:.1f}ms")
+            self.stdout.write(f"[SYNC] Dump sync: {timings['dump_sync'] * 1000:.1f}ms")
 
             # Step 2e: Bulk update hotkey last_seen
             t = time.time()
@@ -333,18 +336,20 @@ class Command(BaseCommand):
                 self.stdout.write(f"[SYNC] Updating {len(hotkeys_to_update)} hotkey last_seen...")
                 Hotkey.objects.filter(id__in=hotkeys_to_update).update(last_seen=timezone.now())
             timings["hotkey_update"] = time.time() - t
-            self.stdout.write(f"[SYNC] Hotkey update: {timings['hotkey_update']*1000:.1f}ms")
+            self.stdout.write(f"[SYNC] Hotkey update: {timings['hotkey_update'] * 1000:.1f}ms")
 
         # Print timing summary
         n_validators = stats["snapshots"]
         self.stdout.write("")
         self.stdout.write(f"[TIMING] Validators synced: {n_validators}/{n_neurons} neurons")
-        self.stdout.write(f"[TIMING] Data extraction:  {timings['data_extraction']*1000:.1f}ms total")
-        self.stdout.write(f"[TIMING] Coldkey sync:     {timings['coldkey_sync']*1000:.1f}ms total")
-        self.stdout.write(f"[TIMING] Hotkey sync:      {timings['hotkey_sync']*1000:.1f}ms total")
-        self.stdout.write(f"[TIMING] Neuron sync:      {timings['neuron_sync']*1000:.1f}ms total")
-        avg_snapshot_time = timings['snapshot_sync'] / n_validators * 1000 if n_validators > 0 else 0
-        self.stdout.write(f"[TIMING] Snapshot sync:    {timings['snapshot_sync']*1000:.1f}ms total ({avg_snapshot_time:.2f}ms/validator)")
-        self.stdout.write(f"[TIMING] Metrics sync:     {timings['metrics_sync']*1000:.1f}ms total")
+        self.stdout.write(f"[TIMING] Data extraction:  {timings['data_extraction'] * 1000:.1f}ms total")
+        self.stdout.write(f"[TIMING] Coldkey sync:     {timings['coldkey_sync'] * 1000:.1f}ms total")
+        self.stdout.write(f"[TIMING] Hotkey sync:      {timings['hotkey_sync'] * 1000:.1f}ms total")
+        self.stdout.write(f"[TIMING] Neuron sync:      {timings['neuron_sync'] * 1000:.1f}ms total")
+        avg_snapshot_time = timings["snapshot_sync"] / n_validators * 1000 if n_validators > 0 else 0
+        self.stdout.write(
+            f"[TIMING] Snapshot sync:    {timings['snapshot_sync'] * 1000:.1f}ms total ({avg_snapshot_time:.2f}ms/validator)"
+        )
+        self.stdout.write(f"[TIMING] Metrics sync:     {timings['metrics_sync'] * 1000:.1f}ms total")
 
         return stats

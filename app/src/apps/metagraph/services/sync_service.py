@@ -27,13 +27,23 @@ from apps.metagraph.models import (
 if TYPE_CHECKING:
     from sentinel.v1.services.extractors.metagraph.dto import (
         Block as BlockDTO,
+    )
+    from sentinel.v1.services.extractors.metagraph.dto import (
         Bond as BondDTO,
+    )
+    from sentinel.v1.services.extractors.metagraph.dto import (
         Collateral as CollateralDTO,
+    )
+    from sentinel.v1.services.extractors.metagraph.dto import (
         FullSubnetSnapshot,
-        MechanismMetrics as MechMetricsDTO,
         NeuronSnapshotFull,
         NeuronWithRelations,
         SubnetWithOwner,
+    )
+    from sentinel.v1.services.extractors.metagraph.dto import (
+        MechanismMetrics as MechMetricsDTO,
+    )
+    from sentinel.v1.services.extractors.metagraph.dto import (
         Weight as WeightDTO,
     )
 
