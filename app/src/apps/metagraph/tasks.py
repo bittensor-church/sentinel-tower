@@ -330,7 +330,7 @@ def _get_metagraph_with_fallback(
                 sync=False,
                 subtensor=subtensor,
             )
-            metagraph._apply_extra_info = lambda _block: None  # type: ignore[method-assign]
+            metagraph._apply_extra_info = lambda block=None: None  # type: ignore[method-assign]
             metagraph.sync(block=block_number, lite=lite, subtensor=subtensor)
             return metagraph
         raise
