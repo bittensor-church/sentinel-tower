@@ -167,6 +167,7 @@ services:
     env_file: ./.env
     extra_hosts:
       - "host.docker.internal:host-gateway"
+    mem_limit: 22g
     environment:
       - DATABASE_URL=postgres://postgres:12345@db:5432/project
       - POSTGRES_HOST=db
