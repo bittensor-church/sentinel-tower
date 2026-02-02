@@ -172,15 +172,22 @@ class Command(BaseCommand):
             action="store_true",
             help="Preview blocks without storing",
         )
+        parser.add_argument(
+            "--async",
+            dest="use_async",
+            action="store_true",
+            help="Dispatch Celery tasks for parallel processing (default: synchronous)",
+        )
 
     def handle(self, *args, **options) -> None:
         from_block = options["from_block"]
         to_block = options["to_block"]
         netuid = options["netuid"]
-        network = options["network"] or os.getenv("BITTENSOR_ARCHIVE_NETWORK")
+        network = options["network"] or os.getenv("BITTENSOR_ARCHIVE_NETWORK", "archive")
         lite = options["lite"]
         step = options["step"]
         dry_run = options["dry_run"]
+        use_async = options["use_async"]
 
         # Validate
         if from_block > to_block:
@@ -217,7 +224,10 @@ class Command(BaseCommand):
                     self.stdout.write(f"    Would process block {block_num}")
             return
 
-        self._process_synchronously(from_block, to_block, netuids, network, lite, step)
+        if use_async:
+            self._process_async(from_block, to_block, netuids, network, lite, step)
+        else:
+            self._process_synchronously(from_block, to_block, netuids, network, lite, step)
 
     def _process_synchronously(
         self,
@@ -313,3 +323,66 @@ class Command(BaseCommand):
             self.stdout.write(self.style.WARNING("\nInterrupted by user"))
 
         self.stdout.write(self.style.SUCCESS(f"\nCompleted: {processed} tasks, {errors} errors"))
+
+    def _process_async(
+        self,
+        from_block: int,
+        to_block: int,
+        netuids: list[int],
+        network: str,
+        lite: bool,
+        step: int,
+    ) -> None:
+        """Dispatch Celery tasks for parallel processing."""
+        from apps.metagraph.tasks import fast_apy_sync  # type: ignore[attr-defined]
+
+        self.stdout.write("Calculating dumpable blocks...")
+
+        # Build list of (block, netuid) pairs to process
+        tasks: list[tuple[int, int]] = []
+        for netuid in netuids:
+            dumpable_blocks = _get_epoch_start_blocks_in_range(from_block, to_block, netuid)
+            self.stdout.write(f"  Netuid {netuid}: {len(dumpable_blocks)} dumpable blocks")
+            tasks.extend((block_num, netuid) for block_num in dumpable_blocks[::step])
+
+        total_tasks = len(tasks)
+        self.stdout.write(f"Total tasks: {total_tasks}")
+        self.stdout.write("Dispatching Celery tasks...")
+
+        dispatched = 0
+        errors = 0
+
+        try:
+            for block_num, netuid in tasks:
+                try:
+                    fast_apy_sync.delay(
+                        block_number=block_num,
+                        netuid=netuid,
+                        network=network,
+                        lite=lite,
+                    )
+                    dispatched += 1
+
+                    if dispatched % 100 == 0 or dispatched == total_tasks:
+                        self.stdout.write(f"Dispatched {dispatched}/{total_tasks} tasks...")
+
+                except Exception as e:
+                    errors += 1
+                    logger.exception(
+                        "Error dispatching task",
+                        block=block_num,
+                        netuid=netuid,
+                        error=str(e),
+                    )
+                    self.stderr.write(
+                        self.style.ERROR(f"Error dispatching block {block_num}, netuid {netuid}: {e}"),
+                    )
+
+        except KeyboardInterrupt:
+            self.stdout.write(self.style.WARNING("\nInterrupted by user"))
+
+        self.stdout.write(
+            self.style.SUCCESS(f"\nDispatched: {dispatched} tasks, {errors} errors")
+        )
+        self.stdout.write("Tasks are now running in Celery workers. Monitor with:")
+        self.stdout.write("  docker compose logs -f celery-worker")

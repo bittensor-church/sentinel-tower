@@ -66,6 +66,7 @@ case "$SENTINEL_MODE" in
             --network="$BITTENSOR_ARCHIVE_NETWORK" \
             --step="$BACKFILL_STEP" \
             --lite \
+            --async \
             $EXTRA_ARGS
         ;;
     *)
