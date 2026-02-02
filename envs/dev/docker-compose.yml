@@ -52,59 +52,59 @@ services:
     ports:
       - ${APP_PORT:-8000}:8000
 
-  dagster-webserver:
-    build:
-      context: ./
-      dockerfile: app/envs/prod/Dockerfile
-    image: project/app
-    init: true
-    env_file: ./.env
-    environment:
-      - DAGSTER_HOME=/root/src
-      - DATABASE_URL=postgres://postgres:12345@db:5432/project
-      - POSTGRES_HOST=db
-      - POSTGRES_PORT=5432
-      - REDIS_HOST=redis
-      - REDIS_PORT=6379
-      - MEDIA_ROOT=${MEDIA_ROOT:-/root/src/media}
-    command: ./dagster-entrypoint.sh
-    volumes:
-      - ${MEDIA_VOLUME_PATH:-./app/src/media}:/root/src/media
-      - dagster-storage:/root/src/.dagster
-    depends_on:
-      db:
-        condition: service_healthy
-      redis:
-        condition: service_healthy
-    ports:
-      - ${DAGSTER_PORT:-3000}:3000
+  # dagster-webserver:
+  #   build:
+  #     context: ./
+  #     dockerfile: app/envs/prod/Dockerfile
+  #   image: project/app
+  #   init: true
+  #   env_file: ./.env
+  #   environment:
+  #     - DAGSTER_HOME=/root/src
+  #     - DATABASE_URL=postgres://postgres:12345@db:5432/project
+  #     - POSTGRES_HOST=db
+  #     - POSTGRES_PORT=5432
+  #     - REDIS_HOST=redis
+  #     - REDIS_PORT=6379
+  #     - MEDIA_ROOT=${MEDIA_ROOT:-/root/src/media}
+  #   command: ./dagster-entrypoint.sh
+  #   volumes:
+  #     - ${MEDIA_VOLUME_PATH:-./app/src/media}:/root/src/media
+  #     - dagster-storage:/root/src/.dagster
+  #   depends_on:
+  #     db:
+  #       condition: service_healthy
+  #     redis:
+  #       condition: service_healthy
+  #   ports:
+  #     - ${DAGSTER_PORT:-3000}:3000
 
-  dagster-daemon:
-    build:
-      context: ./
-      dockerfile: app/envs/prod/Dockerfile
-    image: project/app
-    init: true
-    env_file: ./.env
-    environment:
-      - DAGSTER_HOME=/root/src
-      - DATABASE_URL=postgres://postgres:12345@db:5432/project
-      - POSTGRES_HOST=db
-      - POSTGRES_PORT=5432
-      - REDIS_HOST=redis
-      - REDIS_PORT=6379
-      - MEDIA_ROOT=${MEDIA_ROOT:-/root/src/media}
-    command: dagster-daemon run
-    volumes:
-      - ${MEDIA_VOLUME_PATH:-./app/src/media}:/root/src/media
-      - dagster-storage:/root/src/.dagster
-    depends_on:
-      dagster-webserver:
-        condition: service_started
-      db:
-        condition: service_healthy
-      redis:
-        condition: service_healthy
+  # dagster-daemon:
+  #   build:
+  #     context: ./
+  #     dockerfile: app/envs/prod/Dockerfile
+  #   image: project/app
+  #   init: true
+  #   env_file: ./.env
+  #   environment:
+  #     - DAGSTER_HOME=/root/src
+  #     - DATABASE_URL=postgres://postgres:12345@db:5432/project
+  #     - POSTGRES_HOST=db
+  #     - POSTGRES_PORT=5432
+  #     - REDIS_HOST=redis
+  #     - REDIS_PORT=6379
+  #     - MEDIA_ROOT=${MEDIA_ROOT:-/root/src/media}
+  #   command: dagster-daemon run
+  #   volumes:
+  #     - ${MEDIA_VOLUME_PATH:-./app/src/media}:/root/src/media
+  #     - dagster-storage:/root/src/.dagster
+  #   depends_on:
+  #     dagster-webserver:
+  #       condition: service_started
+  #     db:
+  #       condition: service_healthy
+  #     redis:
+  #       condition: service_healthy
 
   prometheus:
     image: prom/prometheus:v2.47.0

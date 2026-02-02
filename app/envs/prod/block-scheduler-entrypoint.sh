@@ -65,7 +65,7 @@ case "$SENTINEL_MODE" in
             --network="$BITTENSOR_ARCHIVE_NETWORK" \
             --step="$BACKFILL_STEP" \
             --lite \
-            $EXTRA_ARGS
+            "$EXTRA_ARGS"
         ;;
     *)
         echo "ERROR: Invalid SENTINEL_MODE '$SENTINEL_MODE'. Use 'live', 'backfill', or 'fast_backfill'"
