@@ -82,6 +82,8 @@ class MetagraphSyncService:
         self._hotkey_cache: dict[str, Hotkey] = {}
         self._evmkey_cache: dict[str, EvmKey] = {}
         self._neuron_cache: dict[tuple[int, int], Neuron] = {}  # (hotkey_id, subnet_netuid)
+        # Track hotkeys that need last_seen update (deferred for bulk_update)
+        self._hotkeys_to_update: set[int] = set()  # hotkey IDs
 
     def sync_metagraph(self, data: dict[str, Any]) -> dict[str, int]:
         """
@@ -173,6 +175,9 @@ class MetagraphSyncService:
             # dump_data was already extracted above for block timestamp
             self._sync_metagraph_dump(dump_data, block, subnet)
             stats["dumps"] = 1
+
+            # 8. Bulk update last_seen for all hotkeys (single UPDATE instead of many)
+            self._flush_hotkey_last_seen()
 
         return stats
 
@@ -267,6 +272,9 @@ class MetagraphSyncService:
             self._sync_metagraph_dump_from_metadata(dump_metadata, block, subnet)
             stats["dumps"] = 1
 
+            # 8. Bulk update last_seen for all hotkeys (single UPDATE instead of many)
+            self._flush_hotkey_last_seen()
+
         return stats
 
     def _get_or_create_coldkey(self, coldkey_address: str) -> Coldkey:
@@ -286,9 +294,8 @@ class MetagraphSyncService:
         """Get or create a Hotkey, using cache."""
         if hotkey_address in self._hotkey_cache:
             hotkey = self._hotkey_cache[hotkey_address]
-            # Update last_seen
-            hotkey.last_seen = timezone.now()
-            hotkey.save(update_fields=["last_seen"])
+            # Defer last_seen update to bulk operation at end of sync
+            self._hotkeys_to_update.add(hotkey.id)
             return hotkey
 
         coldkey = None
@@ -300,10 +307,12 @@ class MetagraphSyncService:
             defaults={"coldkey": coldkey, "last_seen": timezone.now()},
         )
         if not created:
-            hotkey.last_seen = timezone.now()
+            # Update coldkey if changed (this is rare, so individual save is OK)
             if coldkey and hotkey.coldkey_id != coldkey.id:
                 hotkey.coldkey = coldkey
-            hotkey.save(update_fields=["last_seen", "coldkey"])
+                hotkey.save(update_fields=["coldkey"])
+            # Defer last_seen update to bulk operation
+            self._hotkeys_to_update.add(hotkey.id)
 
         self._hotkey_cache[hotkey_address] = hotkey
         return hotkey
@@ -316,6 +325,16 @@ class MetagraphSyncService:
         evmkey, _ = EvmKey.objects.get_or_create(evm_address=evm_address)
         self._evmkey_cache[evm_address] = evmkey
         return evmkey
+
+    def _flush_hotkey_last_seen(self) -> int:
+        """Bulk update last_seen for all hotkeys touched during this sync."""
+        if not self._hotkeys_to_update:
+            return 0
+
+        now = timezone.now()
+        count = Hotkey.objects.filter(id__in=self._hotkeys_to_update).update(last_seen=now)
+        self._hotkeys_to_update.clear()
+        return count
 
     def _sync_block(self, block_data: dict[str, Any], dump_data: dict[str, Any] | None = None) -> Block:
         """Sync a Block record."""

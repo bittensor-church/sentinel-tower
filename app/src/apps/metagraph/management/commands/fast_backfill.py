@@ -1,20 +1,96 @@
-"""Fast backfill command using sentinel SDK with archive node."""
+"""Fast backfill command using native bittensor SDK with archive node."""
 
 import os
 import time
 from datetime import UTC, datetime
 
+import bittensor as bt
 import structlog
+from bittensor.core.metagraph import Metagraph
 from django.core.management.base import BaseCommand
-from sentinel.v1.providers.bittensor import bittensor_provider
-from sentinel.v1.services.sentinel import sentinel_service
 
+from apps.metagraph.services.apy_sync_service import APYSyncService, DumpMetadata
 from apps.metagraph.services.metagraph_service import MetagraphService
-from apps.metagraph.services.sync_service import DumpMetadata, MetagraphSyncService
-from apps.metagraph.tasks import fast_backfill_batch
 from apps.metagraph.utils import get_dumpable_blocks, get_epoch_containing_block
 
 logger = structlog.get_logger()
+
+
+def _get_metagraph_with_fallback(
+    subtensor: bt.Subtensor,
+    netuid: int,
+    block_number: int,
+    lite: bool = True,
+) -> Metagraph | None:
+    """
+    Get metagraph with fallback for historical blocks.
+
+    The bittensor SDK has a bug where it passes incorrect parameters
+    for historical blocks. This function catches that error and uses
+    a workaround that patches _apply_extra_info to be a no-op.
+    """
+    try:
+        return subtensor.metagraph(netuid=netuid, block=block_number, lite=lite)
+    except ValueError as e:
+        if "Invalid type for list data" in str(e):
+            logger.warning(
+                "Bittensor SDK bug encountered, using legacy metagraph sync",
+                netuid=netuid,
+                block_number=block_number,
+            )
+            return _get_metagraph_legacy(subtensor, netuid, block_number, lite=lite)
+        raise
+
+
+def _get_metagraph_legacy(
+    subtensor: bt.Subtensor,
+    netuid: int,
+    block_number: int,
+    lite: bool = True,
+) -> Metagraph | None:
+    """
+    Legacy metagraph retrieval for historical blocks.
+
+    This bypasses the buggy _runtime_call_with_fallback in the SDK
+    by patching _apply_extra_info to be a no-op during sync.
+    """
+    # Create metagraph without syncing
+    metagraph = Metagraph(
+        netuid=netuid,
+        network=subtensor.network,
+        sync=False,
+        subtensor=subtensor,
+    )
+
+    try:
+        # Patch _apply_extra_info to skip the buggy code path
+        original_apply_extra_info = metagraph._apply_extra_info
+
+        def patched_apply_extra_info(block: int) -> None:
+            # Skip the buggy get_metagraph_info call for historical blocks
+            logger.debug(
+                "Skipping _apply_extra_info for historical block",
+                block_number=block,
+                netuid=netuid,
+            )
+
+        metagraph._apply_extra_info = patched_apply_extra_info  # type: ignore[method-assign]
+
+        # Now sync - this will populate the metagraph with neuron data
+        # but skip the buggy _apply_extra_info call
+        metagraph.sync(block=block_number, lite=lite, subtensor=subtensor)
+
+        # Restore the original method
+        metagraph._apply_extra_info = original_apply_extra_info  # type: ignore[method-assign]
+
+        return metagraph
+    except Exception:
+        logger.exception(
+            "Failed to get legacy metagraph",
+            netuid=netuid,
+            block_number=block_number,
+        )
+        return None
 
 
 def _get_epoch_position_str(block_number: int, netuid: int) -> str:
@@ -29,31 +105,30 @@ def _get_epoch_position_str(block_number: int, netuid: int) -> str:
     return "inside"
 
 
-def _get_dumpable_blocks_in_range(from_block: int, to_block: int, netuid: int) -> list[int]:
+def _get_epoch_start_blocks_in_range(from_block: int, to_block: int, netuid: int) -> list[int]:
     """
-    Get all dumpable blocks in a range for a given netuid.
+    Get epoch start blocks in a range for a given netuid.
 
-    Iterates through epochs and collects dumpable blocks that fall within the range.
+    Only returns the first block of each epoch (for APY calculation we only need one snapshot per epoch).
     """
-    dumpable = set()
+    epoch_starts = set()
     current_block = from_block
 
     while current_block <= to_block:
         epoch = get_epoch_containing_block(current_block, netuid)
-        epoch_dumpable = get_dumpable_blocks(epoch)
+        epoch_start = epoch.start
 
-        for block in epoch_dumpable:
-            if from_block <= block <= to_block:
-                dumpable.add(block)
+        if from_block <= epoch_start <= to_block:
+            epoch_starts.add(epoch_start)
 
         # Move to the next epoch
         current_block = epoch.stop + 1
 
-    return sorted(dumpable)
+    return sorted(epoch_starts)
 
 
 class Command(BaseCommand):
-    help = "Fast backfill historical blocks using sentinel SDK with archive node."
+    help = "Fast backfill historical blocks using native bittensor SDK with archive node."
 
     def add_arguments(self, parser) -> None:
         parser.add_argument(
@@ -97,28 +172,6 @@ class Command(BaseCommand):
             action="store_true",
             help="Preview blocks without storing",
         )
-        parser.add_argument(
-            "--store-artifact",
-            action="store_true",
-            help="Store JSONL artifacts (slower but creates backup)",
-        )
-        parser.add_argument(
-            "--use-celery",
-            action="store_true",
-            help="Spawn celery tasks for each block instead of processing synchronously",
-        )
-        parser.add_argument(
-            "--batch-size",
-            type=int,
-            default=10,
-            help="Blocks per Celery task when using --use-celery (default: 10)",
-        )
-        parser.add_argument(
-            "--batch-delay",
-            type=float,
-            default=1.0,
-            help="Delay in seconds between spawning batch tasks (default: 1.0)",
-        )
 
     def handle(self, *args, **options) -> None:
         from_block = options["from_block"]
@@ -128,10 +181,6 @@ class Command(BaseCommand):
         lite = options["lite"]
         step = options["step"]
         dry_run = options["dry_run"]
-        store_artifact = options["store_artifact"]
-        use_celery = options["use_celery"]
-        batch_size = options["batch_size"]
-        batch_delay = options["batch_delay"]
 
         # Validate
         if from_block > to_block:
@@ -162,18 +211,13 @@ class Command(BaseCommand):
         if dry_run:
             self.stdout.write(self.style.WARNING("Dry-run mode: no data will be stored"))
             for uid in netuids:
-                dumpable_blocks = _get_dumpable_blocks_in_range(from_block, to_block, uid)
+                dumpable_blocks = _get_epoch_start_blocks_in_range(from_block, to_block, uid)
                 self.stdout.write(f"  Netuid {uid}: {len(dumpable_blocks)} dumpable blocks")
                 for block_num in dumpable_blocks[::step]:
                     self.stdout.write(f"    Would process block {block_num}")
             return
 
-        if use_celery:
-            self._process_with_celery(
-                from_block, to_block, netuids, network, lite, step, store_artifact, batch_size, batch_delay,
-            )
-        else:
-            self._process_synchronously(from_block, to_block, netuids, network, lite, step, store_artifact)
+        self._process_synchronously(from_block, to_block, netuids, network, lite, step)
 
     def _process_synchronously(
         self,
@@ -183,15 +227,14 @@ class Command(BaseCommand):
         network: str,
         lite: bool,
         step: int,
-        store_artifact: bool,
     ) -> None:
-        """Process blocks synchronously using a single provider connection."""
+        """Process blocks synchronously using native bittensor SDK."""
         self.stdout.write("Calculating dumpable blocks...")
 
         # Build list of (block, netuid) pairs to process
         tasks: list[tuple[int, int]] = []
         for netuid in netuids:
-            dumpable_blocks = _get_dumpable_blocks_in_range(from_block, to_block, netuid)
+            dumpable_blocks = _get_epoch_start_blocks_in_range(from_block, to_block, netuid)
             self.stdout.write(f"  Netuid {netuid}: {len(dumpable_blocks)} dumpable blocks")
             tasks.extend((block_num, netuid) for block_num in dumpable_blocks[::step])
 
@@ -206,107 +249,67 @@ class Command(BaseCommand):
         self.stdout.write("Press Ctrl+C to stop gracefully...")
 
         try:
-            # Use single provider connection for all blocks
-            with bittensor_provider(network) as provider:
-                service = sentinel_service(provider)
-                self.stdout.write(self.style.SUCCESS("Connected"))
+            # Connect to bittensor network
+            subtensor = bt.Subtensor(network=network)
+            self.stdout.write(self.style.SUCCESS(f"Connected to {subtensor.network}"))
 
-                for block_num, netuid in tasks:
-                    try:
-                        started_at = datetime.now(UTC)
+            for block_num, netuid in tasks:
+                try:
+                    started_at = datetime.now(UTC)
 
-                        # Fetch metagraph using sentinel SDK (skip_timestamp for faster backfill)
-                        t1 = time.time()
-                        subnet = service.ingest_subnet(netuid, block_num, lite=lite, skip_timestamp=True)
-                        metagraph = subnet.metagraph
-                        fetch_time = time.time() - t1
+                    # Fetch metagraph using native bittensor SDK (with fallback for historical blocks)
+                    t1 = time.time()
+                    metagraph = _get_metagraph_with_fallback(subtensor, netuid, block_num, lite=lite)
+                    fetch_time = time.time() - t1
 
-                        finished_at = datetime.now(UTC)
+                    finished_at = datetime.now(UTC)
 
-                        if not metagraph:
-                            self.stderr.write(f"No metagraph data for block {block_num}, netuid {netuid}")
-                            errors += 1
-                            continue
-
-                        # Optionally store artifact
-                        if store_artifact:
-                            MetagraphService.store_metagraph_artifact(metagraph)
-
-                        # Sync to database using Pydantic model directly (avoids model_dump() overhead)
-                        t2 = time.time()
-                        dump_metadata = DumpMetadata(
-                            netuid=netuid,
-                            epoch_position=_get_epoch_position_str(block_num, netuid),
-                            started_at=started_at,
-                            finished_at=finished_at,
-                        )
-                        sync_service = MetagraphSyncService()
-                        stats = sync_service.sync_from_model(metagraph, dump_metadata)
-                        sync_time = time.time() - t2
-
-                        processed += 1
-                        self.stdout.write(
-                            f"[{processed}/{total_tasks}] Block {block_num} netuid {netuid}: "
-                            f"fetch={fetch_time:.2f}s, sync={sync_time:.2f}s, "
-                            f"neurons={stats['neurons']}, weights={stats['weights']}",
-                        )
-
-                    except Exception as e:
+                    if metagraph is None or len(metagraph.uids) == 0:
+                        self.stderr.write(f"No metagraph data for block {block_num}, netuid {netuid}")
                         errors += 1
-                        logger.exception(
-                            "Error processing block",
-                            block=block_num,
-                            netuid=netuid,
-                            error=str(e),
-                        )
-                        self.stderr.write(
-                            self.style.ERROR(f"Error at block {block_num}, netuid {netuid}: {e}"),
-                        )
+                        continue
+
+                    # Skip timestamp for fast backfill - it's optional for APY calculation
+                    # and fetching it for each historical block is slow
+                    block_timestamp: datetime | None = None
+
+                    # Sync to database using APY-optimized service
+                    t2 = time.time()
+                    dump_metadata = DumpMetadata(
+                        netuid=netuid,
+                        epoch_position=_get_epoch_position_str(block_num, netuid),
+                        started_at=started_at,
+                        finished_at=finished_at,
+                    )
+                    sync_service = APYSyncService()
+                    stats = sync_service.sync_metagraph(
+                        metagraph=metagraph,
+                        block_number=block_num,
+                        block_timestamp=block_timestamp,
+                        dump_metadata=dump_metadata,
+                    )
+                    sync_time = time.time() - t2
+
+                    processed += 1
+                    self.stdout.write(
+                        f"[{processed}/{total_tasks}] Block {block_num} netuid {netuid}: "
+                        f"fetch={fetch_time:.2f}s, sync={sync_time:.2f}s, "
+                        f"neurons={stats['snapshots']}, dividends={stats['mechanism_metrics']}",
+                    )
+
+                except Exception as e:
+                    errors += 1
+                    logger.exception(
+                        "Error processing block",
+                        block=block_num,
+                        netuid=netuid,
+                        error=str(e),
+                    )
+                    self.stderr.write(
+                        self.style.ERROR(f"Error at block {block_num}, netuid {netuid}: {e}"),
+                    )
 
         except KeyboardInterrupt:
             self.stdout.write(self.style.WARNING("\nInterrupted by user"))
 
         self.stdout.write(self.style.SUCCESS(f"\nCompleted: {processed} tasks, {errors} errors"))
-
-    def _process_with_celery(
-        self,
-        from_block: int,
-        to_block: int,
-        netuids: list[int],
-        network: str,
-        lite: bool,
-        step: int,
-        store_artifact: bool,
-        batch_size: int,
-        batch_delay: float,
-    ) -> None:
-        """Spawn celery tasks for parallel processing using batches."""
-
-        self.stdout.write("Calculating dumpable blocks...")
-
-        # Build list of (block, netuid) pairs to process
-        all_tasks: list[tuple[int, int]] = []
-        for netuid in netuids:
-            dumpable_blocks = _get_dumpable_blocks_in_range(from_block, to_block, netuid)
-            self.stdout.write(f"  Netuid {netuid}: {len(dumpable_blocks)} dumpable blocks")
-            all_tasks.extend((block_num, netuid) for block_num in dumpable_blocks[::step])
-
-        # Split into batches
-        batches = [all_tasks[i : i + batch_size] for i in range(0, len(all_tasks), batch_size)]
-
-        self.stdout.write(
-            f"Total blocks: {len(all_tasks)}, Batches: {len(batches)} (size={batch_size}, delay={batch_delay}s)",
-        )
-        self.stdout.write("Spawning batch tasks...")
-
-        for batch in batches:
-            time.sleep(batch_delay)
-            fast_backfill_batch.delay(
-                blocks=list(batch),
-                network=network,
-                lite=lite,
-                store_artifact=store_artifact,
-            )  # type: ignore
-
-        self.stdout.write(self.style.SUCCESS(f"Spawned {len(batches)} batch tasks"))
-        self.stdout.write("Monitor progress with: celery -A project inspect active")
