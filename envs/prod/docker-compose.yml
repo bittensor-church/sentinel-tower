@@ -40,6 +40,8 @@ services:
     init: true
     restart: unless-stopped
     env_file: ./.env
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
     environment:
       # Add this variable to all containers that should dump Prometheus metrics.  Each container besides this one
       # should use a different subdirectory of /prometheus-multiproc-dir, e.g.
@@ -92,6 +94,8 @@ services:
       test: celery -A project status > /dev/null || exit 1
     restart: unless-stopped
     env_file: ./.env
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
     environment:
       - DEBUG=off
       - PROMETHEUS_MULTIPROC_DIR=/prometheus-multiproc-dir/celery-worker

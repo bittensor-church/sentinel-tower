@@ -29,6 +29,8 @@ services:
     image: project/app
     init: true
     env_file: ./.env
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
     environment:
       - DATABASE_URL=postgres://postgres:12345@db:5432/project
       - POSTGRES_HOST=db
@@ -163,6 +165,8 @@ services:
     healthcheck:
       test: celery -A project status > /dev/null || exit 1
     env_file: ./.env
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
     environment:
       - DATABASE_URL=postgres://postgres:12345@db:5432/project
       - POSTGRES_HOST=db
