@@ -69,6 +69,8 @@ services:
     init: true
     restart: unless-stopped
     env_file: ./.env
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
     command: ./block-scheduler-entrypoint.sh
     environment:
       - PROMETHEUS_MULTIPROC_DIR=/prometheus-multiproc-dir

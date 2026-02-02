@@ -196,6 +196,8 @@ services:
       test: wget -q --spider 127.0.0.1:8000/admin/login/ || exit 1
     init: true
     env_file: ./.env
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
     command: ./block-scheduler-entrypoint.sh
     environment:
       - DATABASE_URL=postgres://postgres:12345@db:5432/project
