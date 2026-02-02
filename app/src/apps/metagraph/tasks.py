@@ -1,14 +1,19 @@
 """Celery tasks for metagraph data processing."""
 
+import os
 import time
 from datetime import UTC, datetime
 
+import bittensor as bt
 import structlog
+from bittensor.core.metagraph import Metagraph
 from celery import shared_task
 from django.db import connection
 from sentinel.v1.providers.bittensor import bittensor_provider
 from sentinel.v1.services.sentinel import sentinel_service
 
+from apps.metagraph.services.apy_sync_service import APYSyncService
+from apps.metagraph.services.apy_sync_service import DumpMetadata as APYDumpMetadata
 from apps.metagraph.services.metagraph_service import MetagraphService
 from apps.metagraph.services.sync_service import DumpMetadata, MetagraphSyncService
 
@@ -290,6 +295,148 @@ def fast_backfill_batch(
         logger.exception(
             "Fast backfill batch failed",
             blocks_count=len(blocks),
+            error=str(e),
+        )
+        raise
+
+
+def _get_metagraph_with_fallback(
+    subtensor: bt.Subtensor,
+    netuid: int,
+    block_number: int,
+    *,
+    lite: bool = True,
+) -> Metagraph | None:
+    """
+    Get metagraph with fallback for historical blocks.
+
+    The bittensor SDK has a bug where it passes incorrect parameters
+    for historical blocks. This function catches that error and uses
+    a workaround.
+    """
+    try:
+        return subtensor.metagraph(netuid=netuid, block=block_number, lite=lite)
+    except ValueError as e:
+        if "Invalid type for list data" in str(e):
+            logger.warning(
+                "Bittensor SDK bug encountered, using legacy metagraph sync",
+                netuid=netuid,
+                block_number=block_number,
+            )
+            # Create metagraph without syncing and patch _apply_extra_info
+            metagraph = Metagraph(
+                netuid=netuid,
+                network=subtensor.network,
+                sync=False,
+                subtensor=subtensor,
+            )
+            metagraph._apply_extra_info = lambda _block: None  # type: ignore[method-assign]
+            metagraph.sync(block=block_number, lite=lite, subtensor=subtensor)
+            return metagraph
+        raise
+
+
+@shared_task(
+    name="metagraph.fast_apy_sync",
+    bind=True,
+    autoretry_for=(Exception,),
+    retry_backoff=True,
+    retry_kwargs={"max_retries": 3},
+    queue="metagraph",
+)
+def fast_apy_sync(
+    self,
+    block_number: int,
+    netuid: int,
+    network: str | None = None,
+    lite: bool = True,
+) -> dict:
+    """
+    Fast sync APY-relevant data for a single block using native bittensor SDK.
+
+    This task syncs only the minimal data required for APY calculations:
+    - Block, Subnet, Neuron, NeuronSnapshot, MechanismMetrics
+
+    Args:
+        block_number: Block number to sync
+        netuid: Subnet UID
+        network: Bittensor network (default: BITTENSOR_ARCHIVE_NETWORK or "archive")
+        lite: Use lite metagraph mode (default: True)
+
+    Returns:
+        Dict with sync stats
+    """
+    start_time = time.time()
+    network = network or os.getenv("BITTENSOR_ARCHIVE_NETWORK", "archive")
+
+    try:
+        started_at = datetime.now(UTC)
+
+        # Connect and fetch metagraph
+        subtensor = bt.Subtensor(network=network)
+        t1 = time.time()
+        metagraph = _get_metagraph_with_fallback(subtensor, netuid, block_number, lite=lite)
+        fetch_time = time.time() - t1
+
+        finished_at = datetime.now(UTC)
+
+        if metagraph is None or len(metagraph.uids) == 0:
+            logger.warning(
+                "No metagraph data for block",
+                block_number=block_number,
+                netuid=netuid,
+            )
+            return {
+                "status": "no_data",
+                "block_number": block_number,
+                "netuid": netuid,
+            }
+
+        # Sync using APY-optimized service
+        t2 = time.time()
+        dump_metadata = APYDumpMetadata(
+            netuid=netuid,
+            epoch_position=_get_epoch_position_str(block_number, netuid),
+            started_at=started_at,
+            finished_at=finished_at,
+        )
+        sync_service = APYSyncService()
+        stats = sync_service.sync_metagraph(
+            metagraph=metagraph,
+            block_number=block_number,
+            block_timestamp=None,  # Skip for speed
+            dump_metadata=dump_metadata,
+        )
+        sync_time = time.time() - t2
+
+        total_time = time.time() - start_time
+
+        logger.info(
+            "Fast APY sync completed",
+            block_number=block_number,
+            netuid=netuid,
+            fetch_time=round(fetch_time, 2),
+            sync_time=round(sync_time, 2),
+            total_time=round(total_time, 2),
+            snapshots=stats["snapshots"],
+            mechanism_metrics=stats["mechanism_metrics"],
+        )
+
+        return {
+            "status": "success",
+            "block_number": block_number,
+            "netuid": netuid,
+            "fetch_time": round(fetch_time, 2),
+            "sync_time": round(sync_time, 2),
+            "total_time": round(total_time, 2),
+            **stats,
+        }
+
+    except Exception as e:
+        logger.exception(
+            "Fast APY sync failed",
+            block_number=block_number,
+            netuid=netuid,
             error=str(e),
         )
         raise

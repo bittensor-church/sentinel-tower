@@ -405,7 +405,11 @@ BLOCK_DUMPER_MAX_ATTEMPTS = 3  # maximum retry attempts
 BLOCK_TASK_MAX_RETRY_DELAY_MINUTES = 1440  # maximum retry delay (24 hours)
 
 # Metagraph Dumper specific settings
-METAGRAPH_NETUIDS = None  # [12, 89]  # List of netuids to process for metagraph dumps
+# Comma-separated list of netuids to sync, e.g., "1,8,19" (empty = all 1-128)
+_metagraph_netuids_str = os.getenv("METAGRAPH_NETUIDS", "")
+METAGRAPH_NETUIDS: list[int] | None = (
+    [int(x.strip()) for x in _metagraph_netuids_str.split(",") if x.strip()] if _metagraph_netuids_str else None
+)
 # TODO: replace hardcoded value with data from bittensor later
 TEMPO = 360  # Number of blocks per epoch
 NUM_BLOCK_DUMPS_PER_EPOCH = 3  # Number of block dumps to take per epoch

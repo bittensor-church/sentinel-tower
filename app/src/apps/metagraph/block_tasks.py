@@ -8,6 +8,7 @@ from sentinel.v1.services.sentinel import sentinel_service
 import apps.metagraph.utils as metagraph_utils
 from apps.metagraph.services.metagraph_service import MetagraphService
 from apps.metagraph.services.sync_service import MetagraphSyncService
+from apps.metagraph.tasks import fast_apy_sync
 from project.core.utils import get_provider_for_block
 
 logger = structlog.get_logger()
@@ -83,3 +84,27 @@ def store_metagraph(block_number: int, netuid: int) -> str:
     )
 
     return artifact_path
+
+
+@block_task(
+    condition=lambda block_number, netuid: MetagraphService.is_dumpable_block(block_number, netuid),
+    args=[{"netuid": netuid} for netuid in MetagraphService.netuids_to_sync()],
+    celery_kwargs={"queue": "metagraph"},
+)
+def sync_apy_data(block_number: int, netuid: int) -> str:
+    """
+    Dispatch a fast APY sync task for the given block and netuid.
+
+    This block task triggers on dumpable blocks and dispatches a Celery task
+    to sync minimal data required for APY calculations using native bittensor SDK.
+    """
+    task = fast_apy_sync.delay(block_number=block_number, netuid=netuid)
+
+    logger.info(
+        "Dispatched fast APY sync task",
+        block_number=block_number,
+        netuid=netuid,
+        task_id=task.id,
+    )
+
+    return task.id
