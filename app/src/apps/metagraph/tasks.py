@@ -339,9 +339,11 @@ def _get_metagraph_with_fallback(
 @shared_task(
     name="metagraph.fast_apy_sync",
     bind=True,
-    autoretry_for=(Exception,),
+    autoretry_for=(Exception, TimeoutError, ConnectionError, OSError),
     retry_backoff=True,
-    retry_kwargs={"max_retries": 3},
+    retry_backoff_max=60,
+    retry_kwargs={"max_retries": 5},
+    rate_limit="1/s",  # Max 1 task per second per worker to avoid overwhelming archive node
     queue="metagraph",
 )
 def fast_apy_sync(

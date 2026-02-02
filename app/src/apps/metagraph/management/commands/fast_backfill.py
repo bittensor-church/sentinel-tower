@@ -178,6 +178,18 @@ class Command(BaseCommand):
             action="store_true",
             help="Dispatch Celery tasks for parallel processing (default: synchronous)",
         )
+        parser.add_argument(
+            "--batch-size",
+            type=int,
+            default=100,
+            help="Number of tasks to dispatch per batch in async mode (default: 100)",
+        )
+        parser.add_argument(
+            "--batch-delay",
+            type=float,
+            default=1.0,
+            help="Delay in seconds between batches in async mode (default: 1.0)",
+        )
 
     def handle(self, *args, **options) -> None:
         from_block = options["from_block"]
@@ -188,6 +200,8 @@ class Command(BaseCommand):
         step = options["step"]
         dry_run = options["dry_run"]
         use_async = options["use_async"]
+        batch_size = options["batch_size"]
+        batch_delay = options["batch_delay"]
 
         # Validate
         if from_block > to_block:
@@ -225,7 +239,7 @@ class Command(BaseCommand):
             return
 
         if use_async:
-            self._process_async(from_block, to_block, netuids, network, lite, step)
+            self._process_async(from_block, to_block, netuids, network, lite, step, batch_size, batch_delay)
         else:
             self._process_synchronously(from_block, to_block, netuids, network, lite, step)
 
@@ -332,11 +346,13 @@ class Command(BaseCommand):
         network: str,
         lite: bool,
         step: int,
+        batch_size: int,
+        batch_delay: float,
     ) -> None:
         """Dispatch Celery tasks for parallel processing."""
         from apps.metagraph.tasks import fast_apy_sync  # type: ignore[attr-defined]
 
-        self.stdout.write("Calculating dumpable blocks...")
+        self.stdout.write(f"Calculating dumpable blocks (batch_size={batch_size}, batch_delay={batch_delay}s)...")
 
         # Build list of (block, netuid) pairs to process
         tasks: list[tuple[int, int]] = []
@@ -363,8 +379,12 @@ class Command(BaseCommand):
                     )
                     dispatched += 1
 
-                    if dispatched % 100 == 0 or dispatched == total_tasks:
-                        self.stdout.write(f"Dispatched {dispatched}/{total_tasks} tasks...")
+                    # Log progress and apply batch delay
+                    if dispatched % batch_size == 0:
+                        self.stdout.write(f"Dispatched {dispatched}/{total_tasks} tasks, pausing {batch_delay}s...")
+                        time.sleep(batch_delay)
+                    elif dispatched == total_tasks:
+                        self.stdout.write(f"Dispatched {dispatched}/{total_tasks} tasks.")
 
                 except Exception as e:
                     errors += 1

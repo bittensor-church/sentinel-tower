@@ -47,11 +47,14 @@ case "$SENTINEL_MODE" in
         fi
 
         BACKFILL_STEP="${BACKFILL_STEP:-1}"
+        BACKFILL_BATCH_SIZE="${BACKFILL_BATCH_SIZE:-10}"
+        BACKFILL_BATCH_DELAY="${BACKFILL_BATCH_DELAY:-1.0}"
 
         echo "Starting block scheduler in FAST BACKFILL mode..."
         echo "  Block range: $BLOCK_START -> $BLOCK_END"
         echo "  Netuid: ${NETUID:-all configured}"
         echo "  Step: $BACKFILL_STEP"
+        echo "  Batch size: $BACKFILL_BATCH_SIZE, delay: ${BACKFILL_BATCH_DELAY}s"
         echo "  Archive node: $BITTENSOR_ARCHIVE_NETWORK"
 
         EXTRA_ARGS=""
@@ -65,6 +68,8 @@ case "$SENTINEL_MODE" in
             --to-block="$BLOCK_END" \
             --network="$BITTENSOR_ARCHIVE_NETWORK" \
             --step="$BACKFILL_STEP" \
+            --batch-size="$BACKFILL_BATCH_SIZE" \
+            --batch-delay="$BACKFILL_BATCH_DELAY" \
             --lite \
             --async \
             $EXTRA_ARGS
