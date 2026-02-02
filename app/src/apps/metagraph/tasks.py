@@ -367,6 +367,7 @@ def fast_apy_sync(
 
     Returns:
         Dict with sync stats
+
     """
     start_time = time.time()
     network = network or os.getenv("BITTENSOR_ARCHIVE_NETWORK", "archive")
@@ -439,6 +440,171 @@ def fast_apy_sync(
             "Fast APY sync failed",
             block_number=block_number,
             netuid=netuid,
+            error=str(e),
+        )
+        raise
+
+
+@shared_task(
+    name="metagraph.fast_apy_sync_batch",
+    bind=True,
+    autoretry_for=(Exception, TimeoutError, ConnectionError, OSError),
+    retry_backoff=True,
+    retry_backoff_max=60,
+    retry_kwargs={"max_retries": 3},
+    queue="metagraph",
+)
+def fast_apy_sync_batch(
+    self,
+    blocks: list[tuple[int, int]],
+    network: str | None = None,
+    lite: bool = True,
+) -> dict:
+    """
+    Fast sync APY-relevant data for a batch of blocks using a single connection.
+
+    This task processes multiple blocks with a shared Subtensor connection,
+    significantly reducing connection overhead compared to one task per block.
+
+    Args:
+        blocks: List of (block_number, netuid) tuples to process
+        network: Bittensor network URI (default: BITTENSOR_ARCHIVE_NETWORK or "archive")
+        lite: Use lite metagraph mode (default: True)
+
+    Returns:
+        Dict with batch processing stats
+    """
+    start_time = time.time()
+    network = network or os.getenv("BITTENSOR_ARCHIVE_NETWORK", "archive")
+    processed = 0
+    errors = 0
+    total_snapshots = 0
+    total_mechanism_metrics = 0
+    results: list[dict] = []
+
+    try:
+        # Create a single subtensor connection for all blocks
+        subtensor = bt.Subtensor(network=network)
+
+        # Reuse sync service for caching benefits across blocks
+        sync_service = APYSyncService()
+
+        for block_number, netuid in blocks:
+            block_start = time.time()
+            started_at = datetime.now(UTC)
+
+            try:
+                # Fetch metagraph
+                t1 = time.time()
+                metagraph = _get_metagraph_with_fallback(subtensor, netuid, block_number, lite=lite)
+                fetch_time = time.time() - t1
+
+                finished_at = datetime.now(UTC)
+
+                if metagraph is None or len(metagraph.uids) == 0:
+                    logger.warning(
+                        "No metagraph data for block",
+                        block_number=block_number,
+                        netuid=netuid,
+                    )
+                    results.append(
+                        {
+                            "status": "no_data",
+                            "block_number": block_number,
+                            "netuid": netuid,
+                        }
+                    )
+                    continue
+
+                # Sync using APY-optimized service
+                t2 = time.time()
+                dump_metadata = APYDumpMetadata(
+                    netuid=netuid,
+                    epoch_position=_get_epoch_position_str(block_number, netuid),
+                    started_at=started_at,
+                    finished_at=finished_at,
+                )
+                stats = sync_service.sync_metagraph(
+                    metagraph=metagraph,
+                    block_number=block_number,
+                    block_timestamp=None,  # Skip for speed
+                    dump_metadata=dump_metadata,
+                )
+                sync_time = time.time() - t2
+
+                block_time = time.time() - block_start
+                processed += 1
+                total_snapshots += stats["snapshots"]
+                total_mechanism_metrics += stats["mechanism_metrics"]
+
+                logger.info(
+                    "Batch APY: processed block",
+                    block_number=block_number,
+                    netuid=netuid,
+                    fetch_time=round(fetch_time, 2),
+                    sync_time=round(sync_time, 2),
+                    block_time=round(block_time, 2),
+                    snapshots=stats["snapshots"],
+                )
+
+                results.append(
+                    {
+                        "status": "success",
+                        "block_number": block_number,
+                        "netuid": netuid,
+                        "fetch_time": round(fetch_time, 2),
+                        "sync_time": round(sync_time, 2),
+                        **stats,
+                    }
+                )
+
+            except Exception as e:
+                errors += 1
+                logger.exception(
+                    "Batch APY: failed to process block",
+                    block_number=block_number,
+                    netuid=netuid,
+                    error=str(e),
+                )
+                results.append(
+                    {
+                        "status": "error",
+                        "block_number": block_number,
+                        "netuid": netuid,
+                        "error": str(e),
+                    }
+                )
+
+        total_time = time.time() - start_time
+        avg_time = total_time / len(blocks) if blocks else 0
+
+        logger.info(
+            "Fast APY sync batch completed",
+            total_blocks=len(blocks),
+            processed=processed,
+            errors=errors,
+            total_time=round(total_time, 2),
+            avg_time_per_block=round(avg_time, 2),
+            total_snapshots=total_snapshots,
+            total_mechanism_metrics=total_mechanism_metrics,
+        )
+
+        return {
+            "status": "completed",
+            "total_blocks": len(blocks),
+            "processed": processed,
+            "errors": errors,
+            "total_time": round(total_time, 2),
+            "avg_time_per_block": round(avg_time, 2),
+            "total_snapshots": total_snapshots,
+            "total_mechanism_metrics": total_mechanism_metrics,
+            "results": results,
+        }
+
+    except Exception as e:
+        logger.exception(
+            "Fast APY sync batch failed",
+            blocks_count=len(blocks),
             error=str(e),
         )
         raise

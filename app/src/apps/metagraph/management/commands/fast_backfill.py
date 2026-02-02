@@ -349,60 +349,63 @@ class Command(BaseCommand):
         batch_size: int,
         batch_delay: float,
     ) -> None:
-        """Dispatch Celery tasks for parallel processing."""
-        from apps.metagraph.tasks import fast_apy_sync  # type: ignore[attr-defined]
+        """Dispatch Celery batch tasks for parallel processing."""
+        from apps.metagraph.tasks import fast_apy_sync_batch  # type: ignore[attr-defined]
 
         self.stdout.write(f"Calculating dumpable blocks (batch_size={batch_size}, batch_delay={batch_delay}s)...")
 
         # Build list of (block, netuid) pairs to process
-        tasks: list[tuple[int, int]] = []
+        all_blocks: list[tuple[int, int]] = []
         for netuid in netuids:
             dumpable_blocks = _get_epoch_start_blocks_in_range(from_block, to_block, netuid)
             self.stdout.write(f"  Netuid {netuid}: {len(dumpable_blocks)} dumpable blocks")
-            tasks.extend((block_num, netuid) for block_num in dumpable_blocks[::step])
+            all_blocks.extend((block_num, netuid) for block_num in dumpable_blocks[::step])
 
-        total_tasks = len(tasks)
-        self.stdout.write(f"Total tasks: {total_tasks}")
-        self.stdout.write("Dispatching Celery tasks...")
+        total_blocks = len(all_blocks)
+        self.stdout.write(f"Total blocks: {total_blocks}")
+
+        # Split into batches for batch task processing
+        batches = [all_blocks[i : i + batch_size] for i in range(0, len(all_blocks), batch_size)]
+        total_batches = len(batches)
+        self.stdout.write(f"Dispatching {total_batches} batch tasks (each with up to {batch_size} blocks)...")
 
         dispatched = 0
         errors = 0
 
         try:
-            for block_num, netuid in tasks:
+            for i, batch in enumerate(batches, 1):
                 try:
-                    fast_apy_sync.delay(
-                        block_number=block_num,
-                        netuid=netuid,
+                    fast_apy_sync_batch.delay(
+                        blocks=batch,
                         network=network,
                         lite=lite,
                     )
                     dispatched += 1
+                    blocks_in_batch = len(batch)
 
-                    # Log progress and apply batch delay
-                    if dispatched % batch_size == 0:
-                        self.stdout.write(f"Dispatched {dispatched}/{total_tasks} tasks, pausing {batch_delay}s...")
+                    self.stdout.write(f"Dispatched batch {i}/{total_batches} ({blocks_in_batch} blocks)")
+
+                    # Apply delay between batches (except for the last one)
+                    if i < total_batches and batch_delay > 0:
                         time.sleep(batch_delay)
-                    elif dispatched == total_tasks:
-                        self.stdout.write(f"Dispatched {dispatched}/{total_tasks} tasks.")
 
                 except Exception as e:
                     errors += 1
                     logger.exception(
-                        "Error dispatching task",
-                        block=block_num,
-                        netuid=netuid,
+                        "Error dispatching batch task",
+                        batch_index=i,
+                        blocks_count=len(batch),
                         error=str(e),
                     )
                     self.stderr.write(
-                        self.style.ERROR(f"Error dispatching block {block_num}, netuid {netuid}: {e}"),
+                        self.style.ERROR(f"Error dispatching batch {i}: {e}"),
                     )
 
         except KeyboardInterrupt:
             self.stdout.write(self.style.WARNING("\nInterrupted by user"))
 
         self.stdout.write(
-            self.style.SUCCESS(f"\nDispatched: {dispatched} tasks, {errors} errors")
+            self.style.SUCCESS(f"\nDispatched: {dispatched} batch tasks ({total_blocks} blocks), {errors} errors")
         )
-        self.stdout.write("Tasks are now running in Celery workers. Monitor with:")
+        self.stdout.write("Batch tasks are now running in Celery workers. Monitor with:")
         self.stdout.write("  docker compose logs -f celery-worker")
