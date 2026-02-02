@@ -47,23 +47,14 @@ case "$SENTINEL_MODE" in
         fi
 
         BACKFILL_STEP="${BACKFILL_STEP:-1}"
-        BACKFILL_BATCH_SIZE="${BACKFILL_BATCH_SIZE:-10}"
-        BACKFILL_BATCH_DELAY="${BACKFILL_BATCH_DELAY:-1.0}"
-        STORE_ARTIFACT="${STORE_ARTIFACT:-false}"
 
         echo "Starting block scheduler in FAST BACKFILL mode..."
         echo "  Block range: $BLOCK_START -> $BLOCK_END"
         echo "  Netuid: ${NETUID:-all configured}"
         echo "  Step: $BACKFILL_STEP"
-        echo "  Batch size: $BACKFILL_BATCH_SIZE"
-        echo "  Batch delay: $BACKFILL_BATCH_DELAY seconds"
         echo "  Archive node: $BITTENSOR_ARCHIVE_NETWORK"
-        echo "  Store artifacts: $STORE_ARTIFACT"
 
         EXTRA_ARGS=""
-        if [ "$STORE_ARTIFACT" = "true" ]; then
-            EXTRA_ARGS="$EXTRA_ARGS --store-artifact"
-        fi
         if [ -n "${NETUID:-}" ]; then
             EXTRA_ARGS="$EXTRA_ARGS --netuid=$NETUID"
         fi
@@ -73,11 +64,8 @@ case "$SENTINEL_MODE" in
             --to-block="$BLOCK_END" \
             --network="$BITTENSOR_ARCHIVE_NETWORK" \
             --step="$BACKFILL_STEP" \
-            --batch-size="$BACKFILL_BATCH_SIZE" \
-            --batch-delay="$BACKFILL_BATCH_DELAY" \
             --lite \
-            --use-celery \
-            "$EXTRA_ARGS"
+            $EXTRA_ARGS
         ;;
     *)
         echo "ERROR: Invalid SENTINEL_MODE '$SENTINEL_MODE'. Use 'live', 'backfill', or 'fast_backfill'"
