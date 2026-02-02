@@ -59,13 +59,14 @@ case "$SENTINEL_MODE" in
             EXTRA_ARGS="$EXTRA_ARGS --netuid=$NETUID"
         fi
 
+        # shellcheck disable=SC2086
         exec nice python manage.py fast_backfill \
             --from-block="$BLOCK_START" \
             --to-block="$BLOCK_END" \
             --network="$BITTENSOR_ARCHIVE_NETWORK" \
             --step="$BACKFILL_STEP" \
             --lite \
-            "$EXTRA_ARGS"
+            $EXTRA_ARGS
         ;;
     *)
         echo "ERROR: Invalid SENTINEL_MODE '$SENTINEL_MODE'. Use 'live', 'backfill', or 'fast_backfill'"
