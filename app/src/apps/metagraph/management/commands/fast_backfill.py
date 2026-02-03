@@ -190,6 +190,12 @@ class Command(BaseCommand):
             default=1.0,
             help="Delay in seconds between batches in async mode (default: 1.0)",
         )
+        parser.add_argument(
+            "--time-per-block",
+            type=float,
+            default=None,
+            help="Estimated seconds per block for dry-run time calculation (e.g., 2.5)",
+        )
 
     def handle(self, *args, **options) -> None:
         from_block = options["from_block"]
@@ -202,6 +208,7 @@ class Command(BaseCommand):
         use_async = options["use_async"]
         batch_size = options["batch_size"]
         batch_delay = options["batch_delay"]
+        time_per_block = options["time_per_block"]
 
         # Validate
         if from_block > to_block:
@@ -230,12 +237,58 @@ class Command(BaseCommand):
         self.stdout.write(f"Network: {network}, Subnets: {netuids}, Lite: {lite}")
 
         if dry_run:
-            self.stdout.write(self.style.WARNING("Dry-run mode: no data will be stored"))
+            self.stdout.write(self.style.WARNING("\n=== DRY RUN - No data will be stored ===\n"))
+
+            # Calculate blocks per subnet
+            subnet_blocks: dict[int, list[int]] = {}
+            total_tasks = 0
             for uid in netuids:
                 dumpable_blocks = _get_epoch_start_blocks_in_range(from_block, to_block, uid)
-                self.stdout.write(f"  Netuid {uid}: {len(dumpable_blocks)} dumpable blocks")
-                for block_num in dumpable_blocks[::step]:
-                    self.stdout.write(f"    Would process block {block_num}")
+                blocks_to_process = dumpable_blocks[::step]
+                subnet_blocks[uid] = blocks_to_process
+                total_tasks += len(blocks_to_process)
+
+            # Display summary
+            self.stdout.write(self.style.SUCCESS("Summary:"))
+            self.stdout.write(f"  Subnets to sync: {len(netuids)}")
+            self.stdout.write(f"  Total blocks to sync: {total_tasks}")
+            self.stdout.write(f"  Block range: {from_block} -> {to_block}")
+            self.stdout.write(f"  Step: {step}")
+
+            # Time estimation
+            if time_per_block is not None and total_tasks > 0:
+                total_seconds = total_tasks * time_per_block
+                days = int(total_seconds // 86400)
+                hours = int((total_seconds % 86400) // 3600)
+                minutes = int((total_seconds % 3600) // 60)
+
+                time_parts = []
+                if days > 0:
+                    time_parts.append(f"{days}d")
+                if hours > 0:
+                    time_parts.append(f"{hours}h")
+                if minutes > 0 or not time_parts:
+                    time_parts.append(f"{minutes}m")
+
+                self.stdout.write(
+                    f"  Estimated time: {' '.join(time_parts)} "
+                    f"(at {time_per_block}s per block)",
+                )
+
+            self.stdout.write("")
+
+            # Display per-subnet breakdown
+            self.stdout.write("Per-subnet breakdown:")
+            for uid in netuids:
+                blocks = subnet_blocks[uid]
+                if blocks:
+                    self.stdout.write(
+                        f"  Subnet {uid}: {len(blocks)} blocks "
+                        f"(first: {blocks[0]}, last: {blocks[-1]})",
+                    )
+                else:
+                    self.stdout.write(f"  Subnet {uid}: 0 blocks")
+
             return
 
         if use_async:
