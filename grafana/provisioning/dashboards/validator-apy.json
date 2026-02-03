@@ -108,7 +108,7 @@
           "editorMode": "code",
           "format": "table",
           "rawQuery": true,
-          "rawSql": "WITH ranked AS (\n    SELECT\n        netuid,\n        subnet_name,\n        hotkey,\n        weekly_apy,\n        emissions_tao,\n        stake_tao,\n        snapshot_count,\n        ROW_NUMBER() OVER (PARTITION BY netuid ORDER BY weekly_apy DESC) AS rank\n    FROM mv_validator_weekly_apy\n    WHERE week_start = DATE_TRUNC('week', NOW())\n      AND weekly_apy > 0\n)\nSELECT\n    netuid,\n    subnet_name,\n    hotkey,\n    weekly_apy,\n    emissions_tao,\n    stake_tao,\n    snapshot_count,\n    rank\nFROM ranked\nWHERE rank <= $top_n\nORDER BY weekly_apy DESC",
+          "rawSql": "WITH ranked AS (\n    SELECT\n        netuid,\n        subnet_name,\n        hotkey,\n        week_start,\n        weekly_apy,\n        emissions_tao,\n        stake_tao,\n        snapshot_count,\n        ROW_NUMBER() OVER (PARTITION BY netuid, week_start ORDER BY weekly_apy DESC) AS rank\n    FROM mv_validator_weekly_apy\n    WHERE week_start >= $__timeFrom()::timestamp\n      AND week_start <= $__timeTo()::timestamp\n      AND weekly_apy > 0\n)\nSELECT\n    week_start,\n    netuid,\n    subnet_name,\n    hotkey,\n    weekly_apy,\n    emissions_tao,\n    stake_tao,\n    snapshot_count,\n    rank\nFROM ranked\nWHERE rank <= $top_n\nORDER BY week_start DESC, weekly_apy DESC",
           "refId": "A",
           "sql": {
             "columns": [
@@ -129,7 +129,7 @@
           }
         }
       ],
-      "title": "Top Validators by Weekly APY (Current Week)",
+      "title": "Top Validators by Weekly APY",
       "type": "table"
     },
     {
@@ -215,7 +215,7 @@
           "editorMode": "code",
           "format": "table",
           "rawQuery": true,
-          "rawSql": "SELECT\n    COALESCE(subnet_name, 'Subnet ' || netuid::text) AS subnet,\n    AVG(weekly_apy) AS avg_apy\nFROM mv_validator_weekly_apy\nWHERE week_start = DATE_TRUNC('week', NOW())\n  AND weekly_apy > 0\nGROUP BY netuid, subnet_name\nORDER BY avg_apy DESC\nLIMIT 20",
+          "rawSql": "SELECT\n    COALESCE(subnet_name, 'Subnet ' || netuid::text) AS subnet,\n    AVG(weekly_apy) AS avg_apy\nFROM mv_validator_weekly_apy\nWHERE week_start >= $__timeFrom()::timestamp\n  AND week_start <= $__timeTo()::timestamp\n  AND weekly_apy > 0\nGROUP BY netuid, subnet_name\nORDER BY avg_apy DESC\nLIMIT 20",
           "refId": "A",
           "sql": {
             "columns": [
@@ -236,7 +236,7 @@
           }
         }
       ],
-      "title": "Average APY by Subnet (Current Week)",
+      "title": "Average APY by Subnet",
       "type": "barchart"
     },
     {
@@ -324,7 +324,7 @@
           "editorMode": "code",
           "format": "time_series",
           "rawQuery": true,
-          "rawSql": "SELECT\n    week_start AS time,\n    COALESCE(subnet_name, 'Subnet ' || netuid::text) AS metric,\n    AVG(weekly_apy) AS value\nFROM mv_validator_weekly_apy\nWHERE week_start >= NOW() - INTERVAL '12 weeks'\nGROUP BY week_start, netuid, subnet_name\nORDER BY week_start",
+          "rawSql": "SELECT\n    week_start AS time,\n    COALESCE(subnet_name, 'Subnet ' || netuid::text) AS metric,\n    AVG(weekly_apy) AS value\nFROM mv_validator_weekly_apy\nWHERE week_start >= $__timeFrom()::timestamp\n  AND week_start <= $__timeTo()::timestamp\nGROUP BY week_start, netuid, subnet_name\nORDER BY week_start",
           "refId": "A",
           "sql": {
             "columns": [
@@ -345,7 +345,7 @@
           }
         }
       ],
-      "title": "Weekly APY Trend by Subnet (Last 12 Weeks)",
+      "title": "Weekly APY Trend by Subnet",
       "type": "timeseries"
     },
     {
@@ -403,7 +403,7 @@
           "editorMode": "code",
           "format": "table",
           "rawQuery": true,
-          "rawSql": "SELECT COUNT(DISTINCT hotkey) AS total_validators\nFROM mv_validator_weekly_apy\nWHERE week_start = DATE_TRUNC('week', NOW())",
+          "rawSql": "SELECT COUNT(DISTINCT hotkey) AS total_validators\nFROM mv_validator_weekly_apy\nWHERE week_start >= $__timeFrom()::timestamp\n  AND week_start <= $__timeTo()::timestamp",
           "refId": "A",
           "sql": {
             "columns": [
@@ -424,7 +424,7 @@
           }
         }
       ],
-      "title": "Total Validators (This Week)",
+      "title": "Total Validators",
       "type": "stat"
     },
     {
@@ -482,7 +482,7 @@
           "editorMode": "code",
           "format": "table",
           "rawQuery": true,
-          "rawSql": "SELECT COUNT(DISTINCT netuid) AS total_subnets\nFROM mv_validator_weekly_apy\nWHERE week_start = DATE_TRUNC('week', NOW())",
+          "rawSql": "SELECT COUNT(DISTINCT netuid) AS total_subnets\nFROM mv_validator_weekly_apy\nWHERE week_start >= $__timeFrom()::timestamp\n  AND week_start <= $__timeTo()::timestamp",
           "refId": "A",
           "sql": {
             "columns": [
@@ -503,7 +503,7 @@
           }
         }
       ],
-      "title": "Total Subnets (This Week)",
+      "title": "Total Subnets",
       "type": "stat"
     },
     {
@@ -561,7 +561,7 @@
           "editorMode": "code",
           "format": "table",
           "rawQuery": true,
-          "rawSql": "SELECT MAX(weekly_apy) AS max_apy\nFROM mv_validator_weekly_apy\nWHERE week_start = DATE_TRUNC('week', NOW())",
+          "rawSql": "SELECT MAX(weekly_apy) AS max_apy\nFROM mv_validator_weekly_apy\nWHERE week_start >= $__timeFrom()::timestamp\n  AND week_start <= $__timeTo()::timestamp",
           "refId": "A",
           "sql": {
             "columns": [
@@ -582,7 +582,7 @@
           }
         }
       ],
-      "title": "Highest APY (This Week)",
+      "title": "Highest APY",
       "type": "stat"
     },
     {
@@ -640,7 +640,7 @@
           "editorMode": "code",
           "format": "table",
           "rawQuery": true,
-          "rawSql": "SELECT AVG(weekly_apy) AS avg_apy\nFROM mv_validator_weekly_apy\nWHERE week_start = DATE_TRUNC('week', NOW())\n  AND weekly_apy > 0",
+          "rawSql": "SELECT AVG(weekly_apy) AS avg_apy\nFROM mv_validator_weekly_apy\nWHERE week_start >= $__timeFrom()::timestamp\n  AND week_start <= $__timeTo()::timestamp\n  AND weekly_apy > 0",
           "refId": "A",
           "sql": {
             "columns": [
@@ -661,7 +661,7 @@
           }
         }
       ],
-      "title": "Average APY (This Week)",
+      "title": "Average APY",
       "type": "stat"
     }
   ],
@@ -713,7 +713,7 @@
     ]
   },
   "time": {
-    "from": "now-7d",
+    "from": "now-5y",
     "to": "now"
   },
   "timepicker": {},
