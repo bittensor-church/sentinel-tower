@@ -1,3 +1,4 @@
+from functools import cache
 from typing import Any
 
 from django.conf import settings
@@ -7,8 +8,6 @@ from s3fs import S3FileSystem
 
 from .base import StorageBackend
 from .fsspec import FSSpecStorageBackend
-
-_storages: dict[str, StorageBackend] = {}
 
 
 def fsspec_local_backend_factory(**options: Any) -> FSSpecStorageBackend:
@@ -37,7 +36,7 @@ def fsspec_s3_backend_factory(**options: Any) -> FSSpecStorageBackend:
         aws_access_key_id: Optional AWS access key ID.
         aws_secret_access_key: Optional AWS secret access key.
     """
-    if "bucket" not in options:
+    if "bucket" not in options or not options["bucket"]:
         raise ImproperlyConfigured("'bucket' is a required option for fsspec-s3 backends.")
 
     base_path = options.get("base_path", "")
@@ -88,6 +87,7 @@ def _storage_backend_factory(config: dict[str, Any]) -> StorageBackend:
     return factory(**options)
 
 
+@cache
 def get_storage(name: str) -> StorageBackend:
     """
     Get a storage backend by name.
@@ -100,9 +100,6 @@ def get_storage(name: str) -> StorageBackend:
     Raises:
         ImproperlyConfigured: If SENTINEL_STORAGES is not defined or name not found.
     """
-    if name in _storages:
-        return _storages[name]
-
     storages_config = getattr(settings, "SENTINEL_STORAGES", None)
     if storages_config is None:
         raise ImproperlyConfigured("'SENTINEL_STORAGES' setting is not configured.")
@@ -110,11 +107,12 @@ def get_storage(name: str) -> StorageBackend:
     if name not in storages_config:
         raise ImproperlyConfigured(f"Storage '{name}' is not configured.")
 
-    backend = _storage_backend_factory(storages_config[name])
-    _storages[name] = backend
-    return backend
+    return _storage_backend_factory(storages_config[name])
 
 
-def get_default_storage() -> StorageBackend:
-    """Get the storage backend named 'default'."""
-    return get_storage("default")
+def get_local_storage() -> StorageBackend:
+    return get_storage("local")
+
+
+def get_s3_storage() -> StorageBackend:
+    return get_storage("s3")

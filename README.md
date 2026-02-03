@@ -108,3 +108,65 @@ uv run sentinel-cli block hyperparameters
 ```
 
 [Sentinel Core documentation](sentinel/README.md)
+
+## Sentinel Storage
+
+Sentinel storage a pluggable storage system that can be used to store artifacts and data files. Currently it supports
+`AWS S3` and `local` filesystem storage backends. These backends are configured with the names `local` and `s3`
+respectively, and can be accessed through convenient factory functions.
+
+```python
+from project.core.storage import get_local_storage, get_s3_storage
+
+storage = get_local_storage()  # or get_s3_storage() for S3
+
+storage.store("file/path.json", b'{"json": "data"}')
+storage.exists("file/path.json")  # True
+storage.read("file/path.json")  # b'{"json": "data"}'
+storage.delete("file/path.json")
+storage.exists("file/path.json")  # False
+```
+
+*IMPORTANT*: S3 storage is not fully configured. You need to set `SENTINEL_STORAGE_S3_BUCKET`, and optionally
+`SENTINEL_STORAGE_S3_BASE_PATH`, `SENTINEL_STORAGE_S3_AWS_REGION`, `SENTINEL_STORAGE_S3_AWS_ACCESS_KEY_ID`, and
+`SENTINEL_STORAGE_S3_AWS_SECRET_ACCESS_KEY` to use it. Otherwise, it'll throw a configuration error at runtime.
+
+### Custom Storages
+
+You can also configure your own storage via Django settings under `SENTINEL_STORAGES` setting like this.
+
+```python
+# settings.py
+
+SENTINEL_STORAGES = {
+    ...: ...,
+    "my-storage": {
+        "BACKEND_NAME": "fsspec-local", 
+        "OPTIONS": {"base_path": "some/base/path"},
+    },
+}
+
+# in your code
+from project.core.storage import get_storage
+
+my_storage = get_storage("my-storage")
+
+```
+
+`fsspec-local` and `fsspec-s3` storage backends are supported with the following configuration options.
+
+#### 1. `fsspec-local` options
+
+| Option      | Required |
+|-------------|----------|
+| `base_path` | ✅ Yes    |  
+
+#### 2. `fsspec-s3` options
+
+| Option                  | Required |                
+|-------------------------|----------|
+| `bucket`                | Yes      |                                                                
+| `base_path`             | No       |                        
+| `aws_region`            | No       | 
+| `aws_access_key_id`     | No       | 
+| `aws_secret_access_key` | No       |

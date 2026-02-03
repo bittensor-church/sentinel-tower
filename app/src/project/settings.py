@@ -462,8 +462,18 @@ DISCORD_ALERT_CONFIGS: list[AlertConfig] = [
 #            'aws_access_key_id' (optional), 'aws_secret_access_key' (optional)
 # if optional params are not provided, boto3 will read them from env or ~/.aws/credentials
 SENTINEL_STORAGES = {
-    "default": {
+    "local": {
         "BACKEND_NAME": "fsspec-local",
         "OPTIONS": {"base_path": str(MEDIA_ROOT)},
-    }
+    },
+    "s3": {
+        "BACKEND_NAME": "fsspec-s3",
+        "OPTIONS": {
+            "bucket": env("SENTINEL_STORAGE_S3_BUCKET"),
+            "base_path": env("SENTINEL_STORAGE_S3_BASE_PATH", default=""),
+            "aws_region": env("SENTINEL_STORAGE_S3_AWS_REGION", default=None),
+            "aws_access_key_id": env("SENTINEL_STORAGE_S3_AWS_ACCESS_KEY_ID", default=None),
+            "aws_secret_access_key": env("SENTINEL_STORAGE_S3_AWS_SECRET_ACCESS_KEY", default=None),
+        },
+    },
 }

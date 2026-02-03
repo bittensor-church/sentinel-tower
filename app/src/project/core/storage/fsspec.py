@@ -21,7 +21,7 @@ class FSSpecStorageBackend(StorageBackend):
     def __init__(self, base_path: str, fs: AbstractFileSystem) -> None:
         super().__init__()
         self._fs = fs
-        self._base_path = base_path
+        self._base_path = base_path.rstrip("/")
 
     def store(self, key: str, data: bytes) -> None:
         key = self.resolve_key(key)
@@ -59,7 +59,7 @@ class FSSpecStorageBackend(StorageBackend):
 
         full_path = normpath(join(self._base_path, key))
 
-        if not full_path.startswith(self._base_path):
+        if not full_path.startswith(self._base_path + "/"):
             raise InvalidKeyError(key, "path escapes storage root")
 
         return full_path

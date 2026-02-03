@@ -4,21 +4,15 @@ import pytest
 from django.core.exceptions import ImproperlyConfigured
 from fsspec.implementations.local import LocalFileSystem
 
-from project.core.storage import (
-    _storages,
-    fsspec_local_backend_factory,
-    fsspec_s3_backend_factory,
-    get_default_storage,
-    get_storage,
-)
+from project.core.storage import fsspec_local_backend_factory, fsspec_s3_backend_factory, get_storage
 from project.core.storage.fsspec import FSSpecStorageBackend
 
 
 @pytest.fixture(autouse=True)
 def clear_storage_cache():
-    _storages.clear()
+    get_storage.cache_clear()
     yield
-    _storages.clear()
+    get_storage.cache_clear()
 
 
 def test_get_storage(settings, tmp_path):
@@ -85,19 +79,6 @@ def test_get_storage_multiple_backends(settings, tmp_path):
     assert default_storage is not artifacts_storage
     assert isinstance(default_storage, FSSpecStorageBackend)
     assert isinstance(artifacts_storage, FSSpecStorageBackend)
-
-
-def test_get_default_storage(settings, tmp_path):
-    settings.SENTINEL_STORAGES = {
-        "default": {
-            "BACKEND_NAME": "fsspec-local",
-            "OPTIONS": {"base_path": str(tmp_path)},
-        }
-    }
-
-    storage = get_default_storage()
-
-    assert storage is get_storage("default")
 
 
 def test_fsspec_local_backend_factory(tmp_path):
