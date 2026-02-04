@@ -271,8 +271,7 @@ class Command(BaseCommand):
                     time_parts.append(f"{minutes}m")
 
                 self.stdout.write(
-                    f"  Estimated time: {' '.join(time_parts)} "
-                    f"(at {time_per_block}s per block)",
+                    f"  Estimated time: {' '.join(time_parts)} (at {time_per_block}s per block)",
                 )
 
             self.stdout.write("")
@@ -283,8 +282,7 @@ class Command(BaseCommand):
                 blocks = subnet_blocks[uid]
                 if blocks:
                     self.stdout.write(
-                        f"  Subnet {uid}: {len(blocks)} blocks "
-                        f"(first: {blocks[0]}, last: {blocks[-1]})",
+                        f"  Subnet {uid}: {len(blocks)} blocks (first: {blocks[0]}, last: {blocks[-1]})",
                     )
                 else:
                     self.stdout.write(f"  Subnet {uid}: 0 blocks")

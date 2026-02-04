@@ -1,5 +1,3 @@
-"""Celery tasks for metagraph data processing."""
-
 import os
 import time
 from datetime import UTC, datetime
@@ -8,16 +6,113 @@ import bittensor as bt
 import structlog
 from bittensor.core.metagraph import Metagraph
 from celery import shared_task
+from celery.exceptions import SoftTimeLimitExceeded
 from django.db import connection
-from sentinel.v1.providers.bittensor import bittensor_provider
-from sentinel.v1.services.sentinel import sentinel_service
 
 from apps.metagraph.services.apy_sync_service import APYSyncService
 from apps.metagraph.services.apy_sync_service import DumpMetadata as APYDumpMetadata
-from apps.metagraph.services.metagraph_service import MetagraphService
-from apps.metagraph.services.sync_service import DumpMetadata, MetagraphSyncService
+from apps.metagraph.utils import get_dumpable_blocks, get_epoch_containing_block
 
 logger = structlog.get_logger()
+
+# Connection retry settings
+SUBTENSOR_CONNECTION_RETRIES = 3
+SUBTENSOR_CONNECTION_BACKOFF = 5  # seconds
+
+
+class SubtensorConnectionError(Exception):
+    """Raised when Subtensor connection fails after all retry attempts."""
+
+    def __init__(self, network: str, attempts: int, original_error: Exception) -> None:
+        self.network = network
+        self.attempts = attempts
+        self.original_error = original_error
+        # Consistent message format for Sentry grouping
+        super().__init__(f"Subtensor connection failed after {attempts} attempts")
+
+    def __repr__(self) -> str:
+        return (
+            f"SubtensorConnectionError(network={self.network!r}, "
+            f"attempts={self.attempts}, original_error={self.original_error!r})"
+        )
+
+
+class TaskTimeLimitError(Exception):
+    """Raised when a task exceeds its time limit."""
+
+    def __init__(self, task_name: str, time_limit: int, processed: int, total: int) -> None:
+        self.task_name = task_name
+        self.time_limit = time_limit
+        self.processed = processed
+        self.total = total
+        # Consistent message format for Sentry grouping
+        super().__init__(f"Task {task_name} exceeded time limit ({time_limit}s)")
+
+    def __repr__(self) -> str:
+        return (
+            f"TaskTimeLimitError(task_name={self.task_name!r}, time_limit={self.time_limit}, "
+            f"processed={self.processed}, total={self.total})"
+        )
+
+
+def _create_subtensor_with_retry(network: str, max_retries: int = SUBTENSOR_CONNECTION_RETRIES) -> bt.Subtensor:
+    """
+    Create a Subtensor connection with retry logic for transient failures.
+
+    Handles websocket handshake timeouts and other connection errors by retrying
+    with exponential backoff before giving up.
+
+    Raises:
+        SubtensorConnectionError: When all retry attempts fail for transient errors.
+        Exception: Original exception for non-transient errors.
+
+    """
+    last_error: Exception | None = None
+
+    for attempt in range(1, max_retries + 1):
+        try:
+            return bt.Subtensor(network=network)
+        except Exception as e:
+            last_error = e
+            error_msg = str(e).lower()
+
+            # Check for transient connection errors worth retrying
+            is_transient = any(
+                term in error_msg for term in ["timeout", "handshake", "connection", "websocket", "refused"]
+            )
+
+            if not is_transient:
+                # Non-transient error, fail immediately
+                logger.exception(
+                    "Subtensor connection failed with non-transient error",
+                    network=network,
+                    attempt=attempt,
+                )
+                raise
+
+            if attempt == max_retries:
+                # All retries exhausted, raise clean error for Sentry
+                logger.warning(
+                    "Subtensor connection failed after all retries",
+                    network=network,
+                    attempts=attempt,
+                    original_error=str(e),
+                )
+                raise SubtensorConnectionError(network, attempt, e) from e
+
+            backoff = SUBTENSOR_CONNECTION_BACKOFF * attempt
+            logger.warning(
+                "Subtensor connection failed, retrying",
+                network=network,
+                attempt=attempt,
+                max_retries=max_retries,
+                backoff_seconds=backoff,
+                error=str(e),
+            )
+            time.sleep(backoff)
+
+    # Should not reach here, but satisfy type checker
+    raise SubtensorConnectionError(network, max_retries, last_error)  # type: ignore[arg-type]
 
 
 @shared_task(name="metagraph.refresh_apy_materialized_view")
@@ -32,8 +127,6 @@ def refresh_apy_materialized_view() -> dict:
         Dict with refresh status and timing info.
 
     """
-    import time
-
     start_time = time.time()
 
     try:
@@ -62,70 +155,8 @@ def refresh_apy_materialized_view() -> dict:
         raise
 
 
-@shared_task(name="metagraph.get_top_validators_by_apy")
-def get_top_validators_by_apy(limit: int = 5) -> list[dict]:
-    """
-    Get the top validators by weekly APY across all subnets.
-
-    This task queries the materialized view to get the best performing
-    validators from the current week.
-
-    Args:
-        limit: Number of top validators to return per subnet.
-
-    Returns:
-        List of validator APY data grouped by subnet.
-
-    """
-    from django.db import connection
-
-    query = """
-    WITH ranked AS (
-        SELECT
-            netuid,
-            subnet_name,
-            hotkey,
-            weekly_apy,
-            emissions_tao,
-            stake_tao,
-            snapshot_count,
-            ROW_NUMBER() OVER (PARTITION BY netuid ORDER BY weekly_apy DESC) AS rank
-        FROM mv_validator_weekly_apy
-        WHERE week_start = DATE_TRUNC('week', NOW())
-          AND weekly_apy > 0
-    )
-    SELECT
-        netuid,
-        subnet_name,
-        hotkey,
-        weekly_apy,
-        emissions_tao,
-        stake_tao,
-        snapshot_count,
-        rank
-    FROM ranked
-    WHERE rank <= %s
-    ORDER BY netuid, rank
-    """
-
-    with connection.cursor() as cursor:
-        cursor.execute(query, [limit])
-        columns = [col[0] for col in cursor.description]
-        results = [dict(zip(columns, row)) for row in cursor.fetchall()]
-
-    logger.info(
-        "Retrieved top validators by APY",
-        total_results=len(results),
-        limit_per_subnet=limit,
-    )
-
-    return results
-
-
 def _get_epoch_position_str(block_number: int, netuid: int) -> str:
     """Determine the position of a block within its epoch (start, inside, end)."""
-    from apps.metagraph.utils import get_dumpable_blocks, get_epoch_containing_block
-
     epoch = get_epoch_containing_block(block_number, netuid)
     dumpable_blocks = get_dumpable_blocks(epoch)
 
@@ -134,170 +165,6 @@ def _get_epoch_position_str(block_number: int, netuid: int) -> str:
     if block_number == dumpable_blocks[-1]:
         return "end"
     return "inside"
-
-
-@shared_task(
-    name="metagraph.fast_backfill_batch",
-    bind=True,
-    autoretry_for=(Exception,),
-    retry_backoff=True,
-    retry_kwargs={"max_retries": 3},
-    queue="metagraph",
-)
-def fast_backfill_batch(
-    self,
-    blocks: list[tuple[int, int]],
-    network: str,
-    lite: bool = True,
-    store_artifact: bool = False,
-) -> dict:
-    """
-    Fast backfill a batch of blocks using a single connection.
-
-    This task processes multiple blocks with a shared WebSocket connection,
-    significantly reducing connection overhead compared to one task per block.
-
-    Args:
-        blocks: List of (block_number, netuid) tuples to process
-        network: Bittensor network URI (archive node)
-        lite: Use lite metagraph mode (default: True)
-        store_artifact: Whether to store JSONL artifacts (default: False)
-
-    Returns:
-        Dict with batch processing stats
-    """
-    start_time = time.time()
-    processed = 0
-    errors = 0
-    total_neurons = 0
-    total_weights = 0
-    results: list[dict] = []
-
-    try:
-        with bittensor_provider(network) as provider:
-            service = sentinel_service(provider)
-
-            for block_number, netuid in blocks:
-                block_start = time.time()
-                started_at = datetime.now(UTC)
-
-                try:
-                    # Fetch metagraph (skip_timestamp for faster backfill)
-                    t1 = time.time()
-                    subnet = service.ingest_subnet(netuid, block_number, lite=lite, skip_timestamp=True)
-                    metagraph = subnet.metagraph
-                    fetch_time = time.time() - t1
-
-                    finished_at = datetime.now(UTC)
-
-                    if not metagraph:
-                        logger.warning(
-                            "No metagraph data for block",
-                            block_number=block_number,
-                            netuid=netuid,
-                        )
-                        results.append(
-                            {
-                                "status": "no_data",
-                                "block_number": block_number,
-                                "netuid": netuid,
-                            }
-                        )
-                        continue
-
-                    # Optionally store artifact
-                    artifact_path = None
-                    if store_artifact:
-                        artifact_path = MetagraphService.store_metagraph_artifact(metagraph)
-
-                    # Sync to database
-                    t2 = time.time()
-                    dump_metadata = DumpMetadata(
-                        netuid=netuid,
-                        epoch_position=_get_epoch_position_str(block_number, netuid),
-                        started_at=started_at,
-                        finished_at=finished_at,
-                    )
-                    sync_service = MetagraphSyncService()
-                    stats = sync_service.sync_from_model(metagraph, dump_metadata)
-                    sync_time = time.time() - t2
-
-                    block_time = time.time() - block_start
-                    processed += 1
-                    total_neurons += stats["neurons"]
-                    total_weights += stats["weights"]
-
-                    logger.info(
-                        "Batch: processed block",
-                        block_number=block_number,
-                        netuid=netuid,
-                        fetch_time=round(fetch_time, 2),
-                        sync_time=round(sync_time, 2),
-                        block_time=round(block_time, 2),
-                    )
-
-                    results.append(
-                        {
-                            "status": "success",
-                            "block_number": block_number,
-                            "netuid": netuid,
-                            "fetch_time": round(fetch_time, 2),
-                            "sync_time": round(sync_time, 2),
-                            "neurons": stats["neurons"],
-                            "weights": stats["weights"],
-                            "artifact_path": artifact_path,
-                        }
-                    )
-
-                except Exception as e:
-                    errors += 1
-                    logger.exception(
-                        "Batch: failed to process block",
-                        block_number=block_number,
-                        netuid=netuid,
-                        error=str(e),
-                    )
-                    results.append(
-                        {
-                            "status": "error",
-                            "block_number": block_number,
-                            "netuid": netuid,
-                            "error": str(e),
-                        }
-                    )
-
-        total_time = time.time() - start_time
-        avg_time = total_time / len(blocks) if blocks else 0
-
-        logger.info(
-            "Fast backfill batch completed",
-            total_blocks=len(blocks),
-            processed=processed,
-            errors=errors,
-            total_time=round(total_time, 2),
-            avg_time_per_block=round(avg_time, 2),
-            total_neurons=total_neurons,
-        )
-
-        return {
-            "status": "completed",
-            "total_blocks": len(blocks),
-            "processed": processed,
-            "errors": errors,
-            "total_time": round(total_time, 2),
-            "avg_time_per_block": round(avg_time, 2),
-            "total_neurons": total_neurons,
-            "total_weights": total_weights,
-            "results": results,
-        }
-
-    except Exception as e:
-        logger.exception(
-            "Fast backfill batch failed",
-            blocks_count=len(blocks),
-            error=str(e),
-        )
-        raise
 
 
 def _get_metagraph_with_fallback(
@@ -330,7 +197,7 @@ def _get_metagraph_with_fallback(
                 sync=False,
                 subtensor=subtensor,
             )
-            metagraph._apply_extra_info = lambda block=None: None  # type: ignore[method-assign]
+            metagraph._apply_extra_info = lambda block=None: None  # noqa: ARG005, SLF001
             metagraph.sync(block=block_number, lite=lite, subtensor=subtensor)
             return metagraph
         raise
@@ -347,10 +214,10 @@ def _get_metagraph_with_fallback(
     queue="metagraph",
 )
 def fast_apy_sync(
-    self,
     block_number: int,
     netuid: int,
     network: str | None = None,
+    *,
     lite: bool = True,
 ) -> dict:
     """
@@ -449,15 +316,17 @@ def fast_apy_sync(
     name="metagraph.fast_apy_sync_batch",
     bind=True,
     autoretry_for=(Exception, TimeoutError, ConnectionError, OSError),
+    dont_autoretry_for=(SoftTimeLimitExceeded, TaskTimeLimitError),
     retry_backoff=True,
     retry_backoff_max=60,
     retry_kwargs={"max_retries": 3},
+    soft_time_limit=280,  # Catch before hard limit (300s) to handle gracefully
     queue="metagraph",
 )
 def fast_apy_sync_batch(
-    self,
     blocks: list[tuple[int, int]],
     network: str | None = None,
+    *,
     lite: bool = True,
 ) -> dict:
     """
@@ -473,6 +342,7 @@ def fast_apy_sync_batch(
 
     Returns:
         Dict with batch processing stats
+
     """
     start_time = time.time()
     network = network or os.getenv("BITTENSOR_ARCHIVE_NETWORK", "archive")
@@ -483,8 +353,8 @@ def fast_apy_sync_batch(
     results: list[dict] = []
 
     try:
-        # Create a single subtensor connection for all blocks
-        subtensor = bt.Subtensor(network=network)
+        # Create a single subtensor connection for all blocks (with retry for transient failures)
+        subtensor = _create_subtensor_with_retry(network=network)
 
         # Reuse sync service for caching benefits across blocks
         sync_service = APYSyncService()
@@ -512,7 +382,7 @@ def fast_apy_sync_batch(
                             "status": "no_data",
                             "block_number": block_number,
                             "netuid": netuid,
-                        }
+                        },
                     )
                     continue
 
@@ -555,7 +425,7 @@ def fast_apy_sync_batch(
                         "fetch_time": round(fetch_time, 2),
                         "sync_time": round(sync_time, 2),
                         **stats,
-                    }
+                    },
                 )
 
             except Exception as e:
@@ -572,7 +442,7 @@ def fast_apy_sync_batch(
                         "block_number": block_number,
                         "netuid": netuid,
                         "error": str(e),
-                    }
+                    },
                 )
 
         total_time = time.time() - start_time
@@ -600,6 +470,21 @@ def fast_apy_sync_batch(
             "total_mechanism_metrics": total_mechanism_metrics,
             "results": results,
         }
+
+    except SoftTimeLimitExceeded:
+        # Wrap in custom exception for clean Sentry grouping
+        logger.warning(
+            "Fast APY sync batch exceeded time limit",
+            blocks_count=len(blocks),
+            processed=processed,
+            time_limit=280,
+        )
+        raise TaskTimeLimitError(
+            task_name="fast_apy_sync_batch",
+            time_limit=280,
+            processed=processed,
+            total=len(blocks),
+        ) from None
 
     except Exception as e:
         logger.exception(
