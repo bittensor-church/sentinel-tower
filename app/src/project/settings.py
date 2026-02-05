@@ -469,7 +469,7 @@ SENTINEL_STORAGES = {
     "s3": {
         "BACKEND_NAME": "fsspec-s3",
         "OPTIONS": {
-            "bucket": env("SENTINEL_STORAGE_S3_BUCKET"),
+            "bucket": env("SENTINEL_STORAGE_S3_BUCKET", default=""),
             "base_path": env("SENTINEL_STORAGE_S3_BASE_PATH", default=""),
             "aws_region": env("SENTINEL_STORAGE_S3_AWS_REGION", default=None),
             "aws_access_key_id": env("SENTINEL_STORAGE_S3_AWS_ACCESS_KEY_ID", default=None),

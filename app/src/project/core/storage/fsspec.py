@@ -21,7 +21,10 @@ class FSSpecStorageBackend(StorageBackend):
     def __init__(self, base_path: str, fs: AbstractFileSystem) -> None:
         super().__init__()
         self._fs = fs
-        self._base_path = base_path.rstrip("/")
+
+        if base_path.rstrip("/"):
+            base_path = base_path.rstrip("/")
+        self._base_path = base_path
 
     def store(self, key: str, data: bytes) -> None:
         key = self.resolve_key(key)

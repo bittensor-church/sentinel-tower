@@ -17,10 +17,13 @@ def fsspec_local_backend_factory(**options: Any) -> FSSpecStorageBackend:
     Options:
         base_path: Root directory for storage. This option is required.
     """
-    if "base_path" not in options:
+    if "base_path" not in options or not options["base_path"]:
         raise ImproperlyConfigured("'base_path' is a required option for fsspec-local backends.")
 
-    base_path = options["base_path"].rstrip("/")
+    base_path = options["base_path"]
+    if base_path.rstrip("/"):
+        base_path = base_path.rstrip("/")
+
     fs = LocalFileSystem()
     return FSSpecStorageBackend(base_path, fs=fs)
 
@@ -44,12 +47,12 @@ def fsspec_s3_backend_factory(**options: Any) -> FSSpecStorageBackend:
     base_path = f"{options['bucket']}/{base_path}" if base_path else options["bucket"]
 
     fs_options: dict[str, Any] = {}
-    if "aws_region" in options:
-        fs_options["client_kwargs"] = {"region_name": options["aws_region"]}
-    if "aws_access_key_id" in options:
-        fs_options["key"] = options["aws_access_key_id"]
-    if "aws_secret_access_key" in options:
-        fs_options["secret"] = options["aws_secret_access_key"]
+    if (region_name := options.get("aws_region")) is not None:
+        fs_options["client_kwargs"] = {"region_name": region_name}
+    if (key := options.get("aws_access_key_id")) is not None:
+        fs_options["key"] = key
+    if (secret := options.get("aws_secret_access_key")) is not None:
+        fs_options["secret"] = secret
 
     fs = S3FileSystem(**fs_options)
     return FSSpecStorageBackend(base_path=base_path, fs=fs)
