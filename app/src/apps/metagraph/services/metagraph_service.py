@@ -3,7 +3,7 @@ from django.conf import settings
 from sentinel.v1.services.extractors.metagraph.dto import FullSubnetSnapshot
 
 import apps.metagraph.utils as metagraph_utils
-from project.core.services import JsonLinesStorage
+from project.core.storage import get_local_storage
 
 logger = structlog.get_logger()
 
@@ -42,10 +42,13 @@ class MetagraphService:
     @classmethod
     def store_metagraph_artifact(cls, metagraph: FullSubnetSnapshot) -> str:
         """Serialize and store the metagraph artifact in JSONL format."""
-        storage = JsonLinesStorage("data/bittensor/metagraph/{netuid}/{block_number}.jsonl")
 
         netuid = metagraph.subnet.netuid
         block_number = metagraph.block.block_number
+        filename = f"data/bittensor/metagraph/{netuid}/{block_number}.jsonl"
+
+        storage = get_local_storage()
+        storage.store(filename, metagraph.model_dump_json().encode())
 
         logger.info(
             "Storing metagraph artifact",
@@ -53,8 +56,4 @@ class MetagraphService:
             block_number=block_number,
         )
 
-        return storage.append(
-            metagraph.model_dump(),
-            netuid=netuid,
-            block_number=block_number,
-        )
+        return filename

@@ -378,6 +378,7 @@ if SENTRY_DSN is not None and isinstance(SENTRY_DSN, str) and SENTRY_DSN.strip()
     from sentry_sdk.integrations.redis import RedisIntegration
 
     SENTRY_ENVIRONMENT = env("SENTRY_ENVIRONMENT", default=ENV)
+    # noinspection PyAbstractClass
     sentry_sdk.init(  # type: ignore
         dsn=SENTRY_DSN,
         environment=SENTRY_ENVIRONMENT,
@@ -456,3 +457,27 @@ DISCORD_ALERT_CONFIGS: list[AlertConfig] = [
     AlertConfig("SubtensorModule:schedule_coldkey_swap", "DISCORD_COLDKEY_SWAP_WEBHOOK_URL"),
     AlertConfig("SubtensorModule:swap_coldkey", "DISCORD_COLDKEY_SWAP_WEBHOOK_URL"),
 ]
+
+# sentinel storage configuration. each entry requires 'BACKEND_NAME' and 'OPTIONS'.
+# Available backends: 'fsspec-local', 'fsspec-s3'
+# Backend options:
+# fsspec-local: 'base_path'
+# fsspec-s3: 'bucket', 'base_path' (optional), 'aws_region' (optional),
+#            'aws_access_key_id' (optional), 'aws_secret_access_key' (optional)
+# if optional params are not provided, boto3 will read them from env or ~/.aws/credentials
+SENTINEL_STORAGES = {
+    "local": {
+        "BACKEND_NAME": "fsspec-local",
+        "OPTIONS": {"base_path": str(MEDIA_ROOT)},
+    },
+    "s3": {
+        "BACKEND_NAME": "fsspec-s3",
+        "OPTIONS": {
+            "bucket": env("SENTINEL_STORAGE_S3_BUCKET", default=""),
+            "base_path": env("SENTINEL_STORAGE_S3_BASE_PATH", default=""),
+            "aws_region": env("SENTINEL_STORAGE_S3_AWS_REGION", default=None),
+            "aws_access_key_id": env("SENTINEL_STORAGE_S3_AWS_ACCESS_KEY_ID", default=None),
+            "aws_secret_access_key": env("SENTINEL_STORAGE_S3_AWS_SECRET_ACCESS_KEY", default=None),
+        },
+    },
+}
