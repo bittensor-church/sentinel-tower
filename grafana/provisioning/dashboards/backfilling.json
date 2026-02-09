@@ -28,47 +28,63 @@
     },
     {
       "datasource": { "type": "postgres", "uid": "postgresql" },
-      "fieldConfig": {
-        "defaults": {
-          "color": { "mode": "thresholds" },
-          "mappings": [],
-          "thresholds": { "mode": "absolute", "steps": [{ "color": "blue", "value": null }] },
-          "unit": "none"
-        },
-        "overrides": []
-      },
-      "gridPos": { "h": 4, "w": 4, "x": 0, "y": 1 },
-      "id": 19,
-      "options": { "colorMode": "value", "graphMode": "none", "justifyMode": "auto", "orientation": "auto", "reduceOptions": { "calcs": ["lastNotNull"], "fields": "", "values": false }, "textMode": "auto" },
-      "targets": [{
-        "datasource": { "type": "postgres", "uid": "postgresql" },
-        "rawQuery": true,
-        "rawSql": "SELECT MIN(number) AS from_block FROM metagraph_block",
-        "refId": "A",
-        "format": "table"
-      }],
-      "title": "From Block",
-      "type": "stat"
-    },
-    {
-      "gridPos": { "h": 4, "w": 4, "x": 4, "y": 1 },
-      "id": 20,
-      "options": {
-        "code": { "language": "plaintext", "showLineNumbers": false, "showMiniMap": false },
-        "content": "<div style=\"text-align: center; font-size: 40px; color: #5794F2; padding-top: 20px;\">${to_block}</div>",
-        "mode": "html"
-      },
-      "title": "To Block",
-      "type": "text"
-    },
-    {
-      "datasource": { "type": "postgres", "uid": "postgresql" },
+      "description": "Total completed dump operations across all subnets",
       "fieldConfig": {
         "defaults": {
           "color": { "mode": "thresholds" },
           "mappings": [],
           "thresholds": { "mode": "absolute", "steps": [{ "color": "green", "value": null }] },
-          "unit": "none"
+          "unit": "short"
+        },
+        "overrides": []
+      },
+      "gridPos": { "h": 4, "w": 4, "x": 0, "y": 1 },
+      "id": 19,
+      "options": { "colorMode": "value", "graphMode": "area", "justifyMode": "auto", "orientation": "auto", "reduceOptions": { "calcs": ["lastNotNull"], "fields": "", "values": false }, "textMode": "auto" },
+      "targets": [{
+        "datasource": { "type": "postgres", "uid": "postgresql" },
+        "rawQuery": true,
+        "rawSql": "SELECT COUNT(*) AS synced FROM metagraph_dump WHERE finished_at IS NOT NULL",
+        "refId": "A",
+        "format": "table"
+      }],
+      "title": "Synced Dumps",
+      "type": "stat"
+    },
+    {
+      "datasource": { "type": "postgres", "uid": "postgresql" },
+      "description": "Expected total dumps based on block range, tempo, and number of subnets being synced",
+      "fieldConfig": {
+        "defaults": {
+          "color": { "mode": "thresholds" },
+          "mappings": [],
+          "thresholds": { "mode": "absolute", "steps": [{ "color": "blue", "value": null }] },
+          "unit": "short"
+        },
+        "overrides": []
+      },
+      "gridPos": { "h": 4, "w": 4, "x": 4, "y": 1 },
+      "id": 20,
+      "options": { "colorMode": "value", "graphMode": "none", "justifyMode": "auto", "orientation": "auto", "reduceOptions": { "calcs": ["lastNotNull"], "fields": "", "values": false }, "textMode": "auto" },
+      "targets": [{
+        "datasource": { "type": "postgres", "uid": "postgresql" },
+        "rawQuery": true,
+        "rawSql": "SELECT COUNT(DISTINCT netuid) * FLOOR((${to_block}::float - ${from_block}::float) / (${tempo} + 1)) AS expected FROM metagraph_dump",
+        "refId": "A",
+        "format": "table"
+      }],
+      "title": "Expected Dumps",
+      "type": "stat"
+    },
+    {
+      "datasource": { "type": "postgres", "uid": "postgresql" },
+      "description": "Remaining dumps to complete across all subnets",
+      "fieldConfig": {
+        "defaults": {
+          "color": { "mode": "thresholds" },
+          "mappings": [],
+          "thresholds": { "mode": "absolute", "steps": [{ "color": "green", "value": null }, { "color": "yellow", "value": 10000 }, { "color": "red", "value": 100000 }] },
+          "unit": "short"
         },
         "overrides": []
       },
@@ -78,15 +94,16 @@
       "targets": [{
         "datasource": { "type": "postgres", "uid": "postgresql" },
         "rawQuery": true,
-        "rawSql": "SELECT MAX(number) AS latest_block FROM metagraph_block",
+        "rawSql": "SELECT GREATEST(COUNT(DISTINCT netuid) * FLOOR((${to_block}::float - ${from_block}::float) / (${tempo} + 1)) - COUNT(*) FILTER (WHERE finished_at IS NOT NULL), 0) AS remaining FROM metagraph_dump",
         "refId": "A",
         "format": "table"
       }],
-      "title": "Current Block",
+      "title": "Remaining Dumps",
       "type": "stat"
     },
     {
       "datasource": { "type": "postgres", "uid": "postgresql" },
+      "description": "Unique blocks synced in the database",
       "fieldConfig": {
         "defaults": {
           "color": { "mode": "thresholds" },
@@ -126,11 +143,11 @@
       "targets": [{
         "datasource": { "type": "postgres", "uid": "postgresql" },
         "rawQuery": true,
-        "rawSql": "SELECT COUNT(*) AS pending_dumps FROM metagraph_dump WHERE started_at IS NOT NULL AND finished_at IS NULL",
+        "rawSql": "SELECT COUNT(*) AS in_progress FROM metagraph_dump WHERE started_at IS NOT NULL AND finished_at IS NULL",
         "refId": "A",
         "format": "table"
       }],
-      "title": "Pending Dumps",
+      "title": "In Progress",
       "type": "stat"
     },
     {
@@ -159,7 +176,7 @@
     },
     {
       "datasource": { "type": "postgres", "uid": "postgresql" },
-      "description": "Percentage of blocks processed toward target",
+      "description": "Percentage of dumps completed toward target (synced / expected)",
       "fieldConfig": {
         "defaults": {
           "color": { "mode": "thresholds" },
@@ -177,7 +194,7 @@
       "targets": [{
         "datasource": { "type": "postgres", "uid": "postgresql" },
         "rawQuery": true,
-        "rawSql": "SELECT CASE WHEN ${to_block} - MIN(number) > 0 THEN (MAX(number) - MIN(number))::float / (${to_block} - MIN(number)) * 100 ELSE 0 END AS completion FROM metagraph_block",
+        "rawSql": "WITH stats AS (SELECT COUNT(*) FILTER (WHERE finished_at IS NOT NULL) AS synced, COUNT(DISTINCT netuid) * FLOOR((${to_block}::float - ${from_block}::float) / (${tempo} + 1)) AS expected FROM metagraph_dump) SELECT CASE WHEN expected > 0 THEN LEAST(synced::float / expected * 100, 100) ELSE 0 END AS completion FROM stats",
         "refId": "A",
         "format": "table"
       }],
@@ -202,7 +219,7 @@
       "targets": [{
         "datasource": { "type": "postgres", "uid": "postgresql" },
         "rawQuery": true,
-        "rawSql": "WITH rate AS (SELECT COUNT(*)::float / NULLIF(EXTRACT(EPOCH FROM (MAX(finished_at) - MIN(finished_at))), 0) AS blocks_per_sec FROM metagraph_dump WHERE finished_at > NOW() - INTERVAL '1 hour'), remaining AS (SELECT ${to_block} - MAX(number) AS blocks_left FROM metagraph_block) SELECT CASE WHEN rate.blocks_per_sec > 0 THEN remaining.blocks_left / rate.blocks_per_sec ELSE NULL END AS eta FROM rate, remaining",
+        "rawSql": "WITH rate AS (SELECT COUNT(*)::float / NULLIF(EXTRACT(EPOCH FROM (MAX(finished_at) - MIN(finished_at))), 0) AS dumps_per_sec FROM metagraph_dump WHERE finished_at > NOW() - INTERVAL '1 hour'), remaining AS (SELECT GREATEST(COUNT(DISTINCT netuid) * FLOOR((${to_block}::float - ${from_block}::float) / (${tempo} + 1)) - COUNT(*) FILTER (WHERE finished_at IS NOT NULL), 0) AS dumps_left FROM metagraph_dump) SELECT CASE WHEN rate.dumps_per_sec > 0 THEN remaining.dumps_left / rate.dumps_per_sec ELSE NULL END AS eta FROM rate, remaining",
         "refId": "A",
         "format": "table"
       }],
@@ -211,7 +228,7 @@
     },
     {
       "datasource": { "type": "postgres", "uid": "postgresql" },
-      "description": "Blocks processed per second (1h rate)",
+      "description": "Dumps processed per second (1h rate)",
       "fieldConfig": {
         "defaults": {
           "color": { "mode": "thresholds" },
@@ -228,21 +245,21 @@
       "targets": [{
         "datasource": { "type": "postgres", "uid": "postgresql" },
         "rawQuery": true,
-        "rawSql": "SELECT COUNT(*)::float / NULLIF(EXTRACT(EPOCH FROM (MAX(finished_at) - MIN(finished_at))), 0) AS blocks_per_sec FROM metagraph_dump WHERE finished_at > NOW() - INTERVAL '1 hour'",
+        "rawSql": "SELECT COUNT(*)::float / NULLIF(EXTRACT(EPOCH FROM (MAX(finished_at) - MIN(finished_at))), 0) AS dumps_per_sec FROM metagraph_dump WHERE finished_at > NOW() - INTERVAL '1 hour'",
         "refId": "A",
         "format": "table"
       }],
-      "title": "Blocks/sec",
+      "title": "Dumps/sec",
       "type": "stat"
     },
     {
       "datasource": { "type": "postgres", "uid": "postgresql" },
-      "description": "Remaining blocks to process",
+      "description": "Number of distinct subnets being synced",
       "fieldConfig": {
         "defaults": {
           "color": { "mode": "thresholds" },
           "mappings": [],
-          "thresholds": { "mode": "absolute", "steps": [{ "color": "green", "value": null }, { "color": "yellow", "value": 10000 }, { "color": "red", "value": 100000 }] },
+          "thresholds": { "mode": "absolute", "steps": [{ "color": "purple", "value": null }] },
           "unit": "short"
         },
         "overrides": []
@@ -253,16 +270,68 @@
       "targets": [{
         "datasource": { "type": "postgres", "uid": "postgresql" },
         "rawQuery": true,
-        "rawSql": "SELECT ${to_block} - MAX(number) AS remaining FROM metagraph_block",
+        "rawSql": "SELECT COUNT(DISTINCT netuid) AS subnets FROM metagraph_dump",
         "refId": "A",
         "format": "table"
       }],
-      "title": "Remaining Blocks",
+      "title": "Subnets",
       "type": "stat"
     },
     {
       "collapsed": false,
       "gridPos": { "h": 1, "w": 24, "x": 0, "y": 11 },
+      "id": 102,
+      "panels": [],
+      "title": "Per-Subnet Progress",
+      "type": "row"
+    },
+    {
+      "datasource": { "type": "postgres", "uid": "postgresql" },
+      "description": "Backfilling progress per subnet (1 block per epoch)",
+      "fieldConfig": {
+        "defaults": {
+          "color": { "mode": "thresholds" },
+          "custom": { "align": "auto", "cellOptions": { "type": "auto" }, "inspect": false },
+          "mappings": [],
+          "thresholds": { "mode": "absolute", "steps": [{ "color": "green", "value": null }] }
+        },
+        "overrides": [
+          {
+            "matcher": { "id": "byName", "options": "completion_pct" },
+            "properties": [
+              { "id": "thresholds", "value": { "mode": "absolute", "steps": [{ "color": "red", "value": null }, { "color": "yellow", "value": 50 }, { "color": "green", "value": 80 }] } },
+              { "id": "custom.cellOptions", "value": { "mode": "gradient", "type": "gauge" } },
+              { "id": "max", "value": 100 },
+              { "id": "min", "value": 0 },
+              { "id": "unit", "value": "percent" }
+            ]
+          },
+          { "matcher": { "id": "byName", "options": "subnet" }, "properties": [{ "id": "custom.width", "value": 80 }] },
+          { "matcher": { "id": "byName", "options": "synced" }, "properties": [{ "id": "custom.width", "value": 100 }] },
+          { "matcher": { "id": "byName", "options": "expected" }, "properties": [{ "id": "custom.width", "value": 100 }] },
+          { "matcher": { "id": "byName", "options": "remaining" }, "properties": [{ "id": "custom.width", "value": 100 }] },
+          {
+            "matcher": { "id": "byName", "options": "last_synced_at" },
+            "properties": [{ "id": "unit", "value": "dateTimeAsIso" }]
+          }
+        ]
+      },
+      "gridPos": { "h": 10, "w": 24, "x": 0, "y": 12 },
+      "id": 25,
+      "options": { "cellHeight": "sm", "footer": { "countRows": false, "fields": "", "reducer": ["sum"], "show": true }, "showHeader": true, "sortBy": [{ "desc": false, "displayName": "subnet" }] },
+      "targets": [{
+        "datasource": { "type": "postgres", "uid": "postgresql" },
+        "rawQuery": true,
+        "rawSql": "SELECT d.netuid AS subnet, COUNT(*) FILTER (WHERE d.finished_at IS NOT NULL) AS synced, FLOOR((${to_block}::float - ${from_block}::float) / (${tempo} + 1))::int AS expected, GREATEST(FLOOR((${to_block}::float - ${from_block}::float) / (${tempo} + 1))::int - COUNT(*) FILTER (WHERE d.finished_at IS NOT NULL)::int, 0) AS remaining, ROUND((LEAST(COUNT(*) FILTER (WHERE d.finished_at IS NOT NULL)::numeric / NULLIF(FLOOR((${to_block}::numeric - ${from_block}::numeric) / (${tempo} + 1)), 0) * 100, 100))::numeric, 1) AS completion_pct, EXTRACT(EPOCH FROM MAX(d.finished_at)) * 1000 AS last_synced_at FROM metagraph_dump d GROUP BY d.netuid ORDER BY d.netuid",
+        "refId": "A",
+        "format": "table"
+      }],
+      "title": "Per-Subnet Progress",
+      "type": "table"
+    },
+    {
+      "collapsed": false,
+      "gridPos": { "h": 1, "w": 24, "x": 0, "y": 22 },
       "id": 101,
       "panels": [],
       "title": "Processing Rate",
@@ -281,7 +350,7 @@
         },
         "overrides": []
       },
-      "gridPos": { "h": 8, "w": 12, "x": 0, "y": 12 },
+      "gridPos": { "h": 8, "w": 12, "x": 0, "y": 23 },
       "id": 7,
       "options": { "legend": { "calcs": ["sum", "mean"], "displayMode": "table", "placement": "right", "showLegend": false }, "tooltip": { "mode": "single", "sort": "none" } },
       "targets": [{
@@ -312,7 +381,7 @@
           { "matcher": { "id": "byName", "options": "p50" }, "properties": [{ "id": "color", "value": { "fixedColor": "blue", "mode": "fixed" } }] }
         ]
       },
-      "gridPos": { "h": 8, "w": 12, "x": 12, "y": 12 },
+      "gridPos": { "h": 8, "w": 12, "x": 12, "y": 23 },
       "id": 8,
       "options": { "legend": { "calcs": [], "displayMode": "list", "placement": "bottom", "showLegend": true }, "tooltip": { "mode": "multi", "sort": "desc" } },
       "targets": [{
@@ -328,7 +397,7 @@
     },
     {
       "collapsed": false,
-      "gridPos": { "h": 1, "w": 24, "x": 0, "y": 20 },
+      "gridPos": { "h": 1, "w": 24, "x": 0, "y": 31 },
       "id": 104,
       "panels": [],
       "title": "Recent Activity",
@@ -351,7 +420,7 @@
           { "matcher": { "id": "byName", "options": "block" }, "properties": [{ "id": "custom.width", "value": 100 }] }
         ]
       },
-      "gridPos": { "h": 12, "w": 24, "x": 0, "y": 21 },
+      "gridPos": { "h": 12, "w": 24, "x": 0, "y": 32 },
       "id": 14,
       "options": { "cellHeight": "sm", "footer": { "countRows": false, "fields": "", "reducer": ["sum"], "show": false }, "showHeader": true, "sortBy": [{ "desc": true, "displayName": "created_at" }] },
       "targets": [{
@@ -372,6 +441,17 @@
   "templating": {
     "list": [
       {
+        "current": { "selected": true, "text": "4100000", "value": "4100000" },
+        "description": "Starting block number for backfill range",
+        "hide": 0,
+        "label": "From Block",
+        "name": "from_block",
+        "options": [{ "selected": true, "text": "4100000", "value": "4100000" }],
+        "query": "4100000",
+        "skipUrlSync": false,
+        "type": "textbox"
+      },
+      {
         "current": { "selected": true, "text": "5500116", "value": "5500116" },
         "description": "Target block number for backfill completion",
         "hide": 0,
@@ -379,6 +459,17 @@
         "name": "to_block",
         "options": [{ "selected": true, "text": "5500116", "value": "5500116" }],
         "query": "5500116",
+        "skipUrlSync": false,
+        "type": "textbox"
+      },
+      {
+        "current": { "selected": true, "text": "360", "value": "360" },
+        "description": "Subnet epoch tempo (epoch duration = tempo + 1 blocks)",
+        "hide": 0,
+        "label": "Tempo",
+        "name": "tempo",
+        "options": [{ "selected": true, "text": "360", "value": "360" }],
+        "query": "360",
         "skipUrlSync": false,
         "type": "textbox"
       }

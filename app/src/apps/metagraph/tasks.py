@@ -205,7 +205,6 @@ def _get_metagraph_with_fallback(
 
 @shared_task(
     name="metagraph.fast_apy_sync",
-    bind=True,
     autoretry_for=(Exception, TimeoutError, ConnectionError, OSError),
     retry_backoff=True,
     retry_backoff_max=60,
@@ -314,7 +313,6 @@ def fast_apy_sync(
 
 @shared_task(
     name="metagraph.fast_apy_sync_batch",
-    bind=True,
     autoretry_for=(Exception, TimeoutError, ConnectionError, OSError),
     dont_autoretry_for=(SoftTimeLimitExceeded, TaskTimeLimitError),
     retry_backoff=True,
