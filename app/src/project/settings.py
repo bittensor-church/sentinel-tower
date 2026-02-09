@@ -453,7 +453,7 @@ class AlertConfig:
 DISCORD_ALERT_CONFIGS: list[AlertConfig] = [
     AlertConfig("Sudo", "DISCORD_SUDO_ALERTS_WEBHOOK_URL", success_only=True),
     AlertConfig("AdminUtils", "DISCORD_ADMIN_UTILS_ALERTS_WEBHOOK_URL"),
-    AlertConfig("SubtensorModule:register_network", "DISCORD_SUBNET_REGISTRATION_WEBHOOK_URL"),
+    AlertConfig("SubtensorModule:register_network_with_identity", "DISCORD_SUBNET_REGISTRATION_WEBHOOK_URL"),
     AlertConfig("SubtensorModule:schedule_coldkey_swap", "DISCORD_COLDKEY_SWAP_WEBHOOK_URL"),
     AlertConfig("SubtensorModule:swap_coldkey", "DISCORD_COLDKEY_SWAP_WEBHOOK_URL"),
 ]

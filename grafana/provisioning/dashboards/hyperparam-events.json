@@ -188,90 +188,6 @@
     {
       "collapsed": false,
       "gridPos": { "h": 1, "w": 24, "x": 0, "y": 21 },
-      "id": 100,
-      "panels": [],
-      "title": "Sudo Calls",
-      "type": "row"
-    },
-    {
-      "datasource": { "type": "postgres", "uid": "postgresql" },
-      "fieldConfig": { "defaults": { "color": { "mode": "thresholds" }, "mappings": [], "thresholds": { "mode": "absolute", "steps": [{ "color": "red", "value": null }] } }, "overrides": [] },
-      "gridPos": { "h": 4, "w": 6, "x": 0, "y": 22 },
-      "id": 1,
-      "options": { "colorMode": "value", "graphMode": "area", "justifyMode": "auto", "orientation": "auto", "reduceOptions": { "calcs": ["lastNotNull"], "fields": "", "values": false }, "textMode": "auto" },
-      "targets": [{ "datasource": { "type": "postgres", "uid": "postgresql" }, "rawQuery": true, "rawSql": "SELECT COUNT(*) as value FROM extrinsics WHERE call_module = 'Sudo'", "refId": "A", "format": "table" }],
-      "title": "Total Sudo Calls",
-      "type": "stat"
-    },
-    {
-      "datasource": { "type": "postgres", "uid": "postgresql" },
-      "fieldConfig": { "defaults": { "color": { "mode": "thresholds" }, "mappings": [], "thresholds": { "mode": "absolute", "steps": [{ "color": "orange", "value": null }] } }, "overrides": [] },
-      "gridPos": { "h": 4, "w": 6, "x": 6, "y": 22 },
-      "id": 2,
-      "options": { "colorMode": "value", "graphMode": "area", "justifyMode": "auto", "orientation": "auto", "reduceOptions": { "calcs": ["lastNotNull"], "fields": "", "values": false }, "textMode": "auto" },
-      "targets": [{ "datasource": { "type": "postgres", "uid": "postgresql" }, "rawQuery": true, "rawSql": "SELECT COUNT(*) as value FROM extrinsics WHERE call_module = 'Sudo' AND created_at >= NOW() - INTERVAL '24 hours'", "refId": "A", "format": "table" }],
-      "title": "Sudo (24h)",
-      "type": "stat"
-    },
-    {
-      "datasource": { "type": "postgres", "uid": "postgresql" },
-      "fieldConfig": { "defaults": { "color": { "mode": "thresholds" }, "mappings": [], "thresholds": { "mode": "absolute", "steps": [{ "color": "yellow", "value": null }] } }, "overrides": [] },
-      "gridPos": { "h": 4, "w": 6, "x": 12, "y": 22 },
-      "id": 3,
-      "options": { "colorMode": "value", "graphMode": "area", "justifyMode": "auto", "orientation": "auto", "reduceOptions": { "calcs": ["lastNotNull"], "fields": "", "values": false }, "textMode": "auto" },
-      "targets": [{ "datasource": { "type": "postgres", "uid": "postgresql" }, "rawQuery": true, "rawSql": "SELECT COUNT(*) as value FROM extrinsics WHERE call_module = 'Sudo' AND created_at >= NOW() - INTERVAL '7 days'", "refId": "A", "format": "table" }],
-      "title": "Sudo (7d)",
-      "type": "stat"
-    },
-    {
-      "datasource": { "type": "postgres", "uid": "postgresql" },
-      "fieldConfig": { "defaults": { "color": { "mode": "thresholds" }, "mappings": [], "thresholds": { "mode": "absolute", "steps": [{ "color": "blue", "value": null }] } }, "overrides": [] },
-      "gridPos": { "h": 4, "w": 6, "x": 18, "y": 22 },
-      "id": 4,
-      "options": { "colorMode": "value", "graphMode": "area", "justifyMode": "auto", "orientation": "auto", "reduceOptions": { "calcs": ["lastNotNull"], "fields": "", "values": false }, "textMode": "auto" },
-      "targets": [{ "datasource": { "type": "postgres", "uid": "postgresql" }, "rawQuery": true, "rawSql": "SELECT COUNT(DISTINCT call_function) as value FROM extrinsics WHERE call_module = 'Sudo'", "refId": "A", "format": "table" }],
-      "title": "Unique Sudo Functions",
-      "type": "stat"
-    },
-    {
-      "datasource": { "type": "postgres", "uid": "postgresql" },
-      "fieldConfig": {
-        "defaults": { "color": { "mode": "palette-classic" }, "custom": { "axisBorderShow": false, "axisCenteredZero": false, "axisColorMode": "text", "axisLabel": "", "axisPlacement": "auto", "barAlignment": 0, "drawStyle": "bars", "fillOpacity": 80, "gradientMode": "none", "hideFrom": { "legend": false, "tooltip": false, "viz": false }, "insertNulls": false, "lineInterpolation": "linear", "lineWidth": 1, "pointSize": 5, "scaleDistribution": { "type": "linear" }, "showPoints": "auto", "spanNulls": false, "stacking": { "group": "A", "mode": "normal" }, "thresholdsStyle": { "mode": "off" } }, "mappings": [], "thresholds": { "mode": "absolute", "steps": [{ "color": "green", "value": null }] } },
-        "overrides": []
-      },
-      "gridPos": { "h": 8, "w": 16, "x": 0, "y": 26 },
-      "id": 5,
-      "options": { "legend": { "calcs": [], "displayMode": "list", "placement": "bottom", "showLegend": true }, "tooltip": { "mode": "single", "sort": "none" } },
-      "targets": [{ "datasource": { "type": "postgres", "uid": "postgresql" }, "rawQuery": true, "rawSql": "SELECT date_trunc('day', created_at) as time, call_function as metric, COUNT(*) as value FROM extrinsics WHERE call_module = 'Sudo' AND created_at >= NOW() - INTERVAL '30 days' GROUP BY 1, 2 ORDER BY 1", "refId": "A", "format": "time_series" }],
-      "title": "Sudo Calls Over Time",
-      "type": "timeseries"
-    },
-    {
-      "datasource": { "type": "postgres", "uid": "postgresql" },
-      "fieldConfig": { "defaults": { "color": { "mode": "palette-classic" }, "custom": { "hideFrom": { "legend": false, "tooltip": false, "viz": false } }, "mappings": [] }, "overrides": [] },
-      "gridPos": { "h": 8, "w": 8, "x": 16, "y": 26 },
-      "id": 6,
-      "options": { "legend": { "displayMode": "list", "placement": "right", "showLegend": true }, "pieType": "pie", "reduceOptions": { "calcs": ["lastNotNull"], "fields": "/^value$/", "values": true }, "tooltip": { "mode": "single", "sort": "none" }, "displayLabels": ["name", "value"] },
-      "targets": [{ "datasource": { "type": "postgres", "uid": "postgresql" }, "rawQuery": true, "rawSql": "SELECT call_function as metric, COUNT(*) as value FROM extrinsics WHERE call_module = 'Sudo' GROUP BY call_function ORDER BY value DESC LIMIT 10", "refId": "A", "format": "table" }],
-      "title": "Sudo Calls by Function",
-      "type": "piechart"
-    },
-    {
-      "datasource": { "type": "postgres", "uid": "postgresql" },
-      "fieldConfig": {
-        "defaults": { "color": { "mode": "thresholds" }, "custom": { "align": "auto", "cellOptions": { "type": "auto" }, "inspect": false }, "mappings": [], "thresholds": { "mode": "absolute", "steps": [{ "color": "green", "value": null }] } },
-        "overrides": [{ "matcher": { "id": "byName", "options": "success" }, "properties": [{ "id": "mappings", "value": [{ "options": { "true": { "color": "green", "index": 0, "text": "Success" }, "false": { "color": "red", "index": 1, "text": "Failed" } }, "type": "value" }] }, { "id": "custom.cellOptions", "value": { "type": "color-background" } }] }, { "matcher": { "id": "byName", "options": "address" }, "properties": [{ "id": "custom.width", "value": 150 }, { "id": "custom.cellOptions", "value": { "type": "auto" } }, { "id": "custom.inspect", "value": true }] }, { "matcher": { "id": "byName", "options": "call_args" }, "properties": [{ "id": "custom.width", "value": 300 }, { "id": "custom.inspect", "value": true }] }]
-      },
-      "gridPos": { "h": 10, "w": 24, "x": 0, "y": 34 },
-      "id": 9,
-      "options": { "cellHeight": "sm", "footer": { "countRows": false, "fields": "", "reducer": ["sum"], "show": false }, "showHeader": true },
-      "targets": [{ "datasource": { "type": "postgres", "uid": "postgresql" }, "rawQuery": true, "rawSql": "SELECT created_at as time, call_function, call_args, address, block_number, success FROM extrinsics WHERE call_module = 'Sudo' ORDER BY created_at DESC LIMIT 50", "refId": "A", "format": "table" }],
-      "title": "Recent Sudo Calls",
-      "type": "table"
-    },
-    {
-      "collapsed": false,
-      "gridPos": { "h": 1, "w": 24, "x": 0, "y": 44 },
       "id": 101,
       "panels": [],
       "title": "Governance Operations",
@@ -280,17 +196,17 @@
     {
       "datasource": { "type": "postgres", "uid": "postgresql" },
       "fieldConfig": { "defaults": { "color": { "mode": "thresholds" }, "mappings": [], "thresholds": { "mode": "absolute", "steps": [{ "color": "green", "value": null }] } }, "overrides": [] },
-      "gridPos": { "h": 4, "w": 6, "x": 0, "y": 45 },
+      "gridPos": { "h": 4, "w": 6, "x": 0, "y": 22 },
       "id": 10,
       "options": { "colorMode": "value", "graphMode": "area", "justifyMode": "auto", "orientation": "auto", "reduceOptions": { "calcs": ["lastNotNull"], "fields": "", "values": false }, "textMode": "auto" },
-      "targets": [{ "datasource": { "type": "postgres", "uid": "postgresql" }, "rawQuery": true, "rawSql": "SELECT COUNT(*) as value FROM extrinsics WHERE call_function = 'register_network'", "refId": "A", "format": "table" }],
+      "targets": [{ "datasource": { "type": "postgres", "uid": "postgresql" }, "rawQuery": true, "rawSql": "SELECT COUNT(*) as value FROM extrinsics WHERE call_function = 'register_network_with_identity'", "refId": "A", "format": "table" }],
       "title": "Network Registrations",
       "type": "stat"
     },
     {
       "datasource": { "type": "postgres", "uid": "postgresql" },
       "fieldConfig": { "defaults": { "color": { "mode": "thresholds" }, "mappings": [], "thresholds": { "mode": "absolute", "steps": [{ "color": "red", "value": null }] } }, "overrides": [] },
-      "gridPos": { "h": 4, "w": 6, "x": 6, "y": 45 },
+      "gridPos": { "h": 4, "w": 6, "x": 6, "y": 22 },
       "id": 11,
       "options": { "colorMode": "value", "graphMode": "area", "justifyMode": "auto", "orientation": "auto", "reduceOptions": { "calcs": ["lastNotNull"], "fields": "", "values": false }, "textMode": "auto" },
       "targets": [{ "datasource": { "type": "postgres", "uid": "postgresql" }, "rawQuery": true, "rawSql": "SELECT COUNT(*) as value FROM extrinsics WHERE call_function = 'dissolve_network'", "refId": "A", "format": "table" }],
@@ -300,7 +216,7 @@
     {
       "datasource": { "type": "postgres", "uid": "postgresql" },
       "fieldConfig": { "defaults": { "color": { "mode": "thresholds" }, "mappings": [], "thresholds": { "mode": "absolute", "steps": [{ "color": "blue", "value": null }] } }, "overrides": [] },
-      "gridPos": { "h": 4, "w": 6, "x": 12, "y": 45 },
+      "gridPos": { "h": 4, "w": 6, "x": 12, "y": 22 },
       "id": 12,
       "options": { "colorMode": "value", "graphMode": "area", "justifyMode": "auto", "orientation": "auto", "reduceOptions": { "calcs": ["lastNotNull"], "fields": "", "values": false }, "textMode": "auto" },
       "targets": [{ "datasource": { "type": "postgres", "uid": "postgresql" }, "rawQuery": true, "rawSql": "SELECT COUNT(*) as value FROM extrinsics WHERE call_function IN ('schedule_coldkey_swap', 'swap_coldkey')", "refId": "A", "format": "table" }],
@@ -310,7 +226,7 @@
     {
       "datasource": { "type": "postgres", "uid": "postgresql" },
       "fieldConfig": { "defaults": { "color": { "mode": "thresholds" }, "mappings": [], "thresholds": { "mode": "absolute", "steps": [{ "color": "purple", "value": null }] } }, "overrides": [] },
-      "gridPos": { "h": 4, "w": 6, "x": 18, "y": 45 },
+      "gridPos": { "h": 4, "w": 6, "x": 18, "y": 22 },
       "id": 13,
       "options": { "colorMode": "value", "graphMode": "area", "justifyMode": "auto", "orientation": "auto", "reduceOptions": { "calcs": ["lastNotNull"], "fields": "", "values": false }, "textMode": "auto" },
       "targets": [{ "datasource": { "type": "postgres", "uid": "postgresql" }, "rawQuery": true, "rawSql": "SELECT COUNT(*) as value FROM extrinsics WHERE call_module IN ('SubtensorModule') AND call_function IN ('root_register', 'vote', 'add_stake', 'remove_stake')", "refId": "A", "format": "table" }],
@@ -323,10 +239,10 @@
         "defaults": { "color": { "mode": "palette-classic" }, "custom": { "axisBorderShow": false, "axisCenteredZero": false, "axisColorMode": "text", "axisLabel": "", "axisPlacement": "auto", "barAlignment": 0, "drawStyle": "bars", "fillOpacity": 80, "gradientMode": "none", "hideFrom": { "legend": false, "tooltip": false, "viz": false }, "insertNulls": false, "lineInterpolation": "linear", "lineWidth": 1, "pointSize": 5, "scaleDistribution": { "type": "linear" }, "showPoints": "auto", "spanNulls": false, "stacking": { "group": "A", "mode": "normal" }, "thresholdsStyle": { "mode": "off" } }, "mappings": [], "thresholds": { "mode": "absolute", "steps": [{ "color": "green", "value": null }] } },
         "overrides": []
       },
-      "gridPos": { "h": 8, "w": 24, "x": 0, "y": 49 },
+      "gridPos": { "h": 8, "w": 24, "x": 0, "y": 26 },
       "id": 14,
       "options": { "legend": { "calcs": [], "displayMode": "list", "placement": "bottom", "showLegend": true }, "tooltip": { "mode": "single", "sort": "none" } },
-      "targets": [{ "datasource": { "type": "postgres", "uid": "postgresql" }, "rawQuery": true, "rawSql": "SELECT date_trunc('day', created_at) as time, call_function as metric, COUNT(*) as value FROM extrinsics WHERE call_function IN ('register_network', 'dissolve_network', 'schedule_coldkey_swap', 'swap_coldkey', 'root_register', 'vote') AND created_at >= NOW() - INTERVAL '30 days' GROUP BY 1, 2 ORDER BY 1", "refId": "A", "format": "time_series" }],
+      "targets": [{ "datasource": { "type": "postgres", "uid": "postgresql" }, "rawQuery": true, "rawSql": "SELECT date_trunc('day', created_at) as time, call_function as metric, COUNT(*) as value FROM extrinsics WHERE call_function IN ('register_network_with_identity', 'dissolve_network', 'schedule_coldkey_swap', 'swap_coldkey', 'root_register', 'vote') AND created_at >= NOW() - INTERVAL '30 days' GROUP BY 1, 2 ORDER BY 1", "refId": "A", "format": "time_series" }],
       "title": "Governance Operations Over Time",
       "type": "timeseries"
     },
@@ -336,16 +252,171 @@
         "defaults": { "color": { "mode": "thresholds" }, "custom": { "align": "auto", "cellOptions": { "type": "auto" }, "inspect": false }, "mappings": [], "thresholds": { "mode": "absolute", "steps": [{ "color": "green", "value": null }] } },
         "overrides": [{ "matcher": { "id": "byName", "options": "success" }, "properties": [{ "id": "mappings", "value": [{ "options": { "true": { "color": "green", "index": 0, "text": "Success" }, "false": { "color": "red", "index": 1, "text": "Failed" } }, "type": "value" }] }, { "id": "custom.cellOptions", "value": { "type": "color-background" } }] }, { "matcher": { "id": "byName", "options": "address" }, "properties": [{ "id": "custom.width", "value": 150 }, { "id": "custom.cellOptions", "value": { "type": "auto" } }, { "id": "custom.inspect", "value": true }] }, { "matcher": { "id": "byName", "options": "call_args" }, "properties": [{ "id": "custom.width", "value": 300 }, { "id": "custom.inspect", "value": true }] }]
       },
-      "gridPos": { "h": 10, "w": 24, "x": 0, "y": 57 },
+      "gridPos": { "h": 10, "w": 24, "x": 0, "y": 34 },
       "id": 17,
       "options": { "cellHeight": "sm", "footer": { "countRows": false, "fields": "", "reducer": ["sum"], "show": false }, "showHeader": true },
-      "targets": [{ "datasource": { "type": "postgres", "uid": "postgresql" }, "rawQuery": true, "rawSql": "SELECT created_at as time, call_module, call_function, call_args, address, block_number, success FROM extrinsics WHERE call_function IN ('register_network', 'dissolve_network', 'schedule_coldkey_swap', 'swap_coldkey', 'root_register', 'vote') OR call_module = 'Sudo' ORDER BY created_at DESC LIMIT 50", "refId": "A", "format": "table" }],
+      "targets": [{ "datasource": { "type": "postgres", "uid": "postgresql" }, "rawQuery": true, "rawSql": "SELECT created_at as time, call_module, call_function, call_args, address, block_number, success FROM extrinsics WHERE call_function IN ('register_network_with_identity', 'dissolve_network', 'schedule_coldkey_swap', 'swap_coldkey', 'root_register', 'vote') OR call_module = 'Sudo' ORDER BY created_at DESC LIMIT 50", "refId": "A", "format": "table" }],
       "title": "Recent Governance & Sudo Operations",
       "type": "table"
     },
     {
       "collapsed": false,
+      "gridPos": { "h": 1, "w": 24, "x": 0, "y": 44 },
+      "id": 103,
+      "panels": [],
+      "title": "Generic Extrinsics",
+      "type": "row"
+    },
+    {
+      "datasource": { "type": "postgres", "uid": "postgresql" },
+      "fieldConfig": { "defaults": { "color": { "mode": "thresholds" }, "mappings": [], "thresholds": { "mode": "absolute", "steps": [{ "color": "green", "value": null }] } }, "overrides": [] },
+      "gridPos": { "h": 4, "w": 8, "x": 0, "y": 45 },
+      "id": 20,
+      "options": { "colorMode": "value", "graphMode": "area", "justifyMode": "auto", "orientation": "auto", "reduceOptions": { "calcs": ["lastNotNull"], "fields": "", "values": false }, "textMode": "auto" },
+      "targets": [{ "datasource": { "type": "postgres", "uid": "postgresql" }, "rawQuery": true, "rawSql": "SELECT COUNT(*) as value FROM extrinsics WHERE call_function = 'register_network_with_identity'", "refId": "A", "format": "table" }],
+      "title": "Total Registrations",
+      "type": "stat"
+    },
+    {
+      "datasource": { "type": "postgres", "uid": "postgresql" },
+      "fieldConfig": { "defaults": { "color": { "mode": "thresholds" }, "mappings": [], "thresholds": { "mode": "absolute", "steps": [{ "color": "orange", "value": null }] } }, "overrides": [] },
+      "gridPos": { "h": 4, "w": 8, "x": 8, "y": 45 },
+      "id": 21,
+      "options": { "colorMode": "value", "graphMode": "area", "justifyMode": "auto", "orientation": "auto", "reduceOptions": { "calcs": ["lastNotNull"], "fields": "", "values": false }, "textMode": "auto" },
+      "targets": [{ "datasource": { "type": "postgres", "uid": "postgresql" }, "rawQuery": true, "rawSql": "SELECT COUNT(*) as value FROM extrinsics WHERE call_function = 'register_network_with_identity' AND created_at >= NOW() - INTERVAL '24 hours'", "refId": "A", "format": "table" }],
+      "title": "Registrations (24h)",
+      "type": "stat"
+    },
+    {
+      "datasource": { "type": "postgres", "uid": "postgresql" },
+      "fieldConfig": { "defaults": { "color": { "mode": "thresholds" }, "mappings": [], "thresholds": { "mode": "absolute", "steps": [{ "color": "yellow", "value": null }] } }, "overrides": [] },
+      "gridPos": { "h": 4, "w": 8, "x": 16, "y": 45 },
+      "id": 22,
+      "options": { "colorMode": "value", "graphMode": "area", "justifyMode": "auto", "orientation": "auto", "reduceOptions": { "calcs": ["lastNotNull"], "fields": "", "values": false }, "textMode": "auto" },
+      "targets": [{ "datasource": { "type": "postgres", "uid": "postgresql" }, "rawQuery": true, "rawSql": "SELECT COUNT(*) as value FROM extrinsics WHERE call_function = 'register_network_with_identity' AND created_at >= NOW() - INTERVAL '7 days'", "refId": "A", "format": "table" }],
+      "title": "Registrations (7d)",
+      "type": "stat"
+    },
+    {
+      "datasource": { "type": "postgres", "uid": "postgresql" },
+      "fieldConfig": {
+        "defaults": {
+          "color": { "mode": "palette-classic" },
+          "custom": { "axisBorderShow": false, "axisCenteredZero": false, "axisColorMode": "text", "axisLabel": "", "axisPlacement": "auto", "barAlignment": 0, "drawStyle": "line", "fillOpacity": 30, "gradientMode": "none", "hideFrom": { "legend": false, "tooltip": false, "viz": false }, "insertNulls": false, "lineInterpolation": "smooth", "lineWidth": 2, "pointSize": 5, "scaleDistribution": { "type": "linear" }, "showPoints": "never", "spanNulls": false, "stacking": { "group": "A", "mode": "none" }, "thresholdsStyle": { "mode": "off" } },
+          "mappings": [],
+          "thresholds": { "mode": "absolute", "steps": [{ "color": "green", "value": null }] }
+        },
+        "overrides": []
+      },
+      "gridPos": { "h": 8, "w": 24, "x": 0, "y": 49 },
+      "id": 23,
+      "options": { "legend": { "calcs": ["sum"], "displayMode": "table", "placement": "right", "showLegend": true }, "tooltip": { "mode": "multi", "sort": "desc" } },
+      "targets": [
+        { "datasource": { "type": "postgres", "uid": "postgresql" }, "rawQuery": true, "rawSql": "SELECT date_trunc('day', created_at) as time, 'register_network_with_identity' as metric, COUNT(*) as value FROM extrinsics WHERE call_function = 'register_network_with_identity' AND created_at >= NOW() - INTERVAL '30 days' GROUP BY 1 ORDER BY 1", "refId": "A", "format": "time_series" }
+      ],
+      "title": "Registrations Over Time",
+      "type": "timeseries"
+    },
+    {
+      "datasource": { "type": "postgres", "uid": "postgresql" },
+      "fieldConfig": {
+        "defaults": { "color": { "mode": "thresholds" }, "custom": { "align": "auto", "cellOptions": { "type": "auto" }, "inspect": false }, "mappings": [], "thresholds": { "mode": "absolute", "steps": [{ "color": "green", "value": null }] } },
+        "overrides": [{ "matcher": { "id": "byName", "options": "success" }, "properties": [{ "id": "mappings", "value": [{ "options": { "true": { "color": "green", "index": 0, "text": "Success" }, "false": { "color": "red", "index": 1, "text": "Failed" } }, "type": "value" }] }, { "id": "custom.cellOptions", "value": { "type": "color-background" } }] }, { "matcher": { "id": "byName", "options": "address" }, "properties": [{ "id": "custom.width", "value": 150 }, { "id": "custom.cellOptions", "value": { "type": "auto" } }, { "id": "custom.inspect", "value": true }] }, { "matcher": { "id": "byName", "options": "call_args" }, "properties": [{ "id": "custom.width", "value": 300 }, { "id": "custom.inspect", "value": true }] }]
+      },
+      "gridPos": { "h": 10, "w": 24, "x": 0, "y": 57 },
+      "id": 24,
+      "options": { "cellHeight": "sm", "footer": { "countRows": false, "fields": "", "reducer": ["sum"], "show": false }, "showHeader": true },
+      "targets": [{ "datasource": { "type": "postgres", "uid": "postgresql" }, "rawQuery": true, "rawSql": "SELECT created_at as time, call_function, call_args, address, block_number, success FROM extrinsics WHERE call_function = 'register_network_with_identity' ORDER BY created_at DESC LIMIT 50", "refId": "A", "format": "table" }],
+      "title": "Recent Register Network with Identity Extrinsics",
+      "type": "table"
+    },
+    {
+      "collapsed": false,
       "gridPos": { "h": 1, "w": 24, "x": 0, "y": 67 },
+      "id": 100,
+      "panels": [],
+      "title": "Sudo Calls",
+      "type": "row"
+    },
+    {
+      "datasource": { "type": "postgres", "uid": "postgresql" },
+      "fieldConfig": { "defaults": { "color": { "mode": "thresholds" }, "mappings": [], "thresholds": { "mode": "absolute", "steps": [{ "color": "red", "value": null }] } }, "overrides": [] },
+      "gridPos": { "h": 4, "w": 6, "x": 0, "y": 68 },
+      "id": 1,
+      "options": { "colorMode": "value", "graphMode": "area", "justifyMode": "auto", "orientation": "auto", "reduceOptions": { "calcs": ["lastNotNull"], "fields": "", "values": false }, "textMode": "auto" },
+      "targets": [{ "datasource": { "type": "postgres", "uid": "postgresql" }, "rawQuery": true, "rawSql": "SELECT COUNT(*) as value FROM extrinsics WHERE call_module = 'Sudo'", "refId": "A", "format": "table" }],
+      "title": "Total Sudo Calls",
+      "type": "stat"
+    },
+    {
+      "datasource": { "type": "postgres", "uid": "postgresql" },
+      "fieldConfig": { "defaults": { "color": { "mode": "thresholds" }, "mappings": [], "thresholds": { "mode": "absolute", "steps": [{ "color": "orange", "value": null }] } }, "overrides": [] },
+      "gridPos": { "h": 4, "w": 6, "x": 6, "y": 68 },
+      "id": 2,
+      "options": { "colorMode": "value", "graphMode": "area", "justifyMode": "auto", "orientation": "auto", "reduceOptions": { "calcs": ["lastNotNull"], "fields": "", "values": false }, "textMode": "auto" },
+      "targets": [{ "datasource": { "type": "postgres", "uid": "postgresql" }, "rawQuery": true, "rawSql": "SELECT COUNT(*) as value FROM extrinsics WHERE call_module = 'Sudo' AND created_at >= NOW() - INTERVAL '24 hours'", "refId": "A", "format": "table" }],
+      "title": "Sudo (24h)",
+      "type": "stat"
+    },
+    {
+      "datasource": { "type": "postgres", "uid": "postgresql" },
+      "fieldConfig": { "defaults": { "color": { "mode": "thresholds" }, "mappings": [], "thresholds": { "mode": "absolute", "steps": [{ "color": "yellow", "value": null }] } }, "overrides": [] },
+      "gridPos": { "h": 4, "w": 6, "x": 12, "y": 68 },
+      "id": 3,
+      "options": { "colorMode": "value", "graphMode": "area", "justifyMode": "auto", "orientation": "auto", "reduceOptions": { "calcs": ["lastNotNull"], "fields": "", "values": false }, "textMode": "auto" },
+      "targets": [{ "datasource": { "type": "postgres", "uid": "postgresql" }, "rawQuery": true, "rawSql": "SELECT COUNT(*) as value FROM extrinsics WHERE call_module = 'Sudo' AND created_at >= NOW() - INTERVAL '7 days'", "refId": "A", "format": "table" }],
+      "title": "Sudo (7d)",
+      "type": "stat"
+    },
+    {
+      "datasource": { "type": "postgres", "uid": "postgresql" },
+      "fieldConfig": { "defaults": { "color": { "mode": "thresholds" }, "mappings": [], "thresholds": { "mode": "absolute", "steps": [{ "color": "blue", "value": null }] } }, "overrides": [] },
+      "gridPos": { "h": 4, "w": 6, "x": 18, "y": 68 },
+      "id": 4,
+      "options": { "colorMode": "value", "graphMode": "area", "justifyMode": "auto", "orientation": "auto", "reduceOptions": { "calcs": ["lastNotNull"], "fields": "", "values": false }, "textMode": "auto" },
+      "targets": [{ "datasource": { "type": "postgres", "uid": "postgresql" }, "rawQuery": true, "rawSql": "SELECT COUNT(DISTINCT call_function) as value FROM extrinsics WHERE call_module = 'Sudo'", "refId": "A", "format": "table" }],
+      "title": "Unique Sudo Functions",
+      "type": "stat"
+    },
+    {
+      "datasource": { "type": "postgres", "uid": "postgresql" },
+      "fieldConfig": {
+        "defaults": { "color": { "mode": "palette-classic" }, "custom": { "axisBorderShow": false, "axisCenteredZero": false, "axisColorMode": "text", "axisLabel": "", "axisPlacement": "auto", "barAlignment": 0, "drawStyle": "bars", "fillOpacity": 80, "gradientMode": "none", "hideFrom": { "legend": false, "tooltip": false, "viz": false }, "insertNulls": false, "lineInterpolation": "linear", "lineWidth": 1, "pointSize": 5, "scaleDistribution": { "type": "linear" }, "showPoints": "auto", "spanNulls": false, "stacking": { "group": "A", "mode": "normal" }, "thresholdsStyle": { "mode": "off" } }, "mappings": [], "thresholds": { "mode": "absolute", "steps": [{ "color": "green", "value": null }] } },
+        "overrides": []
+      },
+      "gridPos": { "h": 8, "w": 16, "x": 0, "y": 72 },
+      "id": 5,
+      "options": { "legend": { "calcs": [], "displayMode": "list", "placement": "bottom", "showLegend": true }, "tooltip": { "mode": "single", "sort": "none" } },
+      "targets": [{ "datasource": { "type": "postgres", "uid": "postgresql" }, "rawQuery": true, "rawSql": "SELECT date_trunc('day', created_at) as time, call_function as metric, COUNT(*) as value FROM extrinsics WHERE call_module = 'Sudo' AND created_at >= NOW() - INTERVAL '30 days' GROUP BY 1, 2 ORDER BY 1", "refId": "A", "format": "time_series" }],
+      "title": "Sudo Calls Over Time",
+      "type": "timeseries"
+    },
+    {
+      "datasource": { "type": "postgres", "uid": "postgresql" },
+      "fieldConfig": { "defaults": { "color": { "mode": "palette-classic" }, "custom": { "hideFrom": { "legend": false, "tooltip": false, "viz": false } }, "mappings": [] }, "overrides": [] },
+      "gridPos": { "h": 8, "w": 8, "x": 16, "y": 72 },
+      "id": 6,
+      "options": { "legend": { "displayMode": "list", "placement": "right", "showLegend": true }, "pieType": "pie", "reduceOptions": { "calcs": ["lastNotNull"], "fields": "/^value$/", "values": true }, "tooltip": { "mode": "single", "sort": "none" }, "displayLabels": ["name", "value"] },
+      "targets": [{ "datasource": { "type": "postgres", "uid": "postgresql" }, "rawQuery": true, "rawSql": "SELECT call_function as metric, COUNT(*) as value FROM extrinsics WHERE call_module = 'Sudo' GROUP BY call_function ORDER BY value DESC LIMIT 10", "refId": "A", "format": "table" }],
+      "title": "Sudo Calls by Function",
+      "type": "piechart"
+    },
+    {
+      "datasource": { "type": "postgres", "uid": "postgresql" },
+      "fieldConfig": {
+        "defaults": { "color": { "mode": "thresholds" }, "custom": { "align": "auto", "cellOptions": { "type": "auto" }, "inspect": false }, "mappings": [], "thresholds": { "mode": "absolute", "steps": [{ "color": "green", "value": null }] } },
+        "overrides": [{ "matcher": { "id": "byName", "options": "success" }, "properties": [{ "id": "mappings", "value": [{ "options": { "true": { "color": "green", "index": 0, "text": "Success" }, "false": { "color": "red", "index": 1, "text": "Failed" } }, "type": "value" }] }, { "id": "custom.cellOptions", "value": { "type": "color-background" } }] }, { "matcher": { "id": "byName", "options": "address" }, "properties": [{ "id": "custom.width", "value": 150 }, { "id": "custom.cellOptions", "value": { "type": "auto" } }, { "id": "custom.inspect", "value": true }] }, { "matcher": { "id": "byName", "options": "call_args" }, "properties": [{ "id": "custom.width", "value": 300 }, { "id": "custom.inspect", "value": true }] }]
+      },
+      "gridPos": { "h": 10, "w": 24, "x": 0, "y": 80 },
+      "id": 9,
+      "options": { "cellHeight": "sm", "footer": { "countRows": false, "fields": "", "reducer": ["sum"], "show": false }, "showHeader": true },
+      "targets": [{ "datasource": { "type": "postgres", "uid": "postgresql" }, "rawQuery": true, "rawSql": "SELECT created_at as time, call_function, call_args, address, block_number, success FROM extrinsics WHERE call_module = 'Sudo' ORDER BY created_at DESC LIMIT 50", "refId": "A", "format": "table" }],
+      "title": "Recent Sudo Calls",
+      "type": "table"
+    },
+    {
+      "collapsed": false,
+      "gridPos": { "h": 1, "w": 24, "x": 0, "y": 90 },
       "id": 102,
       "panels": [],
       "title": "Top Functions Analysis",
@@ -357,7 +428,7 @@
         "defaults": { "color": { "mode": "thresholds" }, "custom": { "align": "auto", "cellOptions": { "type": "auto" }, "inspect": false }, "mappings": [], "thresholds": { "mode": "absolute", "steps": [{ "color": "green", "value": null }] } },
         "overrides": [{ "matcher": { "id": "byName", "options": "count" }, "properties": [{ "id": "custom.cellOptions", "value": { "mode": "gradient", "type": "gauge" } }] }]
       },
-      "gridPos": { "h": 10, "w": 12, "x": 0, "y": 68 },
+      "gridPos": { "h": 10, "w": 12, "x": 0, "y": 91 },
       "id": 18,
       "options": { "cellHeight": "sm", "footer": { "countRows": false, "fields": "", "reducer": ["sum"], "show": true }, "showHeader": true, "sortBy": [{ "desc": true, "displayName": "count" }] },
       "targets": [{ "datasource": { "type": "postgres", "uid": "postgresql" }, "rawQuery": true, "rawSql": "SELECT call_module, call_function, COUNT(*) as count, ROUND(100.0 * SUM(CASE WHEN success THEN 1 ELSE 0 END) / COUNT(*), 1) as success_rate FROM extrinsics GROUP BY call_module, call_function ORDER BY count DESC LIMIT 25", "refId": "A", "format": "table" }],
@@ -370,7 +441,7 @@
         "defaults": { "color": { "mode": "thresholds" }, "custom": { "align": "auto", "cellOptions": { "type": "auto" }, "inspect": false }, "mappings": [], "thresholds": { "mode": "absolute", "steps": [{ "color": "green", "value": null }] } },
         "overrides": [{ "matcher": { "id": "byName", "options": "failure_count" }, "properties": [{ "id": "color", "value": { "fixedColor": "red", "mode": "fixed" } }, { "id": "custom.cellOptions", "value": { "mode": "gradient", "type": "gauge" } }] }]
       },
-      "gridPos": { "h": 10, "w": 12, "x": 12, "y": 68 },
+      "gridPos": { "h": 10, "w": 12, "x": 12, "y": 91 },
       "id": 19,
       "options": { "cellHeight": "sm", "footer": { "countRows": false, "fields": "", "reducer": ["sum"], "show": true }, "showHeader": true, "sortBy": [{ "desc": true, "displayName": "failure_count" }] },
       "targets": [{ "datasource": { "type": "postgres", "uid": "postgresql" }, "rawQuery": true, "rawSql": "SELECT call_module, call_function, COUNT(*) FILTER (WHERE NOT success) as failure_count, ROUND(100.0 * COUNT(*) FILTER (WHERE NOT success) / NULLIF(COUNT(*), 0), 1) as failure_rate FROM extrinsics WHERE created_at >= NOW() - INTERVAL '7 days' GROUP BY call_module, call_function HAVING COUNT(*) FILTER (WHERE NOT success) > 0 ORDER BY failure_count DESC LIMIT 20", "refId": "A", "format": "table" }],

@@ -63,16 +63,17 @@ def format_extrinsic_message(extrinsic: dict[str, Any]) -> dict[str, Any]:
     tao_stats_link = f"https://taostats.io/extrinsic/{block_number}-{extrinsic_index_formatted}?network=finney"
 
     # Determine alert title
-    if call_module == "Sudo":
-        title = "Sudo Extrinsic Detected"
-    elif call_module == "AdminUtils":
-        title = "AdminUtils Extrinsic Detected"
-    elif call_function == "register_network":
-        title = "Subnet Registration Detected"
-    elif call_function in ("schedule_coldkey_swap", "swap_coldkey"):
-        title = "Coldkey Swap Detected"
-    else:
-        title = "Chain Event Detected"
+    module_titles = {
+        "Sudo": "Sudo Extrinsic Detected",
+        "AdminUtils": "AdminUtils Extrinsic Detected",
+    }
+    function_titles = {
+        "register_network_with_identity": "Subnet Registration Detected",
+        "schedule_coldkey_swap": "Coldkey Swap Detected",
+        "swap_coldkey": "Coldkey Swap Detected",
+    }
+
+    title = module_titles.get(call_module) or function_titles.get(call_function, "Chain Event Detected")
 
     color = 0x00FF00 if success else 0xFF0000  # Green for success, red for failure
 
