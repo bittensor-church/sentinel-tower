@@ -41,11 +41,11 @@ uv run manage.py block_tasks_v1
 
 **Sentinel mode**
 
-The block scheduler supports three modes controlled by `SENTINEL_MODE` environment variable:
+The block scheduler supports four modes controlled by `SENTINEL_MODE` environment variable:
 
 ### Live mode (default)
 
-Runs the block scheduler in live mode, processing new blocks as they appear on the chain.
+Runs the block scheduler in live mode, processing new blocks as they appear on the chain. This is the default mode used in production for real-time monitoring.
 
 ```bash
 SENTINEL_MODE=live  # or omit (default)
@@ -53,7 +53,7 @@ SENTINEL_MODE=live  # or omit (default)
 
 ### Backfill mode
 
-Backfills historical blocks sequentially with rate limiting.
+Legacy sequential backfill. Processes historical blocks one-by-one with rate limiting. Uses `backfill_blocks_v1` management command which performs full metagraph dumps per block.
 
 ```bash
 SENTINEL_MODE=backfill
@@ -69,7 +69,7 @@ BACKFILL_RATE_LIMIT=0.5          # Seconds between blocks (default: 1.0)
 
 ### Fast backfill mode
 
-Fast backfilling using Celery for parallel processing. Recommended for large block ranges.
+Synchronous lite APY-only backfill. Processes epoch-start blocks directly in the management command using a single WebSocket connection. Uses `--lite` mode (excludes weights/bonds). Good for smaller ranges or debugging.
 
 ```bash
 SENTINEL_MODE=fast_backfill
@@ -82,12 +82,28 @@ BITTENSOR_ARCHIVE_NETWORK=wss://archive.node.url  # Archive node URI
 # Optional
 NETUID=1                         # Specific subnet (default: all configured netuids)
 BACKFILL_STEP=1                  # Block step size (default: 1)
-BACKFILL_BATCH_SIZE=10           # Blocks per Celery task (default: 10)
-BACKFILL_BATCH_DELAY=1.0         # Seconds between batch spawns (default: 1.0)
-STORE_ARTIFACT=false             # Store JSONL artifacts (default: false)
 ```
 
-Fast backfill uses batch processing - each Celery task processes multiple blocks using a single WebSocket connection, significantly reducing connection overhead. Monitor progress with:
+### APY backfill mode
+
+Same underlying command as `fast_backfill` but tuned for high-throughput APY backfilling with larger batch sizes and shorter delays between dispatches. Use this when you need to backfill APY data across large block ranges as fast as possible.
+
+```bash
+SENTINEL_MODE=apy_backfill
+
+# Required
+BLOCK_START=1000000              # Starting block number
+BLOCK_END=2000000                # Ending block number
+BITTENSOR_ARCHIVE_NETWORK=wss://archive.node.url  # Archive node URI
+
+# Optional
+NETUID=1                         # Specific subnet (default: all configured netuids)
+BACKFILL_STEP=1                  # Block step size (default: 1)
+BACKFILL_BATCH_SIZE=50           # Blocks per Celery task (default: 50)
+BACKFILL_BATCH_DELAY=0.5         # Seconds between batch spawns (default: 0.5)
+```
+
+Monitor backfill progress with:
 
 ```bash
 celery -A project inspect active

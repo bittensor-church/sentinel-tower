@@ -234,7 +234,12 @@ class Command(BaseCommand):
 
         total_blocks = (to_block - from_block) // step + 1
         self.stdout.write(f"Fast backfill: blocks {from_block} -> {to_block} (step={step}, total={total_blocks})")
-        self.stdout.write(f"Network: {network}, Subnets: {netuids}, Lite: {lite}")
+        self.stdout.write(f"  Network: {network}")
+        self.stdout.write(f"  Subnets: {netuids}")
+        self.stdout.write(f"  Lite: {lite}")
+        self.stdout.write(f"  Async: {use_async}")
+        if use_async:
+            self.stdout.write(f"  Batch size: {batch_size}, Batch delay: {batch_delay}s")
 
         if dry_run:
             self.stdout.write(self.style.WARNING("\n=== DRY RUN - No data will be stored ===\n"))
@@ -310,11 +315,10 @@ class Command(BaseCommand):
         tasks: list[tuple[int, int]] = []
         for netuid in netuids:
             dumpable_blocks = _get_epoch_start_blocks_in_range(from_block, to_block, netuid)
-            self.stdout.write(f"  Netuid {netuid}: {len(dumpable_blocks)} dumpable blocks")
             tasks.extend((block_num, netuid) for block_num in dumpable_blocks[::step])
 
         total_tasks = len(tasks)
-        self.stdout.write(f"Total tasks: {total_tasks}")
+        self.stdout.write(f"Total dumpable blocks: {total_tasks} across {len(netuids)} subnets")
         self.stdout.write(f"Connecting to {network}...")
 
         processed = 0
@@ -403,17 +407,16 @@ class Command(BaseCommand):
         """Dispatch Celery batch tasks for parallel processing."""
         from apps.metagraph.tasks import fast_apy_sync_batch  # type: ignore[attr-defined]
 
-        self.stdout.write(f"Calculating dumpable blocks (batch_size={batch_size}, batch_delay={batch_delay}s)...")
+        self.stdout.write("Calculating dumpable blocks...")
 
         # Build list of (block, netuid) pairs to process
         all_blocks: list[tuple[int, int]] = []
         for netuid in netuids:
             dumpable_blocks = _get_epoch_start_blocks_in_range(from_block, to_block, netuid)
-            self.stdout.write(f"  Netuid {netuid}: {len(dumpable_blocks)} dumpable blocks")
             all_blocks.extend((block_num, netuid) for block_num in dumpable_blocks[::step])
 
         total_blocks = len(all_blocks)
-        self.stdout.write(f"Total blocks: {total_blocks}")
+        self.stdout.write(f"Total dumpable blocks: {total_blocks} across {len(netuids)} subnets")
 
         # Split into batches for batch task processing
         batches = [all_blocks[i : i + batch_size] for i in range(0, len(all_blocks), batch_size)]

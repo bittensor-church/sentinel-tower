@@ -306,7 +306,8 @@
               { "id": "unit", "value": "percent" }
             ]
           },
-          { "matcher": { "id": "byName", "options": "subnet" }, "properties": [{ "id": "custom.width", "value": 80 }] },
+          { "matcher": { "id": "byName", "options": "subnet" }, "properties": [{ "id": "custom.width", "value": 70 }] },
+          { "matcher": { "id": "byName", "options": "subnet_name" }, "properties": [{ "id": "custom.width", "value": 200 }] },
           { "matcher": { "id": "byName", "options": "synced" }, "properties": [{ "id": "custom.width", "value": 100 }] },
           { "matcher": { "id": "byName", "options": "expected" }, "properties": [{ "id": "custom.width", "value": 100 }] },
           { "matcher": { "id": "byName", "options": "remaining" }, "properties": [{ "id": "custom.width", "value": 100 }] },
@@ -322,7 +323,7 @@
       "targets": [{
         "datasource": { "type": "postgres", "uid": "postgresql" },
         "rawQuery": true,
-        "rawSql": "SELECT d.netuid AS subnet, COUNT(*) FILTER (WHERE d.finished_at IS NOT NULL) AS synced, FLOOR((${to_block}::float - ${from_block}::float) / (${tempo} + 1))::int AS expected, GREATEST(FLOOR((${to_block}::float - ${from_block}::float) / (${tempo} + 1))::int - COUNT(*) FILTER (WHERE d.finished_at IS NOT NULL)::int, 0) AS remaining, ROUND((LEAST(COUNT(*) FILTER (WHERE d.finished_at IS NOT NULL)::numeric / NULLIF(FLOOR((${to_block}::numeric - ${from_block}::numeric) / (${tempo} + 1)), 0) * 100, 100))::numeric, 1) AS completion_pct, EXTRACT(EPOCH FROM MAX(d.finished_at)) * 1000 AS last_synced_at FROM metagraph_dump d GROUP BY d.netuid ORDER BY d.netuid",
+        "rawSql": "SELECT s.netuid AS subnet, s.netuid || ' - ' || COALESCE(s.name, '') AS subnet_name, COUNT(d.id) FILTER (WHERE d.finished_at IS NOT NULL) AS synced, FLOOR((${to_block}::float - ${from_block}::float) / (${tempo} + 1))::int AS expected, GREATEST(FLOOR((${to_block}::float - ${from_block}::float) / (${tempo} + 1))::int - COUNT(d.id) FILTER (WHERE d.finished_at IS NOT NULL)::int, 0) AS remaining, ROUND((LEAST(COUNT(d.id) FILTER (WHERE d.finished_at IS NOT NULL)::numeric / NULLIF(FLOOR((${to_block}::numeric - ${from_block}::numeric) / (${tempo} + 1)), 0) * 100, 100))::numeric, 1) AS completion_pct, EXTRACT(EPOCH FROM MAX(d.finished_at)) * 1000 AS last_synced_at FROM metagraph_subnet s LEFT JOIN metagraph_dump d ON d.netuid = s.netuid GROUP BY s.netuid, s.name ORDER BY s.netuid",
         "refId": "A",
         "format": "table"
       }],
@@ -426,7 +427,7 @@
       "targets": [{
         "datasource": { "type": "postgres", "uid": "postgresql" },
         "rawQuery": true,
-        "rawSql": "SELECT d.netuid AS subnet, b.number AS block, d.epoch_position, d.created_at, d.started_at, d.finished_at, ROUND(EXTRACT(EPOCH FROM (d.finished_at - d.started_at)), 1) AS duration_sec, CASE WHEN d.finished_at IS NOT NULL THEN 'Completed' WHEN d.started_at IS NOT NULL THEN 'In Progress' ELSE 'Pending' END AS status FROM metagraph_dump d JOIN metagraph_block b ON d.block_id = b.number WHERE d.created_at BETWEEN '${__from:date}' AND '${__to:date}' ORDER BY d.created_at DESC LIMIT 100",
+        "rawSql": "SELECT d.netuid AS subnet, b.number AS block, d.epoch_position, d.created_at, d.started_at, d.finished_at, ROUND(EXTRACT(EPOCH FROM (d.finished_at - d.started_at)), 1) AS duration_sec, CASE WHEN d.finished_at IS NOT NULL THEN 'Completed' WHEN d.started_at IS NOT NULL THEN 'In Progress' ELSE 'Pending' END AS status FROM metagraph_dump d JOIN metagraph_block b ON d.block_id = b.number ORDER BY d.created_at DESC LIMIT 100",
         "refId": "A",
         "format": "table"
       }],

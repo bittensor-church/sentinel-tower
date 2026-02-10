@@ -71,10 +71,7 @@ case "$SENTINEL_MODE" in
             --to-block="$BLOCK_END" \
             --network="$BITTENSOR_ARCHIVE_NETWORK" \
             --step="$BACKFILL_STEP" \
-            --batch-size="$BACKFILL_BATCH_SIZE" \
-            --batch-delay="$BACKFILL_BATCH_DELAY" \
             --lite \
-            --async \
             $EXTRA_ARGS
         ;;
     apy_backfill)

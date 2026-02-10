@@ -352,7 +352,9 @@ def fast_apy_sync_batch(
 
     try:
         # Create a single subtensor connection for all blocks (with retry for transient failures)
+        t_connect = time.time()
         subtensor = _create_subtensor_with_retry(network=network)
+        connect_time = time.time() - t_connect
 
         # Reuse sync service for caching benefits across blocks
         sync_service = APYSyncService()
@@ -409,9 +411,10 @@ def fast_apy_sync_batch(
                     "Batch APY: processed block",
                     block_number=block_number,
                     netuid=netuid,
+                    connect_time=round(connect_time, 2),
                     fetch_time=round(fetch_time, 2),
                     sync_time=round(sync_time, 2),
-                    block_time=round(block_time, 2),
+                    total_time=round(block_time, 2),
                     snapshots=stats["snapshots"],
                 )
 
