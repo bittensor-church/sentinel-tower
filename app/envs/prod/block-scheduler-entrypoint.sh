@@ -3,7 +3,7 @@ set -eu
 
 # Block Scheduler Entrypoint
 # Runs based on SENTINEL_MODE environment variable:
-#   - live: Real-time block processing (block_tasks_v1)
+#   - live: Real-time block processing (block_scheduler)
 #   - backfill: Legacy full metagraph backfill (backfill_blocks_v1)
 #   - fast_backfill: Fast APY-only backfill with single tasks (fast_backfill)
 #   - apy_backfill: Fast APY-only backfill with batch tasks (fast_backfill --async)
@@ -13,7 +13,7 @@ SENTINEL_MODE="${SENTINEL_MODE:-live}"
 case "$SENTINEL_MODE" in
     live)
         echo "Starting block scheduler in LIVE mode..."
-        exec nice python manage.py block_tasks_v1
+        exec nice python manage.py block_scheduler
         ;;
     backfill)
         if [ -z "${BLOCK_START:-}" ] || [ -z "${BLOCK_END:-}" ]; then

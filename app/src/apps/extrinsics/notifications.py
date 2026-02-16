@@ -13,6 +13,42 @@ MAX_CALL_ARGS_LENGTH = 1000
 MAX_LIST_ITEMS_DISPLAY = 3
 
 
+def _unwrap_sudo_call(extrinsic: dict[str, Any]) -> dict[str, Any]:
+    """Unwrap a Sudo extrinsic to extract the inner call details.
+
+    Returns a dict with inner call's module, function, args, and netuid.
+    If the extrinsic is not a Sudo wrapper, returns the extrinsic as-is.
+    """
+    call_module = extrinsic.get("call_module", "")
+    call_function = extrinsic.get("call_function", "")
+
+    if call_module != "Sudo" or call_function != "sudo":
+        return extrinsic
+
+    call_args = extrinsic.get("call_args", [])
+    for arg in call_args:
+        if arg.get("name") == "call" and isinstance(arg.get("value"), dict):
+            inner = arg["value"]
+            inner_args = inner.get("call_args", [])
+            # Extract netuid from inner call args
+            netuid = extrinsic.get("netuid")
+            if netuid is None:
+                for inner_arg in inner_args:
+                    if inner_arg.get("name") == "netuid":
+                        netuid = inner_arg.get("value")
+                        break
+            return {
+                **extrinsic,
+                "call_module": inner.get("call_module", call_module),
+                "call_function": inner.get("call_function", call_function),
+                "call_args": inner_args,
+                "netuid": netuid,
+                "_is_sudo": True,
+            }
+
+    return extrinsic
+
+
 def _format_call_args(call_args: list[dict[str, Any]] | None) -> str:
     """Format call arguments for display, truncating long values."""
     if not call_args:
@@ -68,9 +104,11 @@ def format_extrinsic_message(extrinsic: dict[str, Any]) -> dict[str, Any]:
         "AdminUtils": "AdminUtils Extrinsic Detected",
     }
     function_titles = {
+        "register_network": "Subnet Registration Detected",
         "register_network_with_identity": "Subnet Registration Detected",
         "schedule_coldkey_swap": "Coldkey Swap Detected",
         "swap_coldkey": "Coldkey Swap Detected",
+        "dissolve_network": "Subnet Dissolution Detected",
     }
 
     title = module_titles.get(call_module) or function_titles.get(call_function, "Chain Event Detected")
@@ -171,40 +209,87 @@ def notify_matching_extrinsics(extrinsics: list[dict[str, Any]]) -> int:
     return notified
 
 
+def _format_value(value: Any) -> str:
+    """Format a value for display, truncating long lists."""
+    if value is None:
+        return "N/A"
+    if isinstance(value, list) and len(value) > MAX_LIST_ITEMS_DISPLAY:
+        return f"[{len(value)} items]"
+    return str(value)
+
+
+def _decode_hex_field(value: Any) -> str:
+    """Decode a hex-encoded bytes field (e.g. SubnetIdentityV3 Vec<u8> fields)."""
+    if not isinstance(value, str):
+        return str(value) if value else ""
+    try:
+        text = value.removeprefix("0x")
+        return bytes.fromhex(text).decode("utf-8", errors="replace").strip("\x00")
+    except (ValueError, UnicodeDecodeError):
+        return value
+
+
 def _format_extrinsic_line(extrinsic: dict[str, Any]) -> str:
-    """Format a single extrinsic as a text line with old → new value format."""
+    """Format a single extrinsic as a text line.
+
+    AdminUtils hyperparam changes use old → new format.
+    Other extrinsics show the function name with key parameters.
+    """
+    call_module = extrinsic.get("call_module", "")
+    call_args = extrinsic.get("call_args", [])
     previous_values = extrinsic.get("previous_values", {})
 
-    # Get the new value from call_args (skip netuid)
-    call_args = extrinsic.get("call_args", [])
-    new_value = None
-    param_name = None
+    # AdminUtils hyperparam changes: show old → new format
+    if call_module == "AdminUtils":
+        new_value = None
+        param_name = None
+        for arg in call_args:
+            name = arg.get("name", "")
+            if name == "netuid":
+                continue
+            new_value = arg.get("value")
+            param_name = name
+            break
+
+        old_value = previous_values.get(param_name) if param_name and previous_values else None
+        old_display = _format_value(old_value)
+        new_display = _format_value(new_value)
+        return f"**{param_name}**: `{old_display}` → `{new_display}`"
+
+    call_function = extrinsic.get("call_function", "unknown")
+
+    # Subnet registration: show full details with decoded identity
+    if call_function in ("register_network", "register_network_with_identity"):
+        address = extrinsic.get("address", "N/A")
+        extrinsic_hash = extrinsic.get("extrinsic_hash", "N/A")
+        lines = [f"`{call_function}`"]
+        lines.append(f"**signer**: `{address}`")
+        for arg in call_args:
+            name = arg.get("name", "")
+            if name == "netuid":
+                continue
+            value = arg.get("value")
+            if name == "identity" and isinstance(value, dict):
+                for field_name, field_value in value.items():
+                    decoded = _decode_hex_field(field_value)
+                    if decoded:
+                        lines.append(f"**{field_name}**: {decoded}")
+            else:
+                lines.append(f"**{name}**: `{_format_value(value)}`")
+        lines.append(f"**hash**: `{extrinsic_hash}`")
+        return "\n".join(lines)
+
+    # Generic format: show function and key parameters
+    params = []
     for arg in call_args:
         name = arg.get("name", "")
         if name == "netuid":
             continue
-        new_value = arg.get("value")
-        param_name = name
-        break
+        params.append(f"**{name}**: `{_format_value(arg.get('value'))}`")
 
-    # Format value for display
-    def format_value(value: Any) -> str:
-        if value is None:
-            return "N/A"
-        if isinstance(value, str) and len(value) > MIN_LENGTH_FOR_TRUNCATION:
-            return f"{value[:8]}...{value[-6:]}"
-        if isinstance(value, list) and len(value) > MAX_LIST_ITEMS_DISPLAY:
-            return f"[{len(value)} items]"
-        return str(value)
-
-    # Get previous value from enriched data
-    old_value = previous_values.get(param_name) if param_name and previous_values else None
-
-    old_display = format_value(old_value)
-    new_display = format_value(new_value)
-
-    # Format: **hyperparam_name**: `prev_value` → `new_value`
-    return f"**{param_name}**: `{old_display}` → `{new_display}`"
+    if params:
+        return f"`{call_function}` — " + ", ".join(params)
+    return f"`{call_function}`"
 
 
 def _group_by_netuid(extrinsics: list[dict[str, Any]]) -> dict[int | None, list[dict[str, Any]]]:
@@ -228,10 +313,13 @@ def format_block_notification(extrinsics: list[dict[str, Any]]) -> dict[str, Any
     extrinsic_index_formatted = f"{extrinsic_index:04d}" if isinstance(extrinsic_index, int) else "0000"
     taostats_link = f"https://taostats.io/extrinsic/{block_number}-{extrinsic_index_formatted}?network=finney"
 
+    # Unwrap Sudo calls so inner call details are used for grouping and display
+    unwrapped = [_unwrap_sudo_call(ext) for ext in extrinsics]
+
     lines = [f"**Block #{block_number}**", ""]
 
     # Group extrinsics by subnet
-    netuid_groups = _group_by_netuid(extrinsics)
+    netuid_groups = _group_by_netuid(unwrapped)
     for netuid in sorted(netuid_groups.keys(), key=lambda x: (x is None, x)):
         if netuid is None:
             lines.append("**Global**")
@@ -257,10 +345,20 @@ def _group_extrinsics_by_webhook(extrinsics: list[dict[str, Any]]) -> dict[str, 
         if not extrinsic.get("success", False):
             continue
 
-        call_module = extrinsic.get("call_module", "")
-        call_function = extrinsic.get("call_function", "")
+        # Unwrap Sudo calls so inner call matches specific webhook configs first
+        unwrapped = _unwrap_sudo_call(extrinsic)
+        call_module = unwrapped.get("call_module", "")
+        call_function = unwrapped.get("call_function", "")
 
-        if not (config := get_alert_config(call_module, call_function)):
+        config = get_alert_config(call_module, call_function)
+        # If no specific match for inner call, fall back to original (e.g. Sudo catch-all)
+        if not config and unwrapped.get("_is_sudo"):
+            config = get_alert_config(
+                extrinsic.get("call_module", ""),
+                extrinsic.get("call_function", ""),
+            )
+
+        if not config:
             continue
 
         if not (webhook_url := config.get_webhook_url()):

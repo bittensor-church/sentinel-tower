@@ -186,3 +186,12 @@ my_storage = get_storage("my-storage")
 | `aws_region`            | No       | 
 | `aws_access_key_id`     | No       | 
 | `aws_secret_access_key` | No       |
+
+
+### Run whole stack locally
+
+```bash
+$ docker run --rm -p 9944:9944 ghcr.io/opentensor/subtensor:latest-local  \
+    --dev --rpc-external --rpc-methods=unsafe --rpc-cors=all --rpc-port=9944 \
+    --one --unsafe-force-node-key-generation
+```

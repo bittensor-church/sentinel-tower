@@ -79,6 +79,16 @@ class Subnet(models.Model):
         related_name="owned_subnets",
     )
     registered_at = models.DateTimeField(null=True, blank=True)
+    alpha_out_emission = models.DecimalField(
+        max_digits=30,
+        decimal_places=0,
+        default=0,
+        help_text="Alpha emission per block in rao",
+    )
+    owner_cut = models.FloatField(
+        default=0.09,
+        help_text="Subnet owner cut fraction (0-1)",
+    )
 
     class Meta:
         db_table = "metagraph_subnet"
@@ -155,6 +165,16 @@ class NeuronSnapshot(models.Model):
         decimal_places=0,
         default=0,
         help_text="Emissions in rao",
+    )
+    alpha_stake = models.DecimalField(
+        max_digits=30,
+        decimal_places=0,
+        default=0,
+        help_text="Alpha stake in rao",
+    )
+    dividend_apy = models.FloatField(
+        default=0.0,
+        help_text="Dividend-based APY percentage, computed at sync time",
     )
     is_active = models.BooleanField(default=False)
     is_validator = models.BooleanField(default=False)

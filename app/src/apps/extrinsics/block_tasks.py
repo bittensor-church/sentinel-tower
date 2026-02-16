@@ -34,13 +34,24 @@ def _parse_extrinsic_record(record: dict) -> dict | None:
     call_data = record.get("call", {})
     call_args_list = call_data.get("call_args", [])
 
-    # Extract netuid from record or call_args
+    # Extract netuid from record, call_args, or events (for register_network)
     netuid = record.get("netuid")
     if netuid is None:
         for arg in call_args_list:
             if arg.get("name") == "netuid":
                 netuid = arg.get("value")
                 break
+    if netuid is None:
+        call_function = call_data.get("call_function", "")
+        if call_function in ("register_network", "register_network_with_identity"):
+            for event in record.get("events", []):
+                if event.get("event_id") == "NetworkAdded":
+                    attrs = event.get("attributes")
+                    if isinstance(attrs, dict):
+                        netuid = attrs.get("netuid")
+                    elif isinstance(attrs, (list, tuple)) and attrs:
+                        netuid = attrs[0]
+                    break
 
     # Determine success from status
     status = record.get("status", "")

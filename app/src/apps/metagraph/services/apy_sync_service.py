@@ -8,6 +8,7 @@ from datetime import datetime
 from decimal import Decimal
 
 import structlog
+from django.conf import settings
 from django.db import transaction
 from django.utils import timezone
 
@@ -27,6 +28,9 @@ logger = structlog.get_logger()
 # Conversion factor from TAO to rao (1 TAO = 10^9 rao)
 TAO_TO_RAO = 10**9
 
+# Blocks per year: 31,557,600 seconds/year / 12 seconds/block
+BLOCKS_PER_YEAR = 2_629_800
+
 
 @dataclass
 class DumpMetadata:
@@ -43,6 +47,47 @@ def _to_rao(tao_value: float | None) -> int:
     if tao_value is None:
         return 0
     return int(Decimal(str(tao_value)) * TAO_TO_RAO)
+
+
+def _compute_dividend_apy(
+    dividend: float,
+    alpha_out_emission: float,
+    alpha_stake: float,
+    owner_cut: float,
+) -> float:
+    """
+    Compute dividend-based APY for a validator.
+
+    Formula (tempo cancels out in annualization):
+        APY = dividend_share * alpha_out_emission * (1 - owner_cut) * 0.5
+              * BLOCKS_PER_YEAR / alpha_stake * 100
+
+    All emission and stake values are in TAO (floats from bittensor SDK).
+
+    Args:
+        dividend: Normalized dividend share (0-1) or raw u16 (0-65535)
+        alpha_out_emission: Alpha emission per block in TAO
+        alpha_stake: Validator's alpha stake in TAO
+        owner_cut: Subnet owner cut fraction (0-1)
+
+    Returns:
+        APY as a percentage (e.g. 15.5 means 15.5%)
+    """
+    if alpha_stake <= 0 or alpha_out_emission <= 0 or dividend <= 0:
+        return 0.0
+
+    # bittensor SDK may return dividends as normalized (0-1) or raw u16 (0-65535)
+    dividend_share = dividend / 65535 if dividend > 1 else dividend
+
+    return (
+        dividend_share
+        * alpha_out_emission
+        * (1.0 - owner_cut)
+        * 0.5
+        * BLOCKS_PER_YEAR
+        / alpha_stake
+        * 100
+    )
 
 
 class APYSyncService:
@@ -94,12 +139,16 @@ class APYSyncService:
 
         netuid = metagraph.netuid
 
+        # Extract subnet-level emission data for APY calculation
+        alpha_out_emission = self._get_alpha_out_emission(metagraph)
+        owner_cut = settings.SUBNET_OWNER_CUT
+
         with transaction.atomic():
             # 1. Sync block
             block = self._sync_block(block_number, block_timestamp, dump_metadata)
 
-            # 2. Sync subnet
-            subnet = self._sync_subnet(netuid)
+            # 2. Sync subnet (including emission params)
+            subnet = self._sync_subnet(netuid, alpha_out_emission=alpha_out_emission)
 
             # 3. Sync neurons and snapshots
             n_neurons = metagraph.n.item() if hasattr(metagraph.n, "item") else len(metagraph.uids)
@@ -112,6 +161,11 @@ class APYSyncService:
                 # Get stake and emission values
                 stake = float(metagraph.stake[i])
                 emission = float(metagraph.emission[i])
+
+                # Get alpha stake for dividend APY
+                alpha_stake = (
+                    float(metagraph.alpha_stake[i]) if hasattr(metagraph, "alpha_stake") else 0.0
+                )
 
                 # Determine if validator (has validator_permit)
                 is_validator = (
@@ -131,6 +185,14 @@ class APYSyncService:
                 dividend = float(metagraph.dividends[i]) if hasattr(metagraph, "dividends") else 0.0
                 incentive = float(metagraph.incentive[i]) if hasattr(metagraph, "incentive") else 0.0
 
+                # Compute dividend-based APY
+                dividend_apy = _compute_dividend_apy(
+                    dividend=dividend,
+                    alpha_out_emission=alpha_out_emission,
+                    alpha_stake=alpha_stake,
+                    owner_cut=owner_cut,
+                )
+
                 # Sync coldkey/hotkey
                 self._get_or_create_coldkey(coldkey_str)
                 stats["coldkeys"] += 1
@@ -149,6 +211,8 @@ class APYSyncService:
                     uid=uid,
                     total_stake=stake,
                     emissions=emission,
+                    alpha_stake=alpha_stake,
+                    dividend_apy=dividend_apy,
                     is_validator=is_validator,
                     trust=trust,
                     rank=rank,
@@ -242,12 +306,25 @@ class APYSyncService:
 
         return block
 
-    def _sync_subnet(self, netuid: int) -> Subnet:
-        """Sync a Subnet record."""
-        subnet, _ = Subnet.objects.get_or_create(
+    @staticmethod
+    def _get_alpha_out_emission(metagraph) -> float:
+        """Extract alpha_out_emission from metagraph (TAO per block)."""
+        if hasattr(metagraph, "emissions") and hasattr(metagraph.emissions, "alpha_out_emission"):
+            return float(metagraph.emissions.alpha_out_emission)
+        return 0.0
+
+    def _sync_subnet(self, netuid: int, alpha_out_emission: float = 0.0) -> Subnet:
+        """Sync a Subnet record with emission parameters."""
+        subnet, created = Subnet.objects.get_or_create(
             netuid=netuid,
-            defaults={"name": f"Subnet {netuid}"},
+            defaults={
+                "name": f"Subnet {netuid}",
+                "alpha_out_emission": _to_rao(alpha_out_emission),
+            },
         )
+        if not created and alpha_out_emission > 0:
+            subnet.alpha_out_emission = _to_rao(alpha_out_emission)
+            subnet.save(update_fields=["alpha_out_emission"])
         return subnet
 
     def _sync_neuron(self, hotkey: Hotkey, subnet: Subnet, uid: int) -> Neuron:
@@ -277,6 +354,8 @@ class APYSyncService:
         total_stake: float,
         emissions: float,
         is_validator: bool,
+        alpha_stake: float = 0.0,
+        dividend_apy: float = 0.0,
         trust: float = 0.0,
         rank: float = 0.0,
         is_active: bool = True,
@@ -289,6 +368,8 @@ class APYSyncService:
                 "uid": uid,
                 "total_stake": _to_rao(total_stake),
                 "emissions": _to_rao(emissions),
+                "alpha_stake": _to_rao(alpha_stake),
+                "dividend_apy": dividend_apy,
                 "is_validator": is_validator,
                 "trust": trust,
                 "rank": rank,

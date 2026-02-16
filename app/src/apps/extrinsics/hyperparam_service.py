@@ -111,18 +111,43 @@ def update_hyperparam(
     return previous_value
 
 
+def _unwrap_sudo_call(extrinsic: dict[str, Any]) -> tuple[str, str, list, int | None]:
+    """Extract inner call details from a Sudo-wrapped extrinsic.
+
+    Returns (call_module, call_function, call_args, netuid).
+    For non-Sudo extrinsics, returns the extrinsic's own values.
+    """
+    call_module = extrinsic.get("call_module", "")
+    call_function = extrinsic.get("call_function", "")
+    call_args = extrinsic.get("call_args", [])
+    netuid = extrinsic.get("netuid")
+
+    if call_module == "Sudo" and call_function == "sudo":
+        for arg in call_args:
+            if arg.get("name") == "call" and isinstance(arg.get("value"), dict):
+                inner = arg["value"]
+                inner_args = inner.get("call_args", [])
+                if netuid is None:
+                    for inner_arg in inner_args:
+                        if inner_arg.get("name") == "netuid":
+                            netuid = inner_arg.get("value")
+                            break
+                return inner.get("call_module", ""), inner.get("call_function", ""), inner_args, netuid
+
+    return call_module, call_function, call_args, netuid
+
+
 def enrich_extrinsic_with_previous_values(extrinsic: dict[str, Any]) -> dict[str, Any]:
     """
     Enrich an extrinsic with previous hyperparam values.
 
-    For AdminUtils extrinsics that change hyperparams, adds a 'previous_values'
-    dict mapping param names to their previous values.
+    For AdminUtils extrinsics (including Sudo-wrapped ones) that change
+    hyperparams, adds a 'previous_values' dict mapping param names to
+    their previous values.
 
     Also updates the stored hyperparam values.
     """
-    call_module = extrinsic.get("call_module", "")
-    call_function = extrinsic.get("call_function", "")
-    netuid = extrinsic.get("netuid")
+    call_module, call_function, call_args, netuid = _unwrap_sudo_call(extrinsic)
     block_number = extrinsic.get("block_number", 0)
     success = extrinsic.get("success", False)
 
@@ -135,7 +160,6 @@ def enrich_extrinsic_with_previous_values(extrinsic: dict[str, Any]) -> dict[str
         return extrinsic
 
     # Get the new value from call_args
-    call_args = extrinsic.get("call_args", [])
     new_value = None
     for arg in call_args:
         # Skip netuid arg

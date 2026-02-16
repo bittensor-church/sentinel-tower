@@ -357,6 +357,33 @@
           {
             "matcher": {
               "id": "byName",
+              "options": "alpha_stake_tao"
+            },
+            "properties": [
+              {
+                "id": "unit",
+                "value": "none"
+              },
+              {
+                "id": "decimals",
+                "value": 2
+              },
+              {
+                "id": "displayName",
+                "value": "Alpha Stake"
+              },
+              {
+                "id": "custom.cellOptions",
+                "value": {
+                  "mode": "gradient",
+                  "type": "gauge"
+                }
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
               "options": "stake_tao"
             },
             "properties": [
@@ -370,14 +397,7 @@
               },
               {
                 "id": "displayName",
-                "value": "Stake"
-              },
-              {
-                "id": "custom.cellOptions",
-                "value": {
-                  "mode": "gradient",
-                  "type": "gauge"
-                }
+                "value": "Total Stake"
               }
             ]
           },
@@ -496,7 +516,7 @@
         "sortBy": [
           {
             "desc": true,
-            "displayName": "Stake"
+            "displayName": "Alpha Stake"
           }
         ]
       },
@@ -510,7 +530,7 @@
           "editorMode": "code",
           "format": "table",
           "rawQuery": true,
-          "rawSql": "WITH time_boundaries AS (\n    SELECT\n        $__timeTo()::timestamp AS end_time,\n        $__timeTo()::timestamp - INTERVAL '1 hour' AS start_1h,\n        $__timeTo()::timestamp - INTERVAL '1 day' AS start_1d,\n        $__timeTo()::timestamp - INTERVAL '1 week' AS start_1w,\n        $__timeTo()::timestamp - INTERVAL '1 month' AS start_1m\n),\nlatest_snapshot AS (\n    SELECT DISTINCT ON (n.id)\n        n.id AS neuron_id,\n        n.subnet_id,\n        h.hotkey,\n        COALESCE(NULLIF(h.label, ''), LEFT(h.hotkey, 8) || '...') AS validator_name,\n        ns.total_stake / 1e9 AS stake_tao,\n        ns.is_validator\n    FROM metagraph_neuron n\n    JOIN metagraph_hotkey h ON n.hotkey_id = h.id\n    JOIN metagraph_neuron_snapshot ns ON ns.neuron_id = n.id\n    JOIN metagraph_block b ON ns.block_id = b.number\n    WHERE n.subnet_id = ${subnet}\n      AND ns.is_validator = true\n      AND b.timestamp <= (SELECT end_time FROM time_boundaries)\n    ORDER BY n.id, b.timestamp DESC\n),\nemissions_1h AS (\n    SELECT\n        n.id AS neuron_id,\n        SUM(ns.emissions) AS total_emissions,\n        AVG(ns.total_stake) AS avg_stake\n    FROM metagraph_neuron n\n    JOIN metagraph_neuron_snapshot ns ON ns.neuron_id = n.id\n    JOIN metagraph_block b ON ns.block_id = b.number\n    WHERE n.subnet_id = ${subnet}\n      AND ns.is_validator = true\n      AND b.timestamp BETWEEN (SELECT start_1h FROM time_boundaries) AND (SELECT end_time FROM time_boundaries)\n    GROUP BY n.id\n),\nemissions_1d AS (\n    SELECT\n        n.id AS neuron_id,\n        SUM(ns.emissions) AS total_emissions,\n        AVG(ns.total_stake) AS avg_stake\n    FROM metagraph_neuron n\n    JOIN metagraph_neuron_snapshot ns ON ns.neuron_id = n.id\n    JOIN metagraph_block b ON ns.block_id = b.number\n    WHERE n.subnet_id = ${subnet}\n      AND ns.is_validator = true\n      AND b.timestamp BETWEEN (SELECT start_1d FROM time_boundaries) AND (SELECT end_time FROM time_boundaries)\n    GROUP BY n.id\n),\nemissions_1w AS (\n    SELECT\n        n.id AS neuron_id,\n        SUM(ns.emissions) AS total_emissions,\n        AVG(ns.total_stake) AS avg_stake\n    FROM metagraph_neuron n\n    JOIN metagraph_neuron_snapshot ns ON ns.neuron_id = n.id\n    JOIN metagraph_block b ON ns.block_id = b.number\n    WHERE n.subnet_id = ${subnet}\n      AND ns.is_validator = true\n      AND b.timestamp BETWEEN (SELECT start_1w FROM time_boundaries) AND (SELECT end_time FROM time_boundaries)\n    GROUP BY n.id\n),\nemissions_1m AS (\n    SELECT\n        n.id AS neuron_id,\n        SUM(ns.emissions) AS total_emissions,\n        AVG(ns.total_stake) AS avg_stake\n    FROM metagraph_neuron n\n    JOIN metagraph_neuron_snapshot ns ON ns.neuron_id = n.id\n    JOIN metagraph_block b ON ns.block_id = b.number\n    WHERE n.subnet_id = ${subnet}\n      AND ns.is_validator = true\n      AND b.timestamp BETWEEN (SELECT start_1m FROM time_boundaries) AND (SELECT end_time FROM time_boundaries)\n    GROUP BY n.id\n)\nSELECT\n    ls.validator_name,\n    ls.stake_tao,\n    CASE WHEN e1h.avg_stake > 0 THEN (e1h.total_emissions::numeric / e1h.avg_stake) * 24 * 365 * 100 ELSE 0 END AS apy_1h,\n    CASE WHEN e1d.avg_stake > 0 THEN (e1d.total_emissions::numeric / e1d.avg_stake) * 365 * 100 ELSE 0 END AS apy_1d,\n    CASE WHEN e1w.avg_stake > 0 THEN (e1w.total_emissions::numeric / e1w.avg_stake) * 52 * 100 ELSE 0 END AS apy_1w,\n    CASE WHEN e1m.avg_stake > 0 THEN (e1m.total_emissions::numeric / e1m.avg_stake) * 12 * 100 ELSE 0 END AS apy_1m\nFROM latest_snapshot ls\nLEFT JOIN emissions_1h e1h ON ls.neuron_id = e1h.neuron_id\nLEFT JOIN emissions_1d e1d ON ls.neuron_id = e1d.neuron_id\nLEFT JOIN emissions_1w e1w ON ls.neuron_id = e1w.neuron_id\nLEFT JOIN emissions_1m e1m ON ls.neuron_id = e1m.neuron_id\nWHERE ls.stake_tao > 0\nORDER BY ls.stake_tao DESC",
+          "rawSql": "WITH time_boundaries AS (\n    SELECT\n        $__timeTo()::timestamp AS end_time,\n        $__timeTo()::timestamp - INTERVAL '1 hour' AS start_1h,\n        $__timeTo()::timestamp - INTERVAL '1 day' AS start_1d,\n        $__timeTo()::timestamp - INTERVAL '1 week' AS start_1w,\n        $__timeTo()::timestamp - INTERVAL '1 month' AS start_1m\n),\nlatest_snapshot AS (\n    SELECT DISTINCT ON (n.id)\n        n.id AS neuron_id,\n        n.subnet_id,\n        h.hotkey,\n        COALESCE(NULLIF(h.label, ''), LEFT(h.hotkey, 8) || '...') AS validator_name,\n        ns.alpha_stake / 1e9 AS alpha_stake_tao,\n        ns.total_stake / 1e9 AS stake_tao,\n        ns.is_validator\n    FROM metagraph_neuron n\n    JOIN metagraph_hotkey h ON n.hotkey_id = h.id\n    JOIN metagraph_neuron_snapshot ns ON ns.neuron_id = n.id\n    JOIN metagraph_block b ON ns.block_id = b.number\n    WHERE n.subnet_id = ${subnet}\n      AND ns.is_validator = true\n      AND b.timestamp <= (SELECT end_time FROM time_boundaries)\n    ORDER BY n.id, b.timestamp DESC\n),\napy_1h AS (\n    SELECT\n        n.id AS neuron_id,\n        AVG(ns.dividend_apy) AS avg_apy\n    FROM metagraph_neuron n\n    JOIN metagraph_neuron_snapshot ns ON ns.neuron_id = n.id\n    JOIN metagraph_block b ON ns.block_id = b.number\n    WHERE n.subnet_id = ${subnet}\n      AND ns.is_validator = true\n      AND b.timestamp BETWEEN (SELECT start_1h FROM time_boundaries) AND (SELECT end_time FROM time_boundaries)\n    GROUP BY n.id\n),\napy_1d AS (\n    SELECT\n        n.id AS neuron_id,\n        AVG(ns.dividend_apy) AS avg_apy\n    FROM metagraph_neuron n\n    JOIN metagraph_neuron_snapshot ns ON ns.neuron_id = n.id\n    JOIN metagraph_block b ON ns.block_id = b.number\n    WHERE n.subnet_id = ${subnet}\n      AND ns.is_validator = true\n      AND b.timestamp BETWEEN (SELECT start_1d FROM time_boundaries) AND (SELECT end_time FROM time_boundaries)\n    GROUP BY n.id\n),\napy_1w AS (\n    SELECT\n        n.id AS neuron_id,\n        AVG(ns.dividend_apy) AS avg_apy\n    FROM metagraph_neuron n\n    JOIN metagraph_neuron_snapshot ns ON ns.neuron_id = n.id\n    JOIN metagraph_block b ON ns.block_id = b.number\n    WHERE n.subnet_id = ${subnet}\n      AND ns.is_validator = true\n      AND b.timestamp BETWEEN (SELECT start_1w FROM time_boundaries) AND (SELECT end_time FROM time_boundaries)\n    GROUP BY n.id\n),\napy_1m AS (\n    SELECT\n        n.id AS neuron_id,\n        AVG(ns.dividend_apy) AS avg_apy\n    FROM metagraph_neuron n\n    JOIN metagraph_neuron_snapshot ns ON ns.neuron_id = n.id\n    JOIN metagraph_block b ON ns.block_id = b.number\n    WHERE n.subnet_id = ${subnet}\n      AND ns.is_validator = true\n      AND b.timestamp BETWEEN (SELECT start_1m FROM time_boundaries) AND (SELECT end_time FROM time_boundaries)\n    GROUP BY n.id\n)\nSELECT\n    ls.validator_name,\n    ls.alpha_stake_tao,\n    ls.stake_tao,\n    COALESCE(a1h.avg_apy, 0) AS apy_1h,\n    COALESCE(a1d.avg_apy, 0) AS apy_1d,\n    COALESCE(a1w.avg_apy, 0) AS apy_1w,\n    COALESCE(a1m.avg_apy, 0) AS apy_1m\nFROM latest_snapshot ls\nLEFT JOIN apy_1h a1h ON ls.neuron_id = a1h.neuron_id\nLEFT JOIN apy_1d a1d ON ls.neuron_id = a1d.neuron_id\nLEFT JOIN apy_1w a1w ON ls.neuron_id = a1w.neuron_id\nLEFT JOIN apy_1m a1m ON ls.neuron_id = a1m.neuron_id\nWHERE ls.stake_tao > 0\nORDER BY ls.alpha_stake_tao DESC",
           "refId": "A"
         }
       ],

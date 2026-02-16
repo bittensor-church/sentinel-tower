@@ -58,6 +58,26 @@
           {
             "matcher": {
               "id": "byName",
+              "options": "alpha_stake_tao"
+            },
+            "properties": [
+              {
+                "id": "unit",
+                "value": "none"
+              },
+              {
+                "id": "decimals",
+                "value": 2
+              },
+              {
+                "id": "displayName",
+                "value": "Alpha Stake"
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
               "options": "stake_tao"
             },
             "properties": [
@@ -108,7 +128,7 @@
           "editorMode": "code",
           "format": "table",
           "rawQuery": true,
-          "rawSql": "WITH ranked AS (\n    SELECT\n        netuid,\n        subnet_name,\n        hotkey,\n        week_start,\n        weekly_apy,\n        emissions_tao,\n        stake_tao,\n        snapshot_count,\n        ROW_NUMBER() OVER (PARTITION BY netuid, week_start ORDER BY weekly_apy DESC) AS rank\n    FROM mv_validator_weekly_apy\n    WHERE week_start >= $__timeFrom()::timestamp\n      AND week_start <= $__timeTo()::timestamp\n      AND weekly_apy > 0\n)\nSELECT\n    week_start,\n    netuid,\n    subnet_name,\n    hotkey,\n    weekly_apy,\n    emissions_tao,\n    stake_tao,\n    snapshot_count,\n    rank\nFROM ranked\nWHERE rank <= $top_n\nORDER BY week_start DESC, weekly_apy DESC",
+          "rawSql": "WITH ranked AS (\n    SELECT\n        netuid,\n        subnet_name,\n        hotkey,\n        week_start,\n        weekly_apy,\n        emissions_tao,\n        alpha_stake_tao,\n        stake_tao,\n        snapshot_count,\n        ROW_NUMBER() OVER (PARTITION BY netuid, week_start ORDER BY weekly_apy DESC) AS rank\n    FROM mv_validator_weekly_apy\n    WHERE week_start >= $__timeFrom()::timestamp\n      AND week_start <= $__timeTo()::timestamp\n      AND weekly_apy > 0\n)\nSELECT\n    week_start,\n    netuid,\n    subnet_name,\n    hotkey,\n    weekly_apy,\n    emissions_tao,\n    alpha_stake_tao,\n    stake_tao,\n    snapshot_count,\n    rank\nFROM ranked\nWHERE rank <= $top_n\nORDER BY week_start DESC, weekly_apy DESC",
           "refId": "A",
           "sql": {
             "columns": [

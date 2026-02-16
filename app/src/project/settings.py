@@ -397,7 +397,7 @@ if SENTRY_DSN is not None and isinstance(SENTRY_DSN, str) and SENTRY_DSN.strip()
 
 
 # Abstract Block Dumper specific settings
-BITTENSOR_NETWORK = "finney"  # Options: 'finney', 'local', 'testnet', 'mainnet'
+BITTENSOR_NETWORK = env.str("BITTENSOR_NETWORK", default="finney")
 BLOCK_DUMPER_START_FROM_BLOCK = "current"  # Options: None, 'current', or int
 BLOCK_DUMPER_POLL_INTERVAL = 5  # seconds between polling for new blocks
 BLOCK_DUMPER_REALTIME_HEAD_ONLY = True  # Only process current head block, no catch-up
@@ -416,6 +416,8 @@ TEMPO = 360  # Number of blocks per epoch
 NUM_BLOCK_DUMPS_PER_EPOCH = 3  # Number of block dumps to take per epoch
 # Metagraph mode: False = full (includes weights/bonds), True = lite (excludes weights/bonds)
 METAGRAPH_LITE = env.bool("METAGRAPH_LITE", default=False)
+# Subnet owner cut fraction (0-1) applied to alpha emissions before miner/validator split
+SUBNET_OWNER_CUT = float(os.getenv("SUBNET_OWNER_CUT", "0.09"))
 
 
 _DISABLED_WEBHOOK_PATTERNS = ("disabled", "https://discord.com/api/webhooks/0/disabled")
@@ -433,7 +435,7 @@ class AlertConfig:
 
     call_pattern: str
     env_var: str
-    success_only: bool = False
+    success_only: bool = True
 
     def matches(self, call_module: str, call_function: str) -> bool:
         """Check if this config matches the given module/function."""
@@ -451,11 +453,14 @@ class AlertConfig:
 
 
 DISCORD_ALERT_CONFIGS: list[AlertConfig] = [
-    AlertConfig("Sudo", "DISCORD_SUDO_ALERTS_WEBHOOK_URL", success_only=True),
     AlertConfig("AdminUtils", "DISCORD_ADMIN_UTILS_ALERTS_WEBHOOK_URL"),
+    AlertConfig("SubtensorModule:register_network", "DISCORD_SUBNET_REGISTRATION_WEBHOOK_URL"),
     AlertConfig("SubtensorModule:register_network_with_identity", "DISCORD_SUBNET_REGISTRATION_WEBHOOK_URL"),
     AlertConfig("SubtensorModule:schedule_coldkey_swap", "DISCORD_COLDKEY_SWAP_WEBHOOK_URL"),
     AlertConfig("SubtensorModule:swap_coldkey", "DISCORD_COLDKEY_SWAP_WEBHOOK_URL"),
+    AlertConfig("SubtensorModule:dissolve_network", "DISCORD_SUBNET_REGISTRATION_WEBHOOK_URL"),
+    # Sudo catch-all must be last so specific patterns above take priority
+    AlertConfig("Sudo", "DISCORD_SUDO_ALERTS_WEBHOOK_URL"),
 ]
 
 # sentinel storage configuration. each entry requires 'BACKEND_NAME' and 'OPTIONS'.

@@ -60,10 +60,8 @@ class Command(BaseCommand):
                 "address": "5FHneW46xGXgs5mUiveU4sbTyGBzmstUspZC92UhjJM694ty",
                 "extrinsic_hash": "0x9876543210fedcba9876543210fedcba9876543210fedcba9876543210fedcba",
                 "success": True,
-                "netuid": 42,
                 "call_args": [
-                    {"name": "immunity_period", "value": 5000},
-                    {"name": "netuid", "value": 42},
+                    {"name": "hotkey", "value": "5GrwvaEF5zXb26Fz9rcQpDWS57CtERHpNehXCPcNoHGKutQY"},
                 ],
             },
             "coldkey_swap": {
