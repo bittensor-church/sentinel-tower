@@ -6,7 +6,6 @@ mv_validator_weekly_apy materialized view to use pre-computed
 dividend_apy instead of the old emissions-based formula.
 """
 
-import django.db.models
 from django.db import migrations, models
 
 

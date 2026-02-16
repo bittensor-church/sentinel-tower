@@ -11,9 +11,7 @@ import time
 
 from async_substrate_interface import SubstrateInterface
 from bittensor import Keypair
-from django.conf import settings
 from django.core.management.base import BaseCommand
-
 
 DEFAULT_URL = "ws://127.0.0.1:9944"
 
@@ -175,7 +173,11 @@ class Command(BaseCommand):
         """Submit a dissolve_network call via Sudo for the previously registered subnet."""
         netuid = self._registered_netuid
         if netuid is None:
-            self.stdout.write(self.style.WARNING("  No netuid to dissolve (use --netuid or run with --type=all to register first), skipping"))
+            self.stdout.write(
+                self.style.WARNING(
+                    "  No netuid to dissolve (use --netuid or run with --type=all to register first), skipping"
+                )
+            )
             return
 
         inner_call = substrate.compose_call(

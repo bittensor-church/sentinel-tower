@@ -79,15 +79,7 @@ def _compute_dividend_apy(
     # bittensor SDK may return dividends as normalized (0-1) or raw u16 (0-65535)
     dividend_share = dividend / 65535 if dividend > 1 else dividend
 
-    return (
-        dividend_share
-        * alpha_out_emission
-        * (1.0 - owner_cut)
-        * 0.5
-        * BLOCKS_PER_YEAR
-        / alpha_stake
-        * 100
-    )
+    return dividend_share * alpha_out_emission * (1.0 - owner_cut) * 0.5 * BLOCKS_PER_YEAR / alpha_stake * 100
 
 
 class APYSyncService:
@@ -163,9 +155,7 @@ class APYSyncService:
                 emission = float(metagraph.emission[i])
 
                 # Get alpha stake for dividend APY
-                alpha_stake = (
-                    float(metagraph.alpha_stake[i]) if hasattr(metagraph, "alpha_stake") else 0.0
-                )
+                alpha_stake = float(metagraph.alpha_stake[i]) if hasattr(metagraph, "alpha_stake") else 0.0
 
                 # Determine if validator (has validator_permit)
                 is_validator = (

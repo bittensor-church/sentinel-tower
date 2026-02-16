@@ -45,9 +45,16 @@ SECONDS_PER_BLOCK = 12
 
 # CSV column headers
 CSV_HEADERS = [
-    "block", "timestamp", "netuid", "hotkey",
-    "alpha_earned", "alpha_staked", "tempo",
-    "moving_price", "dividend_share", "is_legacy",
+    "block",
+    "timestamp",
+    "netuid",
+    "hotkey",
+    "alpha_earned",
+    "alpha_staked",
+    "tempo",
+    "moving_price",
+    "dividend_share",
+    "is_legacy",
 ]
 
 
@@ -63,7 +70,10 @@ def compute_epoch_blocks(netuid: int, tempo: int, start: int, end: int) -> list[
 
 
 def _detect_api_boundary(
-    subtensor: bt.Subtensor, netuid: int, start_block: int, end_block: int,
+    subtensor: bt.Subtensor,
+    netuid: int,
+    start_block: int,
+    end_block: int,
 ) -> int | None:
     """Binary search for the first block where getMetagraph/getSelectiveMetagraph works.
 
@@ -87,7 +97,7 @@ def _detect_api_boundary(
             # Modern API available at start — entire range is modern
             return None
     except (ValueError, Exception):
-        pass
+        logger.debug("Modern API not available at start_block", block=start_block, netuid=netuid)
 
     # Binary search between start_block and end_block
     lo, hi = start_block, end_block
@@ -139,11 +149,20 @@ def _process_modern_epoch(writer, info, block_num: int, netuid: int) -> int:
         if alpha_earned_rao == 0 and alpha_staked_rao == 0:
             continue
 
-        writer.writerow([
-            block_num, timestamp, netuid, hotkey,
-            alpha_earned_rao, alpha_staked_rao,
-            epoch_tempo, moving_price, dividend_share, False,
-        ])
+        writer.writerow(
+            [
+                block_num,
+                timestamp,
+                netuid,
+                hotkey,
+                alpha_earned_rao,
+                alpha_staked_rao,
+                epoch_tempo,
+                moving_price,
+                dividend_share,
+                False,
+            ]
+        )
         records += 1
 
     return records
@@ -186,11 +205,20 @@ def _process_legacy_epoch(writer, neurons, block_num: int, netuid: int) -> int:
         if alpha_earned_rao == 0 and alpha_staked_rao == 0:
             continue
 
-        writer.writerow([
-            block_num, timestamp, netuid, neuron.hotkey,
-            alpha_earned_rao, alpha_staked_rao,
-            360, 0.0, neuron.dividends, True,
-        ])
+        writer.writerow(
+            [
+                block_num,
+                timestamp,
+                netuid,
+                neuron.hotkey,
+                alpha_earned_rao,
+                alpha_staked_rao,
+                360,
+                0.0,
+                neuron.dividends,
+                True,
+            ]
+        )
         records += 1
 
     return records
@@ -261,9 +289,7 @@ class Command(BaseCommand):
             self.stdout.write(f"Chain head: {end_block}")
 
         if start_block > end_block:
-            self.stderr.write(
-                self.style.ERROR(f"--start-block ({start_block}) > --end-block ({end_block})")
-            )
+            self.stderr.write(self.style.ERROR(f"--start-block ({start_block}) > --end-block ({end_block})"))
             return
 
         if subnets is None:
@@ -280,9 +306,7 @@ class Command(BaseCommand):
         boundary_time = time.time() - t0
 
         if api_boundary is None:
-            self.stdout.write(
-                self.style.SUCCESS(f"  Modern API available for entire range ({boundary_time:.1f}s)")
-            )
+            self.stdout.write(self.style.SUCCESS(f"  Modern API available for entire range ({boundary_time:.1f}s)"))
             api_boundary_block = start_block  # everything is modern
         elif api_boundary > end_block:
             self.stdout.write(
@@ -290,15 +314,9 @@ class Command(BaseCommand):
             )
             api_boundary_block = end_block + 1  # everything is legacy
         else:
-            self.stdout.write(
-                f"  API boundary at block {api_boundary:,} ({boundary_time:.1f}s)"
-            )
-            self.stdout.write(
-                f"  Legacy era: {start_block:,} .. {api_boundary - 1:,}"
-            )
-            self.stdout.write(
-                f"  Modern era: {api_boundary:,} .. {end_block:,}"
-            )
+            self.stdout.write(f"  API boundary at block {api_boundary:,} ({boundary_time:.1f}s)")
+            self.stdout.write(f"  Legacy era: {start_block:,} .. {api_boundary - 1:,}")
+            self.stdout.write(f"  Modern era: {api_boundary:,} .. {end_block:,}")
             api_boundary_block = api_boundary
 
         # Compute epoch blocks per subnet (tempo=360 always)
@@ -330,24 +348,28 @@ class Command(BaseCommand):
                 n_leg = sum(1 for b in ep if b < api_boundary_block)
                 n_mod = len(ep) - n_leg
                 self.stdout.write(
-                    f"  Subnet {netuid}: {len(ep):,} epochs ({ep[0]}..{ep[-1]}) "
-                    f"[legacy={n_leg}, modern={n_mod}]"
+                    f"  Subnet {netuid}: {len(ep):,} epochs ({ep[0]}..{ep[-1]}) [legacy={n_leg}, modern={n_mod}]"
                 )
             else:
                 self.stdout.write(f"  Subnet {netuid}: 0 epochs")
 
         if dry_run:
-            full_epochs = sum(
-                len(compute_epoch_blocks(n, tempo, start_block, end_block)) for n in subnets
-            )
+            full_epochs = sum(len(compute_epoch_blocks(n, tempo, start_block, end_block)) for n in subnets)
             self.stdout.write(f"\nFull collection would query {full_epochs:,} epochs")
             self.stdout.write(self.style.WARNING("Dry run - no queries made"))
             return
 
         self._collect(
-            subtensor, subnet_epochs, subnets, tempo,
-            start_block, end_block, api_boundary_block,
-            output_dir, network, limit_epochs,
+            subtensor,
+            subnet_epochs,
+            subnets,
+            tempo,
+            start_block,
+            end_block,
+            api_boundary_block,
+            output_dir,
+            network,
+            limit_epochs,
         )
 
     def _collect(
@@ -393,12 +415,18 @@ class Command(BaseCommand):
 
                             if is_legacy:
                                 epoch_records = self._query_legacy(
-                                    subtensor, writer, netuid, block_num,
+                                    subtensor,
+                                    writer,
+                                    netuid,
+                                    block_num,
                                 )
                                 legacy_count += 1
                             else:
                                 epoch_records = self._query_modern(
-                                    subtensor, writer, netuid, block_num,
+                                    subtensor,
+                                    writer,
+                                    netuid,
+                                    block_num,
                                 )
                                 modern_count += 1
 
@@ -421,15 +449,15 @@ class Command(BaseCommand):
                         except KeyboardInterrupt:
                             raise
                         except Exception as e:
-                            failed_epochs.append({
-                                "netuid": netuid,
-                                "block": block_num,
-                                "error": str(e),
-                            })
-                            logger.exception("Failed epoch query", netuid=netuid, block=block_num)
-                            self.stderr.write(
-                                self.style.ERROR(f"  block {block_num}: {e}")
+                            failed_epochs.append(
+                                {
+                                    "netuid": netuid,
+                                    "block": block_num,
+                                    "error": str(e),
+                                }
                             )
+                            logger.exception("Failed epoch query", netuid=netuid, block=block_num)
+                            self.stderr.write(self.style.ERROR(f"  block {block_num}: {e}"))
 
         except KeyboardInterrupt:
             self.stdout.write(self.style.WARNING("\nInterrupted by user"))
@@ -472,12 +500,10 @@ class Command(BaseCommand):
             self.stdout.write(f"  Total time:      {sum(query_times):.1f}s")
 
             if limit_epochs:
-                full_epochs = sum(
-                    len(compute_epoch_blocks(n, tempo, start_block, end_block)) for n in subnets
-                )
+                full_epochs = sum(len(compute_epoch_blocks(n, tempo, start_block, end_block)) for n in subnets)
                 est_s = full_epochs * avg_query
                 est_h = est_s / 3600
-                self.stdout.write(f"\n  --- Full collection estimate ---")
+                self.stdout.write("\n  --- Full collection estimate ---")
                 self.stdout.write(f"  Total epochs:  {full_epochs:,}")
                 self.stdout.write(f"  Est. time:     {est_h:.1f}h ({est_s:,.0f}s)")
 
@@ -487,14 +513,20 @@ class Command(BaseCommand):
             self.stdout.write(f"  Failures: {failed_path}")
 
     def _query_modern(
-        self, subtensor: bt.Subtensor, writer, netuid: int, block_num: int,
+        self,
+        subtensor: bt.Subtensor,
+        writer,
+        netuid: int,
+        block_num: int,
     ) -> int:
         """Query using selective metagraph (modern era). Falls back to full metagraph,
         then to neurons_lite if selective call fails."""
         # Try selective metagraph first
         try:
             info = subtensor.get_metagraph_info(
-                netuid=netuid, selected_indices=APY_INDEXES, block=block_num,
+                netuid=netuid,
+                selected_indices=APY_INDEXES,
+                block=block_num,
             )
             if info is not None:
                 return _process_modern_epoch(writer, info, block_num, netuid)
@@ -507,14 +539,17 @@ class Command(BaseCommand):
             if info is not None:
                 return _process_modern_epoch(writer, info, block_num, netuid)
         except (ValueError, Exception):
-            pass  # full metagraph also unavailable, fall through to legacy
+            logger.debug("Full metagraph unavailable, falling back to legacy", block=block_num, netuid=netuid)
 
         # Final fallback: legacy neurons_lite
         return self._query_legacy(subtensor, writer, netuid, block_num)
 
     @staticmethod
     def _query_legacy(
-        subtensor: bt.Subtensor, writer, netuid: int, block_num: int,
+        subtensor: bt.Subtensor,
+        writer,
+        netuid: int,
+        block_num: int,
     ) -> int:
         """Query using getNeuronsLite (legacy era)."""
         neurons = subtensor.neurons_lite(netuid=netuid, block=block_num)
