@@ -213,7 +213,16 @@ class Command(BaseCommand):
         self._submit_extrinsic(substrate, extrinsic, "Sudo → sudo_set_min_burn(netuid=1, min_burn=1000)")
 
     # All fields required by the on-chain SubnetIdentityV3 struct
-    IDENTITY_FIELDS = ("subnet_name", "github_repo", "subnet_contact", "subnet_url", "discord", "description", "logo_url", "additional")
+    IDENTITY_FIELDS = (
+        "subnet_name",
+        "github_repo",
+        "subnet_contact",
+        "subnet_url",
+        "discord",
+        "description",
+        "logo_url",
+        "additional",
+    )
 
     def _submit_register_network(self, substrate, alice, bob) -> None:
         """Submit a register_network or register_network_with_identity call.

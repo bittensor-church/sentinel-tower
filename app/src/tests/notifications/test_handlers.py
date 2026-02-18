@@ -8,7 +8,6 @@ from apps.notifications.handlers.subnet_dissolution import SubnetDissolutionNoti
 from apps.notifications.handlers.subnet_registration import SubnetRegistrationNotification
 from apps.notifications.handlers.sudo import SudoNotification
 
-
 # ── Fixtures ───────────────────────────────────────────────────────────
 
 
@@ -137,8 +136,8 @@ def test_registration_format_decodes_identity(registration_handler):
                 {
                     "name": "identity",
                     "value": {
-                        "subnet_name": "0x" + "My Subnet".encode().hex(),
-                        "github_repo": "0x" + "https://github.com/example".encode().hex(),
+                        "subnet_name": "0x" + b"My Subnet".hex(),
+                        "github_repo": "0x" + b"https://github.com/example".hex(),
                     },
                 },
             ],

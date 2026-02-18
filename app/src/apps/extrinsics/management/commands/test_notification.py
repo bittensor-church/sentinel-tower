@@ -82,7 +82,11 @@ class Command(BaseCommand):
                             "call_function": "dissolve_network",
                             "call_module": "SubtensorModule",
                             "call_args": [
-                                {"name": "coldkey", "type": "AccountId", "value": "5GrwvaEF5zXb26Fz9rcQpDWS57CtERHpNehXCPcNoHGKutQY"},
+                                {
+                                    "name": "coldkey",
+                                    "type": "AccountId",
+                                    "value": "5GrwvaEF5zXb26Fz9rcQpDWS57CtERHpNehXCPcNoHGKutQY",
+                                },
                                 {"name": "netuid", "type": "NetUid", "value": 2},
                             ],
                         },

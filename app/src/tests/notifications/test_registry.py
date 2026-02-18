@@ -1,11 +1,10 @@
 from typing import Any, ClassVar
-from unittest.mock import patch
 
 import pytest
 
+from apps.notifications import registry as registry_module
 from apps.notifications.base import ExtrinsicNotification
 from apps.notifications.channels import NotificationChannel
-from apps.notifications import registry as registry_module
 
 
 class FakeChannel(NotificationChannel):
