@@ -247,8 +247,9 @@ services:
       <<: *logging
 
   cadvisor:
-    image: gcr.io/cadvisor/cadvisor:v0.40.0
+    image: gcr.io/cadvisor/cadvisor:v0.51.0
     container_name: cadvisor
+    privileged: true
     devices:
       - /dev/kmsg:/dev/kmsg
     volumes:
@@ -256,7 +257,6 @@ services:
       - /var/run:/var/run:ro
       - /sys:/sys:ro
       - /var/lib/docker:/var/lib/docker:ro
-      - /cgroup:/cgroup:ro
     restart: unless-stopped
     logging:
       <<: *logging
