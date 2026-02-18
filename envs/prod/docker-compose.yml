@@ -69,7 +69,7 @@ services:
       dockerfile: app/envs/prod/Dockerfile
     image: block_dumper/app
     init: true
-    restart: unless-stopped
+    restart: always
     env_file: ./.env
     extra_hosts:
       - "host.docker.internal:host-gateway"

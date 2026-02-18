@@ -1,7 +1,7 @@
 from django.core.management.base import BaseCommand
 
 from apps.extrinsics.hyperparam_service import enrich_extrinsics_with_previous_values
-from apps.extrinsics.notifications import send_block_notifications
+from apps.notifications import dispatch_block_notifications
 
 
 class Command(BaseCommand):
@@ -12,7 +12,7 @@ class Command(BaseCommand):
             "--type",
             type=str,
             default="sudo",
-            choices=["sudo", "admin", "register", "coldkey_swap", "all"],
+            choices=["sudo", "admin", "register", "dissolve", "coldkey_swap", "all"],
             help="Type of notification to send (default: sudo, use 'all' for grouped test)",
         )
         parser.add_argument(
@@ -62,6 +62,35 @@ class Command(BaseCommand):
                 "success": True,
                 "call_args": [
                     {"name": "hotkey", "value": "5GrwvaEF5zXb26Fz9rcQpDWS57CtERHpNehXCPcNoHGKutQY"},
+                ],
+            },
+            "dissolve": {
+                "call_module": "Sudo",
+                "call_function": "sudo",
+                "block_number": 1234567,
+                "extrinsic_index": 5,
+                "address": "5GrwvaEF5zXb26Fz9rcQpDWS57CtERHpNehXCPcNoHGKutQY",
+                "extrinsic_hash": "0x0038942a2d651b64cbc9c0afef3715ad52862ad842ed51229ca48a33e886f69a",
+                "success": True,
+                "netuid": None,
+                "call_args": [
+                    {
+                        "name": "call",
+                        "type": "RuntimeCall",
+                        "value": {
+                            "call_index": "0x073d",
+                            "call_function": "dissolve_network",
+                            "call_module": "SubtensorModule",
+                            "call_args": [
+                                {
+                                    "name": "coldkey",
+                                    "type": "AccountId",
+                                    "value": "5GrwvaEF5zXb26Fz9rcQpDWS57CtERHpNehXCPcNoHGKutQY",
+                                },
+                                {"name": "netuid", "type": "NetUid", "value": 2},
+                            ],
+                        },
+                    }
                 ],
             },
             "coldkey_swap": {
@@ -128,7 +157,7 @@ class Command(BaseCommand):
 
         # Enrich with previous hyperparam values
         enriched = enrich_extrinsics_with_previous_values(extrinsics)
-        notified_count = send_block_notifications(block_number, enriched)
+        notified_count = dispatch_block_notifications(block_number, enriched)
 
         if notified_count > 0:
             self.stdout.write(
