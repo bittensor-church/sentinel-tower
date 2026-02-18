@@ -45,6 +45,59 @@ class Command(BaseCommand):
             default=2.0,
             help="Delay in seconds between extrinsics (default: 2.0)",
         )
+        parser.add_argument(
+            "--topup",
+            action="store_true",
+            help="Top up Alice's balance to 1M TAO before submitting extrinsics",
+        )
+        parser.add_argument(
+            "--subnet-name",
+            type=str,
+            default=None,
+            help="Subnet name (triggers register_network_with_identity when any identity flag is set)",
+        )
+        parser.add_argument(
+            "--github-repo",
+            type=str,
+            default=None,
+            help="GitHub repo URL for subnet identity",
+        )
+        parser.add_argument(
+            "--subnet-contact",
+            type=str,
+            default=None,
+            help="Contact info for subnet identity",
+        )
+        parser.add_argument(
+            "--subnet-url",
+            type=str,
+            default=None,
+            help="Subnet website URL for subnet identity",
+        )
+        parser.add_argument(
+            "--discord",
+            type=str,
+            default=None,
+            help="Discord URL for subnet identity",
+        )
+        parser.add_argument(
+            "--description",
+            type=str,
+            default=None,
+            help="Subnet description for subnet identity",
+        )
+        parser.add_argument(
+            "--logo-url",
+            type=str,
+            default=None,
+            help="Logo URL for subnet identity",
+        )
+        parser.add_argument(
+            "--additional",
+            type=str,
+            default=None,
+            help="Additional information for subnet identity",
+        )
 
     def handle(self, *args, **options) -> None:
         url = options["url"] or DEFAULT_URL
@@ -58,9 +111,20 @@ class Command(BaseCommand):
         alice = Keypair.create_from_uri("//Alice")
         bob = Keypair.create_from_uri("//Bob")
 
-        self._topup_balance(substrate, alice, bob)
+        if options["topup"]:
+            self._topup_balance(substrate, alice, bob)
 
         self._registered_netuid = options["netuid"]
+        self._identity_options = {
+            "subnet_name": options["subnet_name"],
+            "github_repo": options["github_repo"],
+            "subnet_contact": options["subnet_contact"],
+            "subnet_url": options["subnet_url"],
+            "discord": options["discord"],
+            "description": options["description"],
+            "logo_url": options["logo_url"],
+            "additional": options["additional"],
+        }
 
         actions = {
             "sudo": self._submit_sudo_call,
@@ -148,15 +212,39 @@ class Command(BaseCommand):
         extrinsic = substrate.create_signed_extrinsic(call=sudo_call, keypair=alice)
         self._submit_extrinsic(substrate, extrinsic, "Sudo → sudo_set_min_burn(netuid=1, min_burn=1000)")
 
-    def _submit_register_network(self, substrate, alice, _bob) -> None:
-        """Submit a register_network call and store the new netuid for dissolve."""
-        call = substrate.compose_call(
-            call_module="SubtensorModule",
-            call_function="register_network",
-            call_params={"hotkey": alice.ss58_address},
-        )
+    # All fields required by the on-chain SubnetIdentityV3 struct
+    IDENTITY_FIELDS = ("subnet_name", "github_repo", "subnet_contact", "subnet_url", "discord", "description", "logo_url", "additional")
+
+    def _submit_register_network(self, substrate, alice, bob) -> None:
+        """Submit a register_network or register_network_with_identity call.
+
+        Uses bob as hotkey (signed by alice as coldkey) to avoid NonAssociatedColdKey
+        errors when the hotkey is already registered to a different coldkey.
+        """
+        provided = {k: v for k, v in self._identity_options.items() if v is not None}
+
+        if provided:
+            # Build full struct — empty hex for fields not provided
+            identity = {
+                field: "0x" + provided[field].encode().hex() if field in provided else "0x"
+                for field in self.IDENTITY_FIELDS
+            }
+            call = substrate.compose_call(
+                call_module="SubtensorModule",
+                call_function="register_network_with_identity",
+                call_params={"hotkey": bob.ss58_address, "identity": identity},
+            )
+            label = f"SubtensorModule → register_network_with_identity({', '.join(provided)})"
+        else:
+            call = substrate.compose_call(
+                call_module="SubtensorModule",
+                call_function="register_network",
+                call_params={"hotkey": bob.ss58_address},
+            )
+            label = "SubtensorModule → register_network"
+
         extrinsic = substrate.create_signed_extrinsic(call=call, keypair=alice)
-        result = self._submit_extrinsic(substrate, extrinsic, "SubtensorModule → register_network")
+        result = self._submit_extrinsic(substrate, extrinsic, label)
 
         # Extract netuid from NetworkAdded event
         for event in getattr(result, "triggered_events", []):

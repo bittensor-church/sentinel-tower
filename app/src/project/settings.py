@@ -1,7 +1,7 @@
 import inspect
 import logging
 import os
-from dataclasses import dataclass
+
 from datetime import timedelta
 from functools import wraps
 
@@ -419,49 +419,6 @@ METAGRAPH_LITE = env.bool("METAGRAPH_LITE", default=False)
 # Subnet owner cut fraction (0-1) applied to alpha emissions before miner/validator split
 SUBNET_OWNER_CUT = float(os.getenv("SUBNET_OWNER_CUT", "0.09"))
 
-
-_DISABLED_WEBHOOK_PATTERNS = ("disabled", "https://discord.com/api/webhooks/0/disabled")
-
-
-@dataclass
-class AlertConfig:
-    """Configuration for a Discord alert.
-
-    Args:
-        call_pattern: Pattern to match, e.g. "Sudo" (all functions) or "SubtensorModule:register_network"
-        env_var: Environment variable name for the webhook URL
-        success_only: If True, only notify on successful extrinsics
-    """
-
-    call_pattern: str
-    env_var: str
-    success_only: bool = True
-
-    def matches(self, call_module: str, call_function: str) -> bool:
-        """Check if this config matches the given module/function."""
-        if ":" in self.call_pattern:
-            pattern_module, pattern_function = self.call_pattern.split(":", 1)
-            return call_module == pattern_module and call_function == pattern_function
-        return call_module == self.call_pattern
-
-    def get_webhook_url(self) -> str | None:
-        """Get the webhook URL from environment, or None if disabled."""
-        url = os.environ.get(self.env_var, "")
-        if not url or any(pattern in url for pattern in _DISABLED_WEBHOOK_PATTERNS):
-            return None
-        return url
-
-
-DISCORD_ALERT_CONFIGS: list[AlertConfig] = [
-    AlertConfig("AdminUtils", "DISCORD_ADMIN_UTILS_ALERTS_WEBHOOK_URL"),
-    AlertConfig("SubtensorModule:register_network", "DISCORD_SUBNET_REGISTRATION_WEBHOOK_URL"),
-    AlertConfig("SubtensorModule:register_network_with_identity", "DISCORD_SUBNET_REGISTRATION_WEBHOOK_URL"),
-    AlertConfig("SubtensorModule:schedule_coldkey_swap", "DISCORD_COLDKEY_SWAP_WEBHOOK_URL"),
-    AlertConfig("SubtensorModule:swap_coldkey", "DISCORD_COLDKEY_SWAP_WEBHOOK_URL"),
-    AlertConfig("SubtensorModule:dissolve_network", "DISCORD_SUBNET_REGISTRATION_WEBHOOK_URL"),
-    # Sudo catch-all must be last so specific patterns above take priority
-    AlertConfig("Sudo", "DISCORD_SUDO_ALERTS_WEBHOOK_URL"),
-]
 
 # sentinel storage configuration. each entry requires 'BACKEND_NAME' and 'OPTIONS'.
 # Available backends: 'fsspec-local', 'fsspec-s3'
