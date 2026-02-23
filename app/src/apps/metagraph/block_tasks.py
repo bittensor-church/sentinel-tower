@@ -86,11 +86,11 @@ def store_metagraph(block_number: int, netuid: int) -> str:
     return artifact_path
 
 
-@block_task(
-    condition=lambda block_number, netuid: MetagraphService.is_dumpable_block(block_number, netuid),
-    args=[{"netuid": netuid} for netuid in MetagraphService.netuids_to_sync()],
-    celery_kwargs={"queue": "metagraph"},
-)
+# @block_task(
+#     condition=lambda block_number, netuid: MetagraphService.is_dumpable_block(block_number, netuid),
+#     args=[{"netuid": netuid} for netuid in MetagraphService.netuids_to_sync()],
+#     celery_kwargs={"queue": "metagraph"},
+# )
 def sync_apy_data(block_number: int, netuid: int) -> str:
     """
     Dispatch a fast APY sync task for the given block and netuid.
