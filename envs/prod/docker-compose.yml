@@ -253,6 +253,27 @@ services:
     logging:
       <<: *logging
 
+  newrelic-infra:
+    build:
+      context: .
+      dockerfile: newrelic-infra/newrelic-infra.dockerfile
+    container_name: newrelic-infra
+    restart: unless-stopped
+    network_mode: host
+    pid: host
+    privileged: true
+    cap_add:
+      - SYS_PTRACE
+    environment:
+      - NRIA_LICENSE_KEY=${NEW_RELIC_LICENSE_KEY}
+      - NRIA_DISPLAY_NAME=sentinel-tower
+      - NRIA_VERBOSE=0
+    volumes:
+      - "/:/host:ro"
+      - "/var/run/docker.sock:/var/run/docker.sock"
+    logging:
+      <<: *logging
+
   cadvisor:
     image: gcr.io/cadvisor/cadvisor:v0.51.0
     container_name: cadvisor
