@@ -1,5 +1,6 @@
 from datetime import UTC, datetime
 
+import newrelic.agent
 import structlog
 from abstract_block_dumper.v1.decorators import block_task
 from django.conf import settings
@@ -38,12 +39,32 @@ def store_metagraph(block_number: int, netuid: int) -> str:
     Fetches metagraph data from the blockchain, stores it as a JSONL artifact,
     and syncs it to Django models.
     """
+    newrelic.agent.add_custom_attributes([
+        ("block_number", block_number),
+        ("netuid", netuid),
+    ])
+
     started_at = datetime.now(UTC)
 
-    with get_provider_for_block(block_number) as provider:
+    # Phase 1: decide live vs. archive node (makes a quick RPC call internally)
+    with newrelic.agent.FunctionTrace("select_provider"):
+        provider_ctx = get_provider_for_block(block_number)
+
+    # Phase 2: open the actual WebSocket/HTTP connection to the chosen node
+    with newrelic.agent.FunctionTrace("establish_chain_connection"):
+        provider = provider_ctx.__enter__()
         service = sentinel_service(provider)
-        subnet = service.ingest_subnet(netuid, block_number, lite=settings.METAGRAPH_LITE)
-        metagraph = subnet.metagraph
+
+    # Phase 3: fetch metagraph data over the established connection
+    try:
+        with newrelic.agent.FunctionTrace("fetch_metagraph_from_chain"):
+            subnet = service.ingest_subnet(netuid, block_number, lite=settings.METAGRAPH_LITE)
+            metagraph = subnet.metagraph
+    except BaseException as exc:
+        provider_ctx.__exit__(type(exc), exc, exc.__traceback__)
+        raise
+    else:
+        provider_ctx.__exit__(None, None, None)
 
     finished_at = datetime.now(UTC)
 
@@ -54,8 +75,9 @@ def store_metagraph(block_number: int, netuid: int) -> str:
             netuid=netuid,
         )
         return ""
-    # Store artifact to JSONL
-    artifact_path = MetagraphService.store_metagraph_artifact(metagraph)
+
+    with newrelic.agent.FunctionTrace("store_metagraph_artifact"):
+        artifact_path = MetagraphService.store_metagraph_artifact(metagraph)
 
     # Sync to Django models
     data = metagraph.model_dump()
@@ -73,8 +95,11 @@ def store_metagraph(block_number: int, netuid: int) -> str:
         },
     )
 
-    sync_service = MetagraphSyncService()
-    stats = sync_service.sync_metagraph(data)
+    with newrelic.agent.FunctionTrace("sync_metagraph_to_db"):
+        sync_service = MetagraphSyncService()
+        stats = sync_service.sync_metagraph(data)
+
+    newrelic.agent.add_custom_attribute("artifact_path", artifact_path)
 
     logger.info(
         "Synced metagraph to database",
