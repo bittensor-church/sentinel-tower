@@ -1,6 +1,14 @@
 import logging
 import os
 
+# Initialize New Relic before any other imports so the agent can instrument
+# Django, Celery, Redis, and psycopg from the start. Each celery multi worker
+# subprocess imports this module independently, so all workers get monitored.
+if os.environ.get("NEW_RELIC_LICENSE_KEY"):
+    import newrelic.agent
+
+    newrelic.agent.initialize()
+
 from celery import Celery
 from celery.signals import celeryd_init, setup_logging, worker_process_shutdown
 from django.conf import settings

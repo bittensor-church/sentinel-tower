@@ -106,6 +106,13 @@ services:
       - PROMETHEUS_MULTIPROC_DIR=/prometheus-multiproc-dir/celery-worker
       - MEDIA_ROOT=${MEDIA_ROOT:-/root/src/media}
       - SENTINEL_MODE=${SENTINEL_MODE:-live}
+      # New Relic — forwarded from .env; agent is disabled when key is empty
+      - NEW_RELIC_LICENSE_KEY=${NEW_RELIC_LICENSE_KEY:-}
+      - NEW_RELIC_APP_NAME=${NEW_RELIC_APP_NAME:-sentinel-tower-celery-worker}
+      - NEW_RELIC_LOG=${NEW_RELIC_LOG:-stdout}
+      - NEW_RELIC_LOG_LEVEL=${NEW_RELIC_LOG_LEVEL:-info}
+      - NEW_RELIC_GC_RUNTIME_METRICS_ENABLED=${NEW_RELIC_GC_RUNTIME_METRICS_ENABLED:-true}
+      - NEW_RELIC_DISTRIBUTED_TRACING_ENABLED=${NEW_RELIC_DISTRIBUTED_TRACING_ENABLED:-true}
     command: ./celery-entrypoint.sh
     volumes:
       - ${MEDIA_VOLUME_PATH:-./media}:/root/src/media
