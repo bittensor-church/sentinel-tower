@@ -21,6 +21,9 @@ jobs:
         with:
           python-version: "3.11"
 
+      - name: Install uv
+        uses: astral-sh/setup-uv@v5
+
       - name: Install Cruft
         run: pip3 install cruft~=2.16.0 ruff~=0.8.4
 
