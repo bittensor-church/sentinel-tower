@@ -3,6 +3,7 @@ from apps.extrinsics.models import Extrinsic
 from django.core.management.base import BaseCommand
 from apps.extrinsics.block_tasks import store_block_extrinsics
 from apps.extrinsics.block_tasks import get_provider_for_block
+from sentinel.v1.providers.bittensor import bittensor_provider
 
 class Command(BaseCommand):
     help = "Backfill missing extrinsics for recent blocks."
@@ -18,11 +19,9 @@ class Command(BaseCommand):
     def handle(self, *args, **options):
         blocks: int = options["blocks"]
 
-        max_block = Extrinsic.objects.order_by('-block_number').values_list('block_number', flat=True).first()
-
-        if max_block is None:
-            self.stdout.write("No extrinsics found in the database. Please run the initial backfill command first.")
-            return
+        with bittensor_provider() as provider:
+            head = provider.get_current_block()
+        max_block = head - 300
 
         existing = set(
             Extrinsic.objects.filter(block_number__gte=max_block - blocks)
