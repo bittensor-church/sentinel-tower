@@ -86,15 +86,21 @@ def _parse_extrinsic_record(record: dict) -> dict | None:
     }
 
 
-@block_task(celery_kwargs={"rate_limit": "10/m"})
-def store_block_extrinsics(block_number: int) -> str:
+# @block_task(celery_kwargs={"rate_limit": "10/m"})
+def store_block_extrinsics(block_number: int, provider = None) -> str:
     """
     Store extrinsics from the given block number.
 
     Fetches extrinsics from the blockchain, stores them as JSONL artifacts,
     and syncs them to Django models.
     """
-    with get_provider_for_block(block_number) as provider:
+    if not provider:
+        with get_provider_for_block(block_number) as provider:
+            service = sentinel_service(provider)
+            block = service.ingest_block(block_number)
+            extrinsics = block.extrinsics
+            timestamp = block.timestamp
+    else:
         service = sentinel_service(provider)
         block = service.ingest_block(block_number)
         extrinsics = block.extrinsics
