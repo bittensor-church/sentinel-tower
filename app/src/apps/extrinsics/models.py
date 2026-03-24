@@ -128,7 +128,7 @@ class Extrinsic(models.Model):
     netuid = models.PositiveIntegerField(null=True, blank=True, db_index=True)
 
     # Timestamps
-    created_at = models.DateTimeField(auto_now_add=True)
+    created_at = models.DateTimeField(auto_now_add=True, db_index=True)
 
     class Meta:
         db_table = "extrinsics"
@@ -141,6 +141,7 @@ class Extrinsic(models.Model):
             models.Index(fields=["netuid", "call_function"]),
             models.Index(fields=["block_number", "call_function"]),
             models.Index(fields=["address", "call_function"]),
+            models.Index(fields=["created_at"]),
         ]
 
     def __str__(self) -> str:
