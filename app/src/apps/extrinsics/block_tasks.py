@@ -1,15 +1,15 @@
+import time
 from datetime import UTC, datetime
 
 import structlog
-from abstract_block_dumper.v1.decorators import block_task
 from sentinel.v1.dto import ExtrinsicDTO
+from sentinel.v1.providers.bittensor import BittensorProvider
 from sentinel.v1.services.sentinel import sentinel_service
 
 from apps.extrinsics.hyperparam_service import enrich_extrinsics_with_previous_values
 from apps.extrinsics.models import Extrinsic
 from apps.notifications import dispatch_block_notifications
 from project.core.services import JsonLinesStorage
-from project.core.utils import get_provider_for_block
 
 logger = structlog.get_logger()
 
@@ -86,41 +86,52 @@ def _parse_extrinsic_record(record: dict) -> dict | None:
     }
 
 
-@block_task(celery_kwargs={"rate_limit": "10/m"})
-def store_block_extrinsics(block_number: int, provider = None) -> str:
+def store_block_extrinsics(block_number: int, provider: BittensorProvider) -> str:
     """
     Store extrinsics from the given block number.
 
     Fetches extrinsics from the blockchain, stores them as JSONL artifacts,
     and syncs them to Django models.
     """
-    if not provider:
-        with get_provider_for_block(block_number) as provider:
-            service = sentinel_service(provider)
-            block = service.ingest_block(block_number)
-            extrinsics = block.extrinsics
-            timestamp = block.timestamp
-    else:
-        service = sentinel_service(provider)
-        block = service.ingest_block(block_number)
-        extrinsics = block.extrinsics
-        timestamp = block.timestamp
+    t0 = time.monotonic()
+
+    service = sentinel_service(provider)
+    block = service.ingest_block(block_number)
+    extrinsics = block.extrinsics
+    timestamp = block.timestamp
+
+    t1 = time.monotonic()
+    logger.info(
+        "Block ingested",
+        block_number=block_number,
+        extrinsic_count=len(extrinsics) if extrinsics else 0,
+        duration_s=round(t1 - t0, 3),
+    )
 
     if not extrinsics:
         logger.info("No extrinsics found in block", block_number=block_number)
         return ""
 
+    t2 = time.monotonic()
+
     # Store to JSONL artifact
     artifact_count = store_extrinsics_artifact(extrinsics, block_number, timestamp)
+    t3 = time.monotonic()
+    logger.info(
+        "Artifacts stored", block_number=block_number, artifact_count=artifact_count, duration_s=round(t3 - t2, 3)
+    )
 
     # Sync to Django models
     db_count = sync_extrinsics_to_db(extrinsics, block_number, timestamp)
+    t4 = time.monotonic()
+    logger.info("DB sync completed", block_number=block_number, db_count=db_count, duration_s=round(t4 - t3, 3))
 
     logger.info(
         "Stored and synced extrinsics",
         block_number=block_number,
         artifact_count=artifact_count,
         db_count=db_count,
+        total_duration_s=round(t4 - t0, 3),
     )
 
     return f"Block {block_number}: stored {artifact_count} artifacts, synced {db_count} to DB."
@@ -152,11 +163,21 @@ def sync_extrinsics_to_db(extrinsics: list[ExtrinsicDTO], block_number: int, tim
     if not extrinsics:
         return 0
 
+    t0 = time.monotonic()
+
     # Build records for database
     records_to_create = []
     parsed_for_notifications = []
     existing_hashes = set(
         Extrinsic.objects.filter(block_number=block_number).values_list("extrinsic_hash", flat=True),
+    )
+
+    t1 = time.monotonic()
+    logger.info(
+        "sync_extrinsics_to_db: fetched existing hashes",
+        block_number=block_number,
+        existing_count=len(existing_hashes),
+        duration_s=round(t1 - t0, 3),
     )
 
     for extrinsic in extrinsics:
@@ -179,8 +200,25 @@ def sync_extrinsics_to_db(extrinsics: list[ExtrinsicDTO], block_number: int, tim
     if records_to_create:
         Extrinsic.objects.bulk_create(records_to_create, ignore_conflicts=True)
 
+    t2 = time.monotonic()
+    logger.info(
+        "sync_extrinsics_to_db: bulk_create done",
+        block_number=block_number,
+        created_count=len(records_to_create),
+        duration_s=round(t2 - t1, 3),
+    )
+
     # Enrich with previous hyperparam values and send aggregated Discord notification
     enriched = enrich_extrinsics_with_previous_values(parsed_for_notifications)
+
+    t3 = time.monotonic()
+    logger.info("sync_extrinsics_to_db: enrichment done", block_number=block_number, duration_s=round(t3 - t2, 3))
+
     dispatch_block_notifications(block_number, enriched)
+
+    t4 = time.monotonic()
+    logger.info(
+        "sync_extrinsics_to_db: notifications dispatched", block_number=block_number, duration_s=round(t4 - t3, 3)
+    )
 
     return len(records_to_create)

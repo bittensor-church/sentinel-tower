@@ -39,10 +39,12 @@ def store_metagraph(block_number: int, netuid: int) -> str:
     Fetches metagraph data from the blockchain, stores it as a JSONL artifact,
     and syncs it to Django models.
     """
-    newrelic.agent.add_custom_attributes([
-        ("block_number", block_number),
-        ("netuid", netuid),
-    ])
+    newrelic.agent.add_custom_attributes(
+        [
+            ("block_number", block_number),
+            ("netuid", netuid),
+        ]
+    )
 
     started_at = datetime.now(UTC)
 

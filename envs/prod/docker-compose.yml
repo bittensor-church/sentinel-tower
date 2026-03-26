@@ -91,6 +91,42 @@ services:
     logging:
       <<: *logging
 
+  sync-extrinsics:
+    image: project/app
+    init: true
+    restart: always
+    env_file: ./.env
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+    environment:
+      - MEDIA_ROOT=${MEDIA_ROOT:-/root/src/media}
+    command: python manage.py sync_extrinsics
+    volumes:
+      - ${MEDIA_VOLUME_PATH:-./media}:/root/src/media
+    depends_on:
+      - redis
+      - db
+    logging:
+      <<: *logging
+
+  backfill-extrinsics:
+    image: project/app
+    init: true
+    env_file: ./.env
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+    environment:
+      - MEDIA_ROOT=${MEDIA_ROOT:-/root/src/media}
+    command: python manage.py backfill_missing_extrinsics
+    volumes:
+      - ${MEDIA_VOLUME_PATH:-./media}:/root/src/media
+    profiles:
+      - backfill
+    depends_on:
+      - db
+    logging:
+      <<: *logging
+
   celery-worker:
     image: project/app
     init: true

@@ -4,7 +4,6 @@ from async_substrate_interface import SubstrateInterface
 from django.conf import settings
 from django.core.management.base import BaseCommand, CommandParser
 
-
 DEFAULT_URL = "ws://127.0.0.1:9944"
 
 

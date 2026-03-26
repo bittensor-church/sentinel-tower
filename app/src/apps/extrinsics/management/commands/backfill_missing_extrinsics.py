@@ -1,9 +1,10 @@
-from apps.extrinsics.models import Extrinsic
-
 from django.core.management.base import BaseCommand
-from apps.extrinsics.block_tasks import store_block_extrinsics
-from apps.extrinsics.block_tasks import get_provider_for_block
 from sentinel.v1.providers.bittensor import bittensor_provider
+
+from apps.extrinsics.block_tasks import store_block_extrinsics
+from apps.extrinsics.models import Extrinsic
+from project.core.utils import get_archive_provider
+
 
 class Command(BaseCommand):
     help = "Backfill missing extrinsics for recent blocks."
@@ -31,7 +32,7 @@ class Command(BaseCommand):
         missing = sorted(set(range(max_block - blocks, max_block + 1)) - existing)
         self.stdout.write(f"Missing {len(missing)} blocks out of {blocks}. First 20: {missing[:20]}")
 
-        with get_provider_for_block(missing[0], force_archive=True) as provider:
+        with get_archive_provider() as provider:
             for i, block_number in enumerate(missing):
                 try:
                     result = store_block_extrinsics(block_number, provider)

@@ -114,8 +114,8 @@ def report_memory_after_task(**kwargs) -> None:
 
     pid = os.getpid()
     mem = psutil.Process(pid).memory_info()
-    rss_mb = mem.rss / 1024 ** 2
-    vms_mb = mem.vms / 1024 ** 2
+    rss_mb = mem.rss / 1024**2
+    vms_mb = mem.vms / 1024**2
 
     if _worker_rss_baseline_mb is None:
         _worker_rss_baseline_mb = rss_mb
