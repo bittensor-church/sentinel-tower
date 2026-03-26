@@ -2,14 +2,6 @@ import logging
 import os
 import tracemalloc
 
-# Initialize New Relic before any other imports so the agent can instrument
-# Django, Celery, Redis, and psycopg from the start. Each celery multi worker
-# subprocess imports this module independently, so all workers get monitored.
-if os.environ.get("NEW_RELIC_LICENSE_KEY"):
-    import newrelic.agent
-
-    newrelic.agent.initialize()
-
 import psutil
 import structlog
 from celery import Celery
@@ -103,8 +95,6 @@ def report_memory_after_task(**kwargs) -> None:
     executions it logs:
       - RSS / VMS of this worker process (via psutil)
       - Top 15 allocation sites (file:line, size, count) from tracemalloc
-    The snapshot is also forwarded to New Relic as a custom event so it can
-    be queried in NRQL alongside APM data.
     """
     global _worker_task_count, _worker_rss_baseline_mb
 
@@ -141,23 +131,6 @@ def report_memory_after_task(**kwargs) -> None:
         task_count=_worker_task_count,
         top_allocations=top_allocations,
     )
-
-    if os.environ.get("NEW_RELIC_LICENSE_KEY"):
-        import newrelic.agent
-
-        newrelic.agent.record_custom_event(
-            "WorkerMemoryReport",
-            {
-                "pid": pid,
-                "rss_mb": round(rss_mb, 1),
-                "vms_mb": round(vms_mb, 1),
-                "rss_growth_mb": round(rss_growth_mb, 1),
-                "task_count": _worker_task_count,
-                # Top allocation as a compact string for NR attribute search
-                "top1_location": top_allocations[0]["location"] if top_allocations else "",
-                "top1_size_kb": top_allocations[0]["size_kb"] if top_allocations else 0,
-            },
-        )
 
 
 @worker_process_shutdown.connect

@@ -142,13 +142,6 @@ services:
       - PROMETHEUS_MULTIPROC_DIR=/prometheus-multiproc-dir/celery-worker
       - MEDIA_ROOT=${MEDIA_ROOT:-/root/src/media}
       - SENTINEL_MODE=${SENTINEL_MODE:-live}
-      # New Relic — forwarded from .env; agent is disabled when key is empty
-      - NEW_RELIC_LICENSE_KEY=${NEW_RELIC_LICENSE_KEY:-}
-      - NEW_RELIC_APP_NAME=${NEW_RELIC_APP_NAME:-sentinel-tower-celery-worker}
-      - NEW_RELIC_LOG=${NEW_RELIC_LOG:-stdout}
-      - NEW_RELIC_LOG_LEVEL=${NEW_RELIC_LOG_LEVEL:-info}
-      - NEW_RELIC_GC_RUNTIME_METRICS_ENABLED=${NEW_RELIC_GC_RUNTIME_METRICS_ENABLED:-true}
-      - NEW_RELIC_DISTRIBUTED_TRACING_ENABLED=${NEW_RELIC_DISTRIBUTED_TRACING_ENABLED:-true}
     command: ./celery-entrypoint.sh
     volumes:
       - ${MEDIA_VOLUME_PATH:-./media}:/root/src/media
@@ -192,46 +185,46 @@ services:
     logging:
       <<: *logging
 
-  dagster:
-    image: project/app
-    healthcheck:
-      test: wget -qO- 127.0.0.1:3000/dagster/server_info > /dev/null || exit 1
-    init: true
-    restart: unless-stopped
-    env_file: ./.env
-    environment:
-      - DEBUG=off
-      - DAGSTER_HOME=/root/src
-      - MEDIA_ROOT=${MEDIA_ROOT:-/root/src/media}
-    command: ./dagster-entrypoint.sh
-    volumes:
-      - ${MEDIA_VOLUME_PATH:-./media}:/root/src/media
-      - dagster-storage:/root/src/.dagster
-    depends_on:
-      - redis
-      - db
-    ports:
-      - 127.0.0.1:3000:3000
-    logging:
-      <<: *logging
+  # dagster:
+  #   image: project/app
+  #   healthcheck:
+  #     test: wget -qO- 127.0.0.1:3000/dagster/server_info > /dev/null || exit 1
+  #   init: true
+  #   restart: unless-stopped
+  #   env_file: ./.env
+  #   environment:
+  #     - DEBUG=off
+  #     - DAGSTER_HOME=/root/src
+  #     - MEDIA_ROOT=${MEDIA_ROOT:-/root/src/media}
+  #   command: ./dagster-entrypoint.sh
+  #   volumes:
+  #     - ${MEDIA_VOLUME_PATH:-./media}:/root/src/media
+  #     - dagster-storage:/root/src/.dagster
+  #   depends_on:
+  #     - redis
+  #     - db
+  #   ports:
+  #     - 127.0.0.1:3000:3000
+  #   logging:
+  #     <<: *logging
 
-  dagster-daemon:
-    image: project/app
-    init: true
-    restart: unless-stopped
-    env_file: ./.env
-    environment:
-      - DEBUG=off
-      - DAGSTER_HOME=/root/src
-      - MEDIA_ROOT=${MEDIA_ROOT:-/root/src/media}
-    command: dagster-daemon run -m project.dagster.definitions
-    volumes:
-      - ${MEDIA_VOLUME_PATH:-./media}:/root/src/media
-      - dagster-storage:/root/src/.dagster
-    depends_on:
-      - dagster
-    logging:
-      <<: *logging
+  # dagster-daemon:
+  #   image: project/app
+  #   init: true
+  #   restart: unless-stopped
+  #   env_file: ./.env
+  #   environment:
+  #     - DEBUG=off
+  #     - DAGSTER_HOME=/root/src
+  #     - MEDIA_ROOT=${MEDIA_ROOT:-/root/src/media}
+  #   command: dagster-daemon run -m project.dagster.definitions
+  #   volumes:
+  #     - ${MEDIA_VOLUME_PATH:-./media}:/root/src/media
+  #     - dagster-storage:/root/src/.dagster
+  #   depends_on:
+  #     - dagster
+  #   logging:
+  #     <<: *logging
 
   nginx:
     image: 'ghcr.io/reef-technologies/nginx-rt:v1.2.2'
@@ -259,7 +252,6 @@ services:
       - app
       - cadvisor
       - node-exporter
-      - dagster
       - grafana
     command: nginx -g 'daemon off;'
     ports:
@@ -286,28 +278,6 @@ services:
       - '--collector.filesystem.mount-points-exclude=^/(sys|proc|dev|host|etc|run|boot|var/.+)($$|/)'
       - '--collector.textfile.directory=textfile_collectors'
       - '--collector.tcpstat'
-    logging:
-      <<: *logging
-
-  newrelic-infra:
-    build:
-      context: .
-      dockerfile: newrelic-infra/newrelic-infra.dockerfile
-    container_name: newrelic-infra
-    restart: unless-stopped
-    network_mode: host
-    pid: host
-    privileged: true
-    cap_add:
-      - SYS_PTRACE
-    environment:
-      - NRIA_LICENSE_KEY=${NEW_RELIC_LICENSE_KEY}
-      - NRIA_DISPLAY_NAME=sentinel-tower
-      - NRIA_VERBOSE=0
-      - TINI_SUBREAPER=1
-    volumes:
-      - "/:/host:ro"
-      - "/var/run/docker.sock:/var/run/docker.sock"
     logging:
       <<: *logging
 
@@ -428,6 +398,6 @@ volumes:
   gunicorn-socket:
   nodeexporter_collectors:
   alloy-data:
-  dagster-storage:
+
   prometheus-data:
   grafana-data:
