@@ -9,9 +9,9 @@ upstream gunicorn {
     server unix:/var/run/gunicorn/gunicorn.sock fail_timeout=0;
 }
 
-upstream dagster {
-    server dagster:3000;
-}
+# upstream dagster {
+#     server dagster:3000;
+# }
 
 upstream grafana {
     server grafana:3000;
@@ -116,23 +116,23 @@ server {
         proxy_set_header Connection "upgrade";
     }
 
-    # Dagster
-    location = /dagster {
-        return 301 $scheme://$host/dagster/;
-    }
+    # # Dagster
+    # location = /dagster {
+    #     return 301 $scheme://$host/dagster/;
+    # }
 
-    location /dagster/ {
-        proxy_pass http://dagster/dagster/;
-        proxy_http_version 1.1;
-        proxy_set_header Host $http_host;
-        proxy_set_header X-Real-IP $remote_addr;
-        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
-        proxy_set_header X-Forwarded-Proto $scheme;
-        # WebSocket support for Dagster UI
-        proxy_set_header Upgrade $http_upgrade;
-        proxy_set_header Connection "upgrade";
-        proxy_read_timeout 86400;
-    }
+    # location /dagster/ {
+    #     proxy_pass http://dagster/dagster/;
+    #     proxy_http_version 1.1;
+    #     proxy_set_header Host $http_host;
+    #     proxy_set_header X-Real-IP $remote_addr;
+    #     proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+    #     proxy_set_header X-Forwarded-Proto $scheme;
+    #     # WebSocket support for Dagster UI
+    #     proxy_set_header Upgrade $http_upgrade;
+    #     proxy_set_header Connection "upgrade";
+    #     proxy_read_timeout 86400;
+    # }
 
     # Backend (default)
     location / {

@@ -88,6 +88,7 @@ class Extrinsic(models.Model):
     block_timestamp = models.PositiveBigIntegerField(
         null=True,
         blank=True,
+        db_index=True,
         help_text="Block timestamp from Timestamp.Now",
     )
 
