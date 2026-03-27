@@ -264,7 +264,7 @@ services:
       - REDIS_HOST=redis
       - REDIS_PORT=6379
       - MEDIA_ROOT=${MEDIA_ROOT:-/root/src/media}
-    command: python manage.py backfill_missing_extrinsics
+    command: python manage.py backfill_extrinsics
     volumes:
       - ${MEDIA_VOLUME_PATH:-./app/src/media}:/root/src/media
     profiles:
