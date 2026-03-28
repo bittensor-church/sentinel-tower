@@ -1475,18 +1475,6 @@ wheels = [
 ]
 
 [[package]]
-name = "newrelic"
-version = "11.5.0"
-source = { registry = "https://pypi.org/simple" }
-sdist = { url = "https://files.pythonhosted.org/packages/19/09/7031e28416bd79111e4dc2986f54bbfdbd707bf712210388ff649a2528f0/newrelic-11.5.0.tar.gz", hash = "sha256:39607be7a43d1bff59119039b0e9c145bf27debbc2075ec24549817a8faf5a5c", size = 1415240, upload-time = "2026-02-20T00:17:29.971Z" }
-wheels = [
-    { url = "https://files.pythonhosted.org/packages/c6/14/19628204ea57072ee70e1aab87896058b731ad32aa2c62d0b3f5257417d5/newrelic-11.5.0-cp311-cp311-manylinux1_x86_64.manylinux_2_28_x86_64.manylinux_2_5_x86_64.whl", hash = "sha256:b3adbe17625cb62495b108b3ed9ecb3f2ed248e024c1f07e6fce8dd86d8394d1", size = 921510, upload-time = "2026-02-20T00:16:43.125Z" },
-    { url = "https://files.pythonhosted.org/packages/f1/b7/ae54f75597b9c61fcde31745ca007f9a157db9ecef416451193bad323fe1/newrelic-11.5.0-cp311-cp311-manylinux2014_aarch64.manylinux_2_17_aarch64.manylinux_2_28_aarch64.whl", hash = "sha256:de40cb14a0dea7c29d9d0155c2a3aebd56c2fa12c9066692bf38a8df90f3d6a6", size = 923513, upload-time = "2026-02-20T00:16:45.082Z" },
-    { url = "https://files.pythonhosted.org/packages/ca/93/b4d424bbc65cd208f0cc8aa468b1b95b718bf00c6880f9f5ea8d2b90f488/newrelic-11.5.0-cp311-cp311-musllinux_1_2_aarch64.whl", hash = "sha256:6616b785a2deccb74ae7313799dcba4929ee9c707fbf1f15bc7ef0364facf7f4", size = 921816, upload-time = "2026-02-20T00:16:47.288Z" },
-    { url = "https://files.pythonhosted.org/packages/af/ba/a2d09b8dc0029626155d671ae8c78e0b29461a9af4cd5103ee7d4c99a484/newrelic-11.5.0-cp311-cp311-musllinux_1_2_x86_64.whl", hash = "sha256:07b0dce0d4d55679a80f617e03d8292b1dc1e8b4391f5b76cf13dc0768ed5eeb", size = 921002, upload-time = "2026-02-20T00:16:49.185Z" },
-]
-
-[[package]]
 name = "nox"
 version = "2024.10.9"
 source = { registry = "https://pypi.org/simple" }
@@ -2103,7 +2091,6 @@ dependencies = [
     { name = "gunicorn" },
     { name = "ipython" },
     { name = "more-itertools" },
-    { name = "newrelic" },
     { name = "nox" },
     { name = "prometheus-client" },
     { name = "psutil" },
@@ -2162,7 +2149,6 @@ requires-dist = [
     { name = "gunicorn", specifier = "==20.1.0" },
     { name = "ipython", specifier = "~=8.14.0" },
     { name = "more-itertools", specifier = "~=10.3.0" },
-    { name = "newrelic", specifier = ">=10.0.0" },
     { name = "nox", specifier = "==2024.10.9" },
     { name = "prometheus-client", specifier = "~=0.17.0" },
     { name = "psutil", specifier = ">=5.9.8" },

@@ -1,10 +1,12 @@
 import abc
-import os
 
+import environ
 import httpx
 import structlog
 
 logger = structlog.get_logger()
+
+env = environ.Env()
 
 _DISABLED_WEBHOOK_PATTERNS = ("disabled", "https://discord.com/api/webhooks/0/disabled")
 
@@ -24,28 +26,27 @@ class DiscordWebhookChannel(NotificationChannel):
     def __init__(self, env_var: str):
         self.env_var = env_var
 
-    def _get_webhook_url(self) -> str | None:
-        url = os.environ.get(self.env_var, "")
-        if not url or any(p in url for p in _DISABLED_WEBHOOK_PATTERNS):
-            return None
-        return url
+    def _get_webhook_urls(self) -> list[str]:
+        urls = env.list(self.env_var, default=[])
+        return [u for u in urls if u and not any(p in u for p in _DISABLED_WEBHOOK_PATTERNS)]
 
     def send(self, payload: dict) -> bool:
-        url = self._get_webhook_url()
-        if not url:
+        urls = self._get_webhook_urls()
+        if not urls:
             return False
 
-        try:
-            with httpx.Client(timeout=10.0) as client:
-                response = client.post(url, json=payload)
-                response.raise_for_status()
-        except httpx.HTTPStatusError as e:
-            logger.warning("Discord webhook failed", status_code=e.response.status_code, env_var=self.env_var)
-            return False
-        except Exception as e:  # noqa: BLE001
-            logger.warning("Discord webhook error", error=str(e), env_var=self.env_var)
-            return False
-        return True
+        any_sent = False
+        for url in urls:
+            try:
+                with httpx.Client(timeout=10.0) as client:
+                    response = client.post(url, json=payload)
+                    response.raise_for_status()
+                    any_sent = True
+            except httpx.HTTPStatusError as e:
+                logger.warning("Discord webhook failed", status_code=e.response.status_code, env_var=self.env_var)
+            except Exception as e:  # noqa: BLE001
+                logger.warning("Discord webhook error", error=str(e), env_var=self.env_var)
+        return any_sent
 
     def __repr__(self) -> str:
         return f"DiscordWebhookChannel({self.env_var!r})"
