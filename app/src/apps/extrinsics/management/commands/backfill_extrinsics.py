@@ -16,6 +16,10 @@ DEFAULT_LOOKBACK = 12_000
 DEFAULT_RATE_LIMIT = 1.0
 
 
+def _get_lookback_default() -> int:
+    return int(os.environ.get("BACKFILL_LOOKBACK", DEFAULT_LOOKBACK))
+
+
 def _get_rate_limit_default() -> float:
     return float(os.environ.get("BACKFILL_RATE_LIMIT", DEFAULT_RATE_LIMIT))
 
@@ -36,8 +40,8 @@ class Command(BaseCommand):
         parser.add_argument(
             "--lookback",
             type=int,
-            default=DEFAULT_LOOKBACK,
-            help=f"Number of blocks behind head to scan for gaps (default: {DEFAULT_LOOKBACK})",
+            default=None,
+            help="Number of blocks behind head to scan for gaps (default: BACKFILL_LOOKBACK env or 12000)",
         )
         parser.add_argument(
             "--rate-limit",
@@ -50,7 +54,7 @@ class Command(BaseCommand):
         signal.signal(signal.SIGTERM, self._handle_signal)
         signal.signal(signal.SIGINT, self._handle_signal)
 
-        lookback: int = options["lookback"]
+        lookback: int = options["lookback"] if options["lookback"] is not None else _get_lookback_default()
         rate_limit: float = options["rate_limit"] if options["rate_limit"] is not None else _get_rate_limit_default()
 
         # Determine scan range: [head - 300 - lookback, head - 300]

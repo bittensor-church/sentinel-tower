@@ -101,7 +101,7 @@ def store_block_extrinsics(block_number: int, provider: BittensorProvider) -> st
     timestamp = block.timestamp
 
     t1 = time.monotonic()
-    logger.info(
+    logger.debug(
         "Block ingested",
         block_number=block_number,
         extrinsic_count=len(extrinsics) if extrinsics else 0,
@@ -117,14 +117,14 @@ def store_block_extrinsics(block_number: int, provider: BittensorProvider) -> st
     # Store to JSONL artifact
     artifact_count = store_extrinsics_artifact(extrinsics, block_number, timestamp)
     t3 = time.monotonic()
-    logger.info(
+    logger.debug(
         "Artifacts stored", block_number=block_number, artifact_count=artifact_count, duration_s=round(t3 - t2, 3)
     )
 
     # Sync to Django models
     db_count = sync_extrinsics_to_db(extrinsics, block_number, timestamp)
     t4 = time.monotonic()
-    logger.info("DB sync completed", block_number=block_number, db_count=db_count, duration_s=round(t4 - t3, 3))
+    logger.debug("DB sync completed", block_number=block_number, db_count=db_count, duration_s=round(t4 - t3, 3))
 
     logger.info(
         "Stored and synced extrinsics",
@@ -173,7 +173,7 @@ def sync_extrinsics_to_db(extrinsics: list[ExtrinsicDTO], block_number: int, tim
     )
 
     t1 = time.monotonic()
-    logger.info(
+    logger.debug(
         "sync_extrinsics_to_db: fetched existing hashes",
         block_number=block_number,
         existing_count=len(existing_hashes),
@@ -201,7 +201,7 @@ def sync_extrinsics_to_db(extrinsics: list[ExtrinsicDTO], block_number: int, tim
         Extrinsic.objects.bulk_create(records_to_create, ignore_conflicts=True)
 
     t2 = time.monotonic()
-    logger.info(
+    logger.debug(
         "sync_extrinsics_to_db: bulk_create done",
         block_number=block_number,
         created_count=len(records_to_create),
@@ -212,12 +212,12 @@ def sync_extrinsics_to_db(extrinsics: list[ExtrinsicDTO], block_number: int, tim
     enriched = enrich_extrinsics_with_previous_values(parsed_for_notifications)
 
     t3 = time.monotonic()
-    logger.info("sync_extrinsics_to_db: enrichment done", block_number=block_number, duration_s=round(t3 - t2, 3))
+    logger.debug("sync_extrinsics_to_db: enrichment done", block_number=block_number, duration_s=round(t3 - t2, 3))
 
     dispatch_block_notifications(block_number, enriched)
 
     t4 = time.monotonic()
-    logger.info(
+    logger.debug(
         "sync_extrinsics_to_db: notifications dispatched", block_number=block_number, duration_s=round(t4 - t3, 3)
     )
 
