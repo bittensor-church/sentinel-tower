@@ -88,6 +88,8 @@ services:
       - celery-worker
       - redis
       - db
+    profiles:
+      - scheduler
     logging:
       <<: *logging
 
@@ -106,6 +108,26 @@ services:
     depends_on:
       - redis
       - db
+    logging:
+      <<: *logging
+
+  sync-metagraph:
+    image: project/app
+    init: true
+    restart: always
+    env_file: ./.env
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+    environment:
+      - MEDIA_ROOT=${MEDIA_ROOT:-/root/src/media}
+    command: python manage.py sync_metagraph
+    volumes:
+      - ${MEDIA_VOLUME_PATH:-./media}:/root/src/media
+    depends_on:
+      - redis
+      - db
+    profiles:
+      - metagraph
     logging:
       <<: *logging
 
@@ -149,6 +171,8 @@ services:
     tmpfs: /run
     depends_on:
       - redis
+    profiles:
+      - scheduler
     logging:
       <<: *logging
 
@@ -164,6 +188,8 @@ services:
       - ./logs:/tmp/logs
     depends_on:
       - redis
+    profiles:
+      - scheduler
     logging:
       <<: *logging
 
@@ -182,6 +208,8 @@ services:
       - celery-worker
     ports:
       - 127.0.0.1:5555:5555
+    profiles:
+      - scheduler
     logging:
       <<: *logging
 
@@ -368,6 +396,8 @@ services:
       - SLACK_WEBHOOK_URL=${SLACK_WEBHOOK_URL}
     ports:
       - 127.0.0.1:9093:9093
+    profiles:
+      - scheduler
     logging:
       <<: *logging
 

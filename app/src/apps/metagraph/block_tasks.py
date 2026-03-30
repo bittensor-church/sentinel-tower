@@ -3,6 +3,7 @@ from datetime import UTC, datetime
 import structlog
 from abstract_block_dumper.v1.decorators import block_task
 from django.conf import settings
+from sentinel.v1.providers.bittensor import BittensorProvider
 from sentinel.v1.services.sentinel import sentinel_service
 
 import apps.metagraph.utils as metagraph_utils
@@ -26,26 +27,18 @@ def _get_epoch_position(block_number: int, netuid: int) -> str:
     return "inside"
 
 
-@block_task(
-    condition=lambda block_number, netuid: MetagraphService.is_dumpable_block(block_number, netuid),
-    args=[{"netuid": netuid} for netuid in MetagraphService.netuids_to_sync()],
-    celery_kwargs={"queue": "metagraph"},
-)
-def store_metagraph(block_number: int, netuid: int) -> str:
+def sync_metagraph_for_block(block_number: int, netuid: int, provider: BittensorProvider) -> str:
     """
-    Store the metagraph for the given netuid at the specified block number.
+    Sync metagraph for the given netuid at the specified block using an existing provider.
 
     Fetches metagraph data from the blockchain, stores it as a JSONL artifact,
     and syncs it to Django models.
     """
     started_at = datetime.now(UTC)
 
-    provider_ctx = get_provider_for_block(block_number)
-
-    with provider_ctx as provider:
-        service = sentinel_service(provider)
-        subnet = service.ingest_subnet(netuid, block_number, lite=settings.METAGRAPH_LITE)
-        metagraph = subnet.metagraph
+    service = sentinel_service(provider)
+    subnet = service.ingest_subnet(netuid, block_number, lite=settings.METAGRAPH_LITE)
+    metagraph = subnet.metagraph
 
     finished_at = datetime.now(UTC)
 
@@ -86,6 +79,24 @@ def store_metagraph(block_number: int, netuid: int) -> str:
     )
 
     return artifact_path
+
+
+@block_task(
+    condition=lambda block_number, netuid: MetagraphService.is_dumpable_block(block_number, netuid),
+    args=[{"netuid": netuid} for netuid in MetagraphService.netuids_to_sync()],
+    celery_kwargs={"queue": "metagraph"},
+)
+def store_metagraph(block_number: int, netuid: int) -> str:
+    """
+    Store the metagraph for the given netuid at the specified block number.
+
+    Fetches metagraph data from the blockchain, stores it as a JSONL artifact,
+    and syncs it to Django models.
+    """
+    provider_ctx = get_provider_for_block(block_number)
+
+    with provider_ctx as provider:
+        return sync_metagraph_for_block(block_number, netuid, provider)
 
 
 # @block_task(
