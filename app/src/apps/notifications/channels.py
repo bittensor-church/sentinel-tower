@@ -1,12 +1,10 @@
 import abc
+import os
 
-import environ
 import httpx
 import structlog
 
 logger = structlog.get_logger()
-
-env = environ.Env()
 
 _DISABLED_WEBHOOK_PATTERNS = ("disabled", "https://discord.com/api/webhooks/0/disabled")
 
@@ -27,7 +25,10 @@ class DiscordWebhookChannel(NotificationChannel):
         self.env_var = env_var
 
     def _get_webhook_urls(self) -> list[str]:
-        urls = env.list(self.env_var, default=[])
+        raw = os.environ.get(self.env_var, "")
+        if not raw:
+            return []
+        urls = [u.strip() for u in raw.split(",")]
         return [u for u in urls if u and not any(p in u for p in _DISABLED_WEBHOOK_PATTERNS)]
 
     def send(self, payload: dict) -> bool:

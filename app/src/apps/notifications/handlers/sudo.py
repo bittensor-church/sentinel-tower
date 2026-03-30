@@ -10,7 +10,7 @@ class SudoNotification(ExtrinsicNotification):
     """Catch-all notification for Sudo extrinsics not matched by specific handlers."""
 
     extrinsics: ClassVar[list[str]] = ["Sudo"]
-    channels: ClassVar = [DiscordWebhookChannel("DISCORD_SUDO_ALERTS_WEBHOOK_URL")]
+    channel: ClassVar = DiscordWebhookChannel("DISCORD_SUDO_ALERTS_WEBHOOK_URL")
 
     def format_message(self, block_number: int, extrinsics: list[dict[str, Any]]) -> dict[str, Any]:
         first = extrinsics[0]

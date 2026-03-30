@@ -10,7 +10,7 @@ class SubnetDissolutionNotification(ExtrinsicNotification):
     """Notification for subnet dissolution events."""
 
     extrinsics: ClassVar[list[str]] = ["SubtensorModule:dissolve_network"]
-    channels: ClassVar = [DiscordWebhookChannel("DISCORD_SUBNET_REGISTRATION_WEBHOOK_URL")]
+    channel: ClassVar = DiscordWebhookChannel("DISCORD_SUBNET_REGISTRATION_WEBHOOK_URL")
 
     def format_message(self, block_number: int, extrinsics: list[dict[str, Any]]) -> dict[str, Any]:
         first = extrinsics[0]

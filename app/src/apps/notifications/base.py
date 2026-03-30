@@ -27,7 +27,7 @@ class ExtrinsicNotification(abc.ABC):
     """
 
     extrinsics: ClassVar[list[str]]
-    channels: ClassVar[list[NotificationChannel]]
+    channel: ClassVar[NotificationChannel]
     success_only: ClassVar[bool] = True
 
     def matches(self, call_module: str, call_function: str) -> bool:
@@ -55,10 +55,7 @@ class ExtrinsicNotification(abc.ABC):
             return 0
 
         payload = self.format_message(block_number, extrinsics)
-        sent = False
-        for channel in self.channels:
-            if channel.send(payload):
-                sent = True
+        sent = self.channel.send(payload)
 
         if sent:
             logger.info(

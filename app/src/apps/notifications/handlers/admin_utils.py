@@ -13,7 +13,7 @@ class AdminUtilsNotification(ExtrinsicNotification):
     """
 
     extrinsics: ClassVar[list[str]] = ["AdminUtils"]
-    channels: ClassVar = [DiscordWebhookChannel("DISCORD_ADMIN_UTILS_ALERTS_WEBHOOK_URL")]
+    channel: ClassVar = DiscordWebhookChannel("DISCORD_ADMIN_UTILS_ALERTS_WEBHOOK_URL")
 
     def format_message(self, block_number: int, extrinsics: list[dict[str, Any]]) -> dict[str, Any]:
         first = extrinsics[0]

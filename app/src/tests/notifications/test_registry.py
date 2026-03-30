@@ -23,7 +23,7 @@ def _make_handler(extrinsic_patterns: list[str], channel: FakeChannel | None = N
 
     class Handler(ExtrinsicNotification):
         extrinsics: ClassVar[list[str]] = extrinsic_patterns
-        channels: ClassVar = [ch]
+        channel: ClassVar = ch
 
         def format_message(self, block_number: int, extrinsics: list[dict[str, Any]]) -> dict[str, Any]:
             return {"content": f"{self.__class__.__name__}: {len(extrinsics)}"}
@@ -48,7 +48,7 @@ def test_register_adds_to_registry():
     @registry_module.register
     class MyNotification(ExtrinsicNotification):
         extrinsics: ClassVar[list[str]] = ["Foo"]
-        channels: ClassVar = []
+        channel: ClassVar = FakeChannel()
 
         def format_message(self, block_number, extrinsics):
             return {}
@@ -61,7 +61,7 @@ def test_register_returns_class():
     @registry_module.register
     class MyNotification(ExtrinsicNotification):
         extrinsics: ClassVar[list[str]] = ["Foo"]
-        channels: ClassVar = []
+        channel: ClassVar = FakeChannel()
 
         def format_message(self, block_number, extrinsics):
             return {}

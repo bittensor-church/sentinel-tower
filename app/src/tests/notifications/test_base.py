@@ -68,7 +68,7 @@ def test_matches_multiple_patterns():
 def test_notify_filters_failed_when_success_only():
     channel = FakeChannel()
     n = StubNotification()
-    n.channels = [channel]
+    n.channel = channel
 
     extrinsics = [
         {"success": True, "call_module": "TestModule"},
@@ -83,7 +83,7 @@ def test_notify_filters_failed_when_success_only():
 def test_notify_returns_zero_when_all_failed():
     channel = FakeChannel()
     n = StubNotification()
-    n.channels = [channel]
+    n.channel = channel
 
     assert n.notify(100, [{"success": False}]) == 0
     assert channel.payloads == []
@@ -92,7 +92,7 @@ def test_notify_returns_zero_when_all_failed():
 def test_notify_skips_success_filter_when_disabled():
     channel = FakeChannel()
     n = StubNotification()
-    n.channels = [channel]
+    n.channel = channel
     n.success_only = False
 
     assert n.notify(100, [{"success": False}]) == 1
@@ -101,25 +101,14 @@ def test_notify_skips_success_filter_when_disabled():
 def test_notify_returns_zero_when_channel_fails():
     channel = FakeChannel(succeed=False)
     n = StubNotification()
-    n.channels = [channel]
+    n.channel = channel
 
     assert n.notify(100, [{"success": True}]) == 0
 
 
-def test_notify_sends_to_multiple_channels():
-    ch1, ch2 = FakeChannel(), FakeChannel()
-    n = StubNotification()
-    n.channels = [ch1, ch2]
-
-    count = n.notify(100, [{"success": True}])
-    assert count == 1
-    assert len(ch1.payloads) == 1
-    assert len(ch2.payloads) == 1
-
-
 def test_notify_empty_extrinsics():
     n = StubNotification()
-    n.channels = [FakeChannel()]
+    n.channel = FakeChannel()
     assert n.notify(100, []) == 0
 
 

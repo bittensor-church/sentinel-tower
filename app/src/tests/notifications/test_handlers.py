@@ -152,24 +152,59 @@ def test_registration_format_decodes_identity(registration_handler):
 # ── ColdkeySwapNotification ───────────────────────────────────────────
 
 
-def test_coldkey_format_shows_params(coldkey_handler):
+def test_coldkey_format_announce(coldkey_handler):
     extrinsics = [
         {
             "call_module": "SubtensorModule",
-            "call_function": "schedule_coldkey_swap",
+            "call_function": "announce_coldkey_swap",
             "extrinsic_index": 4,
+            "address": "5Gold...",
             "call_args": [
-                {"name": "new_coldkey", "value": "5Gnew..."},
-                {"name": "old_coldkey", "value": "5Gold..."},
+                {"name": "new_coldkey_hash", "value": "0xabc123"},
             ],
         }
     ]
     content = coldkey_handler.format_message(400, extrinsics)["content"]
 
     assert "**Block #400**" in content
-    assert "`schedule_coldkey_swap`" in content
+    assert "**Coldkey Swap Announced**" in content
+    assert "**signer**: `5Gold...`" in content
+    assert "**new_coldkey_hash**: `0xabc123`" in content
+
+
+def test_coldkey_format_executed(coldkey_handler):
+    extrinsics = [
+        {
+            "call_module": "SubtensorModule",
+            "call_function": "swap_coldkey_announced",
+            "extrinsic_index": 5,
+            "address": "5Gold...",
+            "call_args": [
+                {"name": "new_coldkey", "value": "5Gnew..."},
+            ],
+        }
+    ]
+    content = coldkey_handler.format_message(500, extrinsics)["content"]
+
+    assert "**Coldkey Swap Executed**" in content
+    assert "**signer**: `5Gold...`" in content
     assert "**new_coldkey**: `5Gnew...`" in content
-    assert "**old_coldkey**: `5Gold...`" in content
+
+
+def test_coldkey_format_disputed(coldkey_handler):
+    extrinsics = [
+        {
+            "call_module": "SubtensorModule",
+            "call_function": "dispute_coldkey_swap",
+            "extrinsic_index": 6,
+            "address": "5Gkey...",
+            "call_args": [],
+        }
+    ]
+    content = coldkey_handler.format_message(600, extrinsics)["content"]
+
+    assert "**Coldkey Swap Disputed**" in content
+    assert "**signer**: `5Gkey...`" in content
 
 
 # ── SubnetDissolutionNotification ──────────────────────────────────────
