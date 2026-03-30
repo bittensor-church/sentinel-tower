@@ -271,6 +271,31 @@ services:
     profiles:
       - metagraph
 
+  backfill-metagraph:
+    build:
+      context: ./
+      dockerfile: app/envs/prod/Dockerfile
+    image: project/app
+    init: true
+    env_file: ./.env
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+    environment:
+      - DATABASE_URL=postgres://postgres:12345@db:5432/project
+      - POSTGRES_HOST=db
+      - POSTGRES_PORT=5432
+      - REDIS_HOST=redis
+      - REDIS_PORT=6379
+      - MEDIA_ROOT=${MEDIA_ROOT:-/root/src/media}
+    command: python manage.py backfill_metagraph
+    volumes:
+      - ${MEDIA_VOLUME_PATH:-./app/src/media}:/root/src/media
+    profiles:
+      - backfill
+    depends_on:
+      db:
+        condition: service_healthy
+
   backfill-extrinsics:
     build:
       context: ./
