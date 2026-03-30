@@ -17,6 +17,22 @@ class NotificationChannel(abc.ABC):
         """Send a notification payload. Returns True on success."""
         ...
 
+    @staticmethod
+    def _send_to_urls(urls: list[str], payload: dict, *, context: str = "") -> bool:
+        """Send a payload to a list of webhook URLs. Returns True if at least one succeeds."""
+        any_sent = False
+        for url in urls:
+            try:
+                with httpx.Client(timeout=10.0) as client:
+                    response = client.post(url, json=payload)
+                    response.raise_for_status()
+                    any_sent = True
+            except httpx.HTTPStatusError as e:
+                logger.warning("Webhook failed", status_code=e.response.status_code, context=context)
+            except Exception as e:  # noqa: BLE001
+                logger.warning("Webhook error", error=str(e), context=context)
+        return any_sent
+
 
 class DiscordWebhookChannel(NotificationChannel):
     """Delivers notifications via Discord webhook."""
@@ -35,19 +51,33 @@ class DiscordWebhookChannel(NotificationChannel):
         urls = self._get_webhook_urls()
         if not urls:
             return False
-
-        any_sent = False
-        for url in urls:
-            try:
-                with httpx.Client(timeout=10.0) as client:
-                    response = client.post(url, json=payload)
-                    response.raise_for_status()
-                    any_sent = True
-            except httpx.HTTPStatusError as e:
-                logger.warning("Discord webhook failed", status_code=e.response.status_code, env_var=self.env_var)
-            except Exception as e:  # noqa: BLE001
-                logger.warning("Discord webhook error", error=str(e), env_var=self.env_var)
-        return any_sent
+        return self._send_to_urls(urls, payload, context=self.env_var)
 
     def __repr__(self) -> str:
         return f"DiscordWebhookChannel({self.env_var!r})"
+
+
+class DatabaseWebhookChannel(NotificationChannel):
+    """Delivers notifications via webhook URLs stored in the database, keyed by subnet."""
+
+    def __init__(self, netuid: int):
+        self.netuid = netuid
+
+    def _get_webhook_urls(self) -> list[str]:
+        from apps.notifications.models import SubnetWebhook
+
+        return list(
+            SubnetWebhook.objects.filter(
+                netuid=self.netuid,
+                enabled=True,
+            ).values_list("url", flat=True)
+        )
+
+    def send(self, payload: dict) -> bool:
+        urls = self._get_webhook_urls()
+        if not urls:
+            return False
+        return self._send_to_urls(urls, payload, context=f"subnet:{self.netuid}")
+
+    def __repr__(self) -> str:
+        return f"DatabaseWebhookChannel(netuid={self.netuid})"

@@ -3,7 +3,7 @@ from typing import Any, ClassVar
 
 import structlog
 
-from apps.notifications.channels import NotificationChannel
+from apps.notifications.channels import DatabaseWebhookChannel, NotificationChannel
 
 logger = structlog.get_logger()
 
@@ -161,3 +161,58 @@ class ExtrinsicNotification(abc.ABC):
             netuid = ext.get("netuid")
             groups.setdefault(netuid, []).append(ext)
         return groups
+
+
+class SubnetRoutedNotification(ExtrinsicNotification):
+    """Base for notifications routed to per-subnet webhook URLs from the database.
+
+    Groups extrinsics by netuid and sends each group to the webhook URLs
+    configured in the SubnetWebhook model for that subnet.
+
+    Subclasses must define:
+        extrinsics: patterns to match
+        format_message: build notification payload
+
+    Optionally define:
+        fallback_channel: used when no DB webhooks are configured for a netuid
+    """
+
+    fallback_channel: ClassVar[NotificationChannel | None] = None
+
+    @property
+    def channel(self) -> NotificationChannel:  # type: ignore[override]
+        raise AttributeError("SubnetRoutedNotification does not use a static channel")
+
+    def notify(self, block_number: int, extrinsics: list[dict[str, Any]]) -> int:
+        """Filter, group by netuid, and send to per-subnet webhook URLs."""
+        if self.success_only:
+            extrinsics = [e for e in extrinsics if e.get("success", False)]
+
+        if not extrinsics:
+            return 0
+
+        total = 0
+        for netuid, group in self.group_by_netuid(extrinsics).items():
+            payload = self.format_message(block_number, group)
+
+            if netuid is not None:
+                db_channel = DatabaseWebhookChannel(netuid)
+                sent = db_channel.send(payload)
+                if not sent and self.fallback_channel:
+                    sent = self.fallback_channel.send(payload)
+            elif self.fallback_channel:
+                sent = self.fallback_channel.send(payload)
+            else:
+                continue
+
+            if sent:
+                logger.info(
+                    "Subnet notification sent",
+                    notification=self.__class__.__name__,
+                    netuid=netuid,
+                    block_number=block_number,
+                    extrinsic_count=len(group),
+                )
+                total += len(group)
+
+        return total

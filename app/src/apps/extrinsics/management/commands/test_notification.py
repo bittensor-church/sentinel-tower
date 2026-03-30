@@ -95,15 +95,17 @@ class Command(BaseCommand):
             },
             "coldkey_swap": {
                 "call_module": "SubtensorModule",
-                "call_function": "schedule_coldkey_swap",
+                "call_function": "announce_coldkey_swap",
                 "block_number": 1234567,
                 "extrinsic_index": 4,
                 "address": "5DAAnrj7VHTznn2AWBemMuyBwZWs6FNFjdyVXUeYum3PTXFy",
                 "extrinsic_hash": "0xfedcba9876543210fedcba9876543210fedcba9876543210fedcba9876543210",
                 "success": True,
                 "call_args": [
-                    {"name": "new_coldkey", "value": "5GrwvaEF5zXb26Fz9rcQpDWS57CtERHpNehXCPcNoHGKutQY"},
-                    {"name": "old_coldkey", "value": "5DAAnrj7VHTznn2AWBemMuyBwZWs6FNFjdyVXUeYum3PTXFy"},
+                    {
+                        "name": "new_coldkey_hash",
+                        "value": "0x9876543210fedcba9876543210fedcba9876543210fedcba9876543210fedcba",
+                    },
                 ],
             },
         }

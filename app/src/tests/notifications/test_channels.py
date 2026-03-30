@@ -3,7 +3,7 @@ from unittest.mock import MagicMock, patch
 import httpx
 import pytest
 
-from apps.notifications.channels import DiscordWebhookChannel
+from apps.notifications.channels import DatabaseWebhookChannel, DiscordWebhookChannel
 
 
 @pytest.fixture
@@ -177,3 +177,73 @@ def test_send_returns_false_on_connection_error(mock_client_cls, channel, monkey
 
 def test_repr(channel):
     assert repr(channel) == "DiscordWebhookChannel('TEST_WEBHOOK_URL')"
+
+
+# ── DatabaseWebhookChannel ──────────────────────────────────────────
+
+
+@pytest.mark.django_db
+def test_db_channel_returns_urls_for_netuid():
+    from apps.notifications.models import SubnetWebhook
+
+    SubnetWebhook.objects.create(netuid=1, url="https://discord.com/api/webhooks/111/aaa")
+    SubnetWebhook.objects.create(netuid=1, url="https://discord.com/api/webhooks/222/bbb")
+    SubnetWebhook.objects.create(netuid=2, url="https://discord.com/api/webhooks/333/ccc")
+
+    ch = DatabaseWebhookChannel(netuid=1)
+    urls = ch._get_webhook_urls()
+    assert len(urls) == 2
+    assert "https://discord.com/api/webhooks/111/aaa" in urls
+    assert "https://discord.com/api/webhooks/222/bbb" in urls
+
+
+@pytest.mark.django_db
+def test_db_channel_filters_disabled():
+    from apps.notifications.models import SubnetWebhook
+
+    SubnetWebhook.objects.create(netuid=1, url="https://discord.com/api/webhooks/111/aaa", enabled=True)
+    SubnetWebhook.objects.create(netuid=1, url="https://discord.com/api/webhooks/222/bbb", enabled=False)
+
+    ch = DatabaseWebhookChannel(netuid=1)
+    urls = ch._get_webhook_urls()
+    assert urls == ["https://discord.com/api/webhooks/111/aaa"]
+
+
+@pytest.mark.django_db
+def test_db_channel_returns_empty_for_unknown_netuid():
+    ch = DatabaseWebhookChannel(netuid=999)
+    assert ch._get_webhook_urls() == []
+
+
+@pytest.mark.django_db
+def test_db_channel_send_returns_false_when_no_urls():
+    ch = DatabaseWebhookChannel(netuid=999)
+    assert ch.send({"content": "test"}) is False
+
+
+@pytest.mark.django_db
+@patch("apps.notifications.channels.httpx.Client")
+def test_db_channel_send_posts_to_urls(mock_client_cls):
+    from apps.notifications.models import SubnetWebhook
+
+    SubnetWebhook.objects.create(netuid=1, url="https://discord.com/api/webhooks/111/aaa")
+
+    mock_response = MagicMock()
+    mock_response.raise_for_status = MagicMock()
+    mock_client = MagicMock()
+    mock_client.post.return_value = mock_response
+    mock_client.__enter__ = MagicMock(return_value=mock_client)
+    mock_client.__exit__ = MagicMock(return_value=False)
+    mock_client_cls.return_value = mock_client
+
+    ch = DatabaseWebhookChannel(netuid=1)
+    assert ch.send({"content": "hello"}) is True
+    mock_client.post.assert_called_once_with(
+        "https://discord.com/api/webhooks/111/aaa",
+        json={"content": "hello"},
+    )
+
+
+def test_db_channel_repr():
+    ch = DatabaseWebhookChannel(netuid=42)
+    assert repr(ch) == "DatabaseWebhookChannel(netuid=42)"

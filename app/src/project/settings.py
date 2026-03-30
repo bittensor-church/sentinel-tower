@@ -82,6 +82,7 @@ INSTALLED_APPS = [
     "abstract_block_dumper",
     "constance",
     "project.core",
+    "apps.notifications",
 ]
 
 # Add enabled plugins to INSTALLED_APPS
