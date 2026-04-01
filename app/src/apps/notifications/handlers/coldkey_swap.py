@@ -19,7 +19,7 @@ def _format_arg(name: str, value: Any) -> str:
         try:
             return Keypair(public_key=value).ss58_address
         except Exception:  # noqa: BLE001
-            pass
+            logger.debug("Failed to convert hex to SS58", name=name, value=value)
     return str(value) if value is not None else "N/A"
 
 

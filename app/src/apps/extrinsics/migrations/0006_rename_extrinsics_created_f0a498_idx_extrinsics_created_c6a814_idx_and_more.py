@@ -11,15 +11,12 @@ def rename_index_if_exists(apps, schema_editor):
             ["extrinsics_created_f0a498_idx"],
         )
         if cursor.fetchone():
-            cursor.execute(
-                "ALTER INDEX extrinsics_created_f0a498_idx RENAME TO extrinsics_created_c6a814_idx"
-            )
+            cursor.execute("ALTER INDEX extrinsics_created_f0a498_idx RENAME TO extrinsics_created_c6a814_idx")
 
 
 class Migration(migrations.Migration):
-
     dependencies = [
-        ('extrinsics', '0005_add_block_timestamp_index'),
+        ("extrinsics", "0005_add_block_timestamp_index"),
     ]
 
     operations = [
@@ -29,14 +26,14 @@ class Migration(migrations.Migration):
             ],
             state_operations=[
                 migrations.RenameIndex(
-                    model_name='extrinsic',
-                    new_name='extrinsics_created_c6a814_idx',
-                    old_name='extrinsics_created_f0a498_idx',
+                    model_name="extrinsic",
+                    new_name="extrinsics_created_c6a814_idx",
+                    old_name="extrinsics_created_f0a498_idx",
                 ),
             ],
         ),
         migrations.AddIndex(
-            model_name='extrinsic',
-            index=models.Index(fields=['call_function', 'block_timestamp'], name='extrinsics_call_fu_dba940_idx'),
+            model_name="extrinsic",
+            index=models.Index(fields=["call_function", "block_timestamp"], name="extrinsics_call_fu_dba940_idx"),
         ),
     ]
