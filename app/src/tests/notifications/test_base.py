@@ -1,8 +1,9 @@
 from typing import Any, ClassVar
+from unittest.mock import patch
 
 import pytest
 
-from apps.notifications.base import ExtrinsicNotification
+from apps.notifications.base import ExtrinsicNotification, SubnetRoutedNotification
 from apps.notifications.channels import NotificationChannel
 
 
@@ -268,3 +269,144 @@ def test_group_by_netuid():
     assert len(groups[1]) == 2
     assert len(groups[2]) == 1
     assert len(groups[None]) == 1
+
+
+# ── SubnetRoutedNotification ─────────────────────────────────────────
+
+
+class StubSubnetNotification(SubnetRoutedNotification):
+    extrinsics: ClassVar[list[str]] = ["TestModule"]
+
+    def format_message(self, block_number: int, extrinsics: list[dict[str, Any]]) -> dict[str, Any]:
+        return {"content": f"Block {block_number}, {len(extrinsics)} extrinsics"}
+
+
+@pytest.mark.django_db
+def test_subnet_routed_sends_to_db_channel():
+    from apps.notifications.models import SubnetWebhook
+
+    SubnetWebhook.objects.create(netuid=1, url="https://discord.com/api/webhooks/111/aaa")
+
+    n = StubSubnetNotification()
+    extrinsics = [{"success": True, "netuid": 1}]
+
+    with patch("apps.notifications.channels.httpx.Client") as mock_client_cls:
+        mock_response = _mock_http_response()
+        mock_client = _mock_http_client(mock_client_cls, mock_response)
+
+        count = n.notify(100, extrinsics)
+
+    assert count == 1
+    mock_client.post.assert_called_once()
+
+
+@pytest.mark.django_db
+def test_subnet_routed_falls_back_when_no_db_urls():
+    fallback = FakeChannel()
+    n = StubSubnetNotification()
+    n.fallback_channel = fallback
+
+    extrinsics = [{"success": True, "netuid": 99}]
+    count = n.notify(100, extrinsics)
+
+    assert count == 1
+    assert len(fallback.payloads) == 1
+
+
+@pytest.mark.django_db
+def test_subnet_routed_skips_when_no_db_urls_and_no_fallback():
+    n = StubSubnetNotification()
+    n.fallback_channel = None
+
+    extrinsics = [{"success": True, "netuid": 99}]
+    count = n.notify(100, extrinsics)
+
+    assert count == 0
+
+
+@pytest.mark.django_db
+def test_subnet_routed_uses_fallback_for_none_netuid():
+    fallback = FakeChannel()
+    n = StubSubnetNotification()
+    n.fallback_channel = fallback
+
+    extrinsics = [{"success": True}]  # no netuid
+    count = n.notify(100, extrinsics)
+
+    assert count == 1
+    assert len(fallback.payloads) == 1
+
+
+@pytest.mark.django_db
+def test_subnet_routed_skips_none_netuid_without_fallback():
+    n = StubSubnetNotification()
+    n.fallback_channel = None
+
+    extrinsics = [{"success": True}]  # no netuid
+    count = n.notify(100, extrinsics)
+
+    assert count == 0
+
+
+@pytest.mark.django_db
+def test_subnet_routed_groups_by_netuid():
+    from apps.notifications.models import SubnetWebhook
+
+    SubnetWebhook.objects.create(netuid=1, url="https://discord.com/api/webhooks/111/aaa")
+    SubnetWebhook.objects.create(netuid=2, url="https://discord.com/api/webhooks/222/bbb")
+
+    n = StubSubnetNotification()
+    extrinsics = [
+        {"success": True, "netuid": 1},
+        {"success": True, "netuid": 2},
+        {"success": True, "netuid": 1},
+    ]
+
+    with patch("apps.notifications.channels.httpx.Client") as mock_client_cls:
+        mock_response = _mock_http_response()
+        _mock_http_client(mock_client_cls, mock_response)
+
+        count = n.notify(100, extrinsics)
+
+    assert count == 3
+
+
+@pytest.mark.django_db
+def test_subnet_routed_filters_failed():
+    n = StubSubnetNotification()
+    fallback = FakeChannel()
+    n.fallback_channel = fallback
+
+    extrinsics = [
+        {"success": True, "netuid": 1},
+        {"success": False, "netuid": 1},
+    ]
+    count = n.notify(100, extrinsics)
+
+    assert count == 1
+
+
+def test_subnet_routed_channel_property_raises():
+    n = StubSubnetNotification()
+    with pytest.raises(AttributeError):
+        _ = n.channel
+
+
+# ── Test helpers ─────────────────────────────────────────────────────
+
+from unittest.mock import MagicMock  # noqa: E402
+
+
+def _mock_http_response():
+    mock_response = MagicMock()
+    mock_response.raise_for_status = MagicMock()
+    return mock_response
+
+
+def _mock_http_client(mock_client_cls, mock_response):
+    mock_client = MagicMock()
+    mock_client.post.return_value = mock_response
+    mock_client.__enter__ = MagicMock(return_value=mock_client)
+    mock_client.__exit__ = MagicMock(return_value=False)
+    mock_client_cls.return_value = mock_client
+    return mock_client

@@ -1,6 +1,7 @@
 import os
 import signal
 import time
+from collections.abc import Callable
 
 import structlog
 from django.core.management.base import BaseCommand
@@ -22,6 +23,56 @@ def _get_lookback_default() -> int:
 
 def _get_rate_limit_default() -> float:
     return float(os.environ.get("BACKFILL_RATE_LIMIT", DEFAULT_RATE_LIMIT))
+
+
+def _find_missing_blocks(lookback: int) -> list[int]:
+    with bittensor_provider() as provider:
+        head = provider.get_current_block()
+    max_block = head - 300
+    min_block = max_block - lookback
+
+    logger.info(
+        "Scanning for missing extrinsic blocks",
+        min_block=min_block,
+        max_block=max_block,
+        lookback=lookback,
+    )
+
+    existing = set(
+        Extrinsic.objects.filter(block_number__gte=min_block, block_number__lte=max_block)
+        .values_list("block_number", flat=True)
+        .distinct()
+    )
+    expected = set(range(min_block, max_block + 1))
+    return sorted(expected - existing)
+
+
+def _backfill_blocks(blocks: list[int], rate_limit: float, should_stop: Callable[[], bool]) -> tuple[int, int]:
+    synced = 0
+    errors = 0
+    with get_archive_provider() as provider:
+        for i, block_number in enumerate(blocks):
+            if should_stop():
+                logger.info("Shutdown requested, stopping.")
+                break
+
+            try:
+                result = store_block_extrinsics(block_number, provider)
+                synced += 1
+                logger.info(
+                    "Backfilled block",
+                    block_number=block_number,
+                    result=result or "no extrinsics",
+                    remaining=len(blocks) - i - 1,
+                )
+            except Exception:
+                errors += 1
+                logger.warning("Error backfilling block", block_number=block_number, exc_info=True)
+
+            if rate_limit > 0 and i < len(blocks) - 1:
+                time.sleep(rate_limit)
+
+    return synced, errors
 
 
 class Command(BaseCommand):
@@ -49,69 +100,32 @@ class Command(BaseCommand):
             default=None,
             help="Seconds to sleep between blocks (default: BACKFILL_RATE_LIMIT env or 1.0)",
         )
+        parser.add_argument(
+            "--block",
+            type=int,
+            default=None,
+            help="Specific block number to backfill (skips gap detection)",
+        )
 
     def handle(self, *args, **options):
         signal.signal(signal.SIGTERM, self._handle_signal)
         signal.signal(signal.SIGINT, self._handle_signal)
 
-        lookback: int = options["lookback"] if options["lookback"] is not None else _get_lookback_default()
-        rate_limit: float = options["rate_limit"] if options["rate_limit"] is not None else _get_rate_limit_default()
+        rate_limit = options["rate_limit"] if options["rate_limit"] is not None else _get_rate_limit_default()
 
-        # Determine scan range: [head - 300 - lookback, head - 300]
-        with bittensor_provider() as provider:
-            head = provider.get_current_block()
-        max_block = head - 300
-        min_block = max_block - lookback
+        if options["block"] is not None:
+            missing = [options["block"]]
+            logger.info("Backfilling specific block", block_number=options["block"])
+        else:
+            lookback = options["lookback"] if options["lookback"] is not None else _get_lookback_default()
+            missing = _find_missing_blocks(lookback)
+            if not missing:
+                self.stdout.write("No missing blocks found.")
+                return
+            self.stdout.write(f"Found {len(missing)} missing blocks.")
+            logger.info("Missing blocks detected", count=len(missing), first=missing[0], last=missing[-1])
 
-        logger.info(
-            "Scanning for missing extrinsic blocks",
-            min_block=min_block,
-            max_block=max_block,
-            lookback=lookback,
-            rate_limit=rate_limit,
-        )
-
-        # Find gaps
-        existing = set(
-            Extrinsic.objects.filter(block_number__gte=min_block, block_number__lte=max_block)
-            .values_list("block_number", flat=True)
-            .distinct()
-        )
-        expected = set(range(min_block, max_block + 1))
-        missing = sorted(expected - existing)
-
-        if not missing:
-            self.stdout.write("No missing blocks found.")
-            logger.info("No missing blocks found", min_block=min_block, max_block=max_block)
-            return
-
-        self.stdout.write(f"Found {len(missing)} missing blocks (range {min_block}-{max_block}).")
-        logger.info("Missing blocks detected", count=len(missing), first=missing[0], last=missing[-1])
-
-        # Backfill missing blocks using archive node
-        synced = 0
-        errors = 0
-        with get_archive_provider() as provider:
-            for i, block_number in enumerate(missing):
-                if self._shutdown:
-                    self.stdout.write("Shutdown requested, stopping.")
-                    break
-
-                try:
-                    result = store_block_extrinsics(block_number, provider)
-                    synced += 1
-                    logger.info(
-                        "Backfilled block",
-                        block_number=block_number,
-                        result=result or "no extrinsics",
-                        remaining=len(missing) - i - 1,
-                    )
-                except Exception:
-                    errors += 1
-                    logger.warning("Error backfilling block", block_number=block_number, exc_info=True)
-
-                if rate_limit > 0 and i < len(missing) - 1:
-                    time.sleep(rate_limit)
+        synced, errors = _backfill_blocks(missing, rate_limit, lambda: self._shutdown)
 
         self.stdout.write(f"Done. Synced: {synced}, errors: {errors}, total: {len(missing)}.")
         logger.info("Backfill complete", synced=synced, errors=errors, total=len(missing))

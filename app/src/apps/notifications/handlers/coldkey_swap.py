@@ -1,8 +1,27 @@
 from typing import Any, ClassVar
 
-from apps.notifications.base import ExtrinsicNotification
+import structlog
+from bittensor import Keypair
+
+from apps.metagraph.services.coldkey_roles import ColdkeyRoles, resolve_coldkey_roles
+from apps.notifications.base import SubnetRoutedNotification
 from apps.notifications.channels import DiscordWebhookChannel
 from apps.notifications.registry import register
+
+logger = structlog.get_logger()
+
+_HEX_KEY_ARGS = {"old_coldkey", "new_coldkey", "coldkey"}
+
+
+def _format_arg(name: str, value: Any) -> str:
+    """Format a call argument, converting hex public keys to SS58 addresses."""
+    if name in _HEX_KEY_ARGS and isinstance(value, str) and value.startswith("0x"):
+        try:
+            return Keypair(public_key=value).ss58_address
+        except Exception:  # noqa: BLE001
+            logger.debug("Failed to convert hex to SS58", name=name, value=value)
+    return str(value) if value is not None else "N/A"
+
 
 _ACTION_LABELS: dict[str, str] = {
     "announce_coldkey_swap": "Coldkey Swap Announced",
@@ -14,11 +33,15 @@ _ACTION_LABELS: dict[str, str] = {
 
 
 @register
-class ColdkeySwapNotification(ExtrinsicNotification):
+class ColdkeySwapNotification(SubnetRoutedNotification):
     """Notification for coldkey swap events.
 
     Covers the full announce -> wait -> execute lifecycle plus
     dispute, reset, and clear actions.
+
+    Since coldkey swap extrinsics carry no netuid, the handler looks up
+    the signer's roles (subnet owner / validator / miner) and routes
+    notifications to all associated subnets.
     """
 
     extrinsics: ClassVar[list[str]] = [
@@ -28,16 +51,57 @@ class ColdkeySwapNotification(ExtrinsicNotification):
         "SubtensorModule:reset_coldkey_swap",
         "SubtensorModule:clear_coldkey_swap_announcement",
     ]
-    channel: ClassVar = DiscordWebhookChannel("DISCORD_COLDKEY_SWAP_WEBHOOK_URL")
+    fallback_channel: ClassVar = DiscordWebhookChannel("DISCORD_COLDKEY_SWAP_WEBHOOK_URL")
+
+    def notify(self, block_number: int, extrinsics: list[dict[str, Any]]) -> int:
+        """Enrich extrinsics with coldkey roles and discovered netuids, then route."""
+        if self.success_only:
+            extrinsics = [e for e in extrinsics if e.get("success", False)]
+
+        if not extrinsics:
+            return 0
+
+        # Resolve roles for each unique signer and attach to extrinsics
+        roles_cache: dict[str, ColdkeyRoles] = {}
+        enriched: list[dict[str, Any]] = []
+        for ext in extrinsics:
+            address = ext.get("address", "")
+            if address and address not in roles_cache:
+                try:
+                    roles_cache[address] = resolve_coldkey_roles(address)
+                except Exception:  # noqa: BLE001
+                    logger.warning("Failed to resolve coldkey roles", address=address)
+                    roles_cache[address] = ColdkeyRoles()
+
+            roles = roles_cache.get(address, ColdkeyRoles())
+            netuids = roles.all_netuids
+
+            if netuids:
+                # Fan out to each associated subnet for routing
+                for netuid in netuids:
+                    enriched.append({**ext, "netuid": netuid, "_coldkey_roles": roles})
+            else:
+                enriched.append({**ext, "_coldkey_roles": roles})
+
+        return super().notify(block_number, enriched)
 
     def format_message(self, block_number: int, extrinsics: list[dict[str, Any]]) -> dict[str, Any]:
         first = extrinsics[0]
         link = self.taostats_link(block_number, first.get("extrinsic_index", 0))
         unwrapped = [self.unwrap_sudo_call(e) for e in extrinsics]
 
+        # Deduplicate: when fanned out, the same extrinsic appears per-netuid
+        seen: set[tuple[str, str]] = set()
+        unique: list[dict[str, Any]] = []
+        for ext in unwrapped:
+            key = (ext.get("extrinsic_hash", ""), ext.get("call_function", ""))
+            if key not in seen:
+                seen.add(key)
+                unique.append(ext)
+
         lines = [f"**Block #{block_number}**", ""]
 
-        for ext in unwrapped:
+        for ext in unique:
             lines.append(self._format_swap(ext))
             lines.append("")
 
@@ -49,13 +113,17 @@ class ColdkeySwapNotification(ExtrinsicNotification):
         label = _ACTION_LABELS.get(call_function, call_function)
         address = extrinsic.get("address", "")
         call_args = extrinsic.get("call_args", [])
+        roles: ColdkeyRoles = extrinsic.get("_coldkey_roles", ColdkeyRoles())
 
         parts = [f"**{label}**"]
         if address:
             parts.append(f"**signer**: `{address}`")
 
+        parts.extend(roles.format_lines())
+
         for arg in call_args:
             name = arg.get("name", "")
-            parts.append(f"**{name}**: `{self.format_value(arg.get('value'))}`")
+            value = arg.get("value")
+            parts.append(f"**{name}**: `{_format_arg(name, value)}`")
 
         return "\n".join(parts)

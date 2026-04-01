@@ -90,7 +90,7 @@ ignore = [
 "**/test*/**.py" = ["ANN201", "D", "F403", "F405", "S101", "S106", "S311"]
 
 [tool.codespell]
-skip = '*.min.js,*.lock,*/monitoring_certs/*'
+skip = '*.min.js,*.lock,*/monitoring_certs/*,*/media/*'
 ignore-words-list = 'datas'
 
 [tool.pyright]
