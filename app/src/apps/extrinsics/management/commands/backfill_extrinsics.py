@@ -59,12 +59,17 @@ def _backfill_blocks(blocks: list[int], rate_limit: float, should_stop: Callable
             try:
                 result = store_block_extrinsics(block_number, provider)
                 synced += 1
-                logger.info(
-                    "Backfilled block",
-                    block_number=block_number,
-                    result=result or "no extrinsics",
-                    remaining=len(blocks) - i - 1,
-                )
+                remaining = len(blocks) - i - 1
+                if result:
+                    logger.info(
+                        "Backfilled block",
+                        block=block_number,
+                        extrinsics=result["db_count"],
+                        elapsed_ms=result["elapsed_ms"],
+                        remaining=remaining,
+                    )
+                else:
+                    logger.debug("Backfilled block (empty)", block=block_number, remaining=remaining)
             except Exception:
                 errors += 1
                 logger.warning("Error backfilling block", block_number=block_number, exc_info=True)

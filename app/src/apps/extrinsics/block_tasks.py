@@ -86,7 +86,7 @@ def _parse_extrinsic_record(record: dict) -> dict | None:
     }
 
 
-def store_block_extrinsics(block_number: int, provider: BittensorProvider) -> str:
+def store_block_extrinsics(block_number: int, provider: BittensorProvider) -> dict | None:
     """
     Store extrinsics from the given block number.
 
@@ -109,8 +109,8 @@ def store_block_extrinsics(block_number: int, provider: BittensorProvider) -> st
     )
 
     if not extrinsics:
-        logger.info("No extrinsics found in block", block_number=block_number)
-        return ""
+        logger.debug("No extrinsics found in block", block_number=block_number)
+        return None
 
     t2 = time.monotonic()
 
@@ -126,7 +126,7 @@ def store_block_extrinsics(block_number: int, provider: BittensorProvider) -> st
     t4 = time.monotonic()
     logger.debug("DB sync completed", block_number=block_number, db_count=db_count, duration_s=round(t4 - t3, 3))
 
-    logger.info(
+    logger.debug(
         "Stored and synced extrinsics",
         block_number=block_number,
         artifact_count=artifact_count,
@@ -134,7 +134,7 @@ def store_block_extrinsics(block_number: int, provider: BittensorProvider) -> st
         total_duration_s=round(t4 - t0, 3),
     )
 
-    return f"Block {block_number}: stored {artifact_count} artifacts, synced {db_count} to DB."
+    return {"artifact_count": artifact_count, "db_count": db_count, "elapsed_ms": round((t4 - t0) * 1000)}
 
 
 def store_extrinsics_artifact(extrinsics: list[ExtrinsicDTO], block_number: int, timestamp: int | None) -> int:

@@ -69,7 +69,15 @@ class Command(BaseCommand):
                         break
                     try:
                         result = store_block_extrinsics(block_number, provider)
-                        logger.info("Block processed", block_number=block_number, result=result or "no extrinsics")
+                        if result:
+                            logger.info(
+                                "Extrinsics synced",
+                                block=block_number,
+                                extrinsics=result["db_count"],
+                                elapsed_ms=result["elapsed_ms"],
+                            )
+                        else:
+                            logger.debug("Block processed (no extrinsics)", block=block_number)
                         last_processed_block = block_number
                     except Exception:
                         logger.warning(
