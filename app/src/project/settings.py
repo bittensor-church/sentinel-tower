@@ -56,18 +56,6 @@ AUTHENTICATION_BACKENDS = [
     "django.contrib.auth.backends.ModelBackend",
 ]
 
-# Sentinel Plugins - control which block task plugins are loaded
-# Comma-separated list of plugin names: "extrinsics", "metagraph"
-# Empty or unset means all plugins are enabled
-_sentinel_plugins_str = os.environ.get("SENTINEL_PLUGINS", "")
-SENTINEL_PLUGINS: list[str] = [p.strip() for p in _sentinel_plugins_str.split(",") if p.strip()]
-
-# Map plugin names to Django app paths
-_PLUGIN_APPS = {
-    "extrinsics": "apps.extrinsics",
-    "metagraph": "apps.metagraph",
-}
-
 INSTALLED_APPS = [
     "django_prometheus",
     "django.contrib.admin",
@@ -83,15 +71,9 @@ INSTALLED_APPS = [
     "constance",
     "project.core",
     "apps.notifications",
+    "apps.extrinsics",
+    "apps.metagraph",
 ]
-
-# Add enabled plugins to INSTALLED_APPS
-if not SENTINEL_PLUGINS:
-    # No plugins specified = all enabled
-    INSTALLED_APPS.extend(_PLUGIN_APPS.values())
-else:
-    # Only add specified plugins
-    INSTALLED_APPS.extend(_PLUGIN_APPS[p] for p in SENTINEL_PLUGINS if p in _PLUGIN_APPS)
 
 PROMETHEUS_EXPORT_MIGRATIONS = env.bool("PROMETHEUS_EXPORT_MIGRATIONS", default=True)
 

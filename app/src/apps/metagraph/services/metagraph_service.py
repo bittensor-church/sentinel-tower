@@ -50,7 +50,7 @@ class MetagraphService:
         storage = get_local_storage()
         storage.store(filename, metagraph.model_dump_json().encode())
 
-        logger.info(
+        logger.debug(
             "Storing metagraph artifact",
             netuid=netuid,
             block_number=block_number,

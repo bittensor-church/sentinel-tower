@@ -83,7 +83,7 @@ class Command(BaseCommand):
                     try:
                         for netuid in dumpable_netuids:
                             result = sync_metagraph_for_block(block_number, netuid, provider)
-                            logger.info(
+                            logger.debug(
                                 "Metagraph synced",
                                 block_number=block_number,
                                 netuid=netuid,

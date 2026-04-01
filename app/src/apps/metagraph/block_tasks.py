@@ -8,7 +8,7 @@ from sentinel.v1.services.sentinel import sentinel_service
 
 import apps.metagraph.utils as metagraph_utils
 from apps.metagraph.services.metagraph_service import MetagraphService
-from apps.metagraph.services.sync_service import MetagraphSyncService
+from apps.metagraph.services.metagraph_sync_service import DumpMetadata, MetagraphSyncService
 from apps.metagraph.tasks import fast_apy_sync
 from project.core.utils import get_provider_for_block
 
@@ -43,8 +43,8 @@ def sync_metagraph_for_block(block_number: int, netuid: int, provider: Bittensor
     finished_at = datetime.now(UTC)
 
     if not metagraph:
-        logger.info(
-            "No metagraph data found for block and netuid",
+        logger.debug(
+            "No metagraph data found",
             block_number=block_number,
             netuid=netuid,
         )
@@ -53,29 +53,26 @@ def sync_metagraph_for_block(block_number: int, netuid: int, provider: Bittensor
     artifact_path = MetagraphService.store_metagraph_artifact(metagraph)
 
     # Sync to Django models
-    data = metagraph.model_dump()
-
-    # Add dump metadata if not present
-    if "dump" not in data or not data["dump"]:
-        data["dump"] = {}
-
-    data["dump"].update(
-        {
-            "netuid": netuid,
-            "epoch_position": _get_epoch_position(block_number, netuid),
-            "started_at": started_at.isoformat(),
-            "finished_at": finished_at.isoformat(),
-        },
+    dump_metadata = DumpMetadata(
+        netuid=netuid,
+        epoch_position=_get_epoch_position(block_number, netuid),
+        started_at=started_at,
+        finished_at=finished_at,
     )
 
     sync_service = MetagraphSyncService()
-    stats = sync_service.sync_metagraph(data)
+    stats = sync_service.sync_metagraph(metagraph, dump_metadata)
+
+    elapsed_ms = (datetime.now(UTC) - started_at).total_seconds() * 1000
 
     logger.info(
-        "Synced metagraph to database",
-        block_number=block_number,
+        "Metagraph synced",
+        block=block_number,
         netuid=netuid,
-        stats=stats,
+        neurons=stats["neurons"],
+        weights=stats["weights"],
+        bonds=stats["bonds"],
+        elapsed_ms=round(elapsed_ms),
     )
 
     return artifact_path

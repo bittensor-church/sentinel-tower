@@ -1,6 +1,7 @@
 """Dagster jobs and sensors for automated data ingestion."""
 
 from collections.abc import Generator
+from datetime import UTC, datetime
 
 import dagster as dg
 
@@ -231,7 +232,9 @@ def _parse_metagraph_checkpoint_key(key: str) -> tuple[int, int] | None:
 @dg.op
 def ingest_metagraph(context: dg.OpExecutionContext, jsonl_reader: JsonLinesReader) -> dict:
     """Ingest all metagraph snapshots from JSONL files to Django models."""
-    from apps.metagraph.services.sync_service import MetagraphSyncService
+    from sentinel.v1.services.extractors.metagraph.dto import FullSubnetSnapshot
+
+    from apps.metagraph.services.metagraph_sync_service import DumpMetadata, MetagraphSyncService
 
     all_files = jsonl_reader.list_all_metagraph_files()
 
@@ -272,9 +275,18 @@ def ingest_metagraph(context: dg.OpExecutionContext, jsonl_reader: JsonLinesRead
                 error_count += 1
                 continue
 
-            # Sync to Django models
+            # Parse JSONL dict into Pydantic model and sync to Django models
+            metagraph = FullSubnetSnapshot.model_validate(data)
+            dump = metagraph.dump
+            dump_metadata = DumpMetadata(
+                netuid=netuid,
+                epoch_position=dump.epoch_position.value if dump and dump.epoch_position else "inside",
+                started_at=dump.started_at if dump and dump.started_at else datetime.now(UTC),
+                finished_at=dump.finished_at if dump and dump.finished_at else datetime.now(UTC),
+            )
+
             sync_service = MetagraphSyncService()
-            stats = sync_service.sync_metagraph(data)
+            stats = sync_service.sync_metagraph(metagraph, dump_metadata)
 
             # Aggregate stats
             for key, value in stats.items():
