@@ -1,13 +1,27 @@
-from dataclasses import dataclass, field
 from typing import Any, ClassVar
 
 import structlog
+from bittensor import Keypair
 
+from apps.metagraph.services.coldkey_roles import ColdkeyRoles, resolve_coldkey_roles
 from apps.notifications.base import SubnetRoutedNotification
 from apps.notifications.channels import DiscordWebhookChannel
 from apps.notifications.registry import register
 
 logger = structlog.get_logger()
+
+_HEX_KEY_ARGS = {"old_coldkey", "new_coldkey", "coldkey"}
+
+
+def _format_arg(name: str, value: Any) -> str:
+    """Format a call argument, converting hex public keys to SS58 addresses."""
+    if name in _HEX_KEY_ARGS and isinstance(value, str) and value.startswith("0x"):
+        try:
+            return Keypair(public_key=value).ss58_address
+        except Exception:  # noqa: BLE001
+            pass
+    return str(value) if value is not None else "N/A"
+
 
 _ACTION_LABELS: dict[str, str] = {
     "announce_coldkey_swap": "Coldkey Swap Announced",
@@ -16,65 +30,6 @@ _ACTION_LABELS: dict[str, str] = {
     "reset_coldkey_swap": "Coldkey Swap Reset",
     "clear_coldkey_swap_announcement": "Coldkey Swap Cleared",
 }
-
-
-@dataclass
-class ColdkeyRoles:
-    """Roles associated with a coldkey address."""
-
-    owned_subnets: list[int] = field(default_factory=list)
-    validator_subnets: list[int] = field(default_factory=list)
-    miner_subnets: list[int] = field(default_factory=list)
-
-    @property
-    def all_netuids(self) -> set[int]:
-        return {*self.owned_subnets, *self.validator_subnets, *self.miner_subnets}
-
-    def format_lines(self) -> list[str]:
-        lines: list[str] = []
-        if self.owned_subnets:
-            netuids = ", ".join(str(n) for n in sorted(self.owned_subnets))
-            lines.append(f"**role**: Subnet Owner (SN {netuids})")
-        if self.validator_subnets:
-            netuids = ", ".join(str(n) for n in sorted(self.validator_subnets))
-            lines.append(f"**role**: Validator (SN {netuids})")
-        if self.miner_subnets:
-            netuids = ", ".join(str(n) for n in sorted(self.miner_subnets))
-            lines.append(f"**role**: Miner (SN {netuids})")
-        if not lines:
-            lines.append("**role**: Unknown")
-        return lines
-
-
-def _resolve_coldkey_roles(address: str) -> ColdkeyRoles:
-    """Look up the roles of a coldkey address in the database."""
-    from apps.metagraph.models import NeuronSnapshot, Subnet
-
-    roles = ColdkeyRoles()
-
-    # Subnet ownership: Subnet -> owner_hotkey -> coldkey
-    owned = Subnet.objects.filter(
-        owner_hotkey__coldkey__coldkey=address,
-    ).values_list("netuid", flat=True)
-    roles.owned_subnets = list(owned)
-
-    # Validator / miner: latest snapshot per neuron for this coldkey
-    latest_snapshots = (
-        NeuronSnapshot.objects.filter(
-            neuron__hotkey__coldkey__coldkey=address,
-        )
-        .order_by("neuron", "-block__number")
-        .distinct("neuron")
-        .select_related("neuron__subnet")
-    )
-    for snap in latest_snapshots:
-        netuid = snap.neuron.subnet_id
-        if snap.is_validator:
-            roles.validator_subnets.append(netuid)
-        else:
-            roles.miner_subnets.append(netuid)
-
-    return roles
 
 
 @register
@@ -113,7 +68,7 @@ class ColdkeySwapNotification(SubnetRoutedNotification):
             address = ext.get("address", "")
             if address and address not in roles_cache:
                 try:
-                    roles_cache[address] = _resolve_coldkey_roles(address)
+                    roles_cache[address] = resolve_coldkey_roles(address)
                 except Exception:  # noqa: BLE001
                     logger.warning("Failed to resolve coldkey roles", address=address)
                     roles_cache[address] = ColdkeyRoles()
@@ -168,6 +123,7 @@ class ColdkeySwapNotification(SubnetRoutedNotification):
 
         for arg in call_args:
             name = arg.get("name", "")
-            parts.append(f"**{name}**: `{self.format_value(arg.get('value'))}`")
+            value = arg.get("value")
+            parts.append(f"**{name}**: `{_format_arg(name, value)}`")
 
         return "\n".join(parts)
