@@ -83,12 +83,17 @@ class Command(BaseCommand):
                     try:
                         for netuid in dumpable_netuids:
                             result = sync_metagraph_for_block(block_number, netuid, provider)
-                            logger.debug(
-                                "Metagraph synced",
-                                block_number=block_number,
-                                netuid=netuid,
-                                result=result or "no metagraph",
-                            )
+                            if result:
+                                logger.info(
+                                    "Metagraph synced",
+                                    block=block_number,
+                                    netuid=netuid,
+                                    neurons=result["neurons"],
+                                    weights=result["weights"],
+                                    elapsed_ms=result["elapsed_ms"],
+                                )
+                            else:
+                                logger.debug("No metagraph data", block=block_number, netuid=netuid)
                         last_processed_block = block_number
                     except Exception:
                         logger.warning(

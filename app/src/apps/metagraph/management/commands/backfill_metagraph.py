@@ -124,13 +124,21 @@ class Command(BaseCommand):
                 try:
                     result = sync_metagraph_for_block(block_number, netuid, provider)
                     synced += 1
-                    logger.info(
-                        "Backfilled metagraph",
-                        block_number=block_number,
-                        netuid=netuid,
-                        result=result or "no metagraph",
-                        remaining=len(missing) - i - 1,
-                    )
+                    remaining = len(missing) - i - 1
+                    if result:
+                        logger.info(
+                            "Backfilled metagraph",
+                            block=block_number,
+                            netuid=netuid,
+                            neurons=result["neurons"],
+                            weights=result["weights"],
+                            elapsed_ms=result["elapsed_ms"],
+                            remaining=remaining,
+                        )
+                    else:
+                        logger.debug(
+                            "Backfilled metagraph (empty)", block=block_number, netuid=netuid, remaining=remaining
+                        )
                 except Exception:
                     errors += 1
                     logger.warning(

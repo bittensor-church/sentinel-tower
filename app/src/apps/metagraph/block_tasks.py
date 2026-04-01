@@ -27,12 +27,16 @@ def _get_epoch_position(block_number: int, netuid: int) -> str:
     return "inside"
 
 
-def sync_metagraph_for_block(block_number: int, netuid: int, provider: BittensorProvider) -> str:
+def sync_metagraph_for_block(block_number: int, netuid: int, provider: BittensorProvider) -> dict | None:
     """
     Sync metagraph for the given netuid at the specified block using an existing provider.
 
     Fetches metagraph data from the blockchain, stores it as a JSONL artifact,
     and syncs it to Django models.
+
+    Returns:
+        Dict with sync stats and elapsed_ms, or None if no metagraph data found.
+
     """
     started_at = datetime.now(UTC)
 
@@ -43,16 +47,11 @@ def sync_metagraph_for_block(block_number: int, netuid: int, provider: Bittensor
     finished_at = datetime.now(UTC)
 
     if not metagraph:
-        logger.debug(
-            "No metagraph data found",
-            block_number=block_number,
-            netuid=netuid,
-        )
-        return ""
+        logger.debug("No metagraph data found", block=block_number, netuid=netuid)
+        return None
 
-    artifact_path = MetagraphService.store_metagraph_artifact(metagraph)
+    MetagraphService.store_metagraph_artifact(metagraph)
 
-    # Sync to Django models
     dump_metadata = DumpMetadata(
         netuid=netuid,
         epoch_position=_get_epoch_position(block_number, netuid),
@@ -63,19 +62,9 @@ def sync_metagraph_for_block(block_number: int, netuid: int, provider: Bittensor
     sync_service = MetagraphSyncService()
     stats = sync_service.sync_metagraph(metagraph, dump_metadata)
 
-    elapsed_ms = (datetime.now(UTC) - started_at).total_seconds() * 1000
+    elapsed_ms = round((datetime.now(UTC) - started_at).total_seconds() * 1000)
 
-    logger.info(
-        "Metagraph synced",
-        block=block_number,
-        netuid=netuid,
-        neurons=stats["neurons"],
-        weights=stats["weights"],
-        bonds=stats["bonds"],
-        elapsed_ms=round(elapsed_ms),
-    )
-
-    return artifact_path
+    return {"neurons": stats["neurons"], "weights": stats["weights"], "bonds": stats["bonds"], "elapsed_ms": elapsed_ms}
 
 
 @block_task(
@@ -83,7 +72,7 @@ def sync_metagraph_for_block(block_number: int, netuid: int, provider: Bittensor
     args=[{"netuid": netuid} for netuid in MetagraphService.netuids_to_sync()],
     celery_kwargs={"queue": "metagraph"},
 )
-def store_metagraph(block_number: int, netuid: int) -> str:
+def store_metagraph(block_number: int, netuid: int) -> dict | None:
     """
     Store the metagraph for the given netuid at the specified block number.
 
