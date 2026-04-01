@@ -143,6 +143,7 @@ class Extrinsic(models.Model):
             models.Index(fields=["block_number", "call_function"]),
             models.Index(fields=["address", "call_function"]),
             models.Index(fields=["created_at"]),
+            models.Index(fields=["call_function", "block_timestamp"]),
         ]
 
     def __str__(self) -> str:
