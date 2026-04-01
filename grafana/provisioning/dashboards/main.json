@@ -24,623 +24,929 @@
   "panels": [
     {
       "collapsed": false,
-      "gridPos": {
-        "h": 1,
-        "w": 24,
-        "x": 0,
-        "y": 0
+      "gridPos": { "h": 1, "w": 24, "x": 0, "y": 0 },
+      "id": 10,
+      "panels": [],
+      "title": "Overview",
+      "type": "row"
+    },
+    {
+      "datasource": { "type": "postgres", "uid": "postgresql" },
+      "fieldConfig": {
+        "defaults": {
+          "color": { "fixedColor": "blue", "mode": "fixed" },
+          "mappings": [],
+          "thresholds": { "mode": "absolute", "steps": [{ "color": "green", "value": null }] }
+        },
+        "overrides": []
       },
-      "id": 4,
+      "gridPos": { "h": 4, "w": 4, "x": 0, "y": 1 },
+      "id": 11,
+      "options": {
+        "colorMode": "value",
+        "graphMode": "area",
+        "justifyMode": "auto",
+        "orientation": "auto",
+        "reduceOptions": { "calcs": ["lastNotNull"], "fields": "", "values": false },
+        "textMode": "auto"
+      },
+      "pluginVersion": "10.2.0",
+      "targets": [
+        {
+          "datasource": { "type": "postgres", "uid": "postgresql" },
+          "editorMode": "code",
+          "format": "table",
+          "rawQuery": true,
+          "rawSql": "SELECT COUNT(*) AS value FROM extrinsics\nWHERE call_function IN ('register_network', 'register_network_with_identity')\n  AND success = true\n  AND block_timestamp BETWEEN ${__from} AND ${__to}",
+          "refId": "A"
+        }
+      ],
+      "title": "Registrations",
+      "type": "stat"
+    },
+    {
+      "datasource": { "type": "postgres", "uid": "postgresql" },
+      "fieldConfig": {
+        "defaults": {
+          "color": { "fixedColor": "red", "mode": "fixed" },
+          "mappings": [],
+          "thresholds": { "mode": "absolute", "steps": [{ "color": "green", "value": null }] }
+        },
+        "overrides": []
+      },
+      "gridPos": { "h": 4, "w": 4, "x": 4, "y": 1 },
+      "id": 12,
+      "options": {
+        "colorMode": "value",
+        "graphMode": "area",
+        "justifyMode": "auto",
+        "orientation": "auto",
+        "reduceOptions": { "calcs": ["lastNotNull"], "fields": "", "values": false },
+        "textMode": "auto"
+      },
+      "pluginVersion": "10.2.0",
+      "targets": [
+        {
+          "datasource": { "type": "postgres", "uid": "postgresql" },
+          "editorMode": "code",
+          "format": "table",
+          "rawQuery": true,
+          "rawSql": "SELECT COUNT(*) AS value FROM extrinsics\nWHERE call_function = 'dissolve_network'\n  AND success = true\n  AND block_timestamp BETWEEN ${__from} AND ${__to}",
+          "refId": "A"
+        }
+      ],
+      "title": "Dissolutions",
+      "type": "stat"
+    },
+    {
+      "datasource": { "type": "postgres", "uid": "postgresql" },
+      "fieldConfig": {
+        "defaults": {
+          "color": { "fixedColor": "orange", "mode": "fixed" },
+          "mappings": [],
+          "thresholds": { "mode": "absolute", "steps": [{ "color": "green", "value": null }] }
+        },
+        "overrides": []
+      },
+      "gridPos": { "h": 4, "w": 4, "x": 8, "y": 1 },
+      "id": 13,
+      "options": {
+        "colorMode": "value",
+        "graphMode": "area",
+        "justifyMode": "auto",
+        "orientation": "auto",
+        "reduceOptions": { "calcs": ["lastNotNull"], "fields": "", "values": false },
+        "textMode": "auto"
+      },
+      "pluginVersion": "10.2.0",
+      "targets": [
+        {
+          "datasource": { "type": "postgres", "uid": "postgresql" },
+          "editorMode": "code",
+          "format": "table",
+          "rawQuery": true,
+          "rawSql": "SELECT COUNT(*) AS value FROM extrinsics\nWHERE call_function IN ('announce_coldkey_swap', 'swap_coldkey_announced', 'dispute_coldkey_swap', 'reset_coldkey_swap', 'clear_coldkey_swap_announcement')\n  AND success = true\n  AND block_timestamp BETWEEN ${__from} AND ${__to}",
+          "refId": "A"
+        }
+      ],
+      "title": "Coldkey Swaps",
+      "type": "stat"
+    },
+    {
+      "datasource": { "type": "postgres", "uid": "postgresql" },
+      "fieldConfig": {
+        "defaults": {
+          "color": { "fixedColor": "purple", "mode": "fixed" },
+          "mappings": [],
+          "thresholds": { "mode": "absolute", "steps": [{ "color": "green", "value": null }] }
+        },
+        "overrides": []
+      },
+      "gridPos": { "h": 4, "w": 4, "x": 12, "y": 1 },
+      "id": 14,
+      "options": {
+        "colorMode": "value",
+        "graphMode": "area",
+        "justifyMode": "auto",
+        "orientation": "auto",
+        "reduceOptions": { "calcs": ["lastNotNull"], "fields": "", "values": false },
+        "textMode": "auto"
+      },
+      "pluginVersion": "10.2.0",
+      "targets": [
+        {
+          "datasource": { "type": "postgres", "uid": "postgresql" },
+          "editorMode": "code",
+          "format": "table",
+          "rawQuery": true,
+          "rawSql": "SELECT COUNT(*) AS value FROM extrinsics\nWHERE call_module = 'AdminUtils'\n  AND success = true\n  AND block_timestamp BETWEEN ${__from} AND ${__to}",
+          "refId": "A"
+        }
+      ],
+      "title": "AdminUtils",
+      "type": "stat"
+    },
+    {
+      "datasource": { "type": "postgres", "uid": "postgresql" },
+      "fieldConfig": {
+        "defaults": {
+          "color": { "fixedColor": "yellow", "mode": "fixed" },
+          "mappings": [],
+          "thresholds": { "mode": "absolute", "steps": [{ "color": "green", "value": null }] }
+        },
+        "overrides": []
+      },
+      "gridPos": { "h": 4, "w": 4, "x": 16, "y": 1 },
+      "id": 15,
+      "options": {
+        "colorMode": "value",
+        "graphMode": "area",
+        "justifyMode": "auto",
+        "orientation": "auto",
+        "reduceOptions": { "calcs": ["lastNotNull"], "fields": "", "values": false },
+        "textMode": "auto"
+      },
+      "pluginVersion": "10.2.0",
+      "targets": [
+        {
+          "datasource": { "type": "postgres", "uid": "postgresql" },
+          "editorMode": "code",
+          "format": "table",
+          "rawQuery": true,
+          "rawSql": "SELECT COUNT(*) AS value FROM extrinsics\nWHERE call_module = 'Sudo'\n  AND block_timestamp BETWEEN ${__from} AND ${__to}",
+          "refId": "A"
+        }
+      ],
+      "title": "Sudo Calls",
+      "type": "stat"
+    },
+    {
+      "datasource": { "type": "postgres", "uid": "postgresql" },
+      "fieldConfig": {
+        "defaults": {
+          "color": { "mode": "palette-classic" },
+          "custom": {
+            "axisBorderShow": false,
+            "axisCenteredZero": false,
+            "axisLabel": "",
+            "axisPlacement": "auto",
+            "barAlignment": 0,
+            "drawStyle": "bars",
+            "fillOpacity": 80,
+            "gradientMode": "none",
+            "hideFrom": { "legend": false, "tooltip": false, "viz": false },
+            "lineWidth": 1,
+            "pointSize": 5,
+            "scaleDistribution": { "type": "linear" },
+            "showPoints": "never",
+            "spanNulls": false,
+            "stacking": { "group": "A", "mode": "normal" }
+          },
+          "mappings": [],
+          "unit": "short"
+        },
+        "overrides": []
+      },
+      "gridPos": { "h": 8, "w": 24, "x": 0, "y": 5 },
+      "id": 16,
+      "options": {
+        "legend": { "calcs": ["sum"], "displayMode": "table", "placement": "right", "showLegend": true },
+        "tooltip": { "mode": "multi", "sort": "desc" }
+      },
+      "pluginVersion": "10.2.0",
+      "targets": [
+        {
+          "datasource": { "type": "postgres", "uid": "postgresql" },
+          "editorMode": "code",
+          "format": "time_series",
+          "rawQuery": true,
+          "rawSql": "SELECT\n  date_trunc('hour', to_timestamp(block_timestamp / 1000.0)) AS time,\n  CASE\n    WHEN call_function IN ('register_network', 'register_network_with_identity') THEN 'Registration'\n    WHEN call_function = 'dissolve_network' THEN 'Dissolution'\n    WHEN call_function IN ('announce_coldkey_swap', 'swap_coldkey_announced', 'dispute_coldkey_swap', 'reset_coldkey_swap', 'clear_coldkey_swap_announcement') THEN 'Coldkey Swap'\n    WHEN call_module = 'AdminUtils' THEN 'AdminUtils'\n    WHEN call_module = 'Sudo' THEN 'Sudo'\n  END AS metric,\n  COUNT(*) AS value\nFROM extrinsics\nWHERE block_timestamp BETWEEN ${__from} AND ${__to}\n  AND (\n    call_function IN ('register_network', 'register_network_with_identity', 'dissolve_network',\n      'announce_coldkey_swap', 'swap_coldkey_announced', 'dispute_coldkey_swap', 'reset_coldkey_swap', 'clear_coldkey_swap_announcement')\n    OR call_module IN ('AdminUtils', 'Sudo')\n  )\nGROUP BY time, metric\nORDER BY time",
+          "refId": "A"
+        }
+      ],
+      "title": "Notification Events Over Time",
+      "type": "timeseries"
+    },
+
+    {
+      "collapsed": false,
+      "gridPos": { "h": 1, "w": 24, "x": 0, "y": 13 },
+      "id": 20,
       "panels": [],
       "title": "Subnet Registrations",
       "type": "row"
     },
     {
-      "datasource": {
-        "type": "postgres",
-        "uid": "postgresql"
-      },
-      "description": "",
+      "datasource": { "type": "postgres", "uid": "postgresql" },
       "fieldConfig": {
         "defaults": {
-          "color": {
-            "mode": "thresholds"
-          },
+          "color": { "fixedColor": "blue", "mode": "fixed" },
           "mappings": [],
-          "thresholds": {
-            "mode": "absolute",
-            "steps": [
-              {
-                "color": "green",
-                "value": null
-              },
-              {
-                "color": "red",
-                "value": 80
-              }
-            ]
-          }
+          "thresholds": { "mode": "absolute", "steps": [{ "color": "green", "value": null }] }
         },
         "overrides": []
       },
-      "gridPos": {
-        "h": 4,
-        "w": 3,
-        "x": 0,
-        "y": 1
-      },
-      "id": 5,
+      "gridPos": { "h": 8, "w": 3, "x": 0, "y": 14 },
+      "id": 21,
       "options": {
         "colorMode": "value",
         "graphMode": "area",
         "justifyMode": "auto",
         "orientation": "auto",
-        "reduceOptions": {
-          "calcs": [
-            "lastNotNull"
-          ],
-          "fields": "",
-          "values": false
-        },
+        "reduceOptions": { "calcs": ["lastNotNull"], "fields": "", "values": false },
         "textMode": "auto"
       },
       "pluginVersion": "10.2.0",
       "targets": [
         {
-          "datasource": {
-            "type": "postgres",
-            "uid": "postgresql"
-          },
+          "datasource": { "type": "postgres", "uid": "postgresql" },
           "editorMode": "code",
           "format": "table",
           "rawQuery": true,
           "rawSql": "SELECT COUNT(*) AS value FROM extrinsics\nWHERE call_function IN ('register_network', 'register_network_with_identity')\n  AND success = true\n  AND block_timestamp BETWEEN ${__from} AND ${__to}",
-          "refId": "A",
-          "sql": {
-            "columns": [
-              {
-                "parameters": [],
-                "type": "function"
-              }
-            ],
-            "groupBy": [
-              {
-                "property": {
-                  "type": "string"
-                },
-                "type": "groupBy"
-              }
-            ],
-            "limit": 50
-          }
+          "refId": "A"
         }
       ],
-      "title": "Subnet Registrations",
+      "title": "Total",
       "type": "stat"
     },
     {
-      "datasource": {
-        "type": "postgres",
-        "uid": "postgresql"
-      },
-      "description": "",
+      "datasource": { "type": "postgres", "uid": "postgresql" },
       "fieldConfig": {
         "defaults": {
-          "color": {
-            "mode": "thresholds"
-          },
-          "mappings": [],
-          "thresholds": {
-            "mode": "absolute",
-            "steps": [
-              {
-                "color": "green",
-                "value": null
-              },
-              {
-                "color": "red",
-                "value": 80
-              }
-            ]
-          }
-        },
-        "overrides": []
-      },
-      "gridPos": {
-        "h": 4,
-        "w": 3,
-        "x": 3,
-        "y": 1
-      },
-      "id": 6,
-      "options": {
-        "colorMode": "value",
-        "graphMode": "area",
-        "justifyMode": "auto",
-        "orientation": "auto",
-        "reduceOptions": {
-          "calcs": [
-            "lastNotNull"
-          ],
-          "fields": "",
-          "values": false
-        },
-        "textMode": "auto"
-      },
-      "pluginVersion": "10.2.0",
-      "targets": [
-        {
-          "datasource": {
-            "type": "postgres",
-            "uid": "postgresql"
-          },
-          "editorMode": "code",
-          "format": "table",
-          "rawQuery": true,
-          "rawSql": "SELECT COUNT(*) AS value FROM extrinsics\nWHERE call_function = 'dissolve_network'\n  AND success = true\n  AND block_timestamp BETWEEN ${__from} AND ${__to}",
-          "refId": "A",
-          "sql": {
-            "columns": [
-              {
-                "parameters": [],
-                "type": "function"
-              }
-            ],
-            "groupBy": [
-              {
-                "property": {
-                  "type": "string"
-                },
-                "type": "groupBy"
-              }
-            ],
-            "limit": 50
-          }
-        }
-      ],
-      "title": "Subnet Dissolutions",
-      "type": "stat"
-    },
-    {
-      "datasource": {
-        "type": "postgres",
-        "uid": "postgresql"
-      },
-      "fieldConfig": {
-        "defaults": {
-          "color": {
-            "mode": "thresholds"
-          },
+          "color": { "mode": "thresholds" },
           "custom": {
             "align": "auto",
-            "cellOptions": {
-              "type": "auto"
-            },
+            "cellOptions": { "type": "auto" },
             "inspect": true
           },
           "mappings": [],
-          "thresholds": {
-            "mode": "absolute",
-            "steps": [
-              {
-                "color": "green",
-                "value": null
-              },
-              {
-                "color": "red",
-                "value": 80
-              }
-            ]
-          }
+          "thresholds": { "mode": "absolute", "steps": [{ "color": "green", "value": null }] }
         },
         "overrides": [
           {
-            "matcher": {
-              "id": "byName",
-              "options": "event_type"
-            },
-            "properties": [
-              {
-                "id": "custom.width",
-                "value": 132
-              }
-            ]
+            "matcher": { "id": "byName", "options": "event_type" },
+            "properties": [{ "id": "custom.width", "value": 120 }]
           },
           {
-            "matcher": {
-              "id": "byName",
-              "options": "netuid"
-            },
-            "properties": [
-              {
-                "id": "custom.width",
-                "value": 99
-              }
-            ]
+            "matcher": { "id": "byName", "options": "netuid" },
+            "properties": [{ "id": "custom.width", "value": 80 }]
           },
           {
-            "matcher": {
-              "id": "byName",
-              "options": "block_number"
-            },
-            "properties": [
-              {
-                "id": "custom.width",
-                "value": 120
-              }
-            ]
+            "matcher": { "id": "byName", "options": "block_number" },
+            "properties": [{ "id": "custom.width", "value": 120 }]
           }
         ]
       },
-      "gridPos": {
-        "h": 8,
-        "w": 12,
-        "x": 0,
-        "y": 5
-      },
-      "id": 7,
+      "gridPos": { "h": 8, "w": 21, "x": 3, "y": 14 },
+      "id": 22,
       "options": {
         "cellHeight": "sm",
-        "footer": {
-          "countRows": false,
-          "fields": "",
-          "reducer": [
-            "sum"
-          ],
-          "show": false
-        },
+        "footer": { "countRows": false, "fields": "", "reducer": ["sum"], "show": false },
         "showHeader": true,
         "sortBy": []
       },
       "pluginVersion": "10.2.0",
       "targets": [
         {
-          "datasource": {
-            "type": "postgres",
-            "uid": "postgresql"
-          },
+          "datasource": { "type": "postgres", "uid": "postgresql" },
           "editorMode": "code",
           "format": "table",
           "rawQuery": true,
-          "rawSql": "SELECT\n  block_number,\n  netuid,\n  CASE \n    WHEN call_function = 'dissolve_network' THEN 'Dissolution' \n    ELSE 'Registration' \n  END AS event_type,\n\n  CASE \n    WHEN call_function = 'register_network_with_identity' \n    THEN call_args[1]->'value'->>'subnet_name' \n    ELSE NULL \n  END AS subnet_name,\n\n  CASE \n    WHEN call_function = 'register_network_with_identity' \n    THEN call_args[1]->'value'->>'description' \n    ELSE NULL \n  END AS description,\n\n  CASE \n    WHEN call_function = 'register_network_with_identity' \n    THEN call_args[1]->'value'->>'discord' \n    ELSE NULL \n  END AS discord,\n\n  CASE \n    WHEN call_function = 'register_network_with_identity' \n    THEN call_args[1]->'value'->>'subnet_url' \n    ELSE NULL \n  END AS subnet_url,\n\n  CASE \n    WHEN call_function = 'register_network_with_identity' \n    THEN call_args[1]->'value'->>'github_repo' \n    ELSE NULL \n  END AS github_repo,\n\n  CASE \n    WHEN call_function = 'register_network_with_identity' \n    THEN call_args[1]->'value'->>'subnet_contact' \n    ELSE NULL \n  END AS subnet_contact,\n\n  CASE \n    WHEN call_function = 'register_network_with_identity' \n    THEN call_args[1]->'value'->>'additional' \n    ELSE NULL \n  END AS additional,\n\n  CASE \n    WHEN call_function = 'register_network_with_identity' \n    THEN call_args[1]->'value'->>'logo_url' \n    ELSE NULL \n  END AS logo_url,\n\n  address AS signer\n\nFROM extrinsics\nWHERE call_function IN (\n    'register_network', \n    'register_network_with_identity', \n    'dissolve_network'\n)\n  AND block_timestamp BETWEEN ${__from} AND ${__to}\n\nORDER BY block_timestamp DESC\nLIMIT 100;",
-          "refId": "A",
-          "sql": {
-            "columns": [
-              {
-                "parameters": [],
-                "type": "function"
-              }
-            ],
-            "groupBy": [
-              {
-                "property": {
-                  "type": "string"
-                },
-                "type": "groupBy"
-              }
-            ],
-            "limit": 50
-          }
+          "rawSql": "SELECT\n  block_number,\n  to_timestamp(block_timestamp / 1000.0) AS time,\n  netuid,\n  CASE\n    WHEN call_function = 'register_network_with_identity'\n    THEN call_args[1]->'value'->>'subnet_name'\n    ELSE NULL\n  END AS subnet_name,\n  CASE\n    WHEN call_function = 'register_network_with_identity'\n    THEN call_args[1]->'value'->>'description'\n    ELSE NULL\n  END AS description,\n  CASE\n    WHEN call_function = 'register_network_with_identity'\n    THEN call_args[1]->'value'->>'discord'\n    ELSE NULL\n  END AS discord,\n  CASE\n    WHEN call_function = 'register_network_with_identity'\n    THEN call_args[1]->'value'->>'github_repo'\n    ELSE NULL\n  END AS github_repo,\n  address AS signer\nFROM extrinsics\nWHERE call_function IN ('register_network', 'register_network_with_identity')\n  AND success = true\n  AND block_timestamp BETWEEN ${__from} AND ${__to}\nORDER BY block_timestamp DESC\nLIMIT 100",
+          "refId": "A"
         }
       ],
-      "title": "Recent events",
+      "title": "Recent Registrations",
       "type": "table"
     },
+
     {
       "collapsed": false,
-      "gridPos": {
-        "h": 1,
-        "w": 24,
-        "x": 0,
-        "y": 13
-      },
-      "id": 3,
+      "gridPos": { "h": 1, "w": 24, "x": 0, "y": 22 },
+      "id": 25,
       "panels": [],
-      "title": "Set weights",
+      "title": "Subnet Dissolutions",
       "type": "row"
     },
     {
-      "datasource": {
-        "type": "postgres",
-        "uid": "postgresql"
-      },
-      "description": "",
+      "datasource": { "type": "postgres", "uid": "postgresql" },
       "fieldConfig": {
         "defaults": {
-          "color": {
-            "mode": "palette-classic"
-          },
+          "color": { "fixedColor": "red", "mode": "fixed" },
+          "mappings": [],
+          "thresholds": { "mode": "absolute", "steps": [{ "color": "green", "value": null }] }
+        },
+        "overrides": []
+      },
+      "gridPos": { "h": 8, "w": 3, "x": 0, "y": 23 },
+      "id": 26,
+      "options": {
+        "colorMode": "value",
+        "graphMode": "area",
+        "justifyMode": "auto",
+        "orientation": "auto",
+        "reduceOptions": { "calcs": ["lastNotNull"], "fields": "", "values": false },
+        "textMode": "auto"
+      },
+      "pluginVersion": "10.2.0",
+      "targets": [
+        {
+          "datasource": { "type": "postgres", "uid": "postgresql" },
+          "editorMode": "code",
+          "format": "table",
+          "rawQuery": true,
+          "rawSql": "SELECT COUNT(*) AS value FROM extrinsics\nWHERE call_function = 'dissolve_network'\n  AND success = true\n  AND block_timestamp BETWEEN ${__from} AND ${__to}",
+          "refId": "A"
+        }
+      ],
+      "title": "Total",
+      "type": "stat"
+    },
+    {
+      "datasource": { "type": "postgres", "uid": "postgresql" },
+      "fieldConfig": {
+        "defaults": {
+          "color": { "mode": "thresholds" },
           "custom": {
-            "hideFrom": {
-              "legend": false,
-              "tooltip": false,
-              "viz": false
-            }
+            "align": "auto",
+            "cellOptions": { "type": "auto" },
+            "inspect": true
+          },
+          "mappings": [],
+          "thresholds": { "mode": "absolute", "steps": [{ "color": "green", "value": null }] }
+        },
+        "overrides": [
+          {
+            "matcher": { "id": "byName", "options": "netuid" },
+            "properties": [{ "id": "custom.width", "value": 80 }]
+          },
+          {
+            "matcher": { "id": "byName", "options": "block_number" },
+            "properties": [{ "id": "custom.width", "value": 120 }]
+          }
+        ]
+      },
+      "gridPos": { "h": 8, "w": 21, "x": 3, "y": 23 },
+      "id": 27,
+      "options": {
+        "cellHeight": "sm",
+        "footer": { "countRows": false, "fields": "", "reducer": ["sum"], "show": false },
+        "showHeader": true,
+        "sortBy": []
+      },
+      "pluginVersion": "10.2.0",
+      "targets": [
+        {
+          "datasource": { "type": "postgres", "uid": "postgresql" },
+          "editorMode": "code",
+          "format": "table",
+          "rawQuery": true,
+          "rawSql": "SELECT\n  block_number,\n  to_timestamp(block_timestamp / 1000.0) AS time,\n  netuid,\n  address AS signer,\n  success\nFROM extrinsics\nWHERE call_function = 'dissolve_network'\n  AND block_timestamp BETWEEN ${__from} AND ${__to}\nORDER BY block_timestamp DESC\nLIMIT 100",
+          "refId": "A"
+        }
+      ],
+      "title": "Recent Dissolutions",
+      "type": "table"
+    },
+
+    {
+      "collapsed": false,
+      "gridPos": { "h": 1, "w": 24, "x": 0, "y": 31 },
+      "id": 30,
+      "panels": [],
+      "title": "Coldkey Swaps",
+      "type": "row"
+    },
+    {
+      "datasource": { "type": "postgres", "uid": "postgresql" },
+      "fieldConfig": {
+        "defaults": {
+          "color": { "fixedColor": "orange", "mode": "fixed" },
+          "mappings": [],
+          "thresholds": { "mode": "absolute", "steps": [{ "color": "green", "value": null }] }
+        },
+        "overrides": []
+      },
+      "gridPos": { "h": 4, "w": 4, "x": 0, "y": 32 },
+      "id": 31,
+      "options": {
+        "colorMode": "value",
+        "graphMode": "area",
+        "justifyMode": "auto",
+        "orientation": "auto",
+        "reduceOptions": { "calcs": ["lastNotNull"], "fields": "", "values": false },
+        "textMode": "auto"
+      },
+      "pluginVersion": "10.2.0",
+      "targets": [
+        {
+          "datasource": { "type": "postgres", "uid": "postgresql" },
+          "editorMode": "code",
+          "format": "table",
+          "rawQuery": true,
+          "rawSql": "SELECT COUNT(*) AS value FROM extrinsics\nWHERE call_function IN ('announce_coldkey_swap', 'swap_coldkey_announced', 'dispute_coldkey_swap', 'reset_coldkey_swap', 'clear_coldkey_swap_announcement')\n  AND success = true\n  AND block_timestamp BETWEEN ${__from} AND ${__to}",
+          "refId": "A"
+        }
+      ],
+      "title": "Total",
+      "type": "stat"
+    },
+    {
+      "datasource": { "type": "postgres", "uid": "postgresql" },
+      "fieldConfig": {
+        "defaults": {
+          "color": { "fixedColor": "green", "mode": "fixed" },
+          "mappings": [],
+          "thresholds": { "mode": "absolute", "steps": [{ "color": "green", "value": null }] }
+        },
+        "overrides": []
+      },
+      "gridPos": { "h": 4, "w": 4, "x": 4, "y": 32 },
+      "id": 32,
+      "options": {
+        "colorMode": "value",
+        "graphMode": "area",
+        "justifyMode": "auto",
+        "orientation": "auto",
+        "reduceOptions": { "calcs": ["lastNotNull"], "fields": "", "values": false },
+        "textMode": "auto"
+      },
+      "pluginVersion": "10.2.0",
+      "targets": [
+        {
+          "datasource": { "type": "postgres", "uid": "postgresql" },
+          "editorMode": "code",
+          "format": "table",
+          "rawQuery": true,
+          "rawSql": "SELECT COUNT(*) AS value FROM extrinsics\nWHERE call_function = 'announce_coldkey_swap'\n  AND success = true\n  AND block_timestamp BETWEEN ${__from} AND ${__to}",
+          "refId": "A"
+        }
+      ],
+      "title": "Announced",
+      "type": "stat"
+    },
+    {
+      "datasource": { "type": "postgres", "uid": "postgresql" },
+      "fieldConfig": {
+        "defaults": {
+          "color": { "fixedColor": "blue", "mode": "fixed" },
+          "mappings": [],
+          "thresholds": { "mode": "absolute", "steps": [{ "color": "green", "value": null }] }
+        },
+        "overrides": []
+      },
+      "gridPos": { "h": 4, "w": 4, "x": 8, "y": 32 },
+      "id": 33,
+      "options": {
+        "colorMode": "value",
+        "graphMode": "area",
+        "justifyMode": "auto",
+        "orientation": "auto",
+        "reduceOptions": { "calcs": ["lastNotNull"], "fields": "", "values": false },
+        "textMode": "auto"
+      },
+      "pluginVersion": "10.2.0",
+      "targets": [
+        {
+          "datasource": { "type": "postgres", "uid": "postgresql" },
+          "editorMode": "code",
+          "format": "table",
+          "rawQuery": true,
+          "rawSql": "SELECT COUNT(*) AS value FROM extrinsics\nWHERE call_function = 'swap_coldkey_announced'\n  AND success = true\n  AND block_timestamp BETWEEN ${__from} AND ${__to}",
+          "refId": "A"
+        }
+      ],
+      "title": "Executed",
+      "type": "stat"
+    },
+    {
+      "datasource": { "type": "postgres", "uid": "postgresql" },
+      "fieldConfig": {
+        "defaults": {
+          "color": { "fixedColor": "red", "mode": "fixed" },
+          "mappings": [],
+          "thresholds": { "mode": "absolute", "steps": [{ "color": "green", "value": null }] }
+        },
+        "overrides": []
+      },
+      "gridPos": { "h": 4, "w": 4, "x": 12, "y": 32 },
+      "id": 34,
+      "options": {
+        "colorMode": "value",
+        "graphMode": "area",
+        "justifyMode": "auto",
+        "orientation": "auto",
+        "reduceOptions": { "calcs": ["lastNotNull"], "fields": "", "values": false },
+        "textMode": "auto"
+      },
+      "pluginVersion": "10.2.0",
+      "targets": [
+        {
+          "datasource": { "type": "postgres", "uid": "postgresql" },
+          "editorMode": "code",
+          "format": "table",
+          "rawQuery": true,
+          "rawSql": "SELECT COUNT(*) AS value FROM extrinsics\nWHERE call_function = 'dispute_coldkey_swap'\n  AND success = true\n  AND block_timestamp BETWEEN ${__from} AND ${__to}",
+          "refId": "A"
+        }
+      ],
+      "title": "Disputed",
+      "type": "stat"
+    },
+    {
+      "datasource": { "type": "postgres", "uid": "postgresql" },
+      "fieldConfig": {
+        "defaults": {
+          "color": { "mode": "palette-classic" },
+          "custom": {
+            "hideFrom": { "legend": false, "tooltip": false, "viz": false }
           },
           "mappings": []
         },
         "overrides": []
       },
-      "gridPos": {
-        "h": 10,
-        "w": 5,
-        "x": 0,
-        "y": 14
-      },
-      "id": 2,
+      "gridPos": { "h": 8, "w": 6, "x": 0, "y": 36 },
+      "id": 35,
       "options": {
-        "displayLabels": [
-          "name",
-          "value"
-        ],
-        "legend": {
-          "displayMode": "list",
-          "placement": "bottom",
-          "showLegend": true
-        },
+        "displayLabels": ["name", "value"],
+        "legend": { "displayMode": "list", "placement": "bottom", "showLegend": true },
         "pieType": "pie",
-        "reduceOptions": {
-          "calcs": [
-            "lastNotNull"
-          ],
-          "fields": "/^value$/",
-          "values": true
-        },
-        "tooltip": {
-          "mode": "single",
-          "sort": "none"
-        }
+        "reduceOptions": { "calcs": ["lastNotNull"], "fields": "/^value$/", "values": true },
+        "tooltip": { "mode": "single", "sort": "none" }
       },
       "pluginVersion": "10.2.0",
       "targets": [
         {
-          "datasource": {
-            "type": "postgres",
-            "uid": "postgresql"
-          },
+          "datasource": { "type": "postgres", "uid": "postgresql" },
           "editorMode": "code",
           "format": "table",
           "rawQuery": true,
-          "rawSql": "SELECT 'Subnet ' || netuid::text as metric, COUNT(*) as value FROM extrinsics WHERE call_function = 'set_weights' AND block_timestamp BETWEEN ${__from} AND ${__to} GROUP BY netuid ORDER BY value DESC LIMIT 10",
-          "refId": "A",
-          "sql": {
-            "columns": [
-              {
-                "parameters": [],
-                "type": "function"
-              }
-            ],
-            "groupBy": [
-              {
-                "property": {
-                  "type": "string"
-                },
-                "type": "groupBy"
-              }
-            ],
-            "limit": 50
-          }
+          "rawSql": "SELECT\n  CASE call_function\n    WHEN 'announce_coldkey_swap' THEN 'Announced'\n    WHEN 'swap_coldkey_announced' THEN 'Executed'\n    WHEN 'dispute_coldkey_swap' THEN 'Disputed'\n    WHEN 'reset_coldkey_swap' THEN 'Reset'\n    WHEN 'clear_coldkey_swap_announcement' THEN 'Cleared'\n  END AS metric,\n  COUNT(*) AS value\nFROM extrinsics\nWHERE call_function IN ('announce_coldkey_swap', 'swap_coldkey_announced', 'dispute_coldkey_swap', 'reset_coldkey_swap', 'clear_coldkey_swap_announcement')\n  AND success = true\n  AND block_timestamp BETWEEN ${__from} AND ${__to}\nGROUP BY call_function\nORDER BY value DESC",
+          "refId": "A"
         }
       ],
-      "title": "Top 10 Subnets by set weights",
+      "title": "By Action Type",
       "type": "piechart"
     },
     {
-      "datasource": {
-        "type": "postgres",
-        "uid": "postgresql"
-      },
-      "description": "",
+      "datasource": { "type": "postgres", "uid": "postgresql" },
       "fieldConfig": {
         "defaults": {
-          "color": {
-            "mode": "thresholds"
-          },
+          "color": { "mode": "thresholds" },
           "custom": {
             "align": "auto",
-            "cellOptions": {
-              "type": "auto"
-            },
-            "inspect": false
+            "cellOptions": { "type": "auto" },
+            "inspect": true
           },
           "mappings": [],
-          "thresholds": {
-            "mode": "percentage",
-            "steps": [
-              {
-                "color": "green",
-                "value": null
-              },
-              {
-                "color": "green",
-                "value": 10
-              },
-              {
-                "color": "yellow",
-                "value": 30
-              },
-              {
-                "color": "red",
-                "value": 31
-              }
-            ]
-          }
+          "thresholds": { "mode": "absolute", "steps": [{ "color": "green", "value": null }] }
         },
         "overrides": [
           {
-            "matcher": {
-              "id": "byName",
-              "options": "failure_rate_pct"
-            },
-            "properties": [
-              {
-                "id": "displayName",
-                "value": "Failure Rate (%)"
-              },
-              {
-                "id": "custom.cellOptions",
-                "value": {
-                  "mode": "gradient",
-                  "type": "color-background"
-                }
-              },
-              {
-                "id": "thresholds",
-                "value": {
-                  "mode": "absolute",
-                  "steps": [
-                    {
-                      "color": "green",
-                      "value": null
-                    },
-                    {
-                      "color": "green",
-                      "value": 10
-                    },
-                    {
-                      "color": "#EAB839",
-                      "value": 31
-                    },
-                    {
-                      "color": "red",
-                      "value": 49
-                    }
-                  ]
-                }
-              },
-              {
-                "id": "custom.width",
-                "value": 130
-              },
-              {
-                "id": "unit",
-                "value": "percent"
-              }
-            ]
+            "matcher": { "id": "byName", "options": "action" },
+            "properties": [{ "id": "custom.width", "value": 100 }]
           },
           {
-            "matcher": {
-              "id": "byName",
-              "options": "total"
-            },
-            "properties": [
-              {
-                "id": "displayName",
-                "value": "Total"
-              },
-              {
-                "id": "custom.width",
-                "value": 130
-              }
-            ]
+            "matcher": { "id": "byName", "options": "block_number" },
+            "properties": [{ "id": "custom.width", "value": 120 }]
           },
           {
-            "matcher": {
-              "id": "byName",
-              "options": "subnet"
-            },
-            "properties": [
-              {
-                "id": "displayName",
-                "value": "Subnet"
-              },
-              {
-                "id": "custom.width",
-                "value": 130
-              }
-            ]
-          },
-          {
-            "matcher": {
-              "id": "byName",
-              "options": "success"
-            },
-            "properties": [
-              {
-                "id": "displayName",
-                "value": "Success"
-              },
-              {
-                "id": "custom.width",
-                "value": 130
-              }
-            ]
-          },
-          {
-            "matcher": {
-              "id": "byName",
-              "options": "failures"
-            },
-            "properties": [
-              {
-                "id": "displayName",
-                "value": "Failures"
-              },
-              {
-                "id": "custom.width",
-                "value": 100
-              }
-            ]
+            "matcher": { "id": "byName", "options": "success" },
+            "properties": [{ "id": "custom.width", "value": 80 }]
           }
         ]
       },
-      "gridPos": {
-        "h": 10,
-        "w": 7,
-        "x": 5,
-        "y": 14
-      },
-      "id": 1,
+      "gridPos": { "h": 8, "w": 18, "x": 6, "y": 36 },
+      "id": 36,
       "options": {
         "cellHeight": "sm",
-        "footer": {
-          "countRows": false,
-          "fields": "",
-          "reducer": [
-            "sum"
-          ],
-          "show": false
-        },
+        "footer": { "countRows": false, "fields": "", "reducer": ["sum"], "show": false },
         "showHeader": true,
-        "sortBy": [
-          {
-            "desc": true,
-            "displayName": "failure_rate_pct"
-          }
-        ]
+        "sortBy": []
       },
       "pluginVersion": "10.2.0",
       "targets": [
         {
-          "datasource": {
-            "type": "postgres",
-            "uid": "postgresql"
-          },
+          "datasource": { "type": "postgres", "uid": "postgresql" },
           "editorMode": "code",
           "format": "table",
           "rawQuery": true,
-          "rawSql": "SELECT \n    netuid AS Subnet,\n    COUNT(*) FILTER (WHERE success) AS success,\n    COUNT(*) FILTER (WHERE NOT success) AS failures,\n    COUNT(*) AS total,\n    ROUND(\n        100.0 * COUNT(*) FILTER (WHERE NOT success) / COUNT(*),\n        2\n    ) AS failure_rate_pct\nFROM extrinsics\nWHERE call_function = 'set_weights'\n  AND block_timestamp BETWEEN ${__from} AND ${__to}\nGROUP BY netuid\nORDER BY failure_rate_pct DESC;",
-          "refId": "A",
-          "sql": {
-            "columns": [
-              {
-                "parameters": [],
-                "type": "function"
-              }
-            ],
-            "groupBy": [
-              {
-                "property": {
-                  "type": "string"
-                },
-                "type": "groupBy"
-              }
-            ],
-            "limit": 50
-          }
+          "rawSql": "SELECT\n  block_number,\n  to_timestamp(block_timestamp / 1000.0) AS time,\n  CASE call_function\n    WHEN 'announce_coldkey_swap' THEN 'Announced'\n    WHEN 'swap_coldkey_announced' THEN 'Executed'\n    WHEN 'dispute_coldkey_swap' THEN 'Disputed'\n    WHEN 'reset_coldkey_swap' THEN 'Reset'\n    WHEN 'clear_coldkey_swap_announcement' THEN 'Cleared'\n  END AS action,\n  address AS signer,\n  call_args,\n  success\nFROM extrinsics\nWHERE call_function IN ('announce_coldkey_swap', 'swap_coldkey_announced', 'dispute_coldkey_swap', 'reset_coldkey_swap', 'clear_coldkey_swap_announcement')\n  AND block_timestamp BETWEEN ${__from} AND ${__to}\nORDER BY block_timestamp DESC\nLIMIT 100",
+          "refId": "A"
         }
       ],
-      "title": "Set Weights by Subnet",
+      "title": "Recent Coldkey Swap Events",
+      "type": "table"
+    },
+
+    {
+      "collapsed": false,
+      "gridPos": { "h": 1, "w": 24, "x": 0, "y": 44 },
+      "id": 40,
+      "panels": [],
+      "title": "AdminUtils (Hyperparameters)",
+      "type": "row"
+    },
+    {
+      "datasource": { "type": "postgres", "uid": "postgresql" },
+      "fieldConfig": {
+        "defaults": {
+          "color": { "fixedColor": "purple", "mode": "fixed" },
+          "mappings": [],
+          "thresholds": { "mode": "absolute", "steps": [{ "color": "green", "value": null }] }
+        },
+        "overrides": []
+      },
+      "gridPos": { "h": 4, "w": 4, "x": 0, "y": 45 },
+      "id": 41,
+      "options": {
+        "colorMode": "value",
+        "graphMode": "area",
+        "justifyMode": "auto",
+        "orientation": "auto",
+        "reduceOptions": { "calcs": ["lastNotNull"], "fields": "", "values": false },
+        "textMode": "auto"
+      },
+      "pluginVersion": "10.2.0",
+      "targets": [
+        {
+          "datasource": { "type": "postgres", "uid": "postgresql" },
+          "editorMode": "code",
+          "format": "table",
+          "rawQuery": true,
+          "rawSql": "SELECT COUNT(*) AS value FROM extrinsics\nWHERE call_module = 'AdminUtils'\n  AND success = true\n  AND block_timestamp BETWEEN ${__from} AND ${__to}",
+          "refId": "A"
+        }
+      ],
+      "title": "Total Calls",
+      "type": "stat"
+    },
+    {
+      "datasource": { "type": "postgres", "uid": "postgresql" },
+      "fieldConfig": {
+        "defaults": {
+          "color": { "fixedColor": "purple", "mode": "fixed" },
+          "mappings": [],
+          "thresholds": { "mode": "absolute", "steps": [{ "color": "green", "value": null }] }
+        },
+        "overrides": []
+      },
+      "gridPos": { "h": 4, "w": 4, "x": 4, "y": 45 },
+      "id": 42,
+      "options": {
+        "colorMode": "value",
+        "graphMode": "area",
+        "justifyMode": "auto",
+        "orientation": "auto",
+        "reduceOptions": { "calcs": ["lastNotNull"], "fields": "", "values": false },
+        "textMode": "auto"
+      },
+      "pluginVersion": "10.2.0",
+      "targets": [
+        {
+          "datasource": { "type": "postgres", "uid": "postgresql" },
+          "editorMode": "code",
+          "format": "table",
+          "rawQuery": true,
+          "rawSql": "SELECT COUNT(DISTINCT call_function) AS value FROM extrinsics\nWHERE call_module = 'AdminUtils'\n  AND success = true\n  AND block_timestamp BETWEEN ${__from} AND ${__to}",
+          "refId": "A"
+        }
+      ],
+      "title": "Unique Params Changed",
+      "type": "stat"
+    },
+    {
+      "datasource": { "type": "postgres", "uid": "postgresql" },
+      "fieldConfig": {
+        "defaults": {
+          "color": { "mode": "palette-classic" },
+          "custom": {
+            "hideFrom": { "legend": false, "tooltip": false, "viz": false }
+          },
+          "mappings": []
+        },
+        "overrides": []
+      },
+      "gridPos": { "h": 8, "w": 6, "x": 0, "y": 49 },
+      "id": 43,
+      "options": {
+        "displayLabels": ["name", "value"],
+        "legend": { "displayMode": "list", "placement": "bottom", "showLegend": true },
+        "pieType": "pie",
+        "reduceOptions": { "calcs": ["lastNotNull"], "fields": "/^value$/", "values": true },
+        "tooltip": { "mode": "single", "sort": "none" }
+      },
+      "pluginVersion": "10.2.0",
+      "targets": [
+        {
+          "datasource": { "type": "postgres", "uid": "postgresql" },
+          "editorMode": "code",
+          "format": "table",
+          "rawQuery": true,
+          "rawSql": "SELECT call_function AS metric, COUNT(*) AS value\nFROM extrinsics\nWHERE call_module = 'AdminUtils'\n  AND success = true\n  AND block_timestamp BETWEEN ${__from} AND ${__to}\nGROUP BY call_function\nORDER BY value DESC\nLIMIT 10",
+          "refId": "A"
+        }
+      ],
+      "title": "Top Changed Parameters",
+      "type": "piechart"
+    },
+    {
+      "datasource": { "type": "postgres", "uid": "postgresql" },
+      "fieldConfig": {
+        "defaults": {
+          "color": { "mode": "thresholds" },
+          "custom": {
+            "align": "auto",
+            "cellOptions": { "type": "auto" },
+            "inspect": true
+          },
+          "mappings": [],
+          "thresholds": { "mode": "absolute", "steps": [{ "color": "green", "value": null }] }
+        },
+        "overrides": [
+          {
+            "matcher": { "id": "byName", "options": "block_number" },
+            "properties": [{ "id": "custom.width", "value": 120 }]
+          },
+          {
+            "matcher": { "id": "byName", "options": "netuid" },
+            "properties": [{ "id": "custom.width", "value": 80 }]
+          },
+          {
+            "matcher": { "id": "byName", "options": "call_function" },
+            "properties": [{ "id": "custom.width", "value": 200 }]
+          }
+        ]
+      },
+      "gridPos": { "h": 8, "w": 18, "x": 6, "y": 49 },
+      "id": 44,
+      "options": {
+        "cellHeight": "sm",
+        "footer": { "countRows": false, "fields": "", "reducer": ["sum"], "show": false },
+        "showHeader": true,
+        "sortBy": []
+      },
+      "pluginVersion": "10.2.0",
+      "targets": [
+        {
+          "datasource": { "type": "postgres", "uid": "postgresql" },
+          "editorMode": "code",
+          "format": "table",
+          "rawQuery": true,
+          "rawSql": "SELECT\n  block_number,\n  to_timestamp(block_timestamp / 1000.0) AS time,\n  call_function,\n  netuid,\n  call_args,\n  address AS signer,\n  success\nFROM extrinsics\nWHERE call_module = 'AdminUtils'\n  AND block_timestamp BETWEEN ${__from} AND ${__to}\nORDER BY block_timestamp DESC\nLIMIT 100",
+          "refId": "A"
+        }
+      ],
+      "title": "Recent AdminUtils Calls",
+      "type": "table"
+    },
+
+    {
+      "collapsed": false,
+      "gridPos": { "h": 1, "w": 24, "x": 0, "y": 57 },
+      "id": 50,
+      "panels": [],
+      "title": "Sudo",
+      "type": "row"
+    },
+    {
+      "datasource": { "type": "postgres", "uid": "postgresql" },
+      "fieldConfig": {
+        "defaults": {
+          "color": { "fixedColor": "yellow", "mode": "fixed" },
+          "mappings": [],
+          "thresholds": { "mode": "absolute", "steps": [{ "color": "green", "value": null }] }
+        },
+        "overrides": []
+      },
+      "gridPos": { "h": 4, "w": 4, "x": 0, "y": 58 },
+      "id": 51,
+      "options": {
+        "colorMode": "value",
+        "graphMode": "area",
+        "justifyMode": "auto",
+        "orientation": "auto",
+        "reduceOptions": { "calcs": ["lastNotNull"], "fields": "", "values": false },
+        "textMode": "auto"
+      },
+      "pluginVersion": "10.2.0",
+      "targets": [
+        {
+          "datasource": { "type": "postgres", "uid": "postgresql" },
+          "editorMode": "code",
+          "format": "table",
+          "rawQuery": true,
+          "rawSql": "SELECT COUNT(*) AS value FROM extrinsics\nWHERE call_module = 'Sudo'\n  AND block_timestamp BETWEEN ${__from} AND ${__to}",
+          "refId": "A"
+        }
+      ],
+      "title": "Total Calls",
+      "type": "stat"
+    },
+    {
+      "datasource": { "type": "postgres", "uid": "postgresql" },
+      "fieldConfig": {
+        "defaults": {
+          "color": { "mode": "palette-classic" },
+          "custom": {
+            "hideFrom": { "legend": false, "tooltip": false, "viz": false }
+          },
+          "mappings": []
+        },
+        "overrides": []
+      },
+      "gridPos": { "h": 8, "w": 6, "x": 0, "y": 62 },
+      "id": 52,
+      "options": {
+        "displayLabels": ["name", "value"],
+        "legend": { "displayMode": "list", "placement": "bottom", "showLegend": true },
+        "pieType": "pie",
+        "reduceOptions": { "calcs": ["lastNotNull"], "fields": "/^value$/", "values": true },
+        "tooltip": { "mode": "single", "sort": "none" }
+      },
+      "pluginVersion": "10.2.0",
+      "targets": [
+        {
+          "datasource": { "type": "postgres", "uid": "postgresql" },
+          "editorMode": "code",
+          "format": "table",
+          "rawQuery": true,
+          "rawSql": "SELECT call_function AS metric, COUNT(*) AS value\nFROM extrinsics\nWHERE call_module = 'Sudo'\n  AND block_timestamp BETWEEN ${__from} AND ${__to}\nGROUP BY call_function\nORDER BY value DESC\nLIMIT 10",
+          "refId": "A"
+        }
+      ],
+      "title": "By Function",
+      "type": "piechart"
+    },
+    {
+      "datasource": { "type": "postgres", "uid": "postgresql" },
+      "fieldConfig": {
+        "defaults": {
+          "color": { "mode": "thresholds" },
+          "custom": {
+            "align": "auto",
+            "cellOptions": { "type": "auto" },
+            "inspect": true
+          },
+          "mappings": [],
+          "thresholds": { "mode": "absolute", "steps": [{ "color": "green", "value": null }] }
+        },
+        "overrides": [
+          {
+            "matcher": { "id": "byName", "options": "block_number" },
+            "properties": [{ "id": "custom.width", "value": 120 }]
+          },
+          {
+            "matcher": { "id": "byName", "options": "netuid" },
+            "properties": [{ "id": "custom.width", "value": 80 }]
+          },
+          {
+            "matcher": { "id": "byName", "options": "call_function" },
+            "properties": [{ "id": "custom.width", "value": 200 }]
+          }
+        ]
+      },
+      "gridPos": { "h": 8, "w": 18, "x": 6, "y": 62 },
+      "id": 53,
+      "options": {
+        "cellHeight": "sm",
+        "footer": { "countRows": false, "fields": "", "reducer": ["sum"], "show": false },
+        "showHeader": true,
+        "sortBy": []
+      },
+      "pluginVersion": "10.2.0",
+      "targets": [
+        {
+          "datasource": { "type": "postgres", "uid": "postgresql" },
+          "editorMode": "code",
+          "format": "table",
+          "rawQuery": true,
+          "rawSql": "SELECT\n  block_number,\n  to_timestamp(block_timestamp / 1000.0) AS time,\n  call_function,\n  netuid,\n  call_args,\n  address AS signer,\n  success\nFROM extrinsics\nWHERE call_module = 'Sudo'\n  AND block_timestamp BETWEEN ${__from} AND ${__to}\nORDER BY block_timestamp DESC\nLIMIT 100",
+          "refId": "A"
+        }
+      ],
+      "title": "Recent Sudo Calls",
       "type": "table"
     }
   ],
@@ -658,6 +964,6 @@
   "timezone": "",
   "title": "Sentinel Tower",
   "uid": "a41392c6-b7f7-4bce-9e06-7654beb376eb",
-  "version": 14,
+  "version": 15,
   "weekStart": ""
 }
