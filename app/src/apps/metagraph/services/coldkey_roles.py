@@ -1,3 +1,4 @@
+from collections import Counter
 from dataclasses import dataclass, field
 
 
@@ -16,17 +17,27 @@ class ColdkeyRoles:
     def format_lines(self) -> list[str]:
         lines: list[str] = []
         if self.owned_subnets:
-            netuids = ", ".join(str(n) for n in sorted(self.owned_subnets))
-            lines.append(f"**role**: Subnet Owner (SN {netuids})")
+            lines.append(f"**role**: Subnet Owner ({_format_subnets(self.owned_subnets)})")
         if self.validator_subnets:
-            netuids = ", ".join(str(n) for n in sorted(self.validator_subnets))
-            lines.append(f"**role**: Validator (SN {netuids})")
+            lines.append(f"**role**: Validator ({_format_subnets(self.validator_subnets)})")
         if self.miner_subnets:
-            netuids = ", ".join(str(n) for n in sorted(self.miner_subnets))
-            lines.append(f"**role**: Miner (SN {netuids})")
+            lines.append(f"**role**: Miner ({_format_subnets(self.miner_subnets)})")
         if not lines:
             lines.append("**role**: Unknown")
         return lines
+
+
+def _format_subnets(netuids: list[int]) -> str:
+    """Format subnet list, collapsing duplicates into 'SN 54 x19' style."""
+    counts = Counter(netuids)
+    parts = []
+    for netuid in sorted(counts):
+        count = counts[netuid]
+        if count > 1:
+            parts.append(f"SN {netuid} x{count}")
+        else:
+            parts.append(f"SN {netuid}")
+    return ", ".join(parts)
 
 
 def resolve_coldkey_roles(address: str) -> ColdkeyRoles:

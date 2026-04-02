@@ -10,7 +10,7 @@ from apps.notifications.registry import register
 
 logger = structlog.get_logger()
 
-_HEX_KEY_ARGS = {"old_coldkey", "new_coldkey", "coldkey"}
+_HEX_KEY_ARGS = {"old_coldkey", "new_coldkey", "coldkey", "new_coldkey_hash"}
 
 
 def _format_arg(name: str, value: Any) -> str:

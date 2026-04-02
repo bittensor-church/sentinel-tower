@@ -172,7 +172,7 @@ def test_coldkey_format_announce_with_roles(coldkey_handler):
     assert "**Block #400**" in content
     assert "**Coldkey Swap Announced**" in content
     assert "**signer**: `5Gold...`" in content
-    assert "Subnet Owner (SN 1, 3)" in content
+    assert "Subnet Owner (SN 1, SN 3)" in content
     assert "Validator (SN 2)" in content
     assert "**new_coldkey_hash**: `0xabc123`" in content
 
@@ -196,6 +196,24 @@ def test_coldkey_format_executed(coldkey_handler):
     assert "**signer**: `5Gold...`" in content
     assert "Miner (SN 8)" in content
     assert "**new_coldkey**: `5Gnew...`" in content
+
+
+def test_coldkey_format_duplicate_subnets_collapsed(coldkey_handler):
+    """Multiple neurons on the same subnet show count instead of repeating."""
+    extrinsics = [
+        {
+            "call_module": "SubtensorModule",
+            "call_function": "announce_coldkey_swap",
+            "extrinsic_index": 4,
+            "address": "5Gold...",
+            "call_args": [],
+            "_coldkey_roles": ColdkeyRoles(miner_subnets=[54] * 19),
+        }
+    ]
+    content = coldkey_handler.format_message(400, extrinsics)["content"]
+
+    assert "Miner (SN 54 x19)" in content
+    assert content.count("54") == 1
 
 
 def test_coldkey_format_disputed_unknown_role(coldkey_handler):
