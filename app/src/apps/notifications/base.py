@@ -192,27 +192,35 @@ class SubnetRoutedNotification(ExtrinsicNotification):
             return 0
 
         total = 0
-        for netuid, group in self.group_by_netuid(extrinsics).items():
-            payload = self.format_message(block_number, group)
+        fallback_extrinsics: list[dict[str, Any]] = []
 
+        for netuid, group in self.group_by_netuid(extrinsics).items():
             if netuid is not None:
                 db_channel = DatabaseWebhookChannel(netuid)
-                sent = db_channel.send(payload)
-                if not sent and self.fallback_channel:
-                    sent = self.fallback_channel.send(payload)
-            elif self.fallback_channel:
-                sent = self.fallback_channel.send(payload)
-            else:
-                continue
+                sent = db_channel.send(self.format_message(block_number, group))
+                if sent:
+                    logger.info(
+                        "Subnet notification sent",
+                        notification=self.__class__.__name__,
+                        netuid=netuid,
+                        block_number=block_number,
+                        extrinsic_count=len(group),
+                    )
+                    total += len(group)
+                    continue
+            # No DB webhook or netuid is None — collect for fallback
+            fallback_extrinsics.extend(group)
 
+        if fallback_extrinsics and self.fallback_channel:
+            payload = self.format_message(block_number, fallback_extrinsics)
+            sent = self.fallback_channel.send(payload)
             if sent:
                 logger.info(
-                    "Subnet notification sent",
+                    "Fallback notification sent",
                     notification=self.__class__.__name__,
-                    netuid=netuid,
                     block_number=block_number,
-                    extrinsic_count=len(group),
+                    extrinsic_count=len(fallback_extrinsics),
                 )
-                total += len(group)
+                total += len(fallback_extrinsics)
 
         return total
