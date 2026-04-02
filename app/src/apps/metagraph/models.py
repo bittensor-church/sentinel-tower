@@ -61,6 +61,9 @@ class Block(models.Model):
 
     class Meta:
         db_table = "metagraph_block"
+        indexes = [
+            models.Index(fields=["timestamp"]),
+        ]
 
     def __str__(self) -> str:
         return f"Block {self.number}"
@@ -198,6 +201,12 @@ class NeuronSnapshot(models.Model):
                 condition=Q(is_validator=True),
                 name="idx_validator_snapshots",
             ),
+            models.Index(
+                fields=["neuron", "block"],
+                condition=Q(is_validator=True),
+                name="idx_validator_snaps_by_neuron",
+            ),
+            models.Index(fields=["-total_stake"]),
         ]
 
     def __str__(self) -> str:

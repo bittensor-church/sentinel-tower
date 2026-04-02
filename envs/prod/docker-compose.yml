@@ -1,5 +1,3 @@
-version: '3.7'
-
 services:
   redis:
     image: mirror.gcr.io/valkey/valkey:8.1-alpine
