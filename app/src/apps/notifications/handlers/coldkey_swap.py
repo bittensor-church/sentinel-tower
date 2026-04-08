@@ -3,6 +3,7 @@ from typing import Any, ClassVar
 import structlog
 from bittensor import Keypair
 
+from apps.metagraph.models import Coldkey
 from apps.metagraph.services.coldkey_roles import ColdkeyRoles, resolve_coldkey_roles
 from apps.notifications.base import SubnetRoutedNotification
 from apps.notifications.channels import DiscordWebhookChannel
@@ -85,6 +86,23 @@ class ColdkeySwapNotification(SubnetRoutedNotification):
 
         return super().notify(block_number, enriched)
 
+    def _resolve_labels(self, extrinsics: list[dict[str, Any]]) -> dict[str, str]:
+        """Collect all coldkey addresses from extrinsics and resolve their labels."""
+        addresses: set[str] = set()
+        for ext in extrinsics:
+            if addr := ext.get("address"):
+                addresses.add(addr)
+            for arg in ext.get("call_args", []):
+                if arg.get("name") in _HEX_KEY_ARGS:
+                    addresses.add(_format_arg(arg["name"], arg.get("value")))
+        if not addresses:
+            return {}
+        try:
+            return dict(Coldkey.objects.filter(coldkey__in=addresses, label__gt="").values_list("coldkey", "label"))
+        except Exception:  # noqa: BLE001
+            logger.debug("Failed to resolve coldkey labels")
+            return {}
+
     def format_message(self, block_number: int, extrinsics: list[dict[str, Any]]) -> dict[str, Any]:
         first = extrinsics[0]
         link = self.taostats_link(block_number, first.get("extrinsic_index", 0))
@@ -99,16 +117,18 @@ class ColdkeySwapNotification(SubnetRoutedNotification):
                 seen.add(key)
                 unique.append(ext)
 
+        labels = self._resolve_labels(unique)
+
         lines = [f"**Block #{block_number}**", ""]
 
         for ext in unique:
-            lines.append(self._format_swap(ext))
+            lines.append(self._format_swap(ext, labels))
             lines.append("")
 
         lines.append(f"[View on TaoStats]({link})")
         return {"content": "\n".join(lines), "flags": 1 << 2}
 
-    def _format_swap(self, extrinsic: dict[str, Any]) -> str:
+    def _format_swap(self, extrinsic: dict[str, Any], labels: dict[str, str]) -> str:
         call_function = extrinsic.get("call_function", "unknown")
         label = _ACTION_LABELS.get(call_function, call_function)
         address = extrinsic.get("address", "")
@@ -117,13 +137,16 @@ class ColdkeySwapNotification(SubnetRoutedNotification):
 
         parts = [f"**{label}**"]
         if address:
-            parts.append(f"**signer**: `{address}`")
+            identity = f" ({labels[address]})" if address in labels else ""
+            parts.append(f"**signer**: `{address}`{identity}")
 
         parts.extend(roles.format_lines())
 
         for arg in call_args:
             name = arg.get("name", "")
             value = arg.get("value")
-            parts.append(f"**{name}**: `{_format_arg(name, value)}`")
+            formatted = _format_arg(name, value)
+            identity = f" ({labels[formatted]})" if formatted in labels else ""
+            parts.append(f"**{name}**: `{formatted}`{identity}")
 
         return "\n".join(parts)

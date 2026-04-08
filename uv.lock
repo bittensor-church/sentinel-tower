@@ -184,6 +184,18 @@ wheels = [
 ]
 
 [[package]]
+name = "apscheduler"
+version = "3.11.2"
+source = { registry = "https://pypi.org/simple" }
+dependencies = [
+    { name = "tzlocal" },
+]
+sdist = { url = "https://files.pythonhosted.org/packages/07/12/3e4389e5920b4c1763390c6d371162f3784f86f85cd6d6c1bfe68eef14e2/apscheduler-3.11.2.tar.gz", hash = "sha256:2a9966b052ec805f020c8c4c3ae6e6a06e24b1bf19f2e11d91d8cca0473eef41", size = 108683, upload-time = "2025-12-22T00:39:34.884Z" }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/9f/64/2e54428beba8d9992aa478bb8f6de9e4ecaa5f8f513bcfd567ed7fb0262d/apscheduler-3.11.2-py3-none-any.whl", hash = "sha256:ce005177f741409db4e4dd40a7431b76feb856b9dd69d57e0da49d6715bfd26d", size = 64439, upload-time = "2025-12-22T00:39:33.303Z" },
+]
+
+[[package]]
 name = "argcomplete"
 version = "3.6.3"
 source = { registry = "https://pypi.org/simple" }
@@ -338,34 +350,41 @@ wheels = [
 
 [[package]]
 name = "bittensor-pylon-client"
-version = "1.0.0"
+version = "1.8.0"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
+    { name = "apscheduler" },
     { name = "docker" },
     { name = "httpx" },
     { name = "pydantic" },
     { name = "pydantic-settings" },
     { name = "tenacity" },
 ]
-sdist = { url = "https://files.pythonhosted.org/packages/d9/4d/289d9eaab03a845677c4e9ecd480b25a954e1464462482d6128ca9c9be97/bittensor_pylon_client-1.0.0.tar.gz", hash = "sha256:e951a7502a89e5ee934d62dcc3ee8fc0afc3c99daba81c7f7c20d63dcb6140b3", size = 154189, upload-time = "2025-12-23T12:45:25.282Z" }
+sdist = { url = "https://files.pythonhosted.org/packages/5d/31/4398bf68255ef256d3dc3992f1ee3f50ceecad0410c90ef1fa6c2a3b8a75/bittensor_pylon_client-1.8.0.tar.gz", hash = "sha256:d43a65742a15d8b43311f22616360fd72e134f470225a719b5235b6746a840f3", size = 22436, upload-time = "2026-02-20T08:43:53.649Z" }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/8b/b1/c29cad65c6775f3fe92319b08e3ea0f9ce567054d122952919b5f67f6e7e/bittensor_pylon_client-1.0.0-py3-none-any.whl", hash = "sha256:c90cb0cd618e8a6954469525da72d2e9219f03cd86dbb79756337d2f94fa3067", size = 29961, upload-time = "2025-12-23T12:45:23.77Z" },
+    { url = "https://files.pythonhosted.org/packages/75/c7/e8037067d3b87ad6e4ac876375cdbd4844fdc581ea958133724c3f81139a/bittensor_pylon_client-1.8.0-py3-none-any.whl", hash = "sha256:4c0f500dd27d02f880b41532a0ca663bae30a1bb98e29a91b641e57b10914ad4", size = 47761, upload-time = "2026-02-20T08:43:52.128Z" },
 ]
 
 [[package]]
 name = "bittensor-sentinel"
-version = "0.2.0"
+version = "0.2.2"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
     { name = "asgiref" },
     { name = "bittensor" },
+    { name = "bittensor-pylon-client" },
     { name = "pydantic" },
     { name = "structlog" },
     { name = "typer" },
 ]
-sdist = { url = "https://files.pythonhosted.org/packages/c3/3e/17e876a1c8249e0bb4b7480ba4cdf34539ede43b104976e4f320bc4ea50a/bittensor_sentinel-0.2.0.tar.gz", hash = "sha256:b59d1b3a3f00d814a1ad269307017f1b17922a8971675061952d4235f5128b33", size = 178349, upload-time = "2026-02-18T17:05:24.988Z" }
+sdist = { url = "https://files.pythonhosted.org/packages/c4/a3/7d73ac6df232ee49d060f05ba7372fb2c433f381773eecb688f56f1f94e3/bittensor_sentinel-0.2.2.tar.gz", hash = "sha256:1b5a4da94c88d3938f5435de0c57f15c72269ada0e30cc5e0c99eed7139b3a7a", size = 191655, upload-time = "2026-04-08T14:07:37.346Z" }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/2e/00/0b4c2c950b274aef8db8b4eca5026e60c793bed746e8669b4b486fbae20e/bittensor_sentinel-0.2.0-py3-none-any.whl", hash = "sha256:651d6f77ca9f802405a09349c21b646af0efd8664713e142683485a32545634b", size = 42504, upload-time = "2026-02-18T17:05:23.523Z" },
+    { url = "https://files.pythonhosted.org/packages/fc/1a/a73c811881a024e5c1e9430c2112265c3523876e2a70e7b87b3f209ffc6d/bittensor_sentinel-0.2.2-py3-none-any.whl", hash = "sha256:ed9effdcdc2a2c4a024bd16396ab6a238728d2616a7b5dd288357773c9bf774f", size = 52611, upload-time = "2026-04-08T14:07:35.631Z" },
+]
+
+[package.optional-dependencies]
+testing = [
+    { name = "polyfactory" },
 ]
 
 [[package]]
@@ -917,6 +936,30 @@ source = { registry = "https://pypi.org/simple" }
 sdist = { url = "https://files.pythonhosted.org/packages/cc/28/c14e053b6762b1044f34a13aab6859bbf40456d37d23aa286ac24cfd9a5d/executing-2.2.1.tar.gz", hash = "sha256:3632cc370565f6648cc328b32435bd120a1e4ebb20c77e3fdde9a13cd1e533c4", size = 1129488, upload-time = "2025-09-01T09:48:10.866Z" }
 wheels = [
     { url = "https://files.pythonhosted.org/packages/c1/ea/53f2148663b321f21b5a606bd5f191517cf40b7072c0497d3c92c4a13b1e/executing-2.2.1-py2.py3-none-any.whl", hash = "sha256:760643d3452b4d777d295bb167ccc74c64a81df23fb5e08eff250c425a4b2017", size = 28317, upload-time = "2025-09-01T09:48:08.5Z" },
+]
+
+[[package]]
+name = "factory-boy"
+version = "3.3.3"
+source = { registry = "https://pypi.org/simple" }
+dependencies = [
+    { name = "faker" },
+]
+sdist = { url = "https://files.pythonhosted.org/packages/ba/98/75cacae9945f67cfe323829fc2ac451f64517a8a330b572a06a323997065/factory_boy-3.3.3.tar.gz", hash = "sha256:866862d226128dfac7f2b4160287e899daf54f2612778327dd03d0e2cb1e3d03", size = 164146, upload-time = "2025-02-03T09:49:04.433Z" }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/27/8d/2bc5f5546ff2ccb3f7de06742853483ab75bf74f36a92254702f8baecc79/factory_boy-3.3.3-py2.py3-none-any.whl", hash = "sha256:1c39e3289f7e667c4285433f305f8d506efc2fe9c73aaea4151ebd5cdea394fc", size = 37036, upload-time = "2025-02-03T09:49:01.659Z" },
+]
+
+[[package]]
+name = "faker"
+version = "40.13.0"
+source = { registry = "https://pypi.org/simple" }
+dependencies = [
+    { name = "tzdata", marker = "sys_platform == 'win32'" },
+]
+sdist = { url = "https://files.pythonhosted.org/packages/89/95/4822ffe94723553789aef783104f4f18fc20d7c4c68e1bbd633e11d09758/faker-40.13.0.tar.gz", hash = "sha256:a0751c84c3abac17327d7bb4c98e8afe70ebf7821e01dd7d0b15cd8856415525", size = 1962043, upload-time = "2026-04-06T16:44:55.68Z" }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/da/8a/708103325edff16a0b0e004de0d37db8ba216a32713948c64d71f6d4a4c2/faker-40.13.0-py3-none-any.whl", hash = "sha256:c1298fd0d819b3688fb5fd358c4ba8f56c7c8c740b411fd3dbd8e30bf2c05019", size = 1994597, upload-time = "2026-04-06T16:44:53.698Z" },
 ]
 
 [[package]]
@@ -1591,6 +1634,19 @@ wheels = [
 ]
 
 [[package]]
+name = "polyfactory"
+version = "3.3.0"
+source = { registry = "https://pypi.org/simple" }
+dependencies = [
+    { name = "faker" },
+    { name = "typing-extensions" },
+]
+sdist = { url = "https://files.pythonhosted.org/packages/85/68/7717bd9e63ed254617a7d3dc9260904fb736d6ea203e58ffddcb186c64e4/polyfactory-3.3.0.tar.gz", hash = "sha256:237258b6ff43edf362ffd1f68086bb796466f786adfa002b0ac256dbf2246e9a", size = 348668, upload-time = "2026-02-22T09:46:28.01Z" }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/dd/34/b6f19941adcdaf415b5e8a8d577499f5b6a76b59cbae37f9b125a9ffe9f2/polyfactory-3.3.0-py3-none-any.whl", hash = "sha256:686abcaa761930d3df87b91e95b26b8d8cb9fdbbbe0b03d5f918acff5c72606e", size = 62707, upload-time = "2026-02-22T09:46:25.985Z" },
+]
+
+[[package]]
 name = "prometheus-client"
 version = "0.17.1"
 source = { registry = "https://pypi.org/simple" }
@@ -2072,7 +2128,7 @@ source = { editable = "." }
 dependencies = [
     { name = "abstract-block-dumper", extra = ["prometheus"] },
     { name = "bittensor-pylon-client" },
-    { name = "bittensor-sentinel" },
+    { name = "bittensor-sentinel", extra = ["testing"] },
     { name = "celery" },
     { name = "dagster" },
     { name = "dagster-webserver" },
@@ -2111,6 +2167,7 @@ lint = [
     { name = "ruff" },
 ]
 test = [
+    { name = "factory-boy" },
     { name = "freezegun" },
     { name = "ipdb" },
     { name = "pytest" },
@@ -2129,8 +2186,8 @@ type-check = [
 [package.metadata]
 requires-dist = [
     { name = "abstract-block-dumper", extras = ["prometheus"], specifier = "==0.1.6" },
-    { name = "bittensor-pylon-client", specifier = ">=1.0.0" },
-    { name = "bittensor-sentinel", specifier = "==0.2.0" },
+    { name = "bittensor-pylon-client", specifier = ">=1.8.0" },
+    { name = "bittensor-sentinel", extras = ["testing"], specifier = "==0.2.2" },
     { name = "celery", specifier = "~=5.5.3" },
     { name = "dagster", specifier = ">=1.9.0" },
     { name = "dagster-webserver", specifier = ">=1.9.0" },
@@ -2167,6 +2224,7 @@ lint = [
     { name = "ruff" },
 ]
 test = [
+    { name = "factory-boy" },
     { name = "freezegun" },
     { name = "ipdb" },
     { name = "pytest" },
@@ -2471,6 +2529,18 @@ source = { registry = "https://pypi.org/simple" }
 sdist = { url = "https://files.pythonhosted.org/packages/95/32/1a225d6164441be760d75c2c42e2780dc0873fe382da3e98a2e1e48361e5/tzdata-2025.2.tar.gz", hash = "sha256:b60a638fcc0daffadf82fe0f57e53d06bdec2f36c4df66280ae79bce6bd6f2b9", size = 196380, upload-time = "2025-03-23T13:54:43.652Z" }
 wheels = [
     { url = "https://files.pythonhosted.org/packages/5c/23/c7abc0ca0a1526a0774eca151daeb8de62ec457e77262b66b359c3c7679e/tzdata-2025.2-py2.py3-none-any.whl", hash = "sha256:1a403fada01ff9221ca8044d701868fa132215d84beb92242d9acd2147f667a8", size = 347839, upload-time = "2025-03-23T13:54:41.845Z" },
+]
+
+[[package]]
+name = "tzlocal"
+version = "5.3.1"
+source = { registry = "https://pypi.org/simple" }
+dependencies = [
+    { name = "tzdata", marker = "sys_platform == 'win32'" },
+]
+sdist = { url = "https://files.pythonhosted.org/packages/8b/2e/c14812d3d4d9cd1773c6be938f89e5735a1f11a9f184ac3639b93cef35d5/tzlocal-5.3.1.tar.gz", hash = "sha256:cceffc7edecefea1f595541dbd6e990cb1ea3d19bf01b2809f362a03dd7921fd", size = 30761, upload-time = "2025-03-05T21:17:41.549Z" }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/c2/14/e2a54fabd4f08cd7af1c07030603c3356b74da07f7cc056e600436edfa17/tzlocal-5.3.1-py3-none-any.whl", hash = "sha256:eb1a66c3ef5847adf7a834f1be0800581b683b5608e74f86ecbcef8ab91bb85d", size = 18026, upload-time = "2025-03-05T21:17:39.857Z" },
 ]
 
 [[package]]

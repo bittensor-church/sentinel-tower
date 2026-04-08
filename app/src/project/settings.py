@@ -50,6 +50,8 @@ SECRET_KEY = env("SECRET_KEY")
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = env("DEBUG")
 
+PYLON_URL = env("PYLON_URL", default="http://localhost:8090")
+
 ALLOWED_HOSTS = ["*"]
 
 AUTHENTICATION_BACKENDS = [

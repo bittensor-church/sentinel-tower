@@ -1,12 +1,13 @@
 import os
 
 import structlog
-from sentinel.v1.providers.bittensor import BittensorProvider, bittensor_provider
+from sentinel.v1.providers.base import BlockchainProvider
+from sentinel.v1.providers.bittensor import bittensor_provider
 
 logger = structlog.get_logger()
 
 
-def get_provider_for_block(block_number: int, force_archive: bool = False) -> BittensorProvider:
+def get_provider_for_block(block_number: int, force_archive: bool = False) -> BlockchainProvider:
     """
     Get the appropriate provider for a block.
 
@@ -30,7 +31,7 @@ def get_provider_for_block(block_number: int, force_archive: bool = False) -> Bi
     return bittensor_provider()
 
 
-def get_archive_provider() -> BittensorProvider:
+def get_archive_provider() -> BlockchainProvider:
     """Get a provider connected to the archive node."""
     archive_network = os.getenv("BITTENSOR_ARCHIVE_NETWORK", "archive")
     return bittensor_provider(archive_network)

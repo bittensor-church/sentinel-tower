@@ -27,11 +27,11 @@ dependencies = [
     "django-prometheus==2.3.1",
     "django-business-metrics>=1.0.1,<2",
     "abstract-block-dumper[prometheus]==0.1.6",
-    "bittensor-sentinel==0.2.0",
+    "bittensor-sentinel[testing]==0.2.2",
     "dagster>=1.9.0",
     "dagster-webserver>=1.9.0",
 
-    "bittensor-pylon-client>=1.0.0",
+    "bittensor-pylon-client>=1.8.0",
     "fsspec~=2026.1.0",
     "s3fs~=2026.1.0",
 ]
@@ -50,6 +50,7 @@ test = [
     'pytest-xdist',
     'ipdb',
     'freezegun',
+    'factory-boy',
 ]
 lint = [
     "ruff",

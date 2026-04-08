@@ -3,7 +3,8 @@ import time
 
 import structlog
 from django.core.management.base import BaseCommand
-from sentinel.v1.providers.bittensor import BittensorProvider, bittensor_provider
+from sentinel.v1.providers.base import BlockchainProvider
+from sentinel.v1.providers.bittensor import bittensor_provider
 
 from apps.extrinsics.block_tasks import store_block_extrinsics
 
@@ -24,12 +25,12 @@ class Command(BaseCommand):
         logger.info("Received shutdown signal", signal=sig_name)
         self._shutdown = True
 
-    def _create_provider(self) -> BittensorProvider:
+    def _create_provider(self) -> BlockchainProvider:
         provider = bittensor_provider()
         provider.__enter__()
         return provider
 
-    def _close_provider(self, provider: BittensorProvider) -> None:
+    def _close_provider(self, provider: BlockchainProvider) -> None:
         try:
             provider.__exit__(None, None, None)
         except Exception:

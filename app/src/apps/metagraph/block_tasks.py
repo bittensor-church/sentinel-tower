@@ -3,7 +3,7 @@ from datetime import UTC, datetime
 import structlog
 from abstract_block_dumper.v1.decorators import block_task
 from django.conf import settings
-from sentinel.v1.providers.bittensor import BittensorProvider
+from sentinel.v1.providers.base import BlockchainProvider
 from sentinel.v1.services.sentinel import sentinel_service
 
 import apps.metagraph.utils as metagraph_utils
@@ -27,7 +27,7 @@ def _get_epoch_position(block_number: int, netuid: int) -> str:
     return "inside"
 
 
-def sync_metagraph_for_block(block_number: int, netuid: int, provider: BittensorProvider) -> dict | None:
+def sync_metagraph_for_block(block_number: int, netuid: int, provider: BlockchainProvider) -> dict | None:
     """
     Sync metagraph for the given netuid at the specified block using an existing provider.
 

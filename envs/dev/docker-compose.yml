@@ -15,6 +15,7 @@ x-backend: &backend
     REDIS_PORT: "6379"
     MEDIA_ROOT: ${MEDIA_ROOT:-/root/src/media}
     CELERY_BROKER_URL: redis://redis:6379/0
+    PYLON_URL: http://pylon:8090
   volumes:
     - ./app/src:/root/src
     - app-venv:/root/src/.venv

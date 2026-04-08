@@ -3,7 +3,7 @@ from datetime import UTC, datetime
 
 import structlog
 from sentinel.v1.dto import ExtrinsicDTO
-from sentinel.v1.providers.bittensor import BittensorProvider
+from sentinel.v1.providers.base import BlockchainProvider
 from sentinel.v1.services.sentinel import sentinel_service
 
 from apps.extrinsics.hyperparam_service import enrich_extrinsics_with_previous_values
@@ -86,7 +86,7 @@ def _parse_extrinsic_record(record: dict) -> dict | None:
     }
 
 
-def store_block_extrinsics(block_number: int, provider: BittensorProvider) -> dict | None:
+def store_block_extrinsics(block_number: int, provider: BlockchainProvider) -> dict | None:
     """
     Store extrinsics from the given block number.
 
