@@ -98,9 +98,12 @@ class JsonLinesStorage:
         """
         Append using Django storage backend (for S3, etc.).
 
-        Note: This is not fully atomic for remote storage backends.
-        For high-concurrency scenarios with S3, consider using
-        a different approach (e.g., one file per record).
+        WARNING: This method is NOT safe for concurrent writes. The
+        read-delete-write cycle is subject to TOCTOU race conditions.
+        If two processes call this concurrently, one write will be lost.
+
+        Only use this with a single-writer process or external locking.
+        For high-concurrency scenarios, use one file per record instead.
         """
         if default_storage.exists(file_path):
             with default_storage.open(file_path, "r") as f:

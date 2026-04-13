@@ -3,14 +3,13 @@ from datetime import UTC, datetime
 import structlog
 from abstract_block_dumper.v1.decorators import block_task
 from django.conf import settings
+from sentinel.v1.providers import pylon_provider
 from sentinel.v1.providers.base import BlockchainProvider
 from sentinel.v1.services.sentinel import sentinel_service
 
 import apps.metagraph.utils as metagraph_utils
 from apps.metagraph.services.metagraph_service import MetagraphService
 from apps.metagraph.services.metagraph_sync_service import DumpMetadata, MetagraphSyncService
-from apps.metagraph.tasks import fast_apy_sync
-from project.core.utils import get_provider_for_block
 
 logger = structlog.get_logger()
 
@@ -39,18 +38,24 @@ def sync_metagraph_for_block(block_number: int, netuid: int, provider: Blockchai
 
     """
     started_at = datetime.now(UTC)
+    log = logger.bind(block=block_number, netuid=netuid)
 
+    log.debug("Fetching metagraph from provider")
     service = sentinel_service(provider)
     subnet = service.ingest_subnet(netuid, block_number, lite=settings.METAGRAPH_LITE)
     metagraph = subnet.metagraph
-
     finished_at = datetime.now(UTC)
+    ingest_ms = round((finished_at - started_at).total_seconds() * 1000)
+    log.debug("Provider ingest completed", ingest_ms=ingest_ms)
 
     if not metagraph:
-        logger.debug("No metagraph data found", block=block_number, netuid=netuid)
+        log.debug("No metagraph data found")
         return None
 
+    t0 = datetime.now(UTC)
     MetagraphService.store_metagraph_artifact(metagraph)
+    artifact_ms = round((datetime.now(UTC) - t0).total_seconds() * 1000)
+    log.debug("Stored metagraph artifact", artifact_ms=artifact_ms)
 
     dump_metadata = DumpMetadata(
         netuid=netuid,
@@ -59,10 +64,20 @@ def sync_metagraph_for_block(block_number: int, netuid: int, provider: Blockchai
         finished_at=finished_at,
     )
 
+    t0 = datetime.now(UTC)
     sync_service = MetagraphSyncService()
     stats = sync_service.sync_metagraph(metagraph, dump_metadata)
+    sync_ms = round((datetime.now(UTC) - t0).total_seconds() * 1000)
+    log.debug("Synced metagraph to DB", sync_ms=sync_ms, **stats)
 
     elapsed_ms = round((datetime.now(UTC) - started_at).total_seconds() * 1000)
+    log.debug(
+        "sync_metagraph_for_block completed",
+        total_ms=elapsed_ms,
+        ingest_ms=ingest_ms,
+        artifact_ms=artifact_ms,
+        sync_ms=sync_ms,
+    )
 
     return {"neurons": stats["neurons"], "weights": stats["weights"], "bonds": stats["bonds"], "elapsed_ms": elapsed_ms}
 
@@ -79,31 +94,5 @@ def store_metagraph(block_number: int, netuid: int) -> dict | None:
     Fetches metagraph data from the blockchain, stores it as a JSONL artifact,
     and syncs it to Django models.
     """
-    provider_ctx = get_provider_for_block(block_number)
-
-    with provider_ctx as provider:
-        return sync_metagraph_for_block(block_number, netuid, provider)
-
-
-# @block_task(
-#     condition=lambda block_number, netuid: MetagraphService.is_dumpable_block(block_number, netuid),
-#     args=[{"netuid": netuid} for netuid in MetagraphService.netuids_to_sync()],
-#     celery_kwargs={"queue": "metagraph"},
-# )
-def sync_apy_data(block_number: int, netuid: int) -> str:
-    """
-    Dispatch a fast APY sync task for the given block and netuid.
-
-    This block task triggers on dumpable blocks and dispatches a Celery task
-    to sync minimal data required for APY calculations using native bittensor SDK.
-    """
-    task = fast_apy_sync.delay(block_number=block_number, netuid=netuid)
-
-    logger.info(
-        "Dispatched fast APY sync task",
-        block_number=block_number,
-        netuid=netuid,
-        task_id=task.id,
-    )
-
-    return task.id
+    provider = pylon_provider()
+    return sync_metagraph_for_block(block_number, netuid, provider)

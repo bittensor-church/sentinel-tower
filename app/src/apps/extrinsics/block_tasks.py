@@ -214,7 +214,10 @@ def sync_extrinsics_to_db(extrinsics: list[ExtrinsicDTO], block_number: int, tim
     t3 = time.monotonic()
     logger.debug("sync_extrinsics_to_db: enrichment done", block_number=block_number, duration_s=round(t3 - t2, 3))
 
-    dispatch_block_notifications(block_number, enriched)
+    try:
+        dispatch_block_notifications(block_number, enriched)
+    except Exception:  # noqa: BLE001
+        logger.exception("sync_extrinsics_to_db: notification dispatch failed", block_number=block_number)
 
     t4 = time.monotonic()
     logger.debug(

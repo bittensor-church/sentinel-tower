@@ -71,7 +71,7 @@ class ColdkeySwapNotification(SubnetRoutedNotification):
                 try:
                     roles_cache[address] = resolve_coldkey_roles(address)
                 except Exception:  # noqa: BLE001
-                    logger.warning("Failed to resolve coldkey roles", address=address)
+                    logger.warning("Failed to resolve coldkey roles", address=address, exc_info=True)
                     roles_cache[address] = ColdkeyRoles()
 
             roles = roles_cache.get(address, ColdkeyRoles())
@@ -100,7 +100,7 @@ class ColdkeySwapNotification(SubnetRoutedNotification):
         try:
             return dict(Coldkey.objects.filter(coldkey__in=addresses, label__gt="").values_list("coldkey", "label"))
         except Exception:  # noqa: BLE001
-            logger.debug("Failed to resolve coldkey labels")
+            logger.debug("Failed to resolve coldkey labels", exc_info=True)
             return {}
 
     def format_message(self, block_number: int, extrinsics: list[dict[str, Any]]) -> dict[str, Any]:

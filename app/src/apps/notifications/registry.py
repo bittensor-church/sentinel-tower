@@ -76,6 +76,14 @@ def dispatch_block_notifications(block_number: int, extrinsics: list[dict[str, A
     for handler, grouped in handler_groups.items():
         if not grouped:
             continue
-        total_notified += handler.notify(block_number, grouped)
+        try:
+            total_notified += handler.notify(block_number, grouped)
+        except Exception:  # noqa: BLE001
+            logger.exception(
+                "Notification handler failed",
+                handler=handler.__class__.__name__,
+                block_number=block_number,
+                extrinsic_count=len(grouped),
+            )
 
     return total_notified

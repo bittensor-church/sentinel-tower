@@ -15,7 +15,7 @@ x-backend: &backend
     REDIS_PORT: "6379"
     MEDIA_ROOT: ${MEDIA_ROOT:-/root/src/media}
     CELERY_BROKER_URL: redis://redis:6379/0
-    PYLON_URL: http://pylon:8090
+    PYLON_URL: http://pylon:8000
   volumes:
     - ./app/src:/root/src
     - app-venv:/root/src/.venv
@@ -27,6 +27,21 @@ x-backend: &backend
     - ${MEDIA_VOLUME_PATH:-./app/src/media}:/root/src/media
 
 services:
+  app:
+    <<: *backend
+    command: >
+      sh -c "./prometheus-cleanup.sh &&
+             PROMETHEUS_EXPORT_MIGRATIONS=0 ./manage.py wait_for_database --timeout 10 &&
+             PROMETHEUS_EXPORT_MIGRATIONS=0 ./manage.py migrate &&
+             gunicorn -b 0.0.0.0:8000 project.wsgi:application"
+    depends_on:
+      db:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    ports:
+      - ${APP_PORT:-8000}:8000
+
   redis:
     image: mirror.gcr.io/valkey/valkey:8.1-alpine
     command: valkey-server --appendonly yes
@@ -49,21 +64,6 @@ services:
       - ${POSTGRES_DATA_PATH:-./db/data}:/var/lib/postgresql/data
     ports:
       - ${POSTGRES_PORT}:5432
-
-  app:
-    <<: *backend
-    command: >
-      sh -c "./prometheus-cleanup.sh &&
-             PROMETHEUS_EXPORT_MIGRATIONS=0 ./manage.py wait_for_database --timeout 10 &&
-             PROMETHEUS_EXPORT_MIGRATIONS=0 ./manage.py migrate &&
-             gunicorn -b 0.0.0.0:8000 project.wsgi:application"
-    depends_on:
-      db:
-        condition: service_healthy
-      redis:
-        condition: service_healthy
-    ports:
-      - ${APP_PORT:-8000}:8000
 
   prometheus:
     image: prom/prometheus:v2.47.0
@@ -108,28 +108,43 @@ services:
     env_file: ./.env
     ports:
       - ${PYLON_PORT:-8090}:8000
+    profiles:
+      - async-scheduler
+
+  flower:
+    <<: *backend
+    command: celery -A project flower --max-tasks=300
+    environment:
+      <<: *backend-env
+    ports:
+      - ${FLOWER_PORT:-5555}:5555
+    depends_on:
+      redis:
+        condition: service_healthy
+    profiles:
+      - async-scheduler
 
   celery-worker:
     <<: *backend
     healthcheck:
       test: celery -A project status > /dev/null || exit 1
-    mem_limit: 22g
     environment:
       <<: *backend-env
       SENTINEL_MODE: ${SENTINEL_MODE:-live}
-      PYLON_URL: http://pylon:8090
+      PYLON_URL: http://pylon:8000
+      LOG_LEVEL: ${LOG_LEVEL:-DEBUG}
     command: ./celery-entrypoint.sh
     tmpfs: /run
     depends_on:
       redis:
         condition: service_healthy
     profiles:
-      - scheduler
+      - async-scheduler
 
   block-scheduler:
     <<: *backend
     restart: always
-    command: ./block-scheduler-entrypoint.sh
+    command: python manage.py block_scheduler
     environment:
       <<: *backend-env
       SENTINEL_MODE: ${SENTINEL_MODE:-live}
@@ -146,7 +161,7 @@ services:
       db:
         condition: service_healthy
     profiles:
-      - scheduler
+      - async-scheduler
 
   sync-extrinsics:
     <<: *backend
@@ -157,6 +172,19 @@ services:
         condition: service_healthy
       redis:
         condition: service_healthy
+    profiles:
+      - extrinsics
+
+  backfill-extrinsics:
+    <<: *backend
+    command: python manage.py backfill_extrinsics
+    depends_on:
+      db:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    profiles:
+      - extrinsics
 
   sync-metagraph:
     <<: *backend
@@ -173,20 +201,11 @@ services:
   backfill-metagraph:
     <<: *backend
     command: python manage.py backfill_metagraph
-    profiles:
-      - backfill
     depends_on:
       db:
         condition: service_healthy
-
-  backfill-extrinsics:
-    <<: *backend
-    command: python manage.py backfill_extrinsics
     profiles:
-      - backfill
-    depends_on:
-      db:
-        condition: service_healthy
+      - metagraph
 
 volumes:
   app-venv:

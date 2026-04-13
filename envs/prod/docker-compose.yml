@@ -94,6 +94,11 @@ services:
   sync-extrinsics:
     image: project/app
     init: true
+    healthcheck:
+      test: ["CMD-SHELL", "pgrep -f 'manage.py sync_extrinsics' || exit 1"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
     restart: always
     env_file: ./.env
     extra_hosts:
@@ -112,6 +117,11 @@ services:
   sync-metagraph:
     image: project/app
     init: true
+    healthcheck:
+      test: ["CMD-SHELL", "pgrep -f 'manage.py sync_metagraph' || exit 1"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
     restart: always
     env_file: ./.env
     extra_hosts:
@@ -369,6 +379,7 @@ services:
       - nodeexporter_collectors:/app/metrics
     logging:
       <<: *logging
+
   watchtower:
     image: containrrr/watchtower:latest
     restart: unless-stopped
@@ -394,26 +405,6 @@ services:
       - '--web.enable-lifecycle'
     ports:
       - 127.0.0.1:9090:9090
-    logging:
-      <<: *logging
-
-  alertmanager:
-    image: prom/alertmanager:v0.26.0
-    restart: unless-stopped
-    volumes:
-      - ./prometheus/alertmanager.yml:/etc/alertmanager/alertmanager.yml.template:ro
-    entrypoint: /bin/sh
-    command:
-      - -c
-      - |
-        cat /etc/alertmanager/alertmanager.yml.template | sed "s|\$${SLACK_WEBHOOK_URL}|$$SLACK_WEBHOOK_URL|g" > /etc/alertmanager/alertmanager.yml
-        exec /bin/alertmanager --config.file=/etc/alertmanager/alertmanager.yml --storage.path=/alertmanager
-    environment:
-      - SLACK_WEBHOOK_URL=${SLACK_WEBHOOK_URL}
-    ports:
-      - 127.0.0.1:9093:9093
-    profiles:
-      - scheduler
     logging:
       <<: *logging
 

@@ -35,11 +35,17 @@ RUN apt-get update \
 	&& apt-get install -y wget \
 	&& rm -rf /var/lib/apt/lists/*
 
+RUN groupadd --gid 1000 appuser \
+	&& useradd --uid 1000 --gid appuser --create-home appuser
+
 WORKDIR /root/src/
 ENV PYTHONUNBUFFERED=1
 ENV PATH="/root/src/.venv/bin:$PATH"
 
 COPY --from=base-image /root/src/ /root/src/
 
+RUN chown -R appuser:appuser /root/src/
+
+USER appuser
 
 CMD ["./entrypoint.sh"]

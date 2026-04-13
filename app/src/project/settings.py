@@ -1,62 +1,27 @@
-import inspect
+# pyright: reportArgumentType=false, reportCallIssue=false, reportAssignmentType=false
 import logging
-import os
 from datetime import timedelta
-from functools import wraps
 
 import environ
 import structlog
-from celery.schedules import crontab
 from kombu import Queue
 
 root = environ.Path(__file__) - 2
 
 env = environ.Env(DEBUG=(bool, False))
 
-# .env file contents are not passed to docker image during build stage;
-# this results in errors if you require some env var to be set, as if in "env('MYVAR')" -
-# obviously it's not set during build stage, but you don't care and want to ignore that.
-# To mitigate this, we set ENV_FILL_MISSING_VALUES=1 during build phase, and it activates
-# monkey-patching of "environ" module, so that all unset variables get some default value
-# and the library does not complain anymore
-if env.bool("ENV_FILL_MISSING_VALUES", default=False):
-
-    def patch(fn):
-        @wraps(fn)
-        def wrapped(*args, **kwargs):
-            if kwargs.get("default") is env.NOTSET:
-                kwargs["default"] = {
-                    bool: False,
-                    int: 0,
-                    float: 0.0,
-                }.get(kwargs.get("cast"), None)
-
-            return fn(*args, **kwargs)
-
-        return wrapped
-
-    for name, method in inspect.getmembers(env, predicate=inspect.ismethod):
-        setattr(env, name, patch(method))
-
-# read from the .env file if hasn't been sourced already
-if env("ENV", default=None) is None:
-    env.read_env(root("../../.env"))
+env.read_env(root("../../.env"), overwrite=False)
 
 ENV = env("ENV")
 
-# SECURITY WARNING: keep the secret key used in production secret!
+
 SECRET_KEY = env("SECRET_KEY")
-
-# SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = env("DEBUG")
+ALLOWED_HOSTS = env.list("ALLOWED_HOSTS", default=["localhost"])
+ROOT_URLCONF = "project.urls"
+WSGI_APPLICATION = "project.wsgi.application"
+DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
 
-PYLON_URL = env("PYLON_URL", default="http://localhost:8090")
-
-ALLOWED_HOSTS = ["*"]
-
-AUTHENTICATION_BACKENDS = [
-    "django.contrib.auth.backends.ModelBackend",
-]
 
 INSTALLED_APPS = [
     "django_prometheus",
@@ -70,14 +35,11 @@ INSTALLED_APPS = [
     "django_probes",
     "django_structlog",
     "abstract_block_dumper",
-    "constance",
     "project.core",
     "apps.notifications",
     "apps.extrinsics",
     "apps.metagraph",
 ]
-
-PROMETHEUS_EXPORT_MIGRATIONS = env.bool("PROMETHEUS_EXPORT_MIGRATIONS", default=True)
 
 MIDDLEWARE = [
     "django.middleware.security.SecurityMiddleware",
@@ -91,50 +53,9 @@ MIDDLEWARE = [
     "django_structlog.middlewares.RequestMiddleware",
 ]
 
-
-if DEBUG_TOOLBAR := env.bool("DEBUG_TOOLBAR", default=False):
-    INTERNAL_IPS = [
-        "127.0.0.1",
-    ]
-
-    DEBUG_TOOLBAR_CONFIG = {"SHOW_TOOLBAR_CALLBACK": lambda _request: True}
-    INSTALLED_APPS.append("debug_toolbar")
-    MIDDLEWARE = ["debug_toolbar.middleware.DebugToolbarMiddleware", *MIDDLEWARE]
-
-if CORS_ENABLED := env.bool("CORS_ENABLED", default=True):
-    INSTALLED_APPS.append("corsheaders")
-    MIDDLEWARE = ["corsheaders.middleware.CorsMiddleware", *MIDDLEWARE]
-    CORS_ALLOWED_ORIGINS = env.list("CORS_ALLOWED_ORIGINS", default=[])
-    CORS_ALLOWED_ORIGIN_REGEXES = env.list("CORS_ALLOWED_ORIGIN_REGEXES", default=[])
-    CORS_ALLOW_ALL_ORIGINS = env.bool("CORS_ALLOW_ALL_ORIGINS", default=False)
-
-SECURE_PROXY_SSL_HEADER = ("HTTP_X_FORWARDED_PROTO", "https")
-
-# Content Security Policy
-if CSP_ENABLED := env.bool("CSP_ENABLED"):
-    MIDDLEWARE.append("csp.middleware.CSPMiddleware")
-
-    CSP_REPORT_ONLY = env.bool("CSP_REPORT_ONLY", default=True)
-    CSP_REPORT_URL = env("CSP_REPORT_URL", default=None) or None
-
-    CSP_DEFAULT_SRC = env.tuple("CSP_DEFAULT_SRC")
-    CSP_SCRIPT_SRC = env.tuple("CSP_SCRIPT_SRC")
-    CSP_STYLE_SRC = env.tuple("CSP_STYLE_SRC")
-    CSP_FONT_SRC = env.tuple("CSP_FONT_SRC")
-    CSP_IMG_SRC = env.tuple("CSP_IMG_SRC")
-    CSP_MEDIA_SRC = env.tuple("CSP_MEDIA_SRC")
-    CSP_OBJECT_SRC = env.tuple("CSP_OBJECT_SRC")
-    CSP_FRAME_SRC = env.tuple("CSP_FRAME_SRC")
-    CSP_CONNECT_SRC = env.tuple("CSP_CONNECT_SRC")
-    CSP_CHILD_SRC = env.tuple("CSP_CHILD_SRC")
-    CSP_MANIFEST_SRC = env.tuple("CSP_MANIFEST_SRC")
-    CSP_WORKER_SRC = env.tuple("CSP_WORKER_SRC")
-
-    CSP_BLOCK_ALL_MIXED_CONTENT = env.bool("CSP_BLOCK_ALL_MIXED_CONTENT", default=False)
-    CSP_EXCLUDE_URL_PREFIXES = env.tuple("CSP_EXCLUDE_URL_PREFIXES", default=tuple())
-
-
-ROOT_URLCONF = "project.urls"
+AUTHENTICATION_BACKENDS = [
+    "django.contrib.auth.backends.ModelBackend",
+]
 
 TEMPLATES = [
     {
@@ -152,43 +73,25 @@ TEMPLATES = [
     },
 ]
 
-WSGI_APPLICATION = "project.wsgi.application"
 
-DATABASES = {}
-if env("DATABASE_POOL_URL"):  # DB transaction-based connection pool, such as one provided PgBouncer
-    DATABASES["default"] = {
-        **env.db_url("DATABASE_POOL_URL"),
-        "DISABLE_SERVER_SIDE_CURSORS": True,  # prevents random cursor errors with transaction-based connection pool
-    }
-elif env("DATABASE_URL"):
-    DATABASES["default"] = env.db_url("DATABASE_URL")
+DATABASES = {"default": env.db_url("DATABASE_URL")}
 
-DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
 
 AUTH_PASSWORD_VALIDATORS = [
-    {
-        "NAME": "django.contrib.auth.password_validation.UserAttributeSimilarityValidator",
-    },
-    {
-        "NAME": "django.contrib.auth.password_validation.MinimumLengthValidator",
-    },
-    {
-        "NAME": "django.contrib.auth.password_validation.CommonPasswordValidator",
-    },
-    {
-        "NAME": "django.contrib.auth.password_validation.NumericPasswordValidator",
-    },
+    {"NAME": "django.contrib.auth.password_validation.UserAttributeSimilarityValidator"},
+    {"NAME": "django.contrib.auth.password_validation.MinimumLengthValidator"},
+    {"NAME": "django.contrib.auth.password_validation.CommonPasswordValidator"},
+    {"NAME": "django.contrib.auth.password_validation.NumericPasswordValidator"},
 ]
 
 
-# Internationalization
 LANGUAGE_CODE = "en-us"
 TIME_ZONE = "UTC"
 USE_I18N = True
 USE_L10N = True
 USE_TZ = True
 
-# Static files (CSS, JavaScript, Images)
+
 STATIC_URL = env("STATIC_URL", default="/static/")
 STATIC_ROOT = env("STATIC_ROOT", default=root("static"))
 STORAGES = {
@@ -202,44 +105,29 @@ STORAGES = {
 MEDIA_URL = env("MEDIA_URL", default="/media/")
 MEDIA_ROOT = env("MEDIA_ROOT", default=root("media"))
 
-# Security
-# redirect HTTP to HTTPS
-if env.bool("HTTPS_REDIRECT", default=False) and not DEBUG:
-    SECURE_SSL_REDIRECT = True
-    SECURE_REDIRECT_EXEMPT = []  # type: ignore
-    SESSION_COOKIE_SECURE = True
-    CSRF_COOKIE_SECURE = True
-else:
-    SECURE_SSL_REDIRECT = False
+SECURE_PROXY_SSL_HEADER = ("HTTP_X_FORWARDED_PROTO", "https")
 
+if CORS_ENABLED := env.bool("CORS_ENABLED", default=True):
+    INSTALLED_APPS.append("corsheaders")
+    MIDDLEWARE = ["corsheaders.middleware.CorsMiddleware", *MIDDLEWARE]
+    CORS_ALLOWED_ORIGINS = env.list("CORS_ALLOWED_ORIGINS", default=[])
+    CORS_ALLOWED_ORIGIN_REGEXES = env.list("CORS_ALLOWED_ORIGIN_REGEXES", default=[])
+    CORS_ALLOW_ALL_ORIGINS = env.bool("CORS_ALLOW_ALL_ORIGINS", default=False)
 
 REDIS_HOST = env("REDIS_HOST")
 REDIS_PORT = env.int("REDIS_PORT")
 REDIS_URL = f"redis://{REDIS_HOST}:{REDIS_PORT}"
 
-CONSTANCE_BACKEND = "constance.backends.database.DatabaseBackend"
-
 CELERY_BROKER_URL = env("CELERY_BROKER_URL", default="")
-CELERY_RESULT_BACKEND = env("CELERY_BROKER_URL", default="")  # store results in Redis
-CELERY_RESULT_EXPIRES = int(timedelta(days=1).total_seconds())  # time until task result deletion
-CELERY_COMPRESSION = "gzip"  # task compression
-CELERY_MESSAGE_COMPRESSION = "gzip"  # result compression
-CELERY_SEND_EVENTS = True  # needed for worker monitoring
-CELERY_BEAT_SCHEDULE = {
-    "cleanup-old-tasks": {
-        "task": "abstract_block_dumper.v1.tasks.cleanup_old_tasks",
-        "schedule": crontab(hour=2, minute=0),  # Daily at 2 AM
-        "kwargs": {"days": 7},  # Customize retention period
-    },
-    "refresh-apy-materialized-view": {
-        "task": "apps.metagraph.tasks.refresh_apy_materialized_view",
-        "schedule": crontab(hour=3, minute=0),  # Daily at 3 AM (after cleanup)
-    },
-}
+CELERY_RESULT_BACKEND = CELERY_BROKER_URL
+CELERY_RESULT_EXPIRES = int(timedelta(days=1).total_seconds())
+CELERY_MESSAGE_COMPRESSION = "gzip"
+CELERY_ACCEPT_CONTENT = ["json"]
+CELERY_TASK_SERIALIZER = "json"
+CELERY_RESULT_SERIALIZER = "json"
+
 CELERY_TASK_CREATE_MISSING_QUEUES = False
-CELERY_TASK_QUEUES = (Queue("celery"), Queue("worker"), Queue("metagraph"), Queue("dead_letter"))
-CELERY_TASK_DEFAULT_EXCHANGE = "celery"
-CELERY_TASK_DEFAULT_ROUTING_KEY = "celery"
+CELERY_TASK_QUEUES = (Queue("celery"), Queue("metagraph"))
 CELERY_TASK_ANNOTATIONS = {"*": {"acks_late": True, "reject_on_worker_lost": True}}
 CELERY_TASK_ROUTES = {
     "apps.metagraph.block_tasks.store_metagraph": {"queue": "metagraph"},
@@ -248,26 +136,15 @@ CELERY_TASK_ROUTES = {
 CELERY_TASK_TIME_LIMIT = int(timedelta(minutes=5).total_seconds())
 CELERY_TASK_ALWAYS_EAGER = env.bool("CELERY_TASK_ALWAYS_EAGER", default=False)
 CELERY_TASK_EAGER_PROPAGATES = env.bool("CELERY_TASK_EAGER_PROPAGATES", default=False)
+
 CELERY_WORKER_SEND_TASK_EVENTS = True
 CELERY_TASK_SEND_SENT_EVENT = True
-CELERY_ACCEPT_CONTENT = ["json"]
-CELERY_TASK_SERIALIZER = "json"
-CELERY_RESULT_SERIALIZER = "json"
 CELERY_WORKER_PREFETCH_MULTIPLIER = env.int("CELERY_WORKER_PREFETCH_MULTIPLIER", default=1)
 CELERY_BROKER_POOL_LIMIT = env.int("CELERY_BROKER_POOL_LIMIT", default=50)
-# Recycle workers after N tasks to prevent memory leaks from accumulating
 CELERY_WORKER_MAX_TASKS_PER_CHILD = env.int("CELERY_WORKER_MAX_TASKS_PER_CHILD", default=50)
 
-DJANGO_STRUCTLOG_CELERY_ENABLED = True
 
-EMAIL_BACKEND = env("EMAIL_BACKEND")
-EMAIL_FILE_PATH = env("EMAIL_FILE_PATH")
-EMAIL_HOST = env("EMAIL_HOST")
-EMAIL_PORT = env.int("EMAIL_PORT")
-EMAIL_HOST_USER = env("EMAIL_HOST_USER")
-EMAIL_HOST_PASSWORD = env("EMAIL_HOST_PASSWORD")
-EMAIL_USE_TLS = env.bool("EMAIL_USE_TLS")
-DEFAULT_FROM_EMAIL = env("DEFAULT_FROM_EMAIL")
+DJANGO_STRUCTLOG_CELERY_ENABLED = True
 
 LOG_LEVEL = env("LOG_LEVEL", default="INFO")
 
@@ -292,40 +169,24 @@ LOGGING = {
     },
     "loggers": {
         "django": {
-            "handlers": ["console"],
-            "level": "INFO",
+            "level": LOG_LEVEL,
             "propagate": True,
         },
-        "django_structlog.*": {
-            "handlers": ["console"],
-            "level": "INFO",
+        "django_structlog": {
+            "level": LOG_LEVEL,
+            "propagate": True,
         },
         "celery": {
-            "handlers": ["console"],
-            "level": "INFO",
-            "propagate": False,
-        },
-        "celery.task": {
-            "handlers": ["console"],
-            "level": "INFO",
-            "propagate": False,
-        },
-        "celery.redirected": {
-            "handlers": ["console"],
-            "level": "INFO",
+            "level": LOG_LEVEL,
+            "propagate": True,
         },
         "psycopg.pq": {
-            # only logs unavailable libs during psycopg initialization
             "propagate": False,
         },
-        # Fix spamming DEBUG-level logs in manage.py shell and shell_plus.
         "parso": {
-            "handlers": ["console"],
             "level": "INFO",
         },
-        # Suppress verbose websocket connection debug logs
         "websockets": {
-            "handlers": ["console"],
             "level": "WARNING",
         },
     },
@@ -353,9 +214,9 @@ def configure_structlog():
 
 configure_structlog()
 
-# Sentry
+
 SENTRY_DSN = env("SENTRY_DSN", default="")
-if SENTRY_DSN is not None and isinstance(SENTRY_DSN, str) and SENTRY_DSN.strip():
+if SENTRY_DSN:
     import sentry_sdk
     from sentry_sdk.integrations.celery import CeleryIntegration
     from sentry_sdk.integrations.django import DjangoIntegration
@@ -363,8 +224,7 @@ if SENTRY_DSN is not None and isinstance(SENTRY_DSN, str) and SENTRY_DSN.strip()
     from sentry_sdk.integrations.redis import RedisIntegration
 
     SENTRY_ENVIRONMENT = env("SENTRY_ENVIRONMENT", default=ENV)
-    # noinspection PyAbstractClass
-    sentry_sdk.init(  # type: ignore
+    sentry_sdk.init(
         dsn=SENTRY_DSN,
         environment=SENTRY_ENVIRONMENT,
         integrations=[
@@ -372,8 +232,8 @@ if SENTRY_DSN is not None and isinstance(SENTRY_DSN, str) and SENTRY_DSN.strip()
             CeleryIntegration(),
             RedisIntegration(),
             LoggingIntegration(
-                level=logging.INFO,  # Capture info and above as breadcrumbs
-                event_level=logging.ERROR,  # Send error events from log messages
+                level=logging.INFO,
+                event_level=logging.ERROR,
             ),
         ],
     )
@@ -381,37 +241,24 @@ if SENTRY_DSN is not None and isinstance(SENTRY_DSN, str) and SENTRY_DSN.strip()
     ignore_logger("django_structlog.celery.receivers")
 
 
-# Abstract Block Dumper specific settings
+PROMETHEUS_EXPORT_MIGRATIONS = env.bool("PROMETHEUS_EXPORT_MIGRATIONS", default=True)
+
+# Bittensor / Block Dumper
+
 BITTENSOR_NETWORK = env.str("BITTENSOR_NETWORK", default="finney")
-BLOCK_DUMPER_START_FROM_BLOCK = "current"  # Options: None, 'current', or int
-BLOCK_DUMPER_POLL_INTERVAL = 5  # seconds between polling for new blocks
-BLOCK_DUMPER_REALTIME_HEAD_ONLY = True  # Only process current head block, no catch-up
-BLOCK_TASK_RETRY_BACKOFF = 1  # minutes for retry backoff base
-BLOCK_DUMPER_MAX_ATTEMPTS = 3  # maximum retry attempts
-BLOCK_TASK_MAX_RETRY_DELAY_MINUTES = 1440  # maximum retry delay (24 hours)
+PYLON_URL = env("PYLON_URL", default="http://localhost:8090")
 
-# Metagraph Dumper specific settings
-# Comma-separated list of netuids to sync, e.g., "1,8,19" (empty = all 1-128)
-_metagraph_netuids_str = os.getenv("METAGRAPH_NETUIDS", "")
-METAGRAPH_NETUIDS: list[int] | None = (
-    [int(x.strip()) for x in _metagraph_netuids_str.split(",") if x.strip()] if _metagraph_netuids_str else None
-)
-# TODO: replace hardcoded value with data from bittensor later
-TEMPO = 360  # Number of blocks per epoch
-NUM_BLOCK_DUMPS_PER_EPOCH = 3  # Number of block dumps to take per epoch
-# Metagraph mode: False = full (includes weights/bonds), True = lite (excludes weights/bonds)
+BLOCK_DUMPER_START_FROM_BLOCK = "current"
+BLOCK_DUMPER_POLL_INTERVAL = 5
+BLOCK_TASK_RETRY_BACKOFF = 1
+BLOCK_DUMPER_MAX_ATTEMPTS = 3
+BLOCK_TASK_MAX_RETRY_DELAY_MINUTES = 1440
+
+# Metagraph
+METAGRAPH_NETUIDS: list[int] | None = env.list("METAGRAPH_NETUIDS", default=[], cast=int) or None
 METAGRAPH_LITE = env.bool("METAGRAPH_LITE", default=False)
-# Subnet owner cut fraction (0-1) applied to alpha emissions before miner/validator split
-SUBNET_OWNER_CUT = float(os.getenv("SUBNET_OWNER_CUT", "0.09"))
 
 
-# sentinel storage configuration. each entry requires 'BACKEND_NAME' and 'OPTIONS'.
-# Available backends: 'fsspec-local', 'fsspec-s3'
-# Backend options:
-# fsspec-local: 'base_path'
-# fsspec-s3: 'bucket', 'base_path' (optional), 'aws_region' (optional),
-#            'aws_access_key_id' (optional), 'aws_secret_access_key' (optional)
-# if optional params are not provided, boto3 will read them from env or ~/.aws/credentials
 SENTINEL_STORAGES = {
     "local": {
         "BACKEND_NAME": "fsspec-local",
@@ -428,3 +275,10 @@ SENTINEL_STORAGES = {
         },
     },
 }
+
+# Debug toolbar (dev only)
+if DEBUG_TOOLBAR := env.bool("DEBUG_TOOLBAR", default=False):
+    INTERNAL_IPS = ["127.0.0.1"]
+    DEBUG_TOOLBAR_CONFIG = {"SHOW_TOOLBAR_CALLBACK": lambda _request: True}
+    INSTALLED_APPS.append("debug_toolbar")
+    MIDDLEWARE = ["debug_toolbar.middleware.DebugToolbarMiddleware", *MIDDLEWARE]

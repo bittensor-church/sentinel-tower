@@ -1,6 +1,7 @@
 from math import floor
 
-from django.conf import settings
+TEMPO = 360
+NUM_BLOCK_DUMPS_PER_EPOCH = 3
 
 
 def get_dumpable_blocks(epoch: range) -> tuple[int, ...]:
@@ -12,19 +13,19 @@ def get_dumpable_blocks(epoch: range) -> tuple[int, ...]:
     Example NUM_BLOCK_DUMPS_PER_EPOCH=3 and tempo=360:
         [epoch_start, epoch_start + 120, epoch_start + 240, epoch_end (epoch_start + 360)]
     """
-    step = settings.TEMPO / settings.NUM_BLOCK_DUMPS_PER_EPOCH
-    ranges = [floor(epoch.start + step * i) for i in range(settings.NUM_BLOCK_DUMPS_PER_EPOCH)]
+    step = TEMPO / NUM_BLOCK_DUMPS_PER_EPOCH
+    ranges = [floor(epoch.start + step * i) for i in range(NUM_BLOCK_DUMPS_PER_EPOCH)]
 
     # Always inject the end of the epoch
-    end_epoch = epoch.start + settings.TEMPO
+    end_epoch = epoch.start + TEMPO
     ranges.append(end_epoch)
     return tuple(ranges)
 
 
 def get_epoch_containing_block(block: int, netuid: int = 0) -> range:
     """For given subnet returns range of blocks for epoch containing given block."""
-    next_epoch_block = get_next_epoch_block(block, netuid, settings.TEMPO)
-    return range(next_epoch_block - get_epoch_duration(settings.TEMPO), next_epoch_block)
+    next_epoch_block = get_next_epoch_block(block, netuid, TEMPO)
+    return range(next_epoch_block - get_epoch_duration(TEMPO), next_epoch_block)
 
 
 def get_next_epoch_block(block: int, netuid: int = 0, tempo: int = 360) -> int:

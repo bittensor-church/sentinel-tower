@@ -11,8 +11,6 @@ from django_structlog.celery.steps import DjangoStructLogInitStep
 from more_itertools import chunked
 from prometheus_client import Gauge, multiprocess
 
-from .settings import configure_structlog
-
 os.environ.setdefault("DJANGO_SETTINGS_MODULE", "project.settings")
 
 app = Celery("project")
@@ -35,7 +33,7 @@ def receiver_setup_logging(loglevel, logfile, format, colorize, **kwargs):  # pr
         config["handlers"]["console"]["class"] = "logging.FileHandler"
         config["handlers"]["console"]["filename"] = logfile
     logging.config.dictConfig(config)
-    configure_structlog()
+    settings.configure_structlog()
 
 
 def get_tasks_in_queue(queue_name: str) -> list[bytes]:

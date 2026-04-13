@@ -8,6 +8,8 @@ logger = structlog.get_logger()
 
 _DISABLED_WEBHOOK_PATTERNS = ("disabled", "https://discord.com/api/webhooks/0/disabled")
 
+_http_client = httpx.Client(timeout=10.0)
+
 
 class NotificationChannel(abc.ABC):
     """Base class for notification delivery channels."""
@@ -23,14 +25,17 @@ class NotificationChannel(abc.ABC):
         any_sent = False
         for url in urls:
             try:
-                with httpx.Client(timeout=10.0) as client:
-                    response = client.post(url, json=payload)
-                    response.raise_for_status()
-                    any_sent = True
+                response = _http_client.post(url, json=payload)
+                response.raise_for_status()
+                any_sent = True
             except httpx.HTTPStatusError as e:
                 logger.warning("Webhook failed", status_code=e.response.status_code, context=context)
+            except httpx.TimeoutException:
+                logger.warning("Webhook timeout", context=context)
+            except httpx.ConnectError:
+                logger.warning("Webhook connection error", context=context)
             except Exception as e:  # noqa: BLE001
-                logger.warning("Webhook error", error=str(e), context=context)
+                logger.warning("Webhook error", error=str(e), context=context, exc_info=True)
         return any_sent
 
 
