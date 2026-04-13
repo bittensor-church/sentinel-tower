@@ -44,7 +44,9 @@ ENV PATH="/root/src/.venv/bin:$PATH"
 
 COPY --from=base-image /root/src/ /root/src/
 
-RUN chmod 755 /root && chown -R appuser:appuser /root/src/
+RUN chmod 755 /root \
+	&& chown -R appuser:appuser /root/src/ \
+	&& mkdir -p /prometheus-multiproc-dir && chown appuser:appuser /prometheus-multiproc-dir
 
 USER appuser
 
