@@ -53,7 +53,7 @@ def sync_metagraph_for_block(block_number: int, netuid: int, provider: Blockchai
         return None
 
     t0 = datetime.now(UTC)
-    MetagraphService.store_metagraph_artifact(metagraph)
+    # MetagraphService.store_metagraph_artifact(metagraph)
     artifact_ms = round((datetime.now(UTC) - t0).total_seconds() * 1000)
     log.debug("Stored metagraph artifact", artifact_ms=artifact_ms)
 
