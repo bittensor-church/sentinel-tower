@@ -139,6 +139,7 @@ def store_block_extrinsics(block_number: int, provider: BlockchainProvider) -> d
 
 def store_extrinsics_artifact(extrinsics: list[ExtrinsicDTO], block_number: int, timestamp: int | None) -> int:
     """Store extrinsics to JSONL artifact files."""
+    return 0
     extrinsics_storage = JsonLinesStorage("data/bittensor/extrinsics/{date}.jsonl")
     if not extrinsics:
         return 0
