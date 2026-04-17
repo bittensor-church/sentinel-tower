@@ -53,3 +53,20 @@ def block_index_in_epoch(block: int, netuid: int, tempo: int) -> int:
     Get the index of the block in the current epoch.
     """
     return (block + netuid + 2) % get_epoch_duration(tempo)
+
+
+def epoch_start_blocks_in_range(start: int, end: int, netuid: int) -> list[int]:
+    """
+    Enumerate epoch-start blocks in [start, end] (inclusive) for a given netuid.
+
+    An epoch-start block B satisfies block_index_in_epoch(B, netuid, TEMPO) == 0,
+    i.e. (B + netuid + 2) % (TEMPO + 1) == 0. Returns blocks sorted ascending.
+    """
+    if start > end:
+        return []
+    duration = get_epoch_duration(TEMPO)
+    offset = (-(start + netuid + 2)) % duration
+    first = start + offset
+    if first > end:
+        return []
+    return list(range(first, end + 1, duration))
