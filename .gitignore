@@ -26,3 +26,4 @@ logs/
 app/src/.dagster/
 .env.history
 .env.live
+.worktrees/
