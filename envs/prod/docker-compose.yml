@@ -157,6 +157,25 @@ services:
     logging:
       <<: *logging
 
+  historical-metagraph-backfill:
+    image: project/app
+    init: true
+    restart: unless-stopped
+    env_file: ./.env
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+    environment:
+      - MEDIA_ROOT=${MEDIA_ROOT:-/root/src/media}
+    command: python manage.py historical_metagraph_backfill
+    volumes:
+      - ${MEDIA_VOLUME_PATH:-./media}:/root/src/media
+    profiles:
+      - historical-backfill
+    depends_on:
+      - db
+    logging:
+      <<: *logging
+
   backfill-extrinsics:
     image: project/app
     init: true
