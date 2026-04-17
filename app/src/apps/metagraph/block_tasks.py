@@ -26,12 +26,20 @@ def _get_epoch_position(block_number: int, netuid: int) -> str:
     return "inside"
 
 
-def sync_metagraph_for_block(block_number: int, netuid: int, provider: BlockchainProvider) -> dict | None:
+def sync_metagraph_for_block(
+    block_number: int,
+    netuid: int,
+    provider: BlockchainProvider,
+    lite: bool | None = None,
+) -> dict | None:
     """
     Sync metagraph for the given netuid at the specified block using an existing provider.
 
     Fetches metagraph data from the blockchain, stores it as a JSONL artifact,
     and syncs it to Django models.
+
+    Args:
+        lite: If provided, overrides settings.METAGRAPH_LITE for this call.
 
     Returns:
         Dict with sync stats and elapsed_ms, or None if no metagraph data found.
@@ -42,7 +50,8 @@ def sync_metagraph_for_block(block_number: int, netuid: int, provider: Blockchai
 
     log.debug("Fetching metagraph from provider")
     service = sentinel_service(provider)
-    subnet = service.ingest_subnet(netuid, block_number, lite=settings.METAGRAPH_LITE)
+    lite_mode = settings.METAGRAPH_LITE if lite is None else lite
+    subnet = service.ingest_subnet(netuid, block_number, lite=lite_mode)
     metagraph = subnet.metagraph
     finished_at = datetime.now(UTC)
     ingest_ms = round((finished_at - started_at).total_seconds() * 1000)
