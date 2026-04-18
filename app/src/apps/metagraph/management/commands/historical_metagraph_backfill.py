@@ -4,7 +4,6 @@ import time
 
 import structlog
 from django.core.management.base import BaseCommand, CommandError
-from sentinel.v1.providers.bittensor import bittensor_provider
 
 from apps.metagraph.block_tasks import sync_metagraph_for_block
 from apps.metagraph.models import MetagraphDump
@@ -16,6 +15,7 @@ logger = structlog.get_logger()
 
 DEFAULT_RATE_LIMIT = 1.0
 DEFAULT_SLEEP_SECONDS = 3600
+DEFAULT_BLOCK_RANGE = 2_000_000
 
 
 def _parse_netuids(value: str) -> list[int]:
@@ -25,8 +25,10 @@ def _parse_netuids(value: str) -> list[int]:
 class Command(BaseCommand):
     help = (
         "Daemon: backfill one lite metagraph snapshot per epoch from "
-        "HISTORICAL_BACKFILL_BLOCK_START to current head, oldest-first, "
-        "then sleep and re-check."
+        "HISTORICAL_BACKFILL_BLOCK_START to HISTORICAL_BACKFILL_BLOCK_END "
+        "(default: start + 2,000,000), oldest-first, using a single archive "
+        "websocket connection per pass. Sleeps and re-runs after each pass "
+        "to retry any failed fetches."
     )
 
     def __init__(self, *args, **kwargs):
@@ -45,6 +47,7 @@ class Command(BaseCommand):
 
     def add_arguments(self, parser):
         parser.add_argument("--block-start", type=int, default=None)
+        parser.add_argument("--block-end", type=int, default=None)
         parser.add_argument("--rate-limit", type=float, default=None)
         parser.add_argument("--sleep-seconds", type=float, default=None)
         parser.add_argument("--netuids", type=str, default=None, help="CSV of netuids")
@@ -57,6 +60,11 @@ class Command(BaseCommand):
         if not block_start_raw:
             raise CommandError("HISTORICAL_BACKFILL_BLOCK_START env (or --block-start) is required")
         block_start = int(block_start_raw)
+
+        block_end_raw = options["block_end"] or os.environ.get("HISTORICAL_BACKFILL_BLOCK_END")
+        block_end = int(block_end_raw) if block_end_raw else block_start + DEFAULT_BLOCK_RANGE
+        if block_end < block_start:
+            raise CommandError(f"block_end ({block_end}) must be >= block_start ({block_start})")
 
         rate_limit = (
             options["rate_limit"]
@@ -74,13 +82,14 @@ class Command(BaseCommand):
         logger.info(
             "Historical metagraph backfill daemon starting",
             block_start=block_start,
+            block_end=block_end,
             netuids=netuids,
             rate_limit=rate_limit,
             sleep_seconds=sleep_seconds,
         )
 
         while not self._shutdown:
-            self._run_pass(block_start, netuids, rate_limit)
+            self._run_pass(block_start, block_end, netuids, rate_limit)
             if self._shutdown:
                 break
             logger.info("Pass complete, sleeping", sleep_seconds=sleep_seconds)
@@ -88,20 +97,17 @@ class Command(BaseCommand):
 
         logger.info("Historical metagraph backfill daemon stopped")
 
-    def _run_pass(self, block_start: int, netuids: list[int], rate_limit: float) -> None:
-        with bittensor_provider() as provider:
-            head = provider.get_current_block()
-
+    def _run_pass(self, block_start: int, block_end: int, netuids: list[int], rate_limit: float) -> None:
         missing: list[tuple[int, int]] = []
         for netuid in netuids:
-            expected = epoch_start_blocks_in_range(block_start, head, netuid)
+            expected = epoch_start_blocks_in_range(block_start, block_end, netuid)
             if not expected:
                 continue
             existing = set(
                 MetagraphDump.objects.filter(
                     netuid=netuid,
                     block_id__gte=block_start,
-                    block_id__lte=head,
+                    block_id__lte=block_end,
                 ).values_list("block_id", flat=True)
             )
             for block_number in expected:
@@ -109,12 +115,12 @@ class Command(BaseCommand):
                     missing.append((block_number, netuid))
 
         if not missing:
-            logger.info("No missing epoch-start dumps", block_start=block_start, head=head)
+            logger.info("No missing epoch-start dumps", block_start=block_start, block_end=block_end)
             return
 
         missing.sort()
 
-        logger.info("Found missing epoch-start dumps", count=len(missing), block_start=block_start, head=head)
+        logger.info("Found missing epoch-start dumps", count=len(missing), block_start=block_start, block_end=block_end)
 
         synced = 0
         errors = 0
