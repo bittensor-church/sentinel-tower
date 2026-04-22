@@ -199,12 +199,15 @@ class MetagraphSyncService:
         if registered_at and timezone.is_naive(registered_at):
             registered_at = timezone.make_aware(registered_at)
 
+        alpha_out_emission_rao = _to_rao(subnet_model.alpha_out_emission)
+
         subnet, created = Subnet.objects.get_or_create(
             netuid=subnet_model.netuid,
             defaults={
                 "name": subnet_model.name or "",
                 "owner_hotkey": owner_hotkey,
                 "registered_at": registered_at,
+                "alpha_out_emission": alpha_out_emission_rao,
             },
         )
 
@@ -215,6 +218,9 @@ class MetagraphSyncService:
                 updated = True
             if owner_hotkey and subnet.owner_hotkey_id != owner_hotkey.id:
                 subnet.owner_hotkey = owner_hotkey
+                updated = True
+            if alpha_out_emission_rao and subnet.alpha_out_emission != alpha_out_emission_rao:
+                subnet.alpha_out_emission = alpha_out_emission_rao
                 updated = True
             if updated:
                 subnet.save()
@@ -274,6 +280,7 @@ class MetagraphSyncService:
                 "uid": snapshot_model.uid,
                 "axon_address": snapshot_model.axon_address or "",
                 "total_stake": _to_rao(snapshot_model.total_stake),
+                "alpha_stake": _to_rao(snapshot_model.alpha_stake),
                 "normalized_stake": snapshot_model.normalized_stake,
                 "rank": snapshot_model.rank,
                 "trust": snapshot_model.trust,
