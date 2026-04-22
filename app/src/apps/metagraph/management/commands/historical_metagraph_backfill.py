@@ -51,6 +51,16 @@ class Command(BaseCommand):
         parser.add_argument("--rate-limit", type=float, default=None)
         parser.add_argument("--sleep-seconds", type=float, default=None)
         parser.add_argument("--netuids", type=str, default=None, help="CSV of netuids")
+        parser.add_argument(
+            "--force-refresh",
+            action="store_true",
+            default=None,
+            help=(
+                "Re-fetch every (block, netuid) in range, ignoring MetagraphDump dedup. "
+                "Use to refresh existing rows after schema changes (e.g. new fields). "
+                "Env: HISTORICAL_BACKFILL_FORCE_REFRESH=1"
+            ),
+        )
 
     def handle(self, *args, **options):
         signal.signal(signal.SIGTERM, self._handle_signal)
@@ -79,6 +89,12 @@ class Command(BaseCommand):
         netuids_raw = options["netuids"] or os.environ.get("HISTORICAL_BACKFILL_NETUIDS")
         netuids: list[int] = _parse_netuids(netuids_raw) if netuids_raw else MetagraphService.netuids_to_sync()
 
+        force_refresh = (
+            options["force_refresh"]
+            if options["force_refresh"] is not None
+            else os.environ.get("HISTORICAL_BACKFILL_FORCE_REFRESH", "").lower() in ("1", "true", "yes")
+        )
+
         logger.info(
             "Historical metagraph backfill daemon starting",
             block_start=block_start,
@@ -86,10 +102,11 @@ class Command(BaseCommand):
             netuids=netuids,
             rate_limit=rate_limit,
             sleep_seconds=sleep_seconds,
+            force_refresh=force_refresh,
         )
 
         while not self._shutdown:
-            self._run_pass(block_start, block_end, netuids, rate_limit)
+            self._run_pass(block_start, block_end, netuids, rate_limit, force_refresh=force_refresh)
             if self._shutdown:
                 break
             logger.info("Pass complete, sleeping", sleep_seconds=sleep_seconds)
@@ -97,11 +114,23 @@ class Command(BaseCommand):
 
         logger.info("Historical metagraph backfill daemon stopped")
 
-    def _run_pass(self, block_start: int, block_end: int, netuids: list[int], rate_limit: float) -> None:
+    def _run_pass(
+        self,
+        block_start: int,
+        block_end: int,
+        netuids: list[int],
+        rate_limit: float,
+        *,
+        force_refresh: bool = False,
+    ) -> None:
         missing: list[tuple[int, int]] = []
         for netuid in netuids:
             expected = epoch_start_blocks_in_range(block_start, block_end, netuid)
             if not expected:
+                continue
+            if force_refresh:
+                for block_number in expected:
+                    missing.append((block_number, netuid))
                 continue
             existing = set(
                 MetagraphDump.objects.filter(
