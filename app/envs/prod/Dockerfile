@@ -32,7 +32,7 @@ FROM $BASE_IMAGE AS secondary-image
 LABEL builder=false
 
 RUN apt-get update \
-	&& apt-get install -y wget \
+	&& apt-get install -y wget gosu \
 	&& rm -rf /var/lib/apt/lists/*
 
 RUN groupadd --gid 1000 appuser \
@@ -48,6 +48,8 @@ RUN chmod 755 /root \
 	&& chown -R appuser:appuser /root/src/ \
 	&& mkdir -p /prometheus-multiproc-dir && chown appuser:appuser /prometheus-multiproc-dir
 
-USER appuser
+COPY ./app/envs/prod/docker-entrypoint.sh /docker-entrypoint.sh
+RUN chmod +x /docker-entrypoint.sh
 
+ENTRYPOINT ["/docker-entrypoint.sh"]
 CMD ["./entrypoint.sh"]

@@ -78,7 +78,7 @@ class Extrinsic(models.Model):
 
     # Block context
     block_number = models.PositiveBigIntegerField(db_index=True)
-    block_hash = models.CharField(max_length=66, blank=True, db_index=True)
+    block_hash = models.CharField(max_length=66, blank=True)
     extrinsic_hash = models.CharField(max_length=66, unique=True)
     extrinsic_index = models.PositiveIntegerField(
         null=True,
@@ -88,20 +88,19 @@ class Extrinsic(models.Model):
     block_timestamp = models.PositiveBigIntegerField(
         null=True,
         blank=True,
-        db_index=True,
         help_text="Block timestamp from Timestamp.Now",
     )
 
     # Call data
     call_module = models.CharField(max_length=100)
-    call_function = models.CharField(max_length=100, db_index=True)
+    call_function = models.CharField(max_length=100)
     call_args = models.JSONField(
         default=dict,
         help_text="Call arguments from extrinsic",
     )
 
     # Address and signature
-    address = models.CharField(max_length=66, blank=True, db_index=True)
+    address = models.CharField(max_length=66, blank=True)
     signature = models.JSONField(null=True, blank=True)
     nonce = models.PositiveBigIntegerField(null=True, blank=True)
     tip_rao = models.BigIntegerField(
@@ -112,7 +111,7 @@ class Extrinsic(models.Model):
 
     # Execution result
     status = models.CharField(max_length=20, blank=True)
-    success = models.BooleanField(default=False, db_index=True)
+    success = models.BooleanField(default=False)
     error_data = models.JSONField(
         null=True,
         blank=True,
@@ -126,24 +125,18 @@ class Extrinsic(models.Model):
     )
 
     # Optional subnet context (for subnet-related extrinsics)
-    netuid = models.PositiveIntegerField(null=True, blank=True, db_index=True)
+    netuid = models.PositiveIntegerField(null=True, blank=True)
 
     # Timestamps
-    created_at = models.DateTimeField(auto_now_add=True, db_index=True)
+    created_at = models.DateTimeField(auto_now_add=True)
 
     class Meta:
         db_table = "extrinsics"
         ordering = ["-block_number", "-extrinsic_index"]
         indexes = [
             models.Index(fields=["block_number", "extrinsic_index"]),
-            models.Index(fields=["block_hash"]),
-            models.Index(fields=["address", "block_number"]),
-            models.Index(fields=["call_module", "call_function", "success"]),
-            models.Index(fields=["netuid", "call_function"]),
             models.Index(fields=["block_number", "call_function"]),
             models.Index(fields=["address", "call_function"]),
-            models.Index(fields=["created_at"]),
-            models.Index(fields=["call_function", "block_timestamp"]),
         ]
 
     def __str__(self) -> str:

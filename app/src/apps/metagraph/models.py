@@ -195,18 +195,11 @@ class NeuronSnapshot(models.Model):
             ),
         ]
         indexes = [
-            models.Index(fields=["block"]),
-            models.Index(
-                fields=["block", "neuron"],
-                condition=Q(is_validator=True),
-                name="idx_validator_snapshots",
-            ),
             models.Index(
                 fields=["neuron", "block"],
                 condition=Q(is_validator=True),
                 name="idx_validator_snaps_by_neuron",
             ),
-            models.Index(fields=["-total_stake"]),
         ]
 
     def __str__(self) -> str:
@@ -237,9 +230,6 @@ class MechanismMetrics(models.Model):
                 name="unique_snapshot_mech",
             ),
         ]
-        indexes = [
-            models.Index(fields=["snapshot"]),
-        ]
 
     def __str__(self) -> str:
         return f"Mech {self.mech_id} metrics for snapshot {self.snapshot.pk}"
@@ -252,16 +242,19 @@ class Weight(models.Model):
         Neuron,
         on_delete=models.CASCADE,
         related_name="outgoing_weights",
+        db_index=False,
     )
     target_neuron = models.ForeignKey(
         Neuron,
         on_delete=models.CASCADE,
         related_name="incoming_weights",
+        db_index=False,
     )
     block = models.ForeignKey(
         Block,
         on_delete=models.CASCADE,
         related_name="weights",
+        db_index=False,
     )
     mech_id = models.PositiveIntegerField()
     weight = models.FloatField()
@@ -275,10 +268,6 @@ class Weight(models.Model):
                 name="unique_weight",
             ),
         ]
-        indexes = [
-            models.Index(fields=["block", "source_neuron"]),
-            models.Index(fields=["block", "target_neuron"]),
-        ]
 
     def __str__(self) -> str:
         return f"Weight {self.weight} from {self.source_neuron.pk} to {self.target_neuron.pk}"
@@ -291,16 +280,19 @@ class Bond(models.Model):
         Neuron,
         on_delete=models.CASCADE,
         related_name="outgoing_bonds",
+        db_index=False,
     )
     target_neuron = models.ForeignKey(
         Neuron,
         on_delete=models.CASCADE,
         related_name="incoming_bonds",
+        db_index=False,
     )
     block = models.ForeignKey(
         Block,
         on_delete=models.CASCADE,
         related_name="bonds",
+        db_index=False,
     )
     mech_id = models.PositiveIntegerField()
     bond = models.FloatField()
@@ -313,10 +305,6 @@ class Bond(models.Model):
                 fields=["source_neuron", "target_neuron", "block", "mech_id"],
                 name="unique_bond",
             ),
-        ]
-        indexes = [
-            models.Index(fields=["block", "source_neuron"]),
-            models.Index(fields=["block", "target_neuron"]),
         ]
 
     def __str__(self) -> str:

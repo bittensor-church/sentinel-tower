@@ -24,6 +24,7 @@ x-backend: &backend
     - ./app/envs/prod/celery-entrypoint.sh:/root/src/celery-entrypoint.sh
     - ./app/envs/prod/prometheus-cleanup.sh:/root/src/prometheus-cleanup.sh
     - ./app/envs/prod/block-scheduler-entrypoint.sh:/root/src/block-scheduler-entrypoint.sh
+    - ./app/envs/prod/docker-entrypoint.sh:/docker-entrypoint.sh
     - ${MEDIA_VOLUME_PATH:-./app/src/media}:/root/src/media
 
 services:
