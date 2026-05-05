@@ -8,7 +8,7 @@ x-backend: &backend
   extra_hosts:
     - "host.docker.internal:host-gateway"
   environment: &backend-env
-    DATABASE_URL: postgres://postgres:12345@db:5432/project
+    DATABASE_URL: postgres://${POSTGRES_USER}:${POSTGRES_PASSWORD}@db:5432/${POSTGRES_DB}
     POSTGRES_HOST: db
     POSTGRES_PORT: "5432"
     REDIS_HOST: redis
@@ -207,6 +207,12 @@ services:
         condition: service_healthy
     profiles:
       - metagraph
+
+  historical-metagraph-backfill:
+    <<: *backend
+    command: python manage.py historical_metagraph_backfill
+    depends_on:
+      - db
 
 volumes:
   app-venv:
