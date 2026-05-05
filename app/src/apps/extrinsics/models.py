@@ -1,5 +1,6 @@
 """Django models for extrinsic data storage."""
 
+from django.contrib.postgres.indexes import BrinIndex
 from django.db import models
 
 
@@ -137,6 +138,7 @@ class Extrinsic(models.Model):
             models.Index(fields=["block_number", "extrinsic_index"]),
             models.Index(fields=["block_number", "call_function"]),
             models.Index(fields=["address", "call_function"]),
+            BrinIndex(fields=["block_timestamp"], name="extrinsics_block_ts_brin"),
         ]
 
     def __str__(self) -> str:
