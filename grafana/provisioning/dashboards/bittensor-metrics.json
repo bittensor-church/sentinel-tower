@@ -11,7 +11,12 @@
   "panels": [
     {
       "collapsed": false,
-      "gridPos": { "h": 1, "w": 24, "x": 0, "y": 0 },
+      "gridPos": {
+        "h": 1,
+        "w": 24,
+        "x": 0,
+        "y": 0
+      },
       "id": 100,
       "panels": [],
       "title": "Overview",
@@ -24,16 +29,55 @@
       },
       "fieldConfig": {
         "defaults": {
-          "color": { "mode": "thresholds" },
+          "color": {
+            "mode": "thresholds"
+          },
           "mappings": [],
-          "thresholds": { "mode": "absolute", "steps": [{ "color": "green", "value": null }] }
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": null
+              }
+            ]
+          }
         },
         "overrides": []
       },
-      "gridPos": { "h": 4, "w": 4, "x": 0, "y": 1 },
+      "gridPos": {
+        "h": 4,
+        "w": 4,
+        "x": 0,
+        "y": 1
+      },
       "id": 1,
-      "options": { "colorMode": "value", "graphMode": "area", "justifyMode": "auto", "orientation": "auto", "reduceOptions": { "calcs": ["lastNotNull"], "fields": "", "values": false }, "textMode": "auto" },
-      "targets": [{ "datasource": { "type": "postgres", "uid": "postgresql" }, "rawQuery": true, "rawSql": "SELECT reltuples::bigint as value FROM pg_class WHERE relname = 'extrinsics'", "refId": "A", "format": "table" }],
+      "options": {
+        "colorMode": "value",
+        "graphMode": "area",
+        "justifyMode": "auto",
+        "orientation": "auto",
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "",
+          "values": false
+        },
+        "textMode": "auto"
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "postgres",
+            "uid": "postgresql"
+          },
+          "rawQuery": true,
+          "rawSql": "SELECT reltuples::bigint as value FROM pg_class WHERE relname = 'extrinsics'",
+          "refId": "A",
+          "format": "table"
+        }
+      ],
       "title": "Total Extrinsics (estimate)",
       "type": "stat"
     },
@@ -44,16 +88,55 @@
       },
       "fieldConfig": {
         "defaults": {
-          "color": { "mode": "thresholds" },
+          "color": {
+            "mode": "thresholds"
+          },
           "mappings": [],
-          "thresholds": { "mode": "absolute", "steps": [{ "color": "blue", "value": null }] }
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "blue",
+                "value": null
+              }
+            ]
+          }
         },
         "overrides": []
       },
-      "gridPos": { "h": 4, "w": 4, "x": 4, "y": 1 },
+      "gridPos": {
+        "h": 4,
+        "w": 4,
+        "x": 4,
+        "y": 1
+      },
       "id": 2,
-      "options": { "colorMode": "value", "graphMode": "area", "justifyMode": "auto", "orientation": "auto", "reduceOptions": { "calcs": ["lastNotNull"], "fields": "", "values": false }, "textMode": "auto" },
-      "targets": [{ "datasource": { "type": "postgres", "uid": "postgresql" }, "rawQuery": true, "rawSql": "SELECT MAX(block_number) as value FROM extrinsics WHERE ('${netuid:csv}' = '*' OR netuid::text = ANY (string_to_array('${netuid:csv}', ','))) AND ('${status:csv}' = '*' OR success::text = ANY (string_to_array('${status:csv}', ','))) AND ('${call_module:csv}' = '*' OR call_module = ANY (string_to_array('${call_module:csv}', ','))) AND ('${call_function:csv}' = '*' OR call_function = ANY (string_to_array('${call_function:csv}', ','))) AND ('${address:csv}' = '*' OR address = ANY (string_to_array('${address:csv}', ',')))", "refId": "A", "format": "table" }],
+      "options": {
+        "colorMode": "value",
+        "graphMode": "area",
+        "justifyMode": "auto",
+        "orientation": "auto",
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "",
+          "values": false
+        },
+        "textMode": "auto"
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "postgres",
+            "uid": "postgresql"
+          },
+          "rawQuery": true,
+          "rawSql": "SELECT MAX(block_number) as value FROM extrinsics WHERE ('${netuid:csv}' = '*' OR netuid::text = ANY (string_to_array('${netuid:csv}', ','))) AND ('${status:csv}' = '*' OR success::text = ANY (string_to_array('${status:csv}', ','))) AND ('${call_module:csv}' = '*' OR call_module = ANY (string_to_array('${call_module:csv}', ','))) AND ('${call_function:csv}' = '*' OR call_function = ANY (string_to_array('${call_function:csv}', ','))) AND ('${address:csv}' = '*' OR address = ANY (string_to_array('${address:csv}', ',')))",
+          "refId": "A",
+          "format": "table"
+        }
+      ],
       "title": "Latest Block",
       "type": "stat"
     },
@@ -64,16 +147,55 @@
       },
       "fieldConfig": {
         "defaults": {
-          "color": { "mode": "thresholds" },
+          "color": {
+            "mode": "thresholds"
+          },
           "mappings": [],
-          "thresholds": { "mode": "absolute", "steps": [{ "color": "orange", "value": null }] }
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "orange",
+                "value": null
+              }
+            ]
+          }
         },
         "overrides": []
       },
-      "gridPos": { "h": 4, "w": 4, "x": 12, "y": 1 },
+      "gridPos": {
+        "h": 4,
+        "w": 4,
+        "x": 12,
+        "y": 1
+      },
       "id": 4,
-      "options": { "colorMode": "value", "graphMode": "area", "justifyMode": "auto", "orientation": "auto", "reduceOptions": { "calcs": ["lastNotNull"], "fields": "", "values": false }, "textMode": "auto" },
-      "targets": [{ "datasource": { "type": "postgres", "uid": "postgresql" }, "rawQuery": true, "rawSql": "SELECT COUNT(DISTINCT address) as value FROM extrinsics WHERE address != '' AND ('${netuid:csv}' = '*' OR netuid::text = ANY (string_to_array('${netuid:csv}', ','))) AND ('${status:csv}' = '*' OR success::text = ANY (string_to_array('${status:csv}', ','))) AND ('${call_module:csv}' = '*' OR call_module = ANY (string_to_array('${call_module:csv}', ','))) AND ('${call_function:csv}' = '*' OR call_function = ANY (string_to_array('${call_function:csv}', ','))) AND ('${address:csv}' = '*' OR address = ANY (string_to_array('${address:csv}', ','))) AND block_number BETWEEN (SELECT MAX(block_number) FROM extrinsics) - ((extract(epoch FROM now()) * 1000)::bigint - $__from) / 12000 AND (SELECT MAX(block_number) FROM extrinsics) - ((extract(epoch FROM now()) * 1000)::bigint - $__to) / 12000", "refId": "A", "format": "table" }],
+      "options": {
+        "colorMode": "value",
+        "graphMode": "area",
+        "justifyMode": "auto",
+        "orientation": "auto",
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "",
+          "values": false
+        },
+        "textMode": "auto"
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "postgres",
+            "uid": "postgresql"
+          },
+          "rawQuery": true,
+          "rawSql": "SELECT COUNT(DISTINCT address) as value FROM extrinsics WHERE address != '' AND ('${netuid:csv}' = '*' OR netuid::text = ANY (string_to_array('${netuid:csv}', ','))) AND ('${status:csv}' = '*' OR success::text = ANY (string_to_array('${status:csv}', ','))) AND ('${call_module:csv}' = '*' OR call_module = ANY (string_to_array('${call_module:csv}', ','))) AND ('${call_function:csv}' = '*' OR call_function = ANY (string_to_array('${call_function:csv}', ','))) AND ('${address:csv}' = '*' OR address = ANY (string_to_array('${address:csv}', ','))) AND block_number BETWEEN (SELECT MAX(block_number) FROM extrinsics) - ((extract(epoch FROM now()) * 1000)::bigint - $__from) / 12000 AND (SELECT MAX(block_number) FROM extrinsics) - ((extract(epoch FROM now()) * 1000)::bigint - $__to) / 12000",
+          "refId": "A",
+          "format": "table"
+        }
+      ],
       "title": "Unique Addresses",
       "type": "stat"
     },
@@ -84,17 +206,60 @@
       },
       "fieldConfig": {
         "defaults": {
-          "color": { "mode": "thresholds" },
+          "color": {
+            "mode": "thresholds"
+          },
           "mappings": [],
-          "thresholds": { "mode": "absolute", "steps": [{ "color": "green", "value": null }, { "color": "red", "value": 0.1 }] },
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": null
+              },
+              {
+                "color": "red",
+                "value": 0.1
+              }
+            ]
+          },
           "unit": "percentunit"
         },
         "overrides": []
       },
-      "gridPos": { "h": 4, "w": 4, "x": 16, "y": 1 },
+      "gridPos": {
+        "h": 4,
+        "w": 4,
+        "x": 16,
+        "y": 1
+      },
       "id": 5,
-      "options": { "colorMode": "value", "graphMode": "area", "justifyMode": "auto", "orientation": "auto", "reduceOptions": { "calcs": ["lastNotNull"], "fields": "", "values": false }, "textMode": "auto" },
-      "targets": [{ "datasource": { "type": "postgres", "uid": "postgresql" }, "rawQuery": true, "rawSql": "SELECT COALESCE(1.0 - (SUM(CASE WHEN success THEN 1 ELSE 0 END)::float / NULLIF(COUNT(*), 0)), 0) as value FROM extrinsics WHERE ('${netuid:csv}' = '*' OR netuid::text = ANY (string_to_array('${netuid:csv}', ','))) AND ('${status:csv}' = '*' OR success::text = ANY (string_to_array('${status:csv}', ','))) AND ('${call_module:csv}' = '*' OR call_module = ANY (string_to_array('${call_module:csv}', ','))) AND ('${call_function:csv}' = '*' OR call_function = ANY (string_to_array('${call_function:csv}', ','))) AND ('${address:csv}' = '*' OR address = ANY (string_to_array('${address:csv}', ','))) AND block_number BETWEEN (SELECT MAX(block_number) FROM extrinsics) - ((extract(epoch FROM now()) * 1000)::bigint - $__from) / 12000 AND (SELECT MAX(block_number) FROM extrinsics) - ((extract(epoch FROM now()) * 1000)::bigint - $__to) / 12000", "refId": "A", "format": "table" }],
+      "options": {
+        "colorMode": "value",
+        "graphMode": "area",
+        "justifyMode": "auto",
+        "orientation": "auto",
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "",
+          "values": false
+        },
+        "textMode": "auto"
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "postgres",
+            "uid": "postgresql"
+          },
+          "rawQuery": true,
+          "rawSql": "SELECT COALESCE(1.0 - (SUM(CASE WHEN success THEN 1 ELSE 0 END)::float / NULLIF(COUNT(*), 0)), 0) as value FROM extrinsics WHERE ('${netuid:csv}' = '*' OR netuid::text = ANY (string_to_array('${netuid:csv}', ','))) AND ('${status:csv}' = '*' OR success::text = ANY (string_to_array('${status:csv}', ','))) AND ('${call_module:csv}' = '*' OR call_module = ANY (string_to_array('${call_module:csv}', ','))) AND ('${call_function:csv}' = '*' OR call_function = ANY (string_to_array('${call_function:csv}', ','))) AND ('${address:csv}' = '*' OR address = ANY (string_to_array('${address:csv}', ','))) AND block_number BETWEEN (SELECT MAX(block_number) FROM extrinsics) - ((extract(epoch FROM now()) * 1000)::bigint - $__from) / 12000 AND (SELECT MAX(block_number) FROM extrinsics) - ((extract(epoch FROM now()) * 1000)::bigint - $__to) / 12000",
+          "refId": "A",
+          "format": "table"
+        }
+      ],
       "title": "Failure Rate",
       "type": "stat"
     },
@@ -105,16 +270,55 @@
       },
       "fieldConfig": {
         "defaults": {
-          "color": { "mode": "thresholds" },
+          "color": {
+            "mode": "thresholds"
+          },
           "mappings": [],
-          "thresholds": { "mode": "absolute", "steps": [{ "color": "yellow", "value": null }] }
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "yellow",
+                "value": null
+              }
+            ]
+          }
         },
         "overrides": []
       },
-      "gridPos": { "h": 4, "w": 4, "x": 20, "y": 1 },
+      "gridPos": {
+        "h": 4,
+        "w": 4,
+        "x": 20,
+        "y": 1
+      },
       "id": 6,
-      "options": { "colorMode": "value", "graphMode": "area", "justifyMode": "auto", "orientation": "auto", "reduceOptions": { "calcs": ["lastNotNull"], "fields": "", "values": false }, "textMode": "auto" },
-      "targets": [{ "datasource": { "type": "postgres", "uid": "postgresql" }, "rawQuery": true, "rawSql": "SELECT COUNT(*) as value FROM extrinsics WHERE ('${netuid:csv}' = '*' OR netuid::text = ANY (string_to_array('${netuid:csv}', ','))) AND ('${status:csv}' = '*' OR success::text = ANY (string_to_array('${status:csv}', ','))) AND ('${call_module:csv}' = '*' OR call_module = ANY (string_to_array('${call_module:csv}', ','))) AND ('${call_function:csv}' = '*' OR call_function = ANY (string_to_array('${call_function:csv}', ','))) AND ('${address:csv}' = '*' OR address = ANY (string_to_array('${address:csv}', ','))) AND block_number BETWEEN (SELECT MAX(block_number) FROM extrinsics) - ((extract(epoch FROM now()) * 1000)::bigint - $__from) / 12000 AND (SELECT MAX(block_number) FROM extrinsics) - ((extract(epoch FROM now()) * 1000)::bigint - $__to) / 12000", "refId": "A", "format": "table" }],
+      "options": {
+        "colorMode": "value",
+        "graphMode": "area",
+        "justifyMode": "auto",
+        "orientation": "auto",
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "",
+          "values": false
+        },
+        "textMode": "auto"
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "postgres",
+            "uid": "postgresql"
+          },
+          "rawQuery": true,
+          "rawSql": "SELECT COUNT(*) as value FROM extrinsics WHERE ('${netuid:csv}' = '*' OR netuid::text = ANY (string_to_array('${netuid:csv}', ','))) AND ('${status:csv}' = '*' OR success::text = ANY (string_to_array('${status:csv}', ','))) AND ('${call_module:csv}' = '*' OR call_module = ANY (string_to_array('${call_module:csv}', ','))) AND ('${call_function:csv}' = '*' OR call_function = ANY (string_to_array('${call_function:csv}', ','))) AND ('${address:csv}' = '*' OR address = ANY (string_to_array('${address:csv}', ','))) AND block_number BETWEEN (SELECT MAX(block_number) FROM extrinsics) - ((extract(epoch FROM now()) * 1000)::bigint - $__from) / 12000 AND (SELECT MAX(block_number) FROM extrinsics) - ((extract(epoch FROM now()) * 1000)::bigint - $__to) / 12000",
+          "refId": "A",
+          "format": "table"
+        }
+      ],
       "title": "Extrinsics",
       "type": "stat"
     },
@@ -125,16 +329,32 @@
       },
       "fieldConfig": {
         "defaults": {
-          "custom": { "hideFrom": { "legend": false, "tooltip": false, "viz": false }, "scaleDistribution": { "type": "linear" } }
+          "custom": {
+            "hideFrom": {
+              "legend": false,
+              "tooltip": false,
+              "viz": false
+            },
+            "scaleDistribution": {
+              "type": "linear"
+            }
+          }
         },
         "overrides": []
       },
-      "gridPos": { "h": 8, "w": 24, "x": 0, "y": 5 },
+      "gridPos": {
+        "h": 8,
+        "w": 24,
+        "x": 0,
+        "y": 5
+      },
       "id": 7,
       "options": {
         "calculate": false,
         "cellGap": 1,
-        "cellValues": { "decimals": 0 },
+        "cellValues": {
+          "decimals": 0
+        },
         "color": {
           "exponent": 0.5,
           "fill": "dark-orange",
@@ -144,15 +364,39 @@
           "scheme": "Spectral",
           "steps": 64
         },
-        "exemplars": { "color": "rgba(255,0,255,0.7)" },
-        "filterValues": { "le": 1e-9 },
-        "legend": { "show": true },
-        "rowsFrame": { "layout": "auto" },
-        "tooltip": { "mode": "single", "yHistogram": false },
-        "yAxis": { "axisPlacement": "left", "reverse": false, "decimals": 0 }
+        "exemplars": {
+          "color": "rgba(255,0,255,0.7)"
+        },
+        "filterValues": {
+          "le": 1e-09
+        },
+        "legend": {
+          "show": true
+        },
+        "rowsFrame": {
+          "layout": "auto"
+        },
+        "tooltip": {
+          "mode": "single",
+          "yHistogram": false
+        },
+        "yAxis": {
+          "axisPlacement": "left",
+          "reverse": false,
+          "decimals": 0
+        }
       },
       "targets": [
-        { "datasource": { "type": "postgres", "uid": "postgresql" }, "rawQuery": true, "rawSql": "SELECT date_trunc('hour', to_timestamp(block_timestamp / 1000.0)) AS time, call_module AS metric, COUNT(*) AS value FROM extrinsics WHERE ('${netuid:csv}' = '*' OR netuid::text = ANY (string_to_array('${netuid:csv}', ','))) AND ('${status:csv}' = '*' OR success::text = ANY (string_to_array('${status:csv}', ','))) AND ('${call_module:csv}' = '*' OR call_module = ANY (string_to_array('${call_module:csv}', ','))) AND ('${call_function:csv}' = '*' OR call_function = ANY (string_to_array('${call_function:csv}', ','))) AND ('${address:csv}' = '*' OR address = ANY (string_to_array('${address:csv}', ','))) AND block_number BETWEEN (SELECT MAX(block_number) FROM extrinsics) - ((extract(epoch FROM now()) * 1000)::bigint - $__from) / 12000 AND (SELECT MAX(block_number) FROM extrinsics) - ((extract(epoch FROM now()) * 1000)::bigint - $__to) / 12000 GROUP BY 1, 2 ORDER BY 1", "refId": "A", "format": "time_series" }
+        {
+          "datasource": {
+            "type": "postgres",
+            "uid": "postgresql"
+          },
+          "rawQuery": true,
+          "rawSql": "SELECT date_trunc('hour', to_timestamp(block_timestamp / 1000.0)) AS time, call_module AS metric, COUNT(*) AS value FROM extrinsics WHERE ('${netuid:csv}' = '*' OR netuid::text = ANY (string_to_array('${netuid:csv}', ','))) AND ('${status:csv}' = '*' OR success::text = ANY (string_to_array('${status:csv}', ','))) AND ('${call_module:csv}' = '*' OR call_module = ANY (string_to_array('${call_module:csv}', ','))) AND ('${call_function:csv}' = '*' OR call_function = ANY (string_to_array('${call_function:csv}', ','))) AND ('${address:csv}' = '*' OR address = ANY (string_to_array('${address:csv}', ','))) AND block_number BETWEEN (SELECT MAX(block_number) FROM extrinsics) - ((extract(epoch FROM now()) * 1000)::bigint - $__from) / 12000 AND (SELECT MAX(block_number) FROM extrinsics) - ((extract(epoch FROM now()) * 1000)::bigint - $__to) / 12000 GROUP BY 1, 2 ORDER BY 1",
+          "refId": "A",
+          "format": "time_series"
+        }
       ],
       "title": "Extrinsics by Module Over Time",
       "type": "heatmap"
@@ -163,13 +407,63 @@
         "uid": "postgresql"
       },
       "fieldConfig": {
-        "defaults": { "color": { "mode": "palette-classic" }, "custom": { "hideFrom": { "legend": false, "tooltip": false, "viz": false } }, "mappings": [] },
+        "defaults": {
+          "color": {
+            "mode": "palette-classic"
+          },
+          "custom": {
+            "hideFrom": {
+              "legend": false,
+              "tooltip": false,
+              "viz": false
+            }
+          },
+          "mappings": []
+        },
         "overrides": []
       },
-      "gridPos": { "h": 8, "w": 12, "x": 0, "y": 28 },
+      "gridPos": {
+        "h": 8,
+        "w": 12,
+        "x": 0,
+        "y": 28
+      },
       "id": 8,
-      "options": { "legend": { "displayMode": "list", "placement": "right", "showLegend": true }, "pieType": "donut", "reduceOptions": { "calcs": ["lastNotNull"], "fields": "/^value$/", "values": true }, "tooltip": { "mode": "single", "sort": "none" }, "displayLabels": ["name", "percent"] },
-      "targets": [{ "datasource": { "type": "postgres", "uid": "postgresql" }, "rawQuery": true, "rawSql": "SELECT call_module as metric, COUNT(*) as value FROM extrinsics WHERE ('${netuid:csv}' = '*' OR netuid::text = ANY (string_to_array('${netuid:csv}', ','))) AND ('${status:csv}' = '*' OR success::text = ANY (string_to_array('${status:csv}', ','))) AND ('${call_module:csv}' = '*' OR call_module = ANY (string_to_array('${call_module:csv}', ','))) AND ('${call_function:csv}' = '*' OR call_function = ANY (string_to_array('${call_function:csv}', ','))) AND ('${address:csv}' = '*' OR address = ANY (string_to_array('${address:csv}', ','))) AND block_number BETWEEN (SELECT MAX(block_number) FROM extrinsics) - ((extract(epoch FROM now()) * 1000)::bigint - $__from) / 12000 AND (SELECT MAX(block_number) FROM extrinsics) - ((extract(epoch FROM now()) * 1000)::bigint - $__to) / 12000 GROUP BY call_module ORDER BY value DESC LIMIT 10", "refId": "A", "format": "table" }],
+      "options": {
+        "legend": {
+          "displayMode": "list",
+          "placement": "right",
+          "showLegend": true
+        },
+        "pieType": "donut",
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "/^value$/",
+          "values": true
+        },
+        "tooltip": {
+          "mode": "single",
+          "sort": "none"
+        },
+        "displayLabels": [
+          "name",
+          "percent"
+        ]
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "postgres",
+            "uid": "postgresql"
+          },
+          "rawQuery": true,
+          "rawSql": "SELECT call_module as metric, COUNT(*) as value FROM extrinsics WHERE ('${netuid:csv}' = '*' OR netuid::text = ANY (string_to_array('${netuid:csv}', ','))) AND ('${status:csv}' = '*' OR success::text = ANY (string_to_array('${status:csv}', ','))) AND ('${call_module:csv}' = '*' OR call_module = ANY (string_to_array('${call_module:csv}', ','))) AND ('${call_function:csv}' = '*' OR call_function = ANY (string_to_array('${call_function:csv}', ','))) AND ('${address:csv}' = '*' OR address = ANY (string_to_array('${address:csv}', ','))) AND block_number BETWEEN (SELECT MAX(block_number) FROM extrinsics) - ((extract(epoch FROM now()) * 1000)::bigint - $__from) / 12000 AND (SELECT MAX(block_number) FROM extrinsics) - ((extract(epoch FROM now()) * 1000)::bigint - $__to) / 12000 GROUP BY call_module ORDER BY value DESC LIMIT 10",
+          "refId": "A",
+          "format": "table"
+        }
+      ],
       "title": "Distribution by Module",
       "type": "piechart"
     },
@@ -179,13 +473,63 @@
         "uid": "postgresql"
       },
       "fieldConfig": {
-        "defaults": { "color": { "mode": "palette-classic" }, "custom": { "hideFrom": { "legend": false, "tooltip": false, "viz": false } }, "mappings": [] },
+        "defaults": {
+          "color": {
+            "mode": "palette-classic"
+          },
+          "custom": {
+            "hideFrom": {
+              "legend": false,
+              "tooltip": false,
+              "viz": false
+            }
+          },
+          "mappings": []
+        },
         "overrides": []
       },
-      "gridPos": { "h": 8, "w": 12, "x": 12, "y": 28 },
+      "gridPos": {
+        "h": 8,
+        "w": 12,
+        "x": 12,
+        "y": 28
+      },
       "id": 16,
-      "options": { "legend": { "displayMode": "list", "placement": "right", "showLegend": true }, "pieType": "donut", "reduceOptions": { "calcs": ["lastNotNull"], "fields": "/^value$/", "values": true }, "tooltip": { "mode": "single", "sort": "none" }, "displayLabels": ["name", "percent"] },
-      "targets": [{ "datasource": { "type": "postgres", "uid": "postgresql" }, "rawQuery": true, "rawSql": "SELECT call_module || '.' || call_function as metric, COUNT(*) as value FROM extrinsics WHERE ('${netuid:csv}' = '*' OR netuid::text = ANY (string_to_array('${netuid:csv}', ','))) AND ('${status:csv}' = '*' OR success::text = ANY (string_to_array('${status:csv}', ','))) AND ('${call_module:csv}' = '*' OR call_module = ANY (string_to_array('${call_module:csv}', ','))) AND ('${call_function:csv}' = '*' OR call_function = ANY (string_to_array('${call_function:csv}', ','))) AND ('${address:csv}' = '*' OR address = ANY (string_to_array('${address:csv}', ','))) AND block_number BETWEEN (SELECT MAX(block_number) FROM extrinsics) - ((extract(epoch FROM now()) * 1000)::bigint - $__from) / 12000 AND (SELECT MAX(block_number) FROM extrinsics) - ((extract(epoch FROM now()) * 1000)::bigint - $__to) / 12000 GROUP BY 1 ORDER BY value DESC LIMIT 15", "refId": "A", "format": "table" }],
+      "options": {
+        "legend": {
+          "displayMode": "list",
+          "placement": "right",
+          "showLegend": true
+        },
+        "pieType": "donut",
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "/^value$/",
+          "values": true
+        },
+        "tooltip": {
+          "mode": "single",
+          "sort": "none"
+        },
+        "displayLabels": [
+          "name",
+          "percent"
+        ]
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "postgres",
+            "uid": "postgresql"
+          },
+          "rawQuery": true,
+          "rawSql": "SELECT call_module || '.' || call_function as metric, COUNT(*) as value FROM extrinsics WHERE ('${netuid:csv}' = '*' OR netuid::text = ANY (string_to_array('${netuid:csv}', ','))) AND ('${status:csv}' = '*' OR success::text = ANY (string_to_array('${status:csv}', ','))) AND ('${call_module:csv}' = '*' OR call_module = ANY (string_to_array('${call_module:csv}', ','))) AND ('${call_function:csv}' = '*' OR call_function = ANY (string_to_array('${call_function:csv}', ','))) AND ('${address:csv}' = '*' OR address = ANY (string_to_array('${address:csv}', ','))) AND block_number BETWEEN (SELECT MAX(block_number) FROM extrinsics) - ((extract(epoch FROM now()) * 1000)::bigint - $__from) / 12000 AND (SELECT MAX(block_number) FROM extrinsics) - ((extract(epoch FROM now()) * 1000)::bigint - $__to) / 12000 GROUP BY 1 ORDER BY value DESC LIMIT 15",
+          "refId": "A",
+          "format": "table"
+        }
+      ],
       "title": "Distribution by Module + Function",
       "type": "piechart"
     },
@@ -195,16 +539,94 @@
         "uid": "postgresql"
       },
       "fieldConfig": {
-        "defaults": { "color": { "mode": "palette-classic" }, "custom": { "hideFrom": { "legend": false, "tooltip": false, "viz": false } }, "mappings": [] },
+        "defaults": {
+          "color": {
+            "mode": "palette-classic"
+          },
+          "custom": {
+            "hideFrom": {
+              "legend": false,
+              "tooltip": false,
+              "viz": false
+            }
+          },
+          "mappings": []
+        },
         "overrides": [
-          { "matcher": { "id": "byName", "options": "Success" }, "properties": [{ "id": "color", "value": { "fixedColor": "green", "mode": "fixed" } }] },
-          { "matcher": { "id": "byName", "options": "Failed" }, "properties": [{ "id": "color", "value": { "fixedColor": "red", "mode": "fixed" } }] }
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "Success"
+            },
+            "properties": [
+              {
+                "id": "color",
+                "value": {
+                  "fixedColor": "green",
+                  "mode": "fixed"
+                }
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "Failed"
+            },
+            "properties": [
+              {
+                "id": "color",
+                "value": {
+                  "fixedColor": "red",
+                  "mode": "fixed"
+                }
+              }
+            ]
+          }
         ]
       },
-      "gridPos": { "h": 4, "w": 4, "x": 8, "y": 1 },
+      "gridPos": {
+        "h": 4,
+        "w": 4,
+        "x": 8,
+        "y": 1
+      },
       "id": 9,
-      "options": { "legend": { "displayMode": "list", "placement": "right", "showLegend": false }, "pieType": "donut", "reduceOptions": { "calcs": ["lastNotNull"], "fields": "/^value$/", "values": true }, "tooltip": { "mode": "single", "sort": "none" }, "displayLabels": ["name", "percent"] },
-      "targets": [{ "datasource": { "type": "postgres", "uid": "postgresql" }, "rawQuery": true, "rawSql": "SELECT CASE WHEN success THEN 'Success' ELSE 'Failed' END as metric, COUNT(*) as value FROM extrinsics WHERE ('${netuid:csv}' = '*' OR netuid::text = ANY (string_to_array('${netuid:csv}', ','))) AND ('${status:csv}' = '*' OR success::text = ANY (string_to_array('${status:csv}', ','))) AND ('${call_module:csv}' = '*' OR call_module = ANY (string_to_array('${call_module:csv}', ','))) AND ('${call_function:csv}' = '*' OR call_function = ANY (string_to_array('${call_function:csv}', ','))) AND ('${address:csv}' = '*' OR address = ANY (string_to_array('${address:csv}', ','))) AND block_number BETWEEN (SELECT MAX(block_number) FROM extrinsics) - ((extract(epoch FROM now()) * 1000)::bigint - $__from) / 12000 AND (SELECT MAX(block_number) FROM extrinsics) - ((extract(epoch FROM now()) * 1000)::bigint - $__to) / 12000 GROUP BY success", "refId": "A", "format": "table" }],
+      "options": {
+        "legend": {
+          "displayMode": "list",
+          "placement": "right",
+          "showLegend": false
+        },
+        "pieType": "donut",
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "/^value$/",
+          "values": true
+        },
+        "tooltip": {
+          "mode": "single",
+          "sort": "none"
+        },
+        "displayLabels": [
+          "name",
+          "percent"
+        ]
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "postgres",
+            "uid": "postgresql"
+          },
+          "rawQuery": true,
+          "rawSql": "SELECT CASE WHEN success THEN 'Success' ELSE 'Failed' END as metric, COUNT(*) as value FROM extrinsics WHERE ('${netuid:csv}' = '*' OR netuid::text = ANY (string_to_array('${netuid:csv}', ','))) AND ('${status:csv}' = '*' OR success::text = ANY (string_to_array('${status:csv}', ','))) AND ('${call_module:csv}' = '*' OR call_module = ANY (string_to_array('${call_module:csv}', ','))) AND ('${call_function:csv}' = '*' OR call_function = ANY (string_to_array('${call_function:csv}', ','))) AND ('${address:csv}' = '*' OR address = ANY (string_to_array('${address:csv}', ','))) AND block_number BETWEEN (SELECT MAX(block_number) FROM extrinsics) - ((extract(epoch FROM now()) * 1000)::bigint - $__from) / 12000 AND (SELECT MAX(block_number) FROM extrinsics) - ((extract(epoch FROM now()) * 1000)::bigint - $__to) / 12000 GROUP BY success",
+          "refId": "A",
+          "format": "table"
+        }
+      ],
       "title": "Success vs Failed",
       "type": "piechart"
     },
@@ -215,173 +637,109 @@
       },
       "fieldConfig": {
         "defaults": {
-          "color": { "mode": "thresholds" },
-          "custom": { "align": "auto", "cellOptions": { "type": "auto" }, "inspect": false },
+          "color": {
+            "mode": "thresholds"
+          },
+          "custom": {
+            "align": "auto",
+            "cellOptions": {
+              "type": "auto"
+            },
+            "inspect": false
+          },
           "mappings": [],
-          "thresholds": { "mode": "absolute", "steps": [{ "color": "green", "value": null }] }
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": null
+              }
+            ]
+          }
         },
-        "overrides": [{ "matcher": { "id": "byName", "options": "count" }, "properties": [{ "id": "custom.cellOptions", "value": { "mode": "gradient", "type": "gauge" } }] }, { "matcher": { "id": "byName", "options": "address" }, "properties": [{ "id": "custom.width", "value": 120 }, { "id": "custom.inspect", "value": true }] }]
+        "overrides": [
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "count"
+            },
+            "properties": [
+              {
+                "id": "custom.cellOptions",
+                "value": {
+                  "mode": "gradient",
+                  "type": "gauge"
+                }
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "address"
+            },
+            "properties": [
+              {
+                "id": "custom.width",
+                "value": 120
+              },
+              {
+                "id": "custom.inspect",
+                "value": true
+              }
+            ]
+          }
+        ]
       },
-      "gridPos": { "h": 8, "w": 24, "x": 0, "y": 36 },
+      "gridPos": {
+        "h": 8,
+        "w": 24,
+        "x": 0,
+        "y": 36
+      },
       "id": 10,
-      "options": { "cellHeight": "sm", "footer": { "countRows": false, "fields": "", "reducer": ["sum"], "show": true }, "showHeader": true, "sortBy": [{ "desc": true, "displayName": "count" }] },
-      "targets": [{ "datasource": { "type": "postgres", "uid": "postgresql" }, "rawQuery": true, "rawSql": "SELECT address, COUNT(*) as count FROM extrinsics WHERE address != '' AND ('${netuid:csv}' = '*' OR netuid::text = ANY (string_to_array('${netuid:csv}', ','))) AND ('${status:csv}' = '*' OR success::text = ANY (string_to_array('${status:csv}', ','))) AND ('${call_module:csv}' = '*' OR call_module = ANY (string_to_array('${call_module:csv}', ','))) AND ('${call_function:csv}' = '*' OR call_function = ANY (string_to_array('${call_function:csv}', ','))) AND ('${address:csv}' = '*' OR address = ANY (string_to_array('${address:csv}', ','))) AND block_number BETWEEN (SELECT MAX(block_number) FROM extrinsics) - ((extract(epoch FROM now()) * 1000)::bigint - $__from) / 12000 AND (SELECT MAX(block_number) FROM extrinsics) - ((extract(epoch FROM now()) * 1000)::bigint - $__to) / 12000 GROUP BY address ORDER BY count DESC LIMIT 15", "refId": "A", "format": "table" }],
+      "options": {
+        "cellHeight": "sm",
+        "footer": {
+          "countRows": false,
+          "fields": "",
+          "reducer": [
+            "sum"
+          ],
+          "show": true
+        },
+        "showHeader": true,
+        "sortBy": [
+          {
+            "desc": true,
+            "displayName": "count"
+          }
+        ]
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "postgres",
+            "uid": "postgresql"
+          },
+          "rawQuery": true,
+          "rawSql": "SELECT address, COUNT(*) as count FROM extrinsics WHERE address != '' AND ('${netuid:csv}' = '*' OR netuid::text = ANY (string_to_array('${netuid:csv}', ','))) AND ('${status:csv}' = '*' OR success::text = ANY (string_to_array('${status:csv}', ','))) AND ('${call_module:csv}' = '*' OR call_module = ANY (string_to_array('${call_module:csv}', ','))) AND ('${call_function:csv}' = '*' OR call_function = ANY (string_to_array('${call_function:csv}', ','))) AND ('${address:csv}' = '*' OR address = ANY (string_to_array('${address:csv}', ','))) AND block_number BETWEEN (SELECT MAX(block_number) FROM extrinsics) - ((extract(epoch FROM now()) * 1000)::bigint - $__from) / 12000 AND (SELECT MAX(block_number) FROM extrinsics) - ((extract(epoch FROM now()) * 1000)::bigint - $__to) / 12000 GROUP BY address ORDER BY count DESC LIMIT 15",
+          "refId": "A",
+          "format": "table"
+        }
+      ],
       "title": "Most Active Addresses",
       "type": "table"
     },
     {
       "collapsed": false,
-      "gridPos": { "h": 1, "w": 24, "x": 0, "y": 44 },
-      "id": 101,
-      "panels": [],
-      "title": "Weight-Setting Calls Analysis",
-      "type": "row"
-    },
-    {
-      "datasource": {
-        "type": "postgres",
-        "uid": "postgresql"
+      "gridPos": {
+        "h": 1,
+        "w": 24,
+        "x": 0,
+        "y": 44
       },
-      "fieldConfig": {
-        "defaults": {
-          "color": { "mode": "thresholds" },
-          "custom": { "align": "auto", "cellOptions": { "type": "auto" }, "inspect": false },
-          "mappings": [],
-          "thresholds": { "mode": "absolute", "steps": [{ "color": "green", "value": null }] }
-        },
-        "overrides": [
-          { "matcher": { "id": "byName", "options": "failures" }, "properties": [{ "id": "color", "value": { "fixedColor": "red", "mode": "fixed" } }] },
-          { "matcher": { "id": "byName", "options": "success" }, "properties": [{ "id": "color", "value": { "fixedColor": "green", "mode": "fixed" } }] }
-        ]
-      },
-      "gridPos": { "h": 10, "w": 12, "x": 0, "y": 45 },
-      "id": 11,
-      "options": { "cellHeight": "sm", "footer": { "countRows": false, "fields": "", "reducer": ["sum"], "show": true }, "showHeader": true, "sortBy": [{ "desc": true, "displayName": "success" }] },
-      "targets": [{
-        "datasource": { "type": "postgres", "uid": "postgresql" },
-        "rawQuery": true,
-        "rawSql": "SELECT netuid, COUNT(*) FILTER (WHERE success) as \"success\", COUNT(*) FILTER (WHERE NOT success) as \"failures\" FROM extrinsics WHERE call_module = 'SubtensorModule' AND call_function IN ('set_weights','set_mechanism_weights','batch_set_weights','commit_weights','commit_mechanism_weights','batch_commit_weights','reveal_weights','reveal_mechanism_weights','batch_reveal_weights','commit_timelocked_weights','commit_timelocked_mechanism_weights','commit_crv3_mechanism_weights') AND ('${netuid:csv}' = '*' OR netuid::text = ANY (string_to_array('${netuid:csv}', ','))) AND ('${status:csv}' = '*' OR success::text = ANY (string_to_array('${status:csv}', ','))) AND ('${call_module:csv}' = '*' OR call_module = ANY (string_to_array('${call_module:csv}', ','))) AND ('${call_function:csv}' = '*' OR call_function = ANY (string_to_array('${call_function:csv}', ','))) AND ('${address:csv}' = '*' OR address = ANY (string_to_array('${address:csv}', ','))) AND block_number BETWEEN (SELECT MAX(block_number) FROM extrinsics) - ((extract(epoch FROM now()) * 1000)::bigint - $__from) / 12000 AND (SELECT MAX(block_number) FROM extrinsics) - ((extract(epoch FROM now()) * 1000)::bigint - $__to) / 12000 GROUP BY netuid ORDER BY netuid",
-        "refId": "A",
-        "format": "table"
-      }],
-      "title": "Weight-Setting Calls by Subnet",
-      "type": "table"
-    },
-    {
-      "datasource": {
-        "type": "postgres",
-        "uid": "postgresql"
-      },
-      "fieldConfig": {
-        "defaults": { "color": { "mode": "palette-classic" }, "custom": { "hideFrom": { "legend": false, "tooltip": false, "viz": false } }, "mappings": [] },
-        "overrides": []
-      },
-      "gridPos": { "h": 10, "w": 12, "x": 12, "y": 45 },
-      "id": 12,
-      "options": { "legend": { "displayMode": "list", "placement": "right", "showLegend": true }, "pieType": "pie", "reduceOptions": { "calcs": ["lastNotNull"], "fields": "/^value$/", "values": true }, "tooltip": { "mode": "single", "sort": "none" }, "displayLabels": ["name", "value"] },
-      "targets": [{
-        "datasource": { "type": "postgres", "uid": "postgresql" },
-        "rawQuery": true,
-        "rawSql": "SELECT 'Subnet ' || netuid::text as metric, COUNT(*) as value FROM extrinsics WHERE call_module = 'SubtensorModule' AND call_function IN ('set_weights','set_mechanism_weights','batch_set_weights','commit_weights','commit_mechanism_weights','batch_commit_weights','reveal_weights','reveal_mechanism_weights','batch_reveal_weights','commit_timelocked_weights','commit_timelocked_mechanism_weights','commit_crv3_mechanism_weights') AND ('${netuid:csv}' = '*' OR netuid::text = ANY (string_to_array('${netuid:csv}', ','))) AND ('${status:csv}' = '*' OR success::text = ANY (string_to_array('${status:csv}', ','))) AND ('${call_module:csv}' = '*' OR call_module = ANY (string_to_array('${call_module:csv}', ','))) AND ('${call_function:csv}' = '*' OR call_function = ANY (string_to_array('${call_function:csv}', ','))) AND ('${address:csv}' = '*' OR address = ANY (string_to_array('${address:csv}', ','))) AND block_number BETWEEN (SELECT MAX(block_number) FROM extrinsics) - ((extract(epoch FROM now()) * 1000)::bigint - $__from) / 12000 AND (SELECT MAX(block_number) FROM extrinsics) - ((extract(epoch FROM now()) * 1000)::bigint - $__to) / 12000 GROUP BY netuid ORDER BY value DESC LIMIT 10",
-        "refId": "A",
-        "format": "table"
-      }],
-      "title": "Top 10 Subnets by Weight-Setting Calls",
-      "type": "piechart"
-    },
-    {
-      "datasource": {
-        "type": "postgres",
-        "uid": "postgresql"
-      },
-      "fieldConfig": {
-        "defaults": {
-          "custom": { "hideFrom": { "legend": false, "tooltip": false, "viz": false }, "scaleDistribution": { "type": "linear" } }
-        },
-        "overrides": []
-      },
-      "gridPos": { "h": 15, "w": 24, "x": 0, "y": 13 },
-      "id": 13,
-      "options": {
-        "calculate": false,
-        "cellGap": 0,
-        "cellValues": { "decimals": 0 },
-        "color": {
-          "exponent": 0.5,
-          "fill": "dark-orange",
-          "mode": "scheme",
-          "reverse": false,
-          "scale": "exponential",
-          "scheme": "Spectral",
-          "steps": 64
-        },
-        "exemplars": { "color": "rgba(255,0,255,0.7)" },
-        "filterValues": { "le": 1e-9 },
-        "legend": { "show": true },
-        "rowsFrame": { "layout": "auto" },
-        "tooltip": { "mode": "single", "yHistogram": false },
-        "yAxis": { "axisPlacement": "left", "reverse": false, "decimals": 0 }
-      },
-      "targets": [{
-        "datasource": { "type": "postgres", "uid": "postgresql" },
-        "rawQuery": true,
-        "rawSql": "WITH counts AS (SELECT date_trunc('hour', to_timestamp(block_timestamp / 1000.0)) AS time, netuid, COUNT(*) AS value FROM extrinsics WHERE call_module = 'SubtensorModule' AND call_function IN ('set_weights','set_mechanism_weights','batch_set_weights','commit_weights','commit_mechanism_weights','batch_commit_weights','reveal_weights','reveal_mechanism_weights','batch_reveal_weights','commit_timelocked_weights','commit_timelocked_mechanism_weights','commit_crv3_mechanism_weights') AND ('${netuid:csv}' = '*' OR netuid::text = ANY (string_to_array('${netuid:csv}', ','))) AND ('${status:csv}' = '*' OR success::text = ANY (string_to_array('${status:csv}', ','))) AND ('${call_module:csv}' = '*' OR call_module = ANY (string_to_array('${call_module:csv}', ','))) AND ('${call_function:csv}' = '*' OR call_function = ANY (string_to_array('${call_function:csv}', ','))) AND ('${address:csv}' = '*' OR address = ANY (string_to_array('${address:csv}', ','))) AND block_number BETWEEN (SELECT MAX(block_number) FROM extrinsics) - ((extract(epoch FROM now()) * 1000)::bigint - $__from) / 12000 AND (SELECT MAX(block_number) FROM extrinsics) - ((extract(epoch FROM now()) * 1000)::bigint - $__to) / 12000 GROUP BY 1, 2), buckets AS (SELECT generate_series(date_trunc('hour', to_timestamp($__from / 1000.0)), date_trunc('hour', to_timestamp($__to / 1000.0)), INTERVAL '1 hour') AS time), subnets AS (SELECT DISTINCT netuid FROM counts) SELECT b.time, lpad(s.netuid::text, 3, '0') AS metric, COALESCE(c.value, 0) AS value FROM buckets b CROSS JOIN subnets s LEFT JOIN counts c ON c.time = b.time AND c.netuid = s.netuid ORDER BY b.time, s.netuid",
-        "refId": "A",
-        "format": "time_series"
-      }],
-      "title": "Weight-Setting Calls Over Time",
-      "type": "heatmap"
-    },
-    {
-      "datasource": {
-        "type": "postgres",
-        "uid": "postgresql"
-      },
-      "fieldConfig": {
-        "defaults": {
-          "color": { "mode": "thresholds" },
-          "custom": { "align": "auto", "cellOptions": { "type": "auto" }, "filterable": true, "inspect": false },
-          "mappings": [{ "options": { "0": { "color": "transparent", "index": 0, "text": " " } }, "type": "value" }],
-          "thresholds": { "mode": "absolute", "steps": [{ "color": "transparent", "value": null }] }
-        },
-        "overrides": [
-          { "matcher": { "id": "byName", "options": "subnet" },        "properties": [{ "id": "custom.width", "value": 220 }, { "id": "mappings", "value": [] }] },
-          { "matcher": { "id": "byName", "options": "total" },         "properties": [{ "id": "custom.cellOptions", "value": { "mode": "gradient", "type": "gauge" } }, { "id": "color", "value": { "fixedColor": "#888", "mode": "fixed" } }, { "id": "custom.width", "value": 90 }] },
-          { "matcher": { "id": "byName", "options": "set" },           "properties": [{ "id": "custom.cellOptions", "value": { "mode": "gradient", "type": "gauge" } }, { "id": "color", "value": { "fixedColor": "#73BF69", "mode": "fixed" } }] },
-          { "matcher": { "id": "byName", "options": "set_mech" },      "properties": [{ "id": "custom.cellOptions", "value": { "mode": "gradient", "type": "gauge" } }, { "id": "color", "value": { "fixedColor": "#37872D", "mode": "fixed" } }] },
-          { "matcher": { "id": "byName", "options": "set_batch" },     "properties": [{ "id": "custom.cellOptions", "value": { "mode": "gradient", "type": "gauge" } }, { "id": "color", "value": { "fixedColor": "#9DD58E", "mode": "fixed" } }] },
-          { "matcher": { "id": "byName", "options": "commit" },        "properties": [{ "id": "custom.cellOptions", "value": { "mode": "gradient", "type": "gauge" } }, { "id": "color", "value": { "fixedColor": "#5794F2", "mode": "fixed" } }] },
-          { "matcher": { "id": "byName", "options": "commit_mech" },   "properties": [{ "id": "custom.cellOptions", "value": { "mode": "gradient", "type": "gauge" } }, { "id": "color", "value": { "fixedColor": "#1F60BF", "mode": "fixed" } }] },
-          { "matcher": { "id": "byName", "options": "commit_batch" },  "properties": [{ "id": "custom.cellOptions", "value": { "mode": "gradient", "type": "gauge" } }, { "id": "color", "value": { "fixedColor": "#8AB8FF", "mode": "fixed" } }] },
-          { "matcher": { "id": "byName", "options": "reveal" },        "properties": [{ "id": "custom.cellOptions", "value": { "mode": "gradient", "type": "gauge" } }, { "id": "color", "value": { "fixedColor": "#B877D9", "mode": "fixed" } }] },
-          { "matcher": { "id": "byName", "options": "reveal_mech" },   "properties": [{ "id": "custom.cellOptions", "value": { "mode": "gradient", "type": "gauge" } }, { "id": "color", "value": { "fixedColor": "#6F4099", "mode": "fixed" } }] },
-          { "matcher": { "id": "byName", "options": "reveal_batch" },  "properties": [{ "id": "custom.cellOptions", "value": { "mode": "gradient", "type": "gauge" } }, { "id": "color", "value": { "fixedColor": "#D4A5E8", "mode": "fixed" } }] },
-          { "matcher": { "id": "byName", "options": "tlock" },         "properties": [{ "id": "custom.cellOptions", "value": { "mode": "gradient", "type": "gauge" } }, { "id": "color", "value": { "fixedColor": "#FF9830", "mode": "fixed" } }] },
-          { "matcher": { "id": "byName", "options": "tlock_mech" },    "properties": [{ "id": "custom.cellOptions", "value": { "mode": "gradient", "type": "gauge" } }, { "id": "color", "value": { "fixedColor": "#C46A1F", "mode": "fixed" } }] },
-          { "matcher": { "id": "byName", "options": "crv3_mech" },     "properties": [{ "id": "custom.cellOptions", "value": { "mode": "gradient", "type": "gauge" } }, { "id": "color", "value": { "fixedColor": "#FFC080", "mode": "fixed" } }] }
-        ]
-      },
-      "gridPos": { "h": 22, "w": 24, "x": 0, "y": 55 },
-      "id": 17,
-      "options": {
-        "cellHeight": "sm",
-        "footer": { "countRows": false, "fields": "", "reducer": ["sum"], "show": true },
-        "showHeader": true,
-        "sortBy": [{ "desc": true, "displayName": "total" }]
-      },
-      "targets": [{
-        "datasource": { "type": "postgres", "uid": "postgresql" },
-        "rawQuery": true,
-        "rawSql": "SELECT CASE WHEN COALESCE(s.name, '') = '' THEN lpad(e.netuid::text, 3, '0') ELSE lpad(e.netuid::text, 3, '0') || ' · ' || s.name END AS subnet, COUNT(*) AS total, COUNT(*) FILTER (WHERE call_function = 'set_weights') AS \"set\", COUNT(*) FILTER (WHERE call_function = 'set_mechanism_weights') AS set_mech, COUNT(*) FILTER (WHERE call_function = 'batch_set_weights') AS set_batch, COUNT(*) FILTER (WHERE call_function = 'commit_weights') AS \"commit\", COUNT(*) FILTER (WHERE call_function = 'commit_mechanism_weights') AS commit_mech, COUNT(*) FILTER (WHERE call_function = 'batch_commit_weights') AS commit_batch, COUNT(*) FILTER (WHERE call_function = 'reveal_weights') AS reveal, COUNT(*) FILTER (WHERE call_function = 'reveal_mechanism_weights') AS reveal_mech, COUNT(*) FILTER (WHERE call_function = 'batch_reveal_weights') AS reveal_batch, COUNT(*) FILTER (WHERE call_function = 'commit_timelocked_weights') AS tlock, COUNT(*) FILTER (WHERE call_function = 'commit_timelocked_mechanism_weights') AS tlock_mech, COUNT(*) FILTER (WHERE call_function = 'commit_crv3_mechanism_weights') AS crv3_mech FROM extrinsics e LEFT JOIN metagraph_subnet s ON s.netuid = e.netuid WHERE e.call_module = 'SubtensorModule' AND e.call_function IN ('set_weights','set_mechanism_weights','batch_set_weights','commit_weights','commit_mechanism_weights','batch_commit_weights','reveal_weights','reveal_mechanism_weights','batch_reveal_weights','commit_timelocked_weights','commit_timelocked_mechanism_weights','commit_crv3_mechanism_weights') AND ('${netuid:csv}' = '*' OR e.netuid::text = ANY (string_to_array('${netuid:csv}', ','))) AND ('${status:csv}' = '*' OR e.success::text = ANY (string_to_array('${status:csv}', ','))) AND ('${call_module:csv}' = '*' OR e.call_module = ANY (string_to_array('${call_module:csv}', ','))) AND ('${call_function:csv}' = '*' OR e.call_function = ANY (string_to_array('${call_function:csv}', ','))) AND ('${address:csv}' = '*' OR e.address = ANY (string_to_array('${address:csv}', ','))) AND e.block_number BETWEEN (SELECT MAX(block_number) FROM extrinsics) - ((extract(epoch FROM now()) * 1000)::bigint - $__from) / 12000 AND (SELECT MAX(block_number) FROM extrinsics) - ((extract(epoch FROM now()) * 1000)::bigint - $__to) / 12000 GROUP BY e.netuid, s.name HAVING COUNT(*) > 0 ORDER BY e.netuid",
-        "refId": "A",
-        "format": "table"
-      }],
-      "title": "Weight-Setting Methods by Subnet",
-      "type": "table"
-    },
-    {
-      "collapsed": false,
-      "gridPos": { "h": 1, "w": 24, "x": 0, "y": 77 },
       "id": 102,
       "panels": [],
       "title": "Top Functions",
@@ -394,17 +752,82 @@
       },
       "fieldConfig": {
         "defaults": {
-          "color": { "mode": "thresholds" },
-          "custom": { "align": "auto", "cellOptions": { "type": "auto" }, "inspect": false },
+          "color": {
+            "mode": "thresholds"
+          },
+          "custom": {
+            "align": "auto",
+            "cellOptions": {
+              "type": "auto"
+            },
+            "inspect": false
+          },
           "mappings": [],
-          "thresholds": { "mode": "absolute", "steps": [{ "color": "green", "value": null }] }
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": null
+              }
+            ]
+          }
         },
-        "overrides": [{ "matcher": { "id": "byName", "options": "count" }, "properties": [{ "id": "custom.cellOptions", "value": { "mode": "gradient", "type": "gauge" } }] }]
+        "overrides": [
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "count"
+            },
+            "properties": [
+              {
+                "id": "custom.cellOptions",
+                "value": {
+                  "mode": "gradient",
+                  "type": "gauge"
+                }
+              }
+            ]
+          }
+        ]
       },
-      "gridPos": { "h": 10, "w": 12, "x": 0, "y": 78 },
+      "gridPos": {
+        "h": 10,
+        "w": 12,
+        "x": 0,
+        "y": 45
+      },
       "id": 14,
-      "options": { "cellHeight": "sm", "footer": { "countRows": false, "fields": "", "reducer": ["sum"], "show": true }, "showHeader": true, "sortBy": [{ "desc": true, "displayName": "count" }] },
-      "targets": [{ "datasource": { "type": "postgres", "uid": "postgresql" }, "rawQuery": true, "rawSql": "SELECT call_module, call_function, COUNT(*) as count, ROUND(100.0 * SUM(CASE WHEN success THEN 1 ELSE 0 END) / COUNT(*), 1) as success_rate FROM extrinsics WHERE ('${netuid:csv}' = '*' OR netuid::text = ANY (string_to_array('${netuid:csv}', ','))) AND ('${status:csv}' = '*' OR success::text = ANY (string_to_array('${status:csv}', ','))) AND ('${call_module:csv}' = '*' OR call_module = ANY (string_to_array('${call_module:csv}', ','))) AND ('${call_function:csv}' = '*' OR call_function = ANY (string_to_array('${call_function:csv}', ','))) AND ('${address:csv}' = '*' OR address = ANY (string_to_array('${address:csv}', ','))) AND block_number BETWEEN (SELECT MAX(block_number) FROM extrinsics) - ((extract(epoch FROM now()) * 1000)::bigint - $__from) / 12000 AND (SELECT MAX(block_number) FROM extrinsics) - ((extract(epoch FROM now()) * 1000)::bigint - $__to) / 12000 GROUP BY call_module, call_function ORDER BY count DESC LIMIT 20", "refId": "A", "format": "table" }],
+      "options": {
+        "cellHeight": "sm",
+        "footer": {
+          "countRows": false,
+          "fields": "",
+          "reducer": [
+            "sum"
+          ],
+          "show": true
+        },
+        "showHeader": true,
+        "sortBy": [
+          {
+            "desc": true,
+            "displayName": "count"
+          }
+        ]
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "postgres",
+            "uid": "postgresql"
+          },
+          "rawQuery": true,
+          "rawSql": "SELECT call_module, call_function, COUNT(*) as count, ROUND(100.0 * SUM(CASE WHEN success THEN 1 ELSE 0 END) / COUNT(*), 1) as success_rate FROM extrinsics WHERE ('${netuid:csv}' = '*' OR netuid::text = ANY (string_to_array('${netuid:csv}', ','))) AND ('${status:csv}' = '*' OR success::text = ANY (string_to_array('${status:csv}', ','))) AND ('${call_module:csv}' = '*' OR call_module = ANY (string_to_array('${call_module:csv}', ','))) AND ('${call_function:csv}' = '*' OR call_function = ANY (string_to_array('${call_function:csv}', ','))) AND ('${address:csv}' = '*' OR address = ANY (string_to_array('${address:csv}', ','))) AND block_number BETWEEN (SELECT MAX(block_number) FROM extrinsics) - ((extract(epoch FROM now()) * 1000)::bigint - $__from) / 12000 AND (SELECT MAX(block_number) FROM extrinsics) - ((extract(epoch FROM now()) * 1000)::bigint - $__to) / 12000 GROUP BY call_module, call_function ORDER BY count DESC LIMIT 20",
+          "refId": "A",
+          "format": "table"
+        }
+      ],
       "title": "Top 20 Call Functions",
       "type": "table"
     },
@@ -415,20 +838,111 @@
       },
       "fieldConfig": {
         "defaults": {
-          "color": { "mode": "thresholds" },
-          "custom": { "align": "auto", "cellOptions": { "type": "auto" }, "inspect": false },
+          "color": {
+            "mode": "thresholds"
+          },
+          "custom": {
+            "align": "auto",
+            "cellOptions": {
+              "type": "auto"
+            },
+            "inspect": false
+          },
           "mappings": [],
-          "thresholds": { "mode": "absolute", "steps": [{ "color": "green", "value": null }] }
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": null
+              }
+            ]
+          }
         },
         "overrides": [
-          { "matcher": { "id": "byName", "options": "success" }, "properties": [{ "id": "mappings", "value": [{ "options": { "true": { "color": "green", "index": 0, "text": "Success" }, "false": { "color": "red", "index": 1, "text": "Failed" } }, "type": "value" }] }, { "id": "custom.cellOptions", "value": { "type": "color-background" } }] },
-          { "matcher": { "id": "byName", "options": "address" }, "properties": [{ "id": "custom.width", "value": 150 }, { "id": "custom.inspect", "value": true }] }
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "success"
+            },
+            "properties": [
+              {
+                "id": "mappings",
+                "value": [
+                  {
+                    "options": {
+                      "true": {
+                        "color": "green",
+                        "index": 0,
+                        "text": "Success"
+                      },
+                      "false": {
+                        "color": "red",
+                        "index": 1,
+                        "text": "Failed"
+                      }
+                    },
+                    "type": "value"
+                  }
+                ]
+              },
+              {
+                "id": "custom.cellOptions",
+                "value": {
+                  "type": "color-background"
+                }
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "address"
+            },
+            "properties": [
+              {
+                "id": "custom.width",
+                "value": 150
+              },
+              {
+                "id": "custom.inspect",
+                "value": true
+              }
+            ]
+          }
         ]
       },
-      "gridPos": { "h": 10, "w": 12, "x": 12, "y": 78 },
+      "gridPos": {
+        "h": 10,
+        "w": 12,
+        "x": 12,
+        "y": 45
+      },
       "id": 15,
-      "options": { "cellHeight": "sm", "footer": { "countRows": false, "fields": "", "reducer": ["sum"], "show": false }, "showHeader": true },
-      "targets": [{ "datasource": { "type": "postgres", "uid": "postgresql" }, "rawQuery": true, "rawSql": "SELECT to_timestamp(block_timestamp / 1000.0) as time, call_module, call_function, netuid, address, success, block_number FROM extrinsics WHERE ('${netuid:csv}' = '*' OR netuid::text = ANY (string_to_array('${netuid:csv}', ','))) AND ('${status:csv}' = '*' OR success::text = ANY (string_to_array('${status:csv}', ','))) AND ('${call_module:csv}' = '*' OR call_module = ANY (string_to_array('${call_module:csv}', ','))) AND ('${call_function:csv}' = '*' OR call_function = ANY (string_to_array('${call_function:csv}', ','))) AND ('${address:csv}' = '*' OR address = ANY (string_to_array('${address:csv}', ','))) ORDER BY block_timestamp DESC LIMIT 50", "refId": "A", "format": "table" }],
+      "options": {
+        "cellHeight": "sm",
+        "footer": {
+          "countRows": false,
+          "fields": "",
+          "reducer": [
+            "sum"
+          ],
+          "show": false
+        },
+        "showHeader": true
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "postgres",
+            "uid": "postgresql"
+          },
+          "rawQuery": true,
+          "rawSql": "SELECT to_timestamp(block_timestamp / 1000.0) as time, call_module, call_function, netuid, address, success, block_number FROM extrinsics WHERE ('${netuid:csv}' = '*' OR netuid::text = ANY (string_to_array('${netuid:csv}', ','))) AND ('${status:csv}' = '*' OR success::text = ANY (string_to_array('${status:csv}', ','))) AND ('${call_module:csv}' = '*' OR call_module = ANY (string_to_array('${call_module:csv}', ','))) AND ('${call_function:csv}' = '*' OR call_function = ANY (string_to_array('${call_function:csv}', ','))) AND ('${address:csv}' = '*' OR address = ANY (string_to_array('${address:csv}', ','))) ORDER BY block_timestamp DESC LIMIT 50",
+          "refId": "A",
+          "format": "table"
+        }
+      ],
       "title": "Recent Extrinsics",
       "type": "table"
     }
@@ -436,13 +950,24 @@
   "refresh": "",
   "schemaVersion": 38,
   "style": "dark",
-  "tags": ["bittensor", "blockchain", "extrinsics"],
+  "tags": [
+    "bittensor",
+    "blockchain",
+    "extrinsics"
+  ],
   "templating": {
     "list": [
       {
-        "current": { "selected": false, "text": "All", "value": "$__all" },
+        "current": {
+          "selected": false,
+          "text": "All",
+          "value": "$__all"
+        },
         "allValue": "*",
-        "datasource": { "type": "postgres", "uid": "postgresql" },
+        "datasource": {
+          "type": "postgres",
+          "uid": "postgresql"
+        },
         "definition": "SELECT netuid AS __value, netuid || ' - ' || COALESCE(name, 'Unknown') AS __text FROM metagraph_subnet WHERE netuid != 0 ORDER BY netuid",
         "hide": 0,
         "includeAll": true,
@@ -458,7 +983,11 @@
         "type": "query"
       },
       {
-        "current": { "selected": false, "text": "All", "value": "$__all" },
+        "current": {
+          "selected": false,
+          "text": "All",
+          "value": "$__all"
+        },
         "allValue": "*",
         "hide": 0,
         "includeAll": true,
@@ -466,8 +995,16 @@
         "multi": true,
         "name": "status",
         "options": [
-          { "selected": false, "text": "Success", "value": "true" },
-          { "selected": false, "text": "Failed", "value": "false" }
+          {
+            "selected": false,
+            "text": "Success",
+            "value": "true"
+          },
+          {
+            "selected": false,
+            "text": "Failed",
+            "value": "false"
+          }
         ],
         "query": "true : Success, false : Failed",
         "queryValue": "",
@@ -475,9 +1012,16 @@
         "type": "custom"
       },
       {
-        "current": { "selected": false, "text": "All", "value": "$__all" },
+        "current": {
+          "selected": false,
+          "text": "All",
+          "value": "$__all"
+        },
         "allValue": "*",
-        "datasource": { "type": "postgres", "uid": "postgresql" },
+        "datasource": {
+          "type": "postgres",
+          "uid": "postgresql"
+        },
         "definition": "SELECT DISTINCT call_module FROM extrinsics WHERE block_number > COALESCE((SELECT MAX(block_number) FROM extrinsics), 0) - 50000 ORDER BY call_module",
         "hide": 0,
         "includeAll": true,
@@ -493,9 +1037,16 @@
         "type": "query"
       },
       {
-        "current": { "selected": false, "text": "All", "value": "$__all" },
+        "current": {
+          "selected": false,
+          "text": "All",
+          "value": "$__all"
+        },
         "allValue": "*",
-        "datasource": { "type": "postgres", "uid": "postgresql" },
+        "datasource": {
+          "type": "postgres",
+          "uid": "postgresql"
+        },
         "definition": "SELECT DISTINCT call_function FROM extrinsics WHERE block_number > COALESCE((SELECT MAX(block_number) FROM extrinsics), 0) - 50000 ORDER BY call_function",
         "hide": 0,
         "includeAll": true,
@@ -511,9 +1062,16 @@
         "type": "query"
       },
       {
-        "current": { "selected": false, "text": "All", "value": "$__all" },
+        "current": {
+          "selected": false,
+          "text": "All",
+          "value": "$__all"
+        },
         "allValue": "*",
-        "datasource": { "type": "postgres", "uid": "postgresql" },
+        "datasource": {
+          "type": "postgres",
+          "uid": "postgresql"
+        },
         "definition": "SELECT address FROM extrinsics WHERE address != '' AND block_number > COALESCE((SELECT MAX(block_number) FROM extrinsics), 0) - 50000 GROUP BY address ORDER BY COUNT(*) DESC LIMIT 100",
         "hide": 0,
         "includeAll": true,
