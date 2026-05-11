@@ -1,4 +1,4 @@
-# `db_access_certs/`
+# PostgreSQL mTLS certificates
 
 Files required for PostgreSQL mTLS on port `5432`. mTLS is terminated by the nginx container, which proxies plain TCP to the internal `db` service. Only the files in **Keep on the server** are mounted into nginx.
 
@@ -14,56 +14,44 @@ Mounted into the nginx container as `/etc/db_access_certs:ro`.
 
 Replace `${NGINX_HOST}` below with the production hostname (e.g. `sentinel-tower.bittensor.church`).
 
-## Generate certificates
+## Issue certificates
 
-### 1. CA
+Two scripts in this directory replace the manual `openssl` workflow. Both must be run on a workstation, never on the prod host — `ca.key` must stay offline between issuances.
 
-```sh
-openssl genrsa -out ca.key 4096
-openssl req -x509 -new -nodes -key ca.key -sha256 -days 3650 \
-    -out ca.crt -subj "/CN=sentinel-tower-db-ca"
-```
-
-### 2. Server key and CSR
+### Bootstrap (one-time per environment)
 
 ```sh
-openssl genrsa -out server.key 4096
-openssl req -new -key server.key -out server.csr \
-    -subj "/CN=${NGINX_HOST}"
+./init.sh ${NGINX_HOST}
 ```
 
-### 3. Sign the server cert with a SAN for the public hostname
+Produces `ca.{crt,key}`, `server.{crt,key}`, and `ca.srl`. Refuses to overwrite if any of those already exist. Print output ends with a "Next steps" reminder to scp the server triplet to prod and move `ca.key` offline.
+
+### Add a new client
 
 ```sh
-cat > server.ext <<EOF
-subjectAltName=DNS:${NGINX_HOST}
-extendedKeyUsage=serverAuth
-EOF
-
-openssl x509 -req -in server.csr -CA ca.crt -CAkey ca.key -CAcreateserial \
-    -out server.crt -days 825 -sha256 -extfile server.ext
+./issue-client.sh <client-cn>
+# e.g. ./issue-client.sh internal-grafana.bittensor.church
 ```
 
-### 4. Per-consumer client key and CSR
+`ca.crt` and `ca.key` must be in this directory at run time (bring `ca.key` in from offline storage, run the script, remove it again). Output goes to `clients/<client-cn>/{client.crt,client.key,ca.crt}` and one row is appended to `issued.log`. Refuses to overwrite an existing `clients/<client-cn>/` directory.
 
-Replace `<client-cn>` with something identifying the consumer, e.g. `internal-grafana.bittensor.church` or `analyst-alice`.
+### Look up who has access
 
 ```sh
-openssl genrsa -out client.key 4096
-openssl req -new -key client.key -out client.csr \
-    -subj "/CN=<client-cn>"
+column -t -s $'\t' < issued.log              # human-readable
+awk -F'\t' '$3 == "alice"' issued.log        # filter by CN
+sort -t $'\t' -k5 issued.log                 # sort by expiry
 ```
 
-### 5. Sign the client cert
+The exact `openssl` commands the scripts run are visible in [`init.sh`](init.sh) and [`issue-client.sh`](issue-client.sh) — read those if you ever need to reproduce them by hand.
+
+### Run the test suite
 
 ```sh
-cat > client.ext <<'EOF'
-extendedKeyUsage=clientAuth
-EOF
-
-openssl x509 -req -in client.csr -CA ca.crt -CAkey ca.key -CAserial ca.srl \
-    -out client.crt -days 825 -sha256 -extfile client.ext
+./test-scripts.sh
 ```
+
+End-to-end test that exercises `init.sh` and `issue-client.sh` in a tmpdir, including a `nginx -t` smoke against the prod nginx config (skipped if Docker is unavailable). Useful after editing the scripts or bumping the nginx-rt image.
 
 ## Keep on the server
 
@@ -81,11 +69,7 @@ openssl x509 -req -in client.csr -CA ca.crt -CAkey ca.key -CAserial ca.srl \
 
 Move `ca.key` somewhere offline and secure (e.g. a password manager, encrypted USB, vault). You will need it to issue additional client certs in the future. **Do not leave `ca.key` on the production server** — its compromise means the entire mTLS gate is compromised.
 
-After issuance, remove the remaining temporary files from the working directory:
-
-```sh
-rm -f ca.srl server.csr server.ext client.csr client.ext
-```
+`init.sh` and `issue-client.sh` already clean up the transient `*.csr` / `*.ext` files. `ca.srl` is kept on purpose — `issue-client.sh` advances it to guarantee unique cert serial numbers across all certs signed by this CA. Move it offline alongside `ca.key`.
 
 ## Test from a client
 

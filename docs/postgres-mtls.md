@@ -28,7 +28,12 @@ Relevant files in the repo:
 
 ## Initial setup (one-time per environment)
 
-1. **Generate the CA, server cert, and the first client cert** on a workstation, following sections 1–5 of [`db_access_certs/README.md`](../db_access_certs/README.md). Use the production hostname (the value of `${NGINX_HOST}` in `.env`) for the server cert's CN and SAN.
+1. **Bootstrap the CA and server cert** on a workstation. From a clean checkout of this repo:
+   ```sh
+   cd db_access_certs
+   ./init.sh ${NGINX_HOST}   # the prod hostname, e.g. sentinel-tower.bittensor.church
+   ```
+   This produces `ca.{crt,key}`, `server.{crt,key}`, and `ca.srl` in `db_access_certs/`. See [`db_access_certs/README.md`](../db_access_certs/README.md) for the exact `openssl` flags if you're curious.
 2. **Move `ca.key` offline.** It must NOT live on the server. You'll need it to issue more client certs later; store it in a password manager / vault / encrypted offline media.
 3. **Copy `ca.crt`, `server.crt`, `server.key` to the prod host** into `db_access_certs/`. After this step, that directory on the prod host contains:
    ```
@@ -46,7 +51,12 @@ Relevant files in the repo:
 
 Most common operation. The CA is the only thing that can sign new client certs — so this happens wherever `ca.key` and `ca.crt` live (your workstation / vault).
 
-1. Follow sections 4–5 of [`db_access_certs/README.md`](../db_access_certs/README.md). Use a CN that identifies the consumer (`internal-grafana.bittensor.church`, `analyst-alice`, etc.) — it's logged on every connection and helps with rotation later.
+1. On the workstation that has `ca.key` (bring it in from offline storage first), run:
+   ```sh
+   cd db_access_certs
+   ./issue-client.sh <client-cn>   # e.g. internal-grafana.bittensor.church
+   ```
+   Output goes to `clients/<client-cn>/{client.crt,client.key,ca.crt}` and a row is appended to `issued.log`. Use a CN that identifies the consumer — it's logged on every connection and shows up in `issued.log` for audit. After issuance, move `ca.key` back offline.
 2. Securely deliver three files to the consumer: `client.crt`, `client.key`, `ca.crt`.
 3. **Nothing on the server changes.** nginx validates new clients against the existing CA on every handshake; no reload, no redeploy.
 
