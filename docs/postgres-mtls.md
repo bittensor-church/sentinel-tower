@@ -110,17 +110,7 @@ docker compose -f envs/prod/docker-compose.yml exec db psql -U "${POSTGRES_USER}
 
 **psql** — see commands above.
 
-**External Grafana** (a separate Grafana instance, not the one inside our compose) — add a PostgreSQL data source with:
-
-| Field                 | Value                                                |
-|-----------------------|------------------------------------------------------|
-| Host                  | `${NGINX_HOST}:5432`                                 |
-| TLS/SSL Mode          | `verify-full`                                        |
-| TLS/SSL Auth          | enabled                                              |
-| TLS/SSL Root Cert     | contents of `ca.crt`                                 |
-| TLS/SSL Client Cert   | contents of `client.crt`                             |
-| TLS/SSL Client Key    | contents of `client.key`                             |
-| User / Password / DB  | `${POSTGRES_READONLY_USER}` recommended (read-only)  |
+**External Grafana** — Grafana's PostgreSQL driver is Go's `lib/pq`, which does not support `sslnegotiation=direct`. Pasting client cert + key into the Grafana UI does **not** work against this nginx setup — Grafana surfaces the error as `EOF` because nginx closes the connection on the SSLRequest preamble. Use the server-side stunnel approach below ("On a dedicated server").
 
 **Python (psycopg)** — connect with:
 
@@ -171,6 +161,80 @@ Requires libpq ≥17 (psycopg links against the system libpq).
    | User/Password/DB | as usual                        |
 
 The UI sees a plain local postgres while stunnel handles the direct-SSL + mTLS handshake against nginx. Success looks like `Negotiated TLSv1.3` in the stunnel log followed by a normal postgres password prompt in the UI.
+
+**On a dedicated server (Grafana, exporters, anything Go/Java-based).** Same stunnel idea, but the laptop-style instructions above don't carry over cleanly — Ubuntu/Debian's `stunnel4` package has several stationary gotchas, and a containerized client (e.g. Grafana in docker on this host) can't reach `127.0.0.1` on the host.
+
+1. Install and enable:
+   ```sh
+   sudo apt install stunnel4
+   sudo sed -i 's/^ENABLED=0/ENABLED=1/' /etc/default/stunnel4
+   ```
+   The package ships with `ENABLED=0` as a safety; the systemd unit refuses to start until you flip it.
+
+2. Place certs **inside** `/etc/stunnel/` to avoid the chroot issue (`stunnel4` on Ubuntu chroots to `/var/lib/stunnel4` by default, so paths in `/home/...` aren't visible):
+   ```sh
+   sudo mkdir -p /etc/stunnel/certs
+   sudo cp /path/to/issued/{ca.crt,client.crt,client.key} /etc/stunnel/certs/
+   sudo chown -R stunnel4:stunnel4 /etc/stunnel/certs
+   sudo chmod 600 /etc/stunnel/certs/client.key
+   ```
+
+3. Drop `/etc/stunnel/sentinel.conf`:
+   ```ini
+   foreground = no
+   # Use the package-managed pid directory, OR leave pid = empty.
+   # /var/run/stunnel/ (no "4") does NOT exist on Ubuntu — only /var/run/stunnel4/ does.
+   pid = /var/run/stunnel4/sentinel.pid
+
+   [sentinel-prod-db]
+   client = yes
+   accept  = <bind-address>:5433
+   connect = ${NGINX_HOST}:5432
+   cert    = /etc/stunnel/certs/client.crt
+   key     = /etc/stunnel/certs/client.key
+   CAfile  = /etc/stunnel/certs/ca.crt
+   verifyChain = yes
+   checkHost   = ${NGINX_HOST}
+   ```
+   For `accept`, pick the bind address based on where the client lives:
+
+   | Client lives on… | `accept =` |
+   |---|---|
+   | Same host, native (systemd service) | `127.0.0.1:5433` |
+   | Docker container on the **default bridge** | `172.17.0.1:5433` |
+   | Docker container on a **custom network** (e.g. `compose_default`) | output of `docker network inspect <name> --format '{{range .IPAM.Config}}{{.Gateway}}{{end}}'` |
+   | Anywhere — simplest, broadest | `0.0.0.0:5433` (then firewall-restrict) |
+
+4. Start it:
+   ```sh
+   sudo systemctl enable --now stunnel4
+   sudo ss -tlnp | grep 5433       # confirm the listener is on the address you intended
+   sudo journalctl -u stunnel4 -n 30 --no-pager
+   ```
+
+5. Configure the client (Grafana data source shown; other tools analogous):
+
+   | Field         | Value                                          |
+   |---------------|------------------------------------------------|
+   | Host          | the same `<bind-address>:5433` you set above   |
+   | Database      | `${POSTGRES_DB}`                               |
+   | User          | the postgres role (recommended: read-only)     |
+   | Password      | the role's password                            |
+   | TLS/SSL Mode  | **disable** (stunnel terminates TLS)           |
+   | TLS/SSL Auth  | off (clear any cert/key fields)                |
+   | Version       | match the postgres major version on the server |
+
+Sanity-check before saving in Grafana:
+
+```sh
+# From the host shell
+nc -zv <bind-address> 5433
+
+# From inside the client container (replace <grafana-container> as needed)
+docker exec <grafana-container> sh -c 'nc -zv <bind-address> 5433'
+```
+
+Both should print `succeeded`. If the host-side test passes but the container-side fails, the bind address isn't reachable from the container's network — pick a different one from the table above.
 
 ## Rotation & revocation
 
