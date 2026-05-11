@@ -136,6 +136,42 @@ Requires libpq ≥17 (psycopg links against the system libpq).
 
 `client.key` must be `chmod 600` or psycopg/libpq refuses to use it.
 
+**GUI clients (Beekeeper Studio, DBeaver, DataGrip, …) — via local stunnel.** GUI clients typically use drivers that don't support direct SSL — Beekeeper Studio uses `node-postgres` (pure JS), and DBeaver / DataGrip default to the pgjdbc JDBC driver. Neither supports `sslnegotiation=direct`, so they cannot terminate TLS directly against nginx. Run a local TLS proxy that handles direct SSL + the client cert for them:
+
+1. Install stunnel (`sudo apt install stunnel4` / `brew install stunnel`).
+2. Create `~/stunnel-sentinel.conf` (adjust the cert paths and host):
+   ```ini
+   foreground = yes
+   pid =
+   output = /dev/stderr
+
+   [postgres-mtls]
+   client = yes
+   accept  = 127.0.0.1:5433
+   connect = ${NGINX_HOST}:5432
+   cert    = /path/to/client.crt
+   key     = /path/to/client.key
+   CAfile  = /path/to/ca.crt
+   verifyChain = yes
+   checkHost   = ${NGINX_HOST}
+   # alpn = postgresql   # uncomment if your stunnel build (5.65+) needs explicit ALPN
+   ```
+3. Run it in a terminal and leave it running while you use the UI:
+   ```sh
+   stunnel ~/stunnel-sentinel.conf
+   ```
+4. In the UI, create a connection with **SSL/TLS disabled**:
+
+   | Field         | Value                              |
+   |---------------|------------------------------------|
+   | Host          | `127.0.0.1`                        |
+   | Port          | `5433`                             |
+   | SSL/TLS       | **off** (stunnel terminates TLS)   |
+   | SSH tunnel    | off                                |
+   | User/Password/DB | as usual                        |
+
+The UI sees a plain local postgres while stunnel handles the direct-SSL + mTLS handshake against nginx. Success looks like `Negotiated TLSv1.3` in the stunnel log followed by a normal postgres password prompt in the UI.
+
 ## Rotation & revocation
 
 See the **Revocation / rotation** section of [`db_access_certs/README.md`](../db_access_certs/README.md). Short version: per-client revocation is **not** implemented (no CRL/OCSP). Real options for a compromised client are CA rotation, waiting for cert expiry while disabling the consumer's postgres role, or adding `ssl_crl` to `nginx/stream.d/postgres.conf` once a CRL workflow exists.
