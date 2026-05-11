@@ -63,6 +63,20 @@ assert "ca cert subject is sentinel-tower-db-ca" \
 assert "server cert chains to CA" \
     openssl verify -CAfile "$WORK/ca.crt" "$WORK/server.crt"
 
+group "init.sh refuse-to-overwrite"
+WORK="$(new_workdir)"
+( cd "$WORK" && ./init.sh test.example.com ) >/dev/null 2>&1
+# Capture the ca.crt fingerprint so we can prove the second run did not touch it.
+FP_BEFORE="$(openssl x509 -in "$WORK/ca.crt" -noout -fingerprint -sha256)"
+SECOND_OUTPUT="$( cd "$WORK" && ./init.sh test.example.com 2>&1 || true )"
+FP_AFTER="$(openssl x509 -in "$WORK/ca.crt" -noout -fingerprint -sha256)"
+assert "second init.sh exits non-zero" \
+    bash -c "( cd '$WORK' && ./init.sh test.example.com ) >/dev/null 2>&1; [ \$? -ne 0 ]"
+assert "error message mentions existing files" \
+    bash -c "echo '$SECOND_OUTPUT' | grep -qi 'already exists'"
+assert "ca.crt fingerprint unchanged after refused second run" \
+    bash -c "[ '$FP_BEFORE' = '$FP_AFTER' ]"
+
 # ---- summary ----
 
 printf '\n'
