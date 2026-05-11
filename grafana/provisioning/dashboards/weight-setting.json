@@ -260,7 +260,7 @@
         "type": "postgres",
         "uid": "postgresql"
       },
-      "description": "Per-subnet share of weight-setting extrinsics from the `subtensor` pallet, one column per dispatchable. Cell value = percentage of that subnet's total calls that used this method (0\u2013100%); the gauge bar fills proportionally. `total` shows the absolute count for context. Empty cells = method not used by that subnet in the selected time window. Hover any column header for semantic notes.\n\n**Direct (greens)** \u2014 disallowed when commit-reveal is enabled\n- `set_weights`\n- `set_mechanism_weights` (multi-mechanism subnets)\n- `batch_set_weights` (one extrinsic, many subnets)\n\n**Commit-reveal v1 (blues / purples)** \u2014 `commit_*` then `reveal_*` later\n- `commit_weights`, `commit_mechanism_weights`, `batch_commit_weights`\n- `reveal_weights`, `reveal_mechanism_weights`, `batch_reveal_weights`\n\n**Timelocked / drand (oranges)** \u2014 chain auto-reveals on the drand round; no explicit reveal extrinsic\n- `commit_timelocked_weights`\n- `commit_timelocked_mechanism_weights`\n- `commit_crv3_mechanism_weights` (legacy CR-v3 entry, pins `commit_reveal_version = 4`)\n\n`total` is the row sum across all 12 methods.",
+      "description": "Per-subnet share of weight-setting extrinsics from the `subtensor` pallet, grouped into three mechanism families. Cell value = percentage of that subnet's total calls that used this family (0\u2013100%); the gauge bar fills proportionally. `total` shows the absolute count for context. Empty cells = family not used by that subnet in the selected time window. Hover any column header for semantic notes.\n\n**Direct (green)** \u2014 disallowed when commit-reveal is enabled\n- `set_weights`, `set_mechanism_weights`, `batch_set_weights`\n\n**Commit-reveal v1 (blue)** \u2014 `commit_*` then `reveal_*` later\n- `commit_weights`, `commit_mechanism_weights`, `batch_commit_weights`\n- `reveal_weights`, `reveal_mechanism_weights`, `batch_reveal_weights`\n\n**Timelocked / drand (orange)** \u2014 chain auto-reveals on the drand round; no explicit reveal extrinsic\n- `commit_timelocked_weights`, `commit_timelocked_mechanism_weights`\n- `commit_crv3_mechanism_weights` (legacy CR-v3 entry, pins `commit_reveal_version = 4`)",
       "fieldConfig": {
         "defaults": {
           "color": {
@@ -337,14 +337,14 @@
               },
               {
                 "id": "description",
-                "value": "Total weight-setting extrinsics for this subnet across all 12 methods."
+                "value": "Total weight-setting extrinsics for this subnet across all three families."
               }
             ]
           },
           {
             "matcher": {
               "id": "byName",
-              "options": "set_weights"
+              "options": "direct"
             },
             "properties": [
               {
@@ -380,100 +380,14 @@
               },
               {
                 "id": "description",
-                "value": "Direct weight submission. Disallowed when commit-reveal is enabled on the subnet."
+                "value": "Direct submission family: set_weights, set_mechanism_weights, batch_set_weights. Disallowed when commit-reveal is enabled on the subnet."
               }
             ]
           },
           {
             "matcher": {
               "id": "byName",
-              "options": "set_mechanism_weights"
-            },
-            "properties": [
-              {
-                "id": "custom.cellOptions",
-                "value": {
-                  "mode": "gradient",
-                  "type": "gauge"
-                }
-              },
-              {
-                "id": "thresholds",
-                "value": {
-                  "mode": "absolute",
-                  "steps": [
-                    {
-                      "color": "#37872D",
-                      "value": null
-                    }
-                  ]
-                }
-              },
-              {
-                "id": "min",
-                "value": 0
-              },
-              {
-                "id": "max",
-                "value": 100
-              },
-              {
-                "id": "unit",
-                "value": "percent"
-              },
-              {
-                "id": "description",
-                "value": "Direct weights for a specific mechanism within a multi-mechanism subnet."
-              }
-            ]
-          },
-          {
-            "matcher": {
-              "id": "byName",
-              "options": "batch_set_weights"
-            },
-            "properties": [
-              {
-                "id": "custom.cellOptions",
-                "value": {
-                  "mode": "gradient",
-                  "type": "gauge"
-                }
-              },
-              {
-                "id": "thresholds",
-                "value": {
-                  "mode": "absolute",
-                  "steps": [
-                    {
-                      "color": "#9DD58E",
-                      "value": null
-                    }
-                  ]
-                }
-              },
-              {
-                "id": "min",
-                "value": 0
-              },
-              {
-                "id": "max",
-                "value": 100
-              },
-              {
-                "id": "unit",
-                "value": "percent"
-              },
-              {
-                "id": "description",
-                "value": "One extrinsic targeting many subnets at once. Per-subnet attribution may be incomplete (see docs/todo.md)."
-              }
-            ]
-          },
-          {
-            "matcher": {
-              "id": "byName",
-              "options": "commit_weights"
+              "options": "commit_reveal_v1"
             },
             "properties": [
               {
@@ -509,229 +423,14 @@
               },
               {
                 "id": "description",
-                "value": "Commit-reveal v1 commit. Reveal must follow within the commit window."
+                "value": "Commit-reveal v1 family: commit_weights, commit_mechanism_weights, batch_commit_weights, reveal_weights, reveal_mechanism_weights, batch_reveal_weights. Commits and reveals are both counted here."
               }
             ]
           },
           {
             "matcher": {
               "id": "byName",
-              "options": "commit_mechanism_weights"
-            },
-            "properties": [
-              {
-                "id": "custom.cellOptions",
-                "value": {
-                  "mode": "gradient",
-                  "type": "gauge"
-                }
-              },
-              {
-                "id": "thresholds",
-                "value": {
-                  "mode": "absolute",
-                  "steps": [
-                    {
-                      "color": "#1F60BF",
-                      "value": null
-                    }
-                  ]
-                }
-              },
-              {
-                "id": "min",
-                "value": 0
-              },
-              {
-                "id": "max",
-                "value": 100
-              },
-              {
-                "id": "unit",
-                "value": "percent"
-              },
-              {
-                "id": "description",
-                "value": "CR-v1 commit for a specific mechanism."
-              }
-            ]
-          },
-          {
-            "matcher": {
-              "id": "byName",
-              "options": "batch_commit_weights"
-            },
-            "properties": [
-              {
-                "id": "custom.cellOptions",
-                "value": {
-                  "mode": "gradient",
-                  "type": "gauge"
-                }
-              },
-              {
-                "id": "thresholds",
-                "value": {
-                  "mode": "absolute",
-                  "steps": [
-                    {
-                      "color": "#8AB8FF",
-                      "value": null
-                    }
-                  ]
-                }
-              },
-              {
-                "id": "min",
-                "value": 0
-              },
-              {
-                "id": "max",
-                "value": 100
-              },
-              {
-                "id": "unit",
-                "value": "percent"
-              },
-              {
-                "id": "description",
-                "value": "CR-v1 commits batched across subnets."
-              }
-            ]
-          },
-          {
-            "matcher": {
-              "id": "byName",
-              "options": "reveal_weights"
-            },
-            "properties": [
-              {
-                "id": "custom.cellOptions",
-                "value": {
-                  "mode": "gradient",
-                  "type": "gauge"
-                }
-              },
-              {
-                "id": "thresholds",
-                "value": {
-                  "mode": "absolute",
-                  "steps": [
-                    {
-                      "color": "#B877D9",
-                      "value": null
-                    }
-                  ]
-                }
-              },
-              {
-                "id": "min",
-                "value": 0
-              },
-              {
-                "id": "max",
-                "value": 100
-              },
-              {
-                "id": "unit",
-                "value": "percent"
-              },
-              {
-                "id": "description",
-                "value": "CR-v1 reveal. Salt + values must hash to the prior commit."
-              }
-            ]
-          },
-          {
-            "matcher": {
-              "id": "byName",
-              "options": "reveal_mechanism_weights"
-            },
-            "properties": [
-              {
-                "id": "custom.cellOptions",
-                "value": {
-                  "mode": "gradient",
-                  "type": "gauge"
-                }
-              },
-              {
-                "id": "thresholds",
-                "value": {
-                  "mode": "absolute",
-                  "steps": [
-                    {
-                      "color": "#6F4099",
-                      "value": null
-                    }
-                  ]
-                }
-              },
-              {
-                "id": "min",
-                "value": 0
-              },
-              {
-                "id": "max",
-                "value": 100
-              },
-              {
-                "id": "unit",
-                "value": "percent"
-              },
-              {
-                "id": "description",
-                "value": "CR-v1 reveal for a specific mechanism."
-              }
-            ]
-          },
-          {
-            "matcher": {
-              "id": "byName",
-              "options": "batch_reveal_weights"
-            },
-            "properties": [
-              {
-                "id": "custom.cellOptions",
-                "value": {
-                  "mode": "gradient",
-                  "type": "gauge"
-                }
-              },
-              {
-                "id": "thresholds",
-                "value": {
-                  "mode": "absolute",
-                  "steps": [
-                    {
-                      "color": "#D4A5E8",
-                      "value": null
-                    }
-                  ]
-                }
-              },
-              {
-                "id": "min",
-                "value": 0
-              },
-              {
-                "id": "max",
-                "value": 100
-              },
-              {
-                "id": "unit",
-                "value": "percent"
-              },
-              {
-                "id": "description",
-                "value": "Multiple CR-v1 reveals on the same subnet in one call."
-              }
-            ]
-          },
-          {
-            "matcher": {
-              "id": "byName",
-              "options": "commit_timelocked_weights"
+              "options": "timelock"
             },
             "properties": [
               {
@@ -767,93 +466,7 @@
               },
               {
                 "id": "description",
-                "value": "Drand timelock-encrypted commit. Chain auto-reveals on the configured drand round; no explicit reveal extrinsic."
-              }
-            ]
-          },
-          {
-            "matcher": {
-              "id": "byName",
-              "options": "commit_timelocked_mechanism_weights"
-            },
-            "properties": [
-              {
-                "id": "custom.cellOptions",
-                "value": {
-                  "mode": "gradient",
-                  "type": "gauge"
-                }
-              },
-              {
-                "id": "thresholds",
-                "value": {
-                  "mode": "absolute",
-                  "steps": [
-                    {
-                      "color": "#C46A1F",
-                      "value": null
-                    }
-                  ]
-                }
-              },
-              {
-                "id": "min",
-                "value": 0
-              },
-              {
-                "id": "max",
-                "value": 100
-              },
-              {
-                "id": "unit",
-                "value": "percent"
-              },
-              {
-                "id": "description",
-                "value": "Drand timelock for a specific mechanism."
-              }
-            ]
-          },
-          {
-            "matcher": {
-              "id": "byName",
-              "options": "commit_crv3_mechanism_weights"
-            },
-            "properties": [
-              {
-                "id": "custom.cellOptions",
-                "value": {
-                  "mode": "gradient",
-                  "type": "gauge"
-                }
-              },
-              {
-                "id": "thresholds",
-                "value": {
-                  "mode": "absolute",
-                  "steps": [
-                    {
-                      "color": "#FFC080",
-                      "value": null
-                    }
-                  ]
-                }
-              },
-              {
-                "id": "min",
-                "value": 0
-              },
-              {
-                "id": "max",
-                "value": 100
-              },
-              {
-                "id": "unit",
-                "value": "percent"
-              },
-              {
-                "id": "description",
-                "value": "Legacy entry point that pins commit_reveal_version = 4 and delegates to commit_timelocked_mechanism_weights. Prefer commit_timelocked_mechanism_weights for new code."
+                "value": "Drand timelock family: commit_timelocked_weights, commit_timelocked_mechanism_weights, commit_crv3_mechanism_weights (legacy). Chain auto-reveals on the configured drand round; no explicit reveal extrinsic."
               }
             ]
           }
@@ -870,7 +483,9 @@
         "cellHeight": "sm",
         "footer": {
           "countRows": false,
-          "fields": "",
+          "fields": [
+            "total"
+          ],
           "reducer": [
             "sum"
           ],
@@ -891,7 +506,7 @@
             "uid": "postgresql"
           },
           "rawQuery": true,
-          "rawSql": "SELECT CASE WHEN COALESCE(s.name, '') = '' THEN lpad(e.netuid::text, 3, '0') ELSE lpad(e.netuid::text, 3, '0') || ' \u00b7 ' || s.name END AS subnet, COUNT(*) AS total, ROUND(100.0 * NULLIF(COUNT(*) FILTER (WHERE call_function = 'set_weights'), 0) / NULLIF(COUNT(*), 0), 1) AS set_weights, ROUND(100.0 * NULLIF(COUNT(*) FILTER (WHERE call_function = 'set_mechanism_weights'), 0) / NULLIF(COUNT(*), 0), 1) AS set_mechanism_weights, ROUND(100.0 * NULLIF(COUNT(*) FILTER (WHERE call_function = 'batch_set_weights'), 0) / NULLIF(COUNT(*), 0), 1) AS batch_set_weights, ROUND(100.0 * NULLIF(COUNT(*) FILTER (WHERE call_function = 'commit_weights'), 0) / NULLIF(COUNT(*), 0), 1) AS commit_weights, ROUND(100.0 * NULLIF(COUNT(*) FILTER (WHERE call_function = 'commit_mechanism_weights'), 0) / NULLIF(COUNT(*), 0), 1) AS commit_mechanism_weights, ROUND(100.0 * NULLIF(COUNT(*) FILTER (WHERE call_function = 'batch_commit_weights'), 0) / NULLIF(COUNT(*), 0), 1) AS batch_commit_weights, ROUND(100.0 * NULLIF(COUNT(*) FILTER (WHERE call_function = 'reveal_weights'), 0) / NULLIF(COUNT(*), 0), 1) AS reveal_weights, ROUND(100.0 * NULLIF(COUNT(*) FILTER (WHERE call_function = 'reveal_mechanism_weights'), 0) / NULLIF(COUNT(*), 0), 1) AS reveal_mechanism_weights, ROUND(100.0 * NULLIF(COUNT(*) FILTER (WHERE call_function = 'batch_reveal_weights'), 0) / NULLIF(COUNT(*), 0), 1) AS batch_reveal_weights, ROUND(100.0 * NULLIF(COUNT(*) FILTER (WHERE call_function = 'commit_timelocked_weights'), 0) / NULLIF(COUNT(*), 0), 1) AS commit_timelocked_weights, ROUND(100.0 * NULLIF(COUNT(*) FILTER (WHERE call_function = 'commit_timelocked_mechanism_weights'), 0) / NULLIF(COUNT(*), 0), 1) AS commit_timelocked_mechanism_weights, ROUND(100.0 * NULLIF(COUNT(*) FILTER (WHERE call_function = 'commit_crv3_mechanism_weights'), 0) / NULLIF(COUNT(*), 0), 1) AS commit_crv3_mechanism_weights FROM extrinsics e LEFT JOIN metagraph_subnet s ON s.netuid = e.netuid WHERE e.call_module = 'SubtensorModule' AND e.call_function IN ('set_weights','set_mechanism_weights','batch_set_weights','commit_weights','commit_mechanism_weights','batch_commit_weights','reveal_weights','reveal_mechanism_weights','batch_reveal_weights','commit_timelocked_weights','commit_timelocked_mechanism_weights','commit_crv3_mechanism_weights') AND ('${netuid:csv}' = '*' OR e.netuid::text = ANY (string_to_array('${netuid:csv}', ','))) AND ('${status:csv}' = '*' OR e.success::text = ANY (string_to_array('${status:csv}', ','))) AND ('${address:csv}' = '*' OR e.address = ANY (string_to_array('${address:csv}', ','))) AND e.block_number BETWEEN (SELECT MAX(block_number) FROM extrinsics) - ((extract(epoch FROM now()) * 1000)::bigint - $__from) / 12000 AND (SELECT MAX(block_number) FROM extrinsics) - ((extract(epoch FROM now()) * 1000)::bigint - $__to) / 12000 GROUP BY e.netuid, s.name HAVING COUNT(*) > 0 ORDER BY e.netuid",
+          "rawSql": "SELECT CASE WHEN COALESCE(s.name, '') = '' THEN lpad(e.netuid::text, 3, '0') ELSE lpad(e.netuid::text, 3, '0') || ' \u00b7 ' || s.name END AS subnet, COUNT(*) AS total, ROUND(100.0 * NULLIF(COUNT(*) FILTER (WHERE call_function IN ('set_weights','set_mechanism_weights','batch_set_weights')), 0) / NULLIF(COUNT(*), 0), 1) AS direct, ROUND(100.0 * NULLIF(COUNT(*) FILTER (WHERE call_function IN ('commit_weights','commit_mechanism_weights','batch_commit_weights','reveal_weights','reveal_mechanism_weights','batch_reveal_weights')), 0) / NULLIF(COUNT(*), 0), 1) AS commit_reveal_v1, ROUND(100.0 * NULLIF(COUNT(*) FILTER (WHERE call_function IN ('commit_timelocked_weights','commit_timelocked_mechanism_weights','commit_crv3_mechanism_weights')), 0) / NULLIF(COUNT(*), 0), 1) AS timelock FROM extrinsics e LEFT JOIN metagraph_subnet s ON s.netuid = e.netuid WHERE e.call_module = 'SubtensorModule' AND e.call_function IN ('set_weights','set_mechanism_weights','batch_set_weights','commit_weights','commit_mechanism_weights','batch_commit_weights','reveal_weights','reveal_mechanism_weights','batch_reveal_weights','commit_timelocked_weights','commit_timelocked_mechanism_weights','commit_crv3_mechanism_weights') AND ('${netuid:csv}' = '*' OR e.netuid::text = ANY (string_to_array('${netuid:csv}', ','))) AND ('${status:csv}' = '*' OR e.success::text = ANY (string_to_array('${status:csv}', ','))) AND ('${address:csv}' = '*' OR e.address = ANY (string_to_array('${address:csv}', ','))) AND e.block_number BETWEEN (SELECT MAX(block_number) FROM extrinsics) - ((extract(epoch FROM now()) * 1000)::bigint - $__from) / 12000 AND (SELECT MAX(block_number) FROM extrinsics) - ((extract(epoch FROM now()) * 1000)::bigint - $__to) / 12000 GROUP BY e.netuid, s.name HAVING COUNT(*) > 0 ORDER BY e.netuid",
           "refId": "A",
           "format": "table"
         }
@@ -1044,7 +659,8 @@
       "fieldConfig": {
         "defaults": {
           "color": {
-            "mode": "thresholds"
+            "mode": "fixed",
+            "fixedColor": "#F2495C"
           },
           "custom": {
             "axisCenteredZero": false,
@@ -1142,7 +758,7 @@
         "type": "postgres",
         "uid": "postgresql"
       },
-      "description": "Raw `(pallet_index=7, error_byte)` codes from `SubtensorModule`. First byte of the hex = error variant index. The chain emits the index, not the friendly name; decoding requires runtime metadata. Common codes (decode against `pallets/subtensor/src/errors.rs` in bittensor-subtensor):\n- `CommitRevealEnabled` \u2014 validator submitted `set_weights` to a CR-enabled subnet\n- `CommitRevealDisabled` / `CommitRevealV3Disabled` \u2014 wrong CR mode\n- `NoWeightsCommitFound`, `ExpiredWeightCommit`, `RevealTooEarly`, `InvalidRevealCommitHashNotMatch` \u2014 CR-v1 reveal errors\n- `TooManyUnrevealedCommits` \u2014 validator queue full\n- `MaxWeightExceeded`, `WeightVecLengthIsLow`, `WeightVecNotEqualSize` \u2014 payload validation\n- `MechanismDoesNotExist`, `NotRegistered` \u2014 addressing errors\nDecoded names are a follow-up (F1-B) once the variant\u2192name mapping is captured.",
+      "description": "Most-frequent failure modes in the selected window. Friendly names come from the `subtensor_error_codes` lookup table (seeded from `set-weights.md` and the bittensor-subtensor pallet error enum); rows still showing raw hex (e.g. `0x4d000000`) are variants that haven't been seeded yet \u2014 extend the lookup table in a follow-up migration as more variants are decoded.\n\nColumns:\n- **error** \u2014 friendly name when known, raw hex code otherwise\n- **category** \u2014 broad grouping (commit_reveal / validation / addressing / \u2026)\n- **count** \u2014 number of failures in the window\n- **share_pct** \u2014 share of all weight-setting failures\n- **remediation** \u2014 operator action to take (\u2014 = no guidance seeded yet)\n- **code** \u2014 raw hex for traceability and seeding new entries",
       "fieldConfig": {
         "defaults": {
           "color": {
@@ -1171,16 +787,24 @@
           {
             "matcher": {
               "id": "byName",
-              "options": "error_code"
+              "options": "error"
             },
             "properties": [
               {
                 "id": "custom.width",
-                "value": 140
-              },
+                "value": 240
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "category"
+            },
+            "properties": [
               {
-                "id": "description",
-                "value": "First-byte hex variant; decode against pallet errors."
+                "id": "custom.width",
+                "value": 130
               }
             ]
           },
@@ -1199,7 +823,7 @@
               },
               {
                 "id": "custom.width",
-                "value": 100
+                "value": 110
               }
             ]
           },
@@ -1215,15 +839,46 @@
               },
               {
                 "id": "custom.width",
-                "value": 100
+                "value": 90
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "remediation"
+            },
+            "properties": [
+              {
+                "id": "custom.cellOptions",
+                "value": {
+                  "type": "auto",
+                  "wrapText": true
+                }
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "code"
+            },
+            "properties": [
+              {
+                "id": "custom.width",
+                "value": 110
+              },
+              {
+                "id": "description",
+                "value": "Raw hex from `dispatch_error.Module.error`. Use to seed new rows in `subtensor_error_codes`."
               }
             ]
           }
         ]
       },
       "gridPos": {
-        "h": 10,
-        "w": 12,
+        "h": 12,
+        "w": 24,
         "x": 0,
         "y": 58
       },
@@ -1253,7 +908,7 @@
             "uid": "postgresql"
           },
           "rawQuery": true,
-          "rawSql": "SELECT error_data->'dispatch_error'->'Module'->>'error' AS error_code, COUNT(*) AS count, ROUND(100.0 * COUNT(*) / SUM(COUNT(*)) OVER (), 1) AS share_pct FROM extrinsics WHERE call_module = 'SubtensorModule' AND call_function IN ('set_weights','set_mechanism_weights','batch_set_weights','commit_weights','commit_mechanism_weights','batch_commit_weights','reveal_weights','reveal_mechanism_weights','batch_reveal_weights','commit_timelocked_weights','commit_timelocked_mechanism_weights','commit_crv3_mechanism_weights') AND ('${netuid:csv}' = '*' OR netuid::text = ANY (string_to_array('${netuid:csv}', ','))) AND ('${status:csv}' = '*' OR success::text = ANY (string_to_array('${status:csv}', ','))) AND ('${address:csv}' = '*' OR address = ANY (string_to_array('${address:csv}', ','))) AND block_number BETWEEN (SELECT MAX(block_number) FROM extrinsics) - ((extract(epoch FROM now()) * 1000)::bigint - $__from) / 12000 AND (SELECT MAX(block_number) FROM extrinsics) - ((extract(epoch FROM now()) * 1000)::bigint - $__to) / 12000 AND success = false AND error_data IS NOT NULL AND error_data->'dispatch_error'->'Module' IS NOT NULL GROUP BY 1 ORDER BY count DESC LIMIT 20",
+          "rawSql": "SELECT COALESCE(c.name, e.error_data->'dispatch_error'->'Module'->>'error') AS error, COALESCE(c.category, '') AS category, COUNT(*) AS count, ROUND(100.0 * COUNT(*) / SUM(COUNT(*)) OVER (), 1) AS share_pct, COALESCE(NULLIF(c.remediation, ''), '\u2014') AS remediation, e.error_data->'dispatch_error'->'Module'->>'error' AS code FROM extrinsics e LEFT JOIN subtensor_error_codes c ON c.pallet_index = (e.error_data->'dispatch_error'->'Module'->>'index')::int AND c.error_code = e.error_data->'dispatch_error'->'Module'->>'error' WHERE e.call_module = 'SubtensorModule' AND e.call_function IN ('set_weights','set_mechanism_weights','batch_set_weights','commit_weights','commit_mechanism_weights','batch_commit_weights','reveal_weights','reveal_mechanism_weights','batch_reveal_weights','commit_timelocked_weights','commit_timelocked_mechanism_weights','commit_crv3_mechanism_weights') AND ('${netuid:csv}' = '*' OR e.netuid::text = ANY (string_to_array('${netuid:csv}', ','))) AND ('${status:csv}' = '*' OR e.success::text = ANY (string_to_array('${status:csv}', ','))) AND ('${address:csv}' = '*' OR e.address = ANY (string_to_array('${address:csv}', ','))) AND e.block_number BETWEEN (SELECT MAX(block_number) FROM extrinsics) - ((extract(epoch FROM now()) * 1000)::bigint - $__from) / 12000 AND (SELECT MAX(block_number) FROM extrinsics) - ((extract(epoch FROM now()) * 1000)::bigint - $__to) / 12000 AND e.success = false AND e.error_data->'dispatch_error'->'Module' IS NOT NULL GROUP BY 1, 2, 5, 6 ORDER BY count DESC LIMIT 20",
           "refId": "A",
           "format": "table"
         }
@@ -1381,9 +1036,9 @@
       },
       "gridPos": {
         "h": 10,
-        "w": 12,
-        "x": 12,
-        "y": 58
+        "w": 24,
+        "x": 0,
+        "y": 70
       },
       "id": 21,
       "options": {
@@ -1551,7 +1206,7 @@
         "h": 10,
         "w": 24,
         "x": 0,
-        "y": 68
+        "y": 80
       },
       "id": 22,
       "options": {
@@ -1592,7 +1247,7 @@
         "type": "postgres",
         "uid": "postgresql"
       },
-      "description": "Per-validator share of weight-setting extrinsics, one column per dispatchable. Same shape as `Weight-Setting Methods by Subnet` but rows are hotkeys (top 50 by volume). Cell value = % of that validator's total calls that used this method (0\u2013100%); the gauge bar fills proportionally.",
+      "description": "Per-validator share of weight-setting extrinsics, grouped into three mechanism families (Direct / Commit-Reveal v1 / Timelock). Same shape as `Weight-Setting Methods by Subnet` but rows are hotkeys (top 50 by volume). Cell value = % of that validator's total calls that used this family (0\u2013100%); the gauge bar fills proportionally.",
       "fieldConfig": {
         "defaults": {
           "color": {
@@ -1668,7 +1323,7 @@
           {
             "matcher": {
               "id": "byName",
-              "options": "set_weights"
+              "options": "direct"
             },
             "properties": [
               {
@@ -1701,91 +1356,17 @@
               {
                 "id": "unit",
                 "value": "percent"
+              },
+              {
+                "id": "description",
+                "value": "Direct submission family: set_weights, set_mechanism_weights, batch_set_weights."
               }
             ]
           },
           {
             "matcher": {
               "id": "byName",
-              "options": "set_mechanism_weights"
-            },
-            "properties": [
-              {
-                "id": "custom.cellOptions",
-                "value": {
-                  "mode": "gradient",
-                  "type": "gauge"
-                }
-              },
-              {
-                "id": "thresholds",
-                "value": {
-                  "mode": "absolute",
-                  "steps": [
-                    {
-                      "color": "#37872D",
-                      "value": null
-                    }
-                  ]
-                }
-              },
-              {
-                "id": "min",
-                "value": 0
-              },
-              {
-                "id": "max",
-                "value": 100
-              },
-              {
-                "id": "unit",
-                "value": "percent"
-              }
-            ]
-          },
-          {
-            "matcher": {
-              "id": "byName",
-              "options": "batch_set_weights"
-            },
-            "properties": [
-              {
-                "id": "custom.cellOptions",
-                "value": {
-                  "mode": "gradient",
-                  "type": "gauge"
-                }
-              },
-              {
-                "id": "thresholds",
-                "value": {
-                  "mode": "absolute",
-                  "steps": [
-                    {
-                      "color": "#9DD58E",
-                      "value": null
-                    }
-                  ]
-                }
-              },
-              {
-                "id": "min",
-                "value": 0
-              },
-              {
-                "id": "max",
-                "value": 100
-              },
-              {
-                "id": "unit",
-                "value": "percent"
-              }
-            ]
-          },
-          {
-            "matcher": {
-              "id": "byName",
-              "options": "commit_weights"
+              "options": "commit_reveal_v1"
             },
             "properties": [
               {
@@ -1818,208 +1399,17 @@
               {
                 "id": "unit",
                 "value": "percent"
+              },
+              {
+                "id": "description",
+                "value": "Commit-reveal v1 family: commit_weights, commit_mechanism_weights, batch_commit_weights, reveal_weights, reveal_mechanism_weights, batch_reveal_weights."
               }
             ]
           },
           {
             "matcher": {
               "id": "byName",
-              "options": "commit_mechanism_weights"
-            },
-            "properties": [
-              {
-                "id": "custom.cellOptions",
-                "value": {
-                  "mode": "gradient",
-                  "type": "gauge"
-                }
-              },
-              {
-                "id": "thresholds",
-                "value": {
-                  "mode": "absolute",
-                  "steps": [
-                    {
-                      "color": "#1F60BF",
-                      "value": null
-                    }
-                  ]
-                }
-              },
-              {
-                "id": "min",
-                "value": 0
-              },
-              {
-                "id": "max",
-                "value": 100
-              },
-              {
-                "id": "unit",
-                "value": "percent"
-              }
-            ]
-          },
-          {
-            "matcher": {
-              "id": "byName",
-              "options": "batch_commit_weights"
-            },
-            "properties": [
-              {
-                "id": "custom.cellOptions",
-                "value": {
-                  "mode": "gradient",
-                  "type": "gauge"
-                }
-              },
-              {
-                "id": "thresholds",
-                "value": {
-                  "mode": "absolute",
-                  "steps": [
-                    {
-                      "color": "#8AB8FF",
-                      "value": null
-                    }
-                  ]
-                }
-              },
-              {
-                "id": "min",
-                "value": 0
-              },
-              {
-                "id": "max",
-                "value": 100
-              },
-              {
-                "id": "unit",
-                "value": "percent"
-              }
-            ]
-          },
-          {
-            "matcher": {
-              "id": "byName",
-              "options": "reveal_weights"
-            },
-            "properties": [
-              {
-                "id": "custom.cellOptions",
-                "value": {
-                  "mode": "gradient",
-                  "type": "gauge"
-                }
-              },
-              {
-                "id": "thresholds",
-                "value": {
-                  "mode": "absolute",
-                  "steps": [
-                    {
-                      "color": "#B877D9",
-                      "value": null
-                    }
-                  ]
-                }
-              },
-              {
-                "id": "min",
-                "value": 0
-              },
-              {
-                "id": "max",
-                "value": 100
-              },
-              {
-                "id": "unit",
-                "value": "percent"
-              }
-            ]
-          },
-          {
-            "matcher": {
-              "id": "byName",
-              "options": "reveal_mechanism_weights"
-            },
-            "properties": [
-              {
-                "id": "custom.cellOptions",
-                "value": {
-                  "mode": "gradient",
-                  "type": "gauge"
-                }
-              },
-              {
-                "id": "thresholds",
-                "value": {
-                  "mode": "absolute",
-                  "steps": [
-                    {
-                      "color": "#6F4099",
-                      "value": null
-                    }
-                  ]
-                }
-              },
-              {
-                "id": "min",
-                "value": 0
-              },
-              {
-                "id": "max",
-                "value": 100
-              },
-              {
-                "id": "unit",
-                "value": "percent"
-              }
-            ]
-          },
-          {
-            "matcher": {
-              "id": "byName",
-              "options": "batch_reveal_weights"
-            },
-            "properties": [
-              {
-                "id": "custom.cellOptions",
-                "value": {
-                  "mode": "gradient",
-                  "type": "gauge"
-                }
-              },
-              {
-                "id": "thresholds",
-                "value": {
-                  "mode": "absolute",
-                  "steps": [
-                    {
-                      "color": "#D4A5E8",
-                      "value": null
-                    }
-                  ]
-                }
-              },
-              {
-                "id": "min",
-                "value": 0
-              },
-              {
-                "id": "max",
-                "value": 100
-              },
-              {
-                "id": "unit",
-                "value": "percent"
-              }
-            ]
-          },
-          {
-            "matcher": {
-              "id": "byName",
-              "options": "commit_timelocked_weights"
+              "options": "timelock"
             },
             "properties": [
               {
@@ -2052,84 +1442,10 @@
               {
                 "id": "unit",
                 "value": "percent"
-              }
-            ]
-          },
-          {
-            "matcher": {
-              "id": "byName",
-              "options": "commit_timelocked_mechanism_weights"
-            },
-            "properties": [
-              {
-                "id": "custom.cellOptions",
-                "value": {
-                  "mode": "gradient",
-                  "type": "gauge"
-                }
               },
               {
-                "id": "thresholds",
-                "value": {
-                  "mode": "absolute",
-                  "steps": [
-                    {
-                      "color": "#C46A1F",
-                      "value": null
-                    }
-                  ]
-                }
-              },
-              {
-                "id": "min",
-                "value": 0
-              },
-              {
-                "id": "max",
-                "value": 100
-              },
-              {
-                "id": "unit",
-                "value": "percent"
-              }
-            ]
-          },
-          {
-            "matcher": {
-              "id": "byName",
-              "options": "commit_crv3_mechanism_weights"
-            },
-            "properties": [
-              {
-                "id": "custom.cellOptions",
-                "value": {
-                  "mode": "gradient",
-                  "type": "gauge"
-                }
-              },
-              {
-                "id": "thresholds",
-                "value": {
-                  "mode": "absolute",
-                  "steps": [
-                    {
-                      "color": "#FFC080",
-                      "value": null
-                    }
-                  ]
-                }
-              },
-              {
-                "id": "min",
-                "value": 0
-              },
-              {
-                "id": "max",
-                "value": 100
-              },
-              {
-                "id": "unit",
-                "value": "percent"
+                "id": "description",
+                "value": "Drand timelock family: commit_timelocked_weights, commit_timelocked_mechanism_weights, commit_crv3_mechanism_weights."
               }
             ]
           }
@@ -2139,14 +1455,16 @@
         "h": 22,
         "w": 24,
         "x": 0,
-        "y": 78
+        "y": 90
       },
       "id": 23,
       "options": {
         "cellHeight": "sm",
         "footer": {
           "countRows": false,
-          "fields": "",
+          "fields": [
+            "total"
+          ],
           "reducer": [
             "sum"
           ],
@@ -2167,7 +1485,7 @@
             "uid": "postgresql"
           },
           "rawQuery": true,
-          "rawSql": "WITH top_validators AS (SELECT address, COUNT(*) AS total FROM extrinsics WHERE call_module = 'SubtensorModule' AND call_function IN ('set_weights','set_mechanism_weights','batch_set_weights','commit_weights','commit_mechanism_weights','batch_commit_weights','reveal_weights','reveal_mechanism_weights','batch_reveal_weights','commit_timelocked_weights','commit_timelocked_mechanism_weights','commit_crv3_mechanism_weights') AND ('${netuid:csv}' = '*' OR netuid::text = ANY (string_to_array('${netuid:csv}', ','))) AND ('${status:csv}' = '*' OR success::text = ANY (string_to_array('${status:csv}', ','))) AND ('${address:csv}' = '*' OR address = ANY (string_to_array('${address:csv}', ','))) AND block_number BETWEEN (SELECT MAX(block_number) FROM extrinsics) - ((extract(epoch FROM now()) * 1000)::bigint - $__from) / 12000 AND (SELECT MAX(block_number) FROM extrinsics) - ((extract(epoch FROM now()) * 1000)::bigint - $__to) / 12000 AND address != '' GROUP BY address ORDER BY total DESC LIMIT 50) SELECT e.address AS hotkey, COUNT(*) AS total, ROUND(100.0 * NULLIF(COUNT(*) FILTER (WHERE call_function = 'set_weights'), 0) / NULLIF(COUNT(*), 0), 1) AS set_weights, ROUND(100.0 * NULLIF(COUNT(*) FILTER (WHERE call_function = 'set_mechanism_weights'), 0) / NULLIF(COUNT(*), 0), 1) AS set_mechanism_weights, ROUND(100.0 * NULLIF(COUNT(*) FILTER (WHERE call_function = 'batch_set_weights'), 0) / NULLIF(COUNT(*), 0), 1) AS batch_set_weights, ROUND(100.0 * NULLIF(COUNT(*) FILTER (WHERE call_function = 'commit_weights'), 0) / NULLIF(COUNT(*), 0), 1) AS commit_weights, ROUND(100.0 * NULLIF(COUNT(*) FILTER (WHERE call_function = 'commit_mechanism_weights'), 0) / NULLIF(COUNT(*), 0), 1) AS commit_mechanism_weights, ROUND(100.0 * NULLIF(COUNT(*) FILTER (WHERE call_function = 'batch_commit_weights'), 0) / NULLIF(COUNT(*), 0), 1) AS batch_commit_weights, ROUND(100.0 * NULLIF(COUNT(*) FILTER (WHERE call_function = 'reveal_weights'), 0) / NULLIF(COUNT(*), 0), 1) AS reveal_weights, ROUND(100.0 * NULLIF(COUNT(*) FILTER (WHERE call_function = 'reveal_mechanism_weights'), 0) / NULLIF(COUNT(*), 0), 1) AS reveal_mechanism_weights, ROUND(100.0 * NULLIF(COUNT(*) FILTER (WHERE call_function = 'batch_reveal_weights'), 0) / NULLIF(COUNT(*), 0), 1) AS batch_reveal_weights, ROUND(100.0 * NULLIF(COUNT(*) FILTER (WHERE call_function = 'commit_timelocked_weights'), 0) / NULLIF(COUNT(*), 0), 1) AS commit_timelocked_weights, ROUND(100.0 * NULLIF(COUNT(*) FILTER (WHERE call_function = 'commit_timelocked_mechanism_weights'), 0) / NULLIF(COUNT(*), 0), 1) AS commit_timelocked_mechanism_weights, ROUND(100.0 * NULLIF(COUNT(*) FILTER (WHERE call_function = 'commit_crv3_mechanism_weights'), 0) / NULLIF(COUNT(*), 0), 1) AS commit_crv3_mechanism_weights FROM extrinsics e INNER JOIN top_validators tv ON tv.address = e.address WHERE e.call_module = 'SubtensorModule' AND e.call_function IN ('set_weights','set_mechanism_weights','batch_set_weights','commit_weights','commit_mechanism_weights','batch_commit_weights','reveal_weights','reveal_mechanism_weights','batch_reveal_weights','commit_timelocked_weights','commit_timelocked_mechanism_weights','commit_crv3_mechanism_weights') AND ('${netuid:csv}' = '*' OR e.netuid::text = ANY (string_to_array('${netuid:csv}', ','))) AND ('${status:csv}' = '*' OR e.success::text = ANY (string_to_array('${status:csv}', ','))) AND ('${address:csv}' = '*' OR e.address = ANY (string_to_array('${address:csv}', ','))) AND e.block_number BETWEEN (SELECT MAX(block_number) FROM extrinsics) - ((extract(epoch FROM now()) * 1000)::bigint - $__from) / 12000 AND (SELECT MAX(block_number) FROM extrinsics) - ((extract(epoch FROM now()) * 1000)::bigint - $__to) / 12000 GROUP BY e.address HAVING COUNT(*) > 0 ORDER BY total DESC",
+          "rawSql": "WITH top_validators AS (SELECT address, COUNT(*) AS total FROM extrinsics WHERE call_module = 'SubtensorModule' AND call_function IN ('set_weights','set_mechanism_weights','batch_set_weights','commit_weights','commit_mechanism_weights','batch_commit_weights','reveal_weights','reveal_mechanism_weights','batch_reveal_weights','commit_timelocked_weights','commit_timelocked_mechanism_weights','commit_crv3_mechanism_weights') AND ('${netuid:csv}' = '*' OR netuid::text = ANY (string_to_array('${netuid:csv}', ','))) AND ('${status:csv}' = '*' OR success::text = ANY (string_to_array('${status:csv}', ','))) AND ('${address:csv}' = '*' OR address = ANY (string_to_array('${address:csv}', ','))) AND block_number BETWEEN (SELECT MAX(block_number) FROM extrinsics) - ((extract(epoch FROM now()) * 1000)::bigint - $__from) / 12000 AND (SELECT MAX(block_number) FROM extrinsics) - ((extract(epoch FROM now()) * 1000)::bigint - $__to) / 12000 AND address != '' GROUP BY address ORDER BY total DESC LIMIT 50) SELECT e.address AS hotkey, COUNT(*) AS total, ROUND(100.0 * NULLIF(COUNT(*) FILTER (WHERE call_function IN ('set_weights','set_mechanism_weights','batch_set_weights')), 0) / NULLIF(COUNT(*), 0), 1) AS direct, ROUND(100.0 * NULLIF(COUNT(*) FILTER (WHERE call_function IN ('commit_weights','commit_mechanism_weights','batch_commit_weights','reveal_weights','reveal_mechanism_weights','batch_reveal_weights')), 0) / NULLIF(COUNT(*), 0), 1) AS commit_reveal_v1, ROUND(100.0 * NULLIF(COUNT(*) FILTER (WHERE call_function IN ('commit_timelocked_weights','commit_timelocked_mechanism_weights','commit_crv3_mechanism_weights')), 0) / NULLIF(COUNT(*), 0), 1) AS timelock FROM extrinsics e INNER JOIN top_validators tv ON tv.address = e.address WHERE e.call_module = 'SubtensorModule' AND e.call_function IN ('set_weights','set_mechanism_weights','batch_set_weights','commit_weights','commit_mechanism_weights','batch_commit_weights','reveal_weights','reveal_mechanism_weights','batch_reveal_weights','commit_timelocked_weights','commit_timelocked_mechanism_weights','commit_crv3_mechanism_weights') AND ('${netuid:csv}' = '*' OR e.netuid::text = ANY (string_to_array('${netuid:csv}', ','))) AND ('${status:csv}' = '*' OR e.success::text = ANY (string_to_array('${status:csv}', ','))) AND ('${address:csv}' = '*' OR e.address = ANY (string_to_array('${address:csv}', ','))) AND e.block_number BETWEEN (SELECT MAX(block_number) FROM extrinsics) - ((extract(epoch FROM now()) * 1000)::bigint - $__from) / 12000 AND (SELECT MAX(block_number) FROM extrinsics) - ((extract(epoch FROM now()) * 1000)::bigint - $__to) / 12000 GROUP BY e.address HAVING COUNT(*) > 0 ORDER BY total DESC",
           "refId": "A",
           "format": "table"
         }
@@ -2198,14 +1516,14 @@
           "type": "postgres",
           "uid": "postgresql"
         },
-        "definition": "SELECT netuid AS __value, netuid || ' - ' || COALESCE(name, 'Unknown') AS __text FROM metagraph_subnet WHERE netuid != 0 ORDER BY netuid",
+        "definition": "SELECT n AS __value, n || COALESCE(' - ' || s.name, '') AS __text FROM generate_series(1, 128) n LEFT JOIN metagraph_subnet s ON s.netuid = n ORDER BY n",
         "hide": 0,
         "includeAll": true,
         "label": "Subnet",
         "multi": true,
         "name": "netuid",
         "options": [],
-        "query": "SELECT netuid AS __value, netuid || ' - ' || COALESCE(name, 'Unknown') AS __text FROM metagraph_subnet WHERE netuid != 0 ORDER BY netuid",
+        "query": "SELECT n AS __value, n || COALESCE(' - ' || s.name, '') AS __text FROM generate_series(1, 128) n LEFT JOIN metagraph_subnet s ON s.netuid = n ORDER BY n",
         "refresh": 1,
         "regex": "",
         "skipUrlSync": false,

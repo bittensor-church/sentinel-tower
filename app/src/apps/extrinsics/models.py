@@ -4,6 +4,34 @@ from django.contrib.postgres.indexes import BrinIndex
 from django.db import models
 
 
+class SubtensorErrorCode(models.Model):
+    """Lookup mapping `(pallet_index, error_code)` → friendly error name.
+
+    Translates raw `dispatch_error.Module` hex codes from `extrinsics.error_data`
+    into human-readable names for dashboards and notifications. Seeded with the
+    set of weight-setting errors enumerated in `set-weights.md`; extend as more
+    variant→name mappings are confirmed against the runtime metadata or
+    `pallets/subtensor/src/errors.rs` in the bittensor-subtensor repo.
+    """
+
+    pallet_index = models.SmallIntegerField(help_text="Substrate pallet index (e.g. 7 = SubtensorModule)")
+    error_code = models.CharField(
+        max_length=20,
+        help_text="Hex `dispatch_error.Module.error` field, e.g. '0x1d000000'",
+    )
+    name = models.CharField(max_length=100, help_text="The `Error<T>` enum variant name")
+    category = models.CharField(max_length=50, blank=True, help_text="e.g. commit_reveal, validation, addressing")
+    description = models.TextField(blank=True)
+    remediation = models.TextField(blank=True, help_text="Operator action when this error occurs")
+
+    class Meta:
+        db_table = "subtensor_error_codes"
+        unique_together = [["pallet_index", "error_code"]]
+
+    def __str__(self) -> str:
+        return f"{self.name} ({self.pallet_index}.{self.error_code})"
+
+
 class SubnetHyperparam(models.Model):
     """
     Tracks current hyperparam values for each subnet.
