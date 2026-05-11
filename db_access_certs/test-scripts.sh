@@ -77,6 +77,47 @@ assert "error message mentions existing files" \
 assert "ca.crt fingerprint unchanged after refused second run" \
     bash -c "[ '$FP_BEFORE' = '$FP_AFTER' ]"
 
+group "issue-client.sh happy path + audit log + unique serials"
+WORK="$(new_workdir)"
+( cd "$WORK" && ./init.sh test.example.com ) >/dev/null 2>&1
+( cd "$WORK" && ./issue-client.sh alice )   >/dev/null 2>&1
+ALICE_RC=$?
+( cd "$WORK" && ./issue-client.sh bob )     >/dev/null 2>&1
+BOB_RC=$?
+
+assert "issue-client.sh alice exits 0"            [ "$ALICE_RC" -eq 0 ]
+assert "issue-client.sh bob   exits 0"            [ "$BOB_RC"   -eq 0 ]
+assert "clients/alice/client.crt produced"        [ -f "$WORK/clients/alice/client.crt" ]
+assert "clients/alice/client.key produced"        [ -f "$WORK/clients/alice/client.key" ]
+assert "clients/alice/ca.crt copied for client"   [ -f "$WORK/clients/alice/ca.crt" ]
+assert "clients/bob/client.crt produced"          [ -f "$WORK/clients/bob/client.crt" ]
+assert "client.csr cleaned up (alice)"            [ ! -f "$WORK/clients/alice/client.csr" ]
+assert "client.ext cleaned up (alice)"            [ ! -f "$WORK/clients/alice/client.ext" ]
+
+assert "alice client cert chains to CA" \
+    openssl verify -CAfile "$WORK/ca.crt" "$WORK/clients/alice/client.crt"
+assert "alice client cert has clientAuth EKU" \
+    bash -c "openssl x509 -in '$WORK/clients/alice/client.crt' -noout -ext extendedKeyUsage | grep -q 'TLS Web Client Authentication'"
+assert "alice client cert CN is 'alice'" \
+    bash -c "openssl x509 -in '$WORK/clients/alice/client.crt' -noout -subject | grep -q 'CN *= *alice'"
+
+assert "issued.log exists"                        [ -f "$WORK/issued.log" ]
+assert "issued.log has exactly 2 rows" \
+    bash -c "[ \"\$(wc -l < '$WORK/issued.log')\" = '2' ]"
+assert "issued.log rows have 5 tab-separated columns" \
+    bash -c "awk -F'\t' 'NF != 5 { exit 1 }' '$WORK/issued.log'"
+assert "issued.log column 3 contains both CNs" \
+    bash -c "awk -F'\t' '{print \$3}' '$WORK/issued.log' | sort | uniq | tr '\n' ',' | grep -q 'alice,bob,'"
+
+# Serial uniqueness: server cert serial must differ from both client cert serials,
+# and the two client serials must differ from each other.
+S_SRV="$(openssl x509 -in "$WORK/server.crt"             -noout -serial | cut -d= -f2)"
+S_A="$(  openssl x509 -in "$WORK/clients/alice/client.crt" -noout -serial | cut -d= -f2)"
+S_B="$(  openssl x509 -in "$WORK/clients/bob/client.crt"   -noout -serial | cut -d= -f2)"
+assert "server serial != alice serial" bash -c "[ '$S_SRV' != '$S_A' ]"
+assert "server serial != bob serial"   bash -c "[ '$S_SRV' != '$S_B' ]"
+assert "alice serial  != bob serial"   bash -c "[ '$S_A'   != '$S_B' ]"
+
 # ---- summary ----
 
 printf '\n'
