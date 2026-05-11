@@ -147,6 +147,30 @@ assert "rejects CN containing a slash" \
 assert "bad-CN error names the CN" \
     bash -c "echo '$BAD_CN_OUTPUT' | grep -q 'evil/cn'"
 
+group "nginx -t smoke (requires docker)"
+if ! command -v docker >/dev/null 2>&1; then
+    ok "docker not present — skipping nginx integration smoke"
+else
+    WORK="$(new_workdir)"
+    ( cd "$WORK" && ./init.sh test.example.com ) >/dev/null 2>&1
+
+    # Stage a stub stream config that uses a resolvable upstream (127.0.0.1)
+    # in place of the docker-network "db" hostname.
+    STREAM_D="$(mktemp -d "$TMPROOT/stream.d.XXXXXX")"
+    REPO_ROOT="$(cd "$SCRIPT_DIR/.." && pwd)"
+    sed 's/server db:5432/server 127.0.0.1:5432/' \
+        "$REPO_ROOT/nginx/stream.d/postgres.conf" > "$STREAM_D/postgres.conf"
+
+    NGINX_OUTPUT="$( docker run --rm \
+        -v "$REPO_ROOT/nginx/nginx.conf:/etc/nginx/nginx.conf:ro" \
+        -v "$STREAM_D:/etc/nginx/stream.d:ro" \
+        -v "$WORK:/etc/db_access_certs:ro" \
+        --entrypoint sh ghcr.io/reef-technologies/nginx-rt:v1.2.2 \
+        -c 'nginx -t' 2>&1 || true )"
+    assert "nginx -t accepts the generated certs" \
+        bash -c "echo '$NGINX_OUTPUT' | grep -q 'test is successful'"
+fi
+
 # ---- summary ----
 
 printf '\n'
