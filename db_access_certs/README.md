@@ -75,8 +75,11 @@ Move `ca.key` somewhere offline and secure (e.g. a password manager, encrypted U
 
 ```sh
 psql "host=${NGINX_HOST} port=5432 dbname=<db> user=<user> \
-      sslmode=verify-full sslrootcert=ca.crt sslcert=client.crt sslkey=client.key"
+      sslnegotiation=direct sslmode=verify-full \
+      sslrootcert=ca.crt sslcert=client.crt sslkey=client.key"
 ```
+
+`sslnegotiation=direct` is required (libpq ≥17 / PostgreSQL 17 client). See [`docs/postgres-mtls.md`](../docs/postgres-mtls.md#testing-the-endpoint) for the why and a docker fallback for hosts without libpq 17.
 
 ## Revocation / rotation
 
