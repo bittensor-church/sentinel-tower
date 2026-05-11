@@ -1,0 +1,5 @@
+# Ignore everything in this directory by default (root .gitignore does this too),
+# but allow the README and this .gitignore through so the directory documents itself.
+*
+!.gitignore
+!README.md
