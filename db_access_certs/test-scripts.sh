@@ -118,6 +118,35 @@ assert "server serial != alice serial" bash -c "[ '$S_SRV' != '$S_A' ]"
 assert "server serial != bob serial"   bash -c "[ '$S_SRV' != '$S_B' ]"
 assert "alice serial  != bob serial"   bash -c "[ '$S_A'   != '$S_B' ]"
 
+group "issue-client.sh preconditions"
+WORK="$(new_workdir)"
+
+# Case 1: no CA at all.
+NO_CA_OUTPUT="$( cd "$WORK" && ./issue-client.sh alice 2>&1 || true )"
+assert "fails when ca.crt is missing" \
+    bash -c "( cd '$WORK' && ./issue-client.sh alice ) >/dev/null 2>&1; [ \$? -ne 0 ]"
+assert "missing-CA error message mentions ca.key" \
+    bash -c "echo '$NO_CA_OUTPUT' | grep -q 'ca.key'"
+
+# Case 2: existing client directory.
+( cd "$WORK" && ./init.sh test.example.com ) >/dev/null 2>&1
+( cd "$WORK" && ./issue-client.sh alice )    >/dev/null 2>&1
+EXISTING_OUTPUT="$( cd "$WORK" && ./issue-client.sh alice 2>&1 || true )"
+assert "fails when clients/<cn>/ already exists" \
+    bash -c "( cd '$WORK' && ./issue-client.sh alice ) >/dev/null 2>&1; [ \$? -ne 0 ]"
+assert "existing-client error mentions re-issuance" \
+    bash -c "echo '$EXISTING_OUTPUT' | grep -qi 're-issu'"
+# issued.log must still have exactly one entry (the original alice) after the refused second run.
+assert "issued.log unchanged after refused re-issuance" \
+    bash -c "[ \"\$(wc -l < '$WORK/issued.log')\" = '1' ]"
+
+# Case 3: bad CN (with a slash).
+BAD_CN_OUTPUT="$( cd "$WORK" && ./issue-client.sh 'evil/cn' 2>&1 || true )"
+assert "rejects CN containing a slash" \
+    bash -c "( cd '$WORK' && ./issue-client.sh 'evil/cn' ) >/dev/null 2>&1; [ \$? -ne 0 ]"
+assert "bad-CN error names the CN" \
+    bash -c "echo '$BAD_CN_OUTPUT' | grep -q 'evil/cn'"
+
 # ---- summary ----
 
 printf '\n'
