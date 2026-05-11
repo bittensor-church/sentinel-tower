@@ -79,13 +79,13 @@ openssl x509 -req -in client.csr -CA ca.crt -CAkey ca.key -CAserial ca.srl \
 
 ## Cleanup
 
-After issuance, remove temporary files:
+Move `ca.key` somewhere offline and secure (e.g. a password manager, encrypted USB, vault). You will need it to issue additional client certs in the future. **Do not leave `ca.key` on the production server** — its compromise means the entire mTLS gate is compromised.
+
+After issuance, remove the remaining temporary files from the working directory:
 
 ```sh
-rm -f ca.key ca.srl server.csr server.ext client.csr client.ext
+rm -f ca.srl server.csr server.ext client.csr client.ext
 ```
-
-Keep `ca.key` somewhere safe if you intend to issue more client certs later — otherwise you must re-issue everything.
 
 ## Test from a client
 
@@ -96,5 +96,14 @@ psql "host=${NGINX_HOST} port=5432 dbname=<db> user=<user> \
 
 ## Revocation / rotation
 
-- **One client compromised** — rotate that client's `client.crt`/`client.key`. Other clients are unaffected. Nginx does not need a reload because client cert validity is checked per-handshake against the CA.
-- **CA compromised** — regenerate `ca.crt`, reissue every client cert, replace the server-side `ca.crt`, and reload nginx (`docker compose exec nginx nginx -s reload`).
+**This setup does not implement per-client revocation.** Without a CRL or OCSP responder, a client cert remains valid until it expires (~825 days). Plan your response accordingly:
+
+- **One client compromised** — there is no way to invalidate that specific cert alone short of rotating the CA. Practical options, worst-case to least bad:
+  1. **Rotate the CA** (see below). Slow, affects every client, but is the only true revocation.
+  2. **Wait for the cert to expire.** Use only if the consumer can be locked out at the postgres role level (revoke the role's password / drop the role) in the meantime, since postgres role auth is the second factor.
+  3. **Configure `ssl_crl`** in `nginx/stream.d/postgres.conf` and start publishing a CRL — out of scope for this initial setup.
+- **CA compromised** — regenerate `ca.crt` and `ca.key` (offline), reissue every client cert against the new CA, replace `db_access_certs/ca.crt` on the server, and reload nginx:
+  ```sh
+  docker compose exec nginx nginx -s reload
+  ```
+  Old client certs stop working as soon as the new `ca.crt` is in place.
