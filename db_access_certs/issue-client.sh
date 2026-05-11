@@ -31,6 +31,14 @@ if ! printf '%s' "$CN" | grep -Eq '^[A-Za-z0-9._-]+$'; then
     exit 1
 fi
 
+# The character class above also accepts "." and "..", which resolve to the
+# clients/ directory itself and the script directory respectively. Reject them
+# explicitly so OUTDIR is always a fresh, distinct subdirectory.
+if [ "$CN" = "." ] || [ "$CN" = ".." ]; then
+    echo "error: <client-cn> cannot be '.' or '..'" >&2
+    exit 1
+fi
+
 cd "$(dirname "$0")"
 
 echo

@@ -23,7 +23,7 @@ Relevant files in the repo:
 | [`nginx/nginx.conf`](../nginx/nginx.conf)    | Override of the image-baked nginx.conf adding the top-level `stream {}` block (with `log_format`, shared cipher list, and stream include). |
 | [`nginx/stream.d/postgres.conf`](../nginx/stream.d/postgres.conf) | The mTLS-terminating stream server on `:5432`.                          |
 | [`db_access_certs/`](../db_access_certs/)    | Server-side cert material (git-ignored except for the README).          |
-| [`db_access_certs/README.md`](../db_access_certs/README.md) | All `openssl` commands for issuing CA, server, and client certs.        |
+| [`db_access_certs/README.md`](../db_access_certs/README.md) | Operator runbook for the cert-issuance scripts (bootstrap, add client, audit). |
 | [`envs/prod/docker-compose.yml`](../envs/prod/docker-compose.yml) | Wires the bind mounts and exposes nginx `:5432`.                        |
 
 ## Initial setup (one-time per environment)

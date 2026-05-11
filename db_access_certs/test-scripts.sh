@@ -147,6 +147,13 @@ assert "rejects CN containing a slash" \
 assert "bad-CN error names the CN" \
     bash -c "echo '$BAD_CN_OUTPUT' | grep -q 'evil/cn'"
 
+# Case 4: degenerate dot CNs (".", "..") pass the character class but would
+# resolve OUTDIR onto clients/ itself or the script root.
+assert "rejects CN of '.'" \
+    bash -c "( cd '$WORK' && ./issue-client.sh '.' ) >/dev/null 2>&1; [ \$? -ne 0 ]"
+assert "rejects CN of '..'" \
+    bash -c "( cd '$WORK' && ./issue-client.sh '..' ) >/dev/null 2>&1; [ \$? -ne 0 ]"
+
 group "nginx -t smoke (requires docker)"
 if ! command -v docker >/dev/null 2>&1; then
     ok "docker not present — skipping nginx integration smoke"
