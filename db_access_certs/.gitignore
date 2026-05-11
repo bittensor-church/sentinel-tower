@@ -3,3 +3,6 @@
 *
 !.gitignore
 !README.md
+!init.sh
+!issue-client.sh
+!test-scripts.sh
