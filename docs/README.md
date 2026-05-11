@@ -125,6 +125,13 @@ To flush add tasks in specific queue, use
 Running the app requires proper certificates to be put into `nginx/monitoring_certs`,
 see [nginx/monitoring_certs/README.md](nginx/monitoring_certs/README.md) for more details.
 
+# Remote PostgreSQL access (mTLS)
+
+Prod nginx exposes port `5432` with mutual TLS; postgres has no host port binding.
+See [docs/postgres-mtls.md](postgres-mtls.md) for setup, adding a new client,
+testing, and troubleshooting. Cert issuance commands live in
+[db_access_certs/README.md](../db_access_certs/README.md).
+
 ## Monitoring execution time of code blocks
 
 Somewhere, probably in `metrics.py`:
