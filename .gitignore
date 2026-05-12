@@ -30,3 +30,4 @@ app/src/.dagster/
 db_access_certs/*
 docs/superpowers/
 webhooks.csv
+webhooks.sql

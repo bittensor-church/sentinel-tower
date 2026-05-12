@@ -5,6 +5,7 @@ from collections.abc import Callable
 
 import structlog
 from django.core.management.base import BaseCommand
+from sentinel.v1.providers.base import BlockchainProvider
 from sentinel.v1.providers.bittensor import bittensor_provider
 
 from apps.extrinsics.block_tasks import store_block_extrinsics
@@ -15,6 +16,7 @@ logger = structlog.get_logger()
 
 DEFAULT_LOOKBACK = 12_000
 DEFAULT_RATE_LIMIT = 1.0
+LIVE_PROVIDER_WINDOW = 300
 
 
 def _get_lookback_default() -> int:
@@ -25,10 +27,8 @@ def _get_rate_limit_default() -> float:
     return float(os.environ.get("BACKFILL_RATE_LIMIT", DEFAULT_RATE_LIMIT))
 
 
-def _find_missing_blocks(lookback: int) -> list[int]:
-    with bittensor_provider() as provider:
-        head = provider.get_current_block()
-    max_block = head - 300
+def _find_missing_blocks(lookback: int, head: int) -> list[int]:
+    max_block = head
     min_block = max_block - lookback
 
     logger.info(
@@ -47,15 +47,25 @@ def _find_missing_blocks(lookback: int) -> list[int]:
     return sorted(expected - existing)
 
 
-def _backfill_blocks(blocks: list[int], rate_limit: float, should_stop: Callable[[], bool]) -> tuple[int, int]:
+def _pick_provider(
+    block_number: int, head: int, live: BlockchainProvider, archive: BlockchainProvider
+) -> BlockchainProvider:
+    """Live for the most-recent LIVE_PROVIDER_WINDOW blocks (archive often lags); archive otherwise."""
+    return live if head - block_number < LIVE_PROVIDER_WINDOW else archive
+
+
+def _backfill_blocks(
+    blocks: list[int], head: int, rate_limit: float, should_stop: Callable[[], bool]
+) -> tuple[int, int]:
     synced = 0
     errors = 0
-    with get_archive_provider() as provider:
+    with bittensor_provider() as live, get_archive_provider() as archive:
         for i, block_number in enumerate(blocks):
             if should_stop():
                 logger.info("Shutdown requested, stopping.")
                 break
 
+            provider = _pick_provider(block_number, head, live, archive)
             try:
                 result = store_block_extrinsics(block_number, provider)
                 synced += 1
@@ -67,6 +77,7 @@ def _backfill_blocks(blocks: list[int], rate_limit: float, should_stop: Callable
                         extrinsics=result["db_count"],
                         elapsed_ms=result["elapsed_ms"],
                         remaining=remaining,
+                        source="live" if provider is live else "archive",
                     )
                 else:
                     logger.debug("Backfilled block (empty)", block=block_number, remaining=remaining)
@@ -118,19 +129,22 @@ class Command(BaseCommand):
 
         rate_limit = options["rate_limit"] if options["rate_limit"] is not None else _get_rate_limit_default()
 
+        with bittensor_provider() as p:
+            head = p.get_current_block()
+
         if options["block"] is not None:
             missing = [options["block"]]
-            logger.info("Backfilling specific block", block_number=options["block"])
+            logger.info("Backfilling specific block", block_number=options["block"], head=head)
         else:
             lookback = options["lookback"] if options["lookback"] is not None else _get_lookback_default()
-            missing = _find_missing_blocks(lookback)
+            missing = _find_missing_blocks(lookback, head)
             if not missing:
                 self.stdout.write("No missing blocks found.")
                 return
             self.stdout.write(f"Found {len(missing)} missing blocks.")
             logger.info("Missing blocks detected", count=len(missing), first=missing[0], last=missing[-1])
 
-        synced, errors = _backfill_blocks(missing, rate_limit, lambda: self._shutdown)
+        synced, errors = _backfill_blocks(missing, head, rate_limit, lambda: self._shutdown)
 
         self.stdout.write(f"Done. Synced: {synced}, errors: {errors}, total: {len(missing)}.")
         logger.info("Backfill complete", synced=synced, errors=errors, total=len(missing))

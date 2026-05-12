@@ -530,11 +530,223 @@
           "editorMode": "code",
           "format": "table",
           "rawQuery": true,
-          "rawSql": "WITH time_boundaries AS (\n    SELECT\n        $__timeTo()::timestamp AS end_time,\n        $__timeTo()::timestamp - INTERVAL '1 hour' AS start_1h,\n        $__timeTo()::timestamp - INTERVAL '1 day' AS start_1d,\n        $__timeTo()::timestamp - INTERVAL '1 week' AS start_1w,\n        $__timeTo()::timestamp - INTERVAL '1 month' AS start_1m\n),\nsnapshot_apy AS (\n    SELECT\n        ns.id        AS snapshot_id,\n        ns.neuron_id,\n        ns.alpha_stake,\n        ns.total_stake,\n        b.timestamp  AS block_ts,\n        CASE\n            WHEN ns.total_stake > 0 AND s.alpha_out_emission > 0 THEN\n                (CASE WHEN mm.dividend > 1 THEN mm.dividend / 65535.0 ELSE mm.dividend END)\n                * (s.alpha_out_emission::numeric / ns.total_stake::numeric)\n                * (1 - COALESCE(s.owner_cut, 0.09))\n                * 0.5\n                * 2629800\n                * 100\n            ELSE 0\n        END AS apy_pct\n    FROM metagraph_neuron_snapshot ns\n    JOIN metagraph_neuron  n ON n.id     = ns.neuron_id\n    JOIN metagraph_subnet  s ON s.netuid = n.subnet_id\n    JOIN metagraph_block   b ON b.number = ns.block_id\n    LEFT JOIN metagraph_mechanism_metrics mm\n           ON mm.snapshot_id = ns.id AND mm.mech_id = 0\n    WHERE n.subnet_id = ${subnet}\n      AND ns.is_validator = true\n      AND b.timestamp BETWEEN (SELECT start_1m FROM time_boundaries)\n                          AND (SELECT end_time FROM time_boundaries)\n),\nlatest_snapshot AS (\n    SELECT DISTINCT ON (sa.neuron_id)\n        sa.neuron_id,\n        h.hotkey,\n        COALESCE(NULLIF(h.label, ''), LEFT(h.hotkey, 8) || '...') AS validator_name,\n        sa.alpha_stake / 1e9 AS alpha_stake_tao,\n        sa.total_stake / 1e9 AS stake_tao\n    FROM snapshot_apy sa\n    JOIN metagraph_neuron n ON n.id = sa.neuron_id\n    JOIN metagraph_hotkey h ON h.id = n.hotkey_id\n    ORDER BY sa.neuron_id, sa.block_ts DESC\n),\napy_windows AS (\n    SELECT\n        neuron_id,\n        AVG(apy_pct) FILTER (WHERE block_ts >= (SELECT start_1h FROM time_boundaries)) AS apy_1h,\n        AVG(apy_pct) FILTER (WHERE block_ts >= (SELECT start_1d FROM time_boundaries)) AS apy_1d,\n        AVG(apy_pct) FILTER (WHERE block_ts >= (SELECT start_1w FROM time_boundaries)) AS apy_1w,\n        AVG(apy_pct)                                                                    AS apy_1m\n    FROM snapshot_apy\n    GROUP BY neuron_id\n)\nSELECT\n    ls.validator_name,\n    ls.alpha_stake_tao,\n    ls.stake_tao,\n    COALESCE(aw.apy_1h, 0) AS apy_1h,\n    COALESCE(aw.apy_1d, 0) AS apy_1d,\n    COALESCE(aw.apy_1w, 0) AS apy_1w,\n    COALESCE(aw.apy_1m, 0) AS apy_1m\nFROM latest_snapshot ls\nLEFT JOIN apy_windows  aw ON ls.neuron_id = aw.neuron_id\nWHERE ls.stake_tao > 0\nORDER BY ls.alpha_stake_tao DESC",
+          "rawSql": "WITH time_boundaries AS (\n    SELECT\n        $__timeTo()::timestamp AS end_time,\n        $__timeTo()::timestamp - INTERVAL '1 hour' AS start_1h,\n        $__timeTo()::timestamp - INTERVAL '1 day' AS start_1d,\n        $__timeTo()::timestamp - INTERVAL '1 week' AS start_1w,\n        $__timeTo()::timestamp - INTERVAL '1 month' AS start_1m\n),\nsnapshot_apy AS (\n    SELECT\n        ns.id        AS snapshot_id,\n        ns.neuron_id,\n        ns.alpha_stake,\n        ns.total_stake,\n        b.timestamp  AS block_ts,\n        CASE\n            WHEN ns.total_stake > 0 THEN\n                (CASE WHEN mm.dividend > 1 THEN mm.dividend / 65535.0 ELSE mm.dividend END)\n                * (COALESCE(NULLIF(s.alpha_out_emission, 0), 1e9)::numeric / ns.total_stake::numeric)\n                * (1 - COALESCE(s.owner_cut, 0.09))\n                * 0.5\n                * 2629800\n                * 100\n            ELSE 0\n        END AS apy_pct\n    FROM metagraph_neuron_snapshot ns\n    JOIN metagraph_neuron  n ON n.id     = ns.neuron_id\n    JOIN metagraph_subnet  s ON s.netuid = n.subnet_id\n    JOIN metagraph_block   b ON b.number = ns.block_id\n    LEFT JOIN metagraph_mechanism_metrics mm\n           ON mm.snapshot_id = ns.id AND mm.mech_id = 0\n    WHERE n.subnet_id = ${subnet}\n      AND ns.is_validator = true\n      AND b.timestamp BETWEEN (SELECT start_1m FROM time_boundaries)\n                          AND (SELECT end_time FROM time_boundaries)\n),\nlatest_snapshot AS (\n    SELECT DISTINCT ON (sa.neuron_id)\n        sa.neuron_id,\n        h.hotkey,\n        COALESCE(NULLIF(h.label, ''), LEFT(h.hotkey, 8) || '...') AS validator_name,\n        sa.alpha_stake / 1e9 AS alpha_stake_tao,\n        sa.total_stake / 1e9 AS stake_tao\n    FROM snapshot_apy sa\n    JOIN metagraph_neuron n ON n.id = sa.neuron_id\n    JOIN metagraph_hotkey h ON h.id = n.hotkey_id\n    ORDER BY sa.neuron_id, sa.block_ts DESC\n),\napy_windows AS (\n    SELECT\n        neuron_id,\n        AVG(apy_pct) FILTER (WHERE block_ts >= (SELECT start_1h FROM time_boundaries)) AS apy_1h,\n        AVG(apy_pct) FILTER (WHERE block_ts >= (SELECT start_1d FROM time_boundaries)) AS apy_1d,\n        AVG(apy_pct) FILTER (WHERE block_ts >= (SELECT start_1w FROM time_boundaries)) AS apy_1w,\n        AVG(apy_pct)                                                                    AS apy_1m\n    FROM snapshot_apy\n    GROUP BY neuron_id\n)\nSELECT\n    ls.validator_name,\n    ls.alpha_stake_tao,\n    ls.stake_tao,\n    COALESCE(aw.apy_1h, 0) AS apy_1h,\n    COALESCE(aw.apy_1d, 0) AS apy_1d,\n    COALESCE(aw.apy_1w, 0) AS apy_1w,\n    COALESCE(aw.apy_1m, 0) AS apy_1m\nFROM latest_snapshot ls\nLEFT JOIN apy_windows  aw ON ls.neuron_id = aw.neuron_id\nWHERE ls.stake_tao > 0\nORDER BY ls.alpha_stake_tao DESC",
           "refId": "A"
         }
       ],
-      "title": "Subnet Validators APY",
+      "title": "Subnet Validators APY (delegator view / total stake)",
+      "type": "table"
+    },
+    {
+      "datasource": {
+        "type": "postgres",
+        "uid": "postgresql"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "thresholds"
+          },
+          "custom": {
+            "align": "auto",
+            "cellOptions": {
+              "type": "auto"
+            },
+            "inspect": false
+          },
+          "mappings": [],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": null
+              }
+            ]
+          }
+        },
+        "overrides": [
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "alpha_stake_tao"
+            },
+            "properties": [
+              {
+                "id": "unit",
+                "value": "none"
+              },
+              {
+                "id": "decimals",
+                "value": 2
+              },
+              {
+                "id": "displayName",
+                "value": "Alpha Stake"
+              },
+              {
+                "id": "custom.cellOptions",
+                "value": {
+                  "mode": "gradient",
+                  "type": "gauge"
+                }
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "stake_tao"
+            },
+            "properties": [
+              {
+                "id": "unit",
+                "value": "none"
+              },
+              {
+                "id": "decimals",
+                "value": 2
+              },
+              {
+                "id": "displayName",
+                "value": "Total Stake"
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "apy_1h"
+            },
+            "properties": [
+              {
+                "id": "unit",
+                "value": "percent"
+              },
+              {
+                "id": "decimals",
+                "value": 2
+              },
+              {
+                "id": "displayName",
+                "value": "1h APY"
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "apy_1d"
+            },
+            "properties": [
+              {
+                "id": "unit",
+                "value": "percent"
+              },
+              {
+                "id": "decimals",
+                "value": 2
+              },
+              {
+                "id": "displayName",
+                "value": "1d APY"
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "apy_1w"
+            },
+            "properties": [
+              {
+                "id": "unit",
+                "value": "percent"
+              },
+              {
+                "id": "decimals",
+                "value": 2
+              },
+              {
+                "id": "displayName",
+                "value": "1W APY"
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "apy_1m"
+            },
+            "properties": [
+              {
+                "id": "unit",
+                "value": "percent"
+              },
+              {
+                "id": "decimals",
+                "value": 2
+              },
+              {
+                "id": "displayName",
+                "value": "1M APY"
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "validator_name"
+            },
+            "properties": [
+              {
+                "id": "displayName",
+                "value": "Validator Name"
+              }
+            ]
+          }
+        ]
+      },
+      "gridPos": {
+        "h": 14,
+        "w": 24,
+        "x": 0,
+        "y": 28
+      },
+      "id": 6,
+      "options": {
+        "cellHeight": "sm",
+        "footer": {
+          "countRows": false,
+          "fields": "",
+          "reducer": [
+            "sum"
+          ],
+          "show": false
+        },
+        "showHeader": true,
+        "sortBy": [
+          {
+            "desc": true,
+            "displayName": "Alpha Stake"
+          }
+        ]
+      },
+      "pluginVersion": "10.2.0",
+      "targets": [
+        {
+          "datasource": {
+            "type": "postgres",
+            "uid": "postgresql"
+          },
+          "editorMode": "code",
+          "format": "table",
+          "rawQuery": true,
+          "rawSql": "WITH time_boundaries AS (\n    SELECT\n        $__timeTo()::timestamp AS end_time,\n        $__timeTo()::timestamp - INTERVAL '1 hour' AS start_1h,\n        $__timeTo()::timestamp - INTERVAL '1 day' AS start_1d,\n        $__timeTo()::timestamp - INTERVAL '1 week' AS start_1w,\n        $__timeTo()::timestamp - INTERVAL '1 month' AS start_1m\n),\nsnapshot_apy AS (\n    SELECT\n        ns.id        AS snapshot_id,\n        ns.neuron_id,\n        ns.alpha_stake,\n        ns.total_stake,\n        b.timestamp  AS block_ts,\n        CASE\n            WHEN ns.alpha_stake > 0 THEN\n                (CASE WHEN mm.dividend > 1 THEN mm.dividend / 65535.0 ELSE mm.dividend END)\n                * (COALESCE(NULLIF(s.alpha_out_emission, 0), 1e9)::numeric / ns.alpha_stake::numeric)\n                * (1 - COALESCE(s.owner_cut, 0.09))\n                * 0.5\n                * 2629800\n                * 100\n            ELSE 0\n        END AS apy_pct\n    FROM metagraph_neuron_snapshot ns\n    JOIN metagraph_neuron  n ON n.id     = ns.neuron_id\n    JOIN metagraph_subnet  s ON s.netuid = n.subnet_id\n    JOIN metagraph_block   b ON b.number = ns.block_id\n    LEFT JOIN metagraph_mechanism_metrics mm\n           ON mm.snapshot_id = ns.id AND mm.mech_id = 0\n    WHERE n.subnet_id = ${subnet}\n      AND ns.is_validator = true\n      AND b.timestamp BETWEEN (SELECT start_1m FROM time_boundaries)\n                          AND (SELECT end_time FROM time_boundaries)\n),\nlatest_snapshot AS (\n    SELECT DISTINCT ON (sa.neuron_id)\n        sa.neuron_id,\n        h.hotkey,\n        COALESCE(NULLIF(h.label, ''), LEFT(h.hotkey, 8) || '...') AS validator_name,\n        sa.alpha_stake / 1e9 AS alpha_stake_tao,\n        sa.total_stake / 1e9 AS stake_tao\n    FROM snapshot_apy sa\n    JOIN metagraph_neuron n ON n.id = sa.neuron_id\n    JOIN metagraph_hotkey h ON h.id = n.hotkey_id\n    ORDER BY sa.neuron_id, sa.block_ts DESC\n),\napy_windows AS (\n    SELECT\n        neuron_id,\n        AVG(apy_pct) FILTER (WHERE block_ts >= (SELECT start_1h FROM time_boundaries)) AS apy_1h,\n        AVG(apy_pct) FILTER (WHERE block_ts >= (SELECT start_1d FROM time_boundaries)) AS apy_1d,\n        AVG(apy_pct) FILTER (WHERE block_ts >= (SELECT start_1w FROM time_boundaries)) AS apy_1w,\n        AVG(apy_pct)                                                                    AS apy_1m\n    FROM snapshot_apy\n    GROUP BY neuron_id\n)\nSELECT\n    ls.validator_name,\n    ls.alpha_stake_tao,\n    ls.stake_tao,\n    COALESCE(aw.apy_1h, 0) AS apy_1h,\n    COALESCE(aw.apy_1d, 0) AS apy_1d,\n    COALESCE(aw.apy_1w, 0) AS apy_1w,\n    COALESCE(aw.apy_1m, 0) AS apy_1m\nFROM latest_snapshot ls\nLEFT JOIN apy_windows  aw ON ls.neuron_id = aw.neuron_id\nWHERE ls.alpha_stake_tao > 0\nORDER BY ls.alpha_stake_tao DESC",
+          "refId": "A"
+        }
+      ],
+      "title": "Subnet Validators APY (alpha-only view / yield on alpha exposure)",
       "type": "table"
     }
   ],
