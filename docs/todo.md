@@ -44,3 +44,11 @@ Issuing a client cert via `db_access_certs/issue-client.sh` only gates *transpor
 **Action:** add a companion `db_access_certs/create-readonly-user.sh` (run on the prod host, separate from `issue-client.sh`) that takes a CN, creates `r_<cn>` with a generated password, grants `CONNECT` + appropriate `USAGE`/`SELECT`, and prints the password once. Update [docs/postgres-mtls.md](postgres-mtls.md) to make the two gates explicit: cert proves "you reach the proxy," postgres role proves "you are this DB user."
 
 **Why separate from `issue-client.sh`:** that script runs on a workstation holding the offline CA key; it must not need network access to prod or DB admin credentials. Coupling cert issuance with live-DB role creation mixes two trust domains.
+
+## Add `postgres_exporter` for time-series DB observability
+
+The DB size / index hygiene Grafana dashboard (see [docs/superpowers/specs/](superpowers/specs/) — design pending) is shipping with point-in-time SQL queries only. That answers "what's the state right now" but not "how is it growing." For retention planning we want week-over-week / month-over-month trends per table.
+
+**Action:** add `prometheuscommunity/postgres-exporter` as a service in `docker-compose.yml`, point Prometheus at it, and extend the dashboard with trended panels (table size over time, row counts over time, growth rate per table). Most of the metrics we want — `pg_table_size_bytes{relname}`, `pg_index_size_bytes{relname}`, `pg_stat_user_tables_n_live_tup` — are exposed by the default config; the rest can be added via a `queries.yaml`.
+
+**Why deferred:** the point-in-time dashboard already answers the immediate "which tables/indexes are biggest" question, and adding an exporter is a separate deploy-touching change (new container, new scrape target, secrets). Bundling them would slow the dashboard ship.

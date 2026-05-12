@@ -212,7 +212,10 @@ services:
     <<: *backend
     command: python manage.py historical_metagraph_backfill
     depends_on:
-      - db
+      db:
+        condition: service_healthy
+    profiles:
+      - historical-backfill
 
 volumes:
   app-venv:

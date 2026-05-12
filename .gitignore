@@ -29,3 +29,4 @@ app/src/.dagster/
 .worktrees/
 db_access_certs/*
 docs/superpowers/
+webhooks.csv

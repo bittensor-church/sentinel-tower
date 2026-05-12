@@ -132,7 +132,7 @@
             "uid": "postgresql"
           },
           "rawQuery": true,
-          "rawSql": "SELECT MAX(block_number) as value FROM extrinsics WHERE ('${netuid:csv}' = '*' OR netuid::text = ANY (string_to_array('${netuid:csv}', ','))) AND ('${status:csv}' = '*' OR success::text = ANY (string_to_array('${status:csv}', ','))) AND ('${call_module:csv}' = '*' OR call_module = ANY (string_to_array('${call_module:csv}', ','))) AND ('${call_function:csv}' = '*' OR call_function = ANY (string_to_array('${call_function:csv}', ','))) AND ('${address:csv}' = '*' OR address = ANY (string_to_array('${address:csv}', ',')))",
+          "rawSql": "SELECT MAX(block_number) as value FROM extrinsics",
           "refId": "A",
           "format": "table"
         }
@@ -191,7 +191,7 @@
             "uid": "postgresql"
           },
           "rawQuery": true,
-          "rawSql": "SELECT COUNT(DISTINCT address) as value FROM extrinsics WHERE address != '' AND ('${netuid:csv}' = '*' OR netuid::text = ANY (string_to_array('${netuid:csv}', ','))) AND ('${status:csv}' = '*' OR success::text = ANY (string_to_array('${status:csv}', ','))) AND ('${call_module:csv}' = '*' OR call_module = ANY (string_to_array('${call_module:csv}', ','))) AND ('${call_function:csv}' = '*' OR call_function = ANY (string_to_array('${call_function:csv}', ','))) AND ('${address:csv}' = '*' OR address = ANY (string_to_array('${address:csv}', ','))) AND block_number BETWEEN (SELECT MAX(block_number) FROM extrinsics) - ((extract(epoch FROM now()) * 1000)::bigint - $__from) / 12000 AND (SELECT MAX(block_number) FROM extrinsics) - ((extract(epoch FROM now()) * 1000)::bigint - $__to) / 12000",
+          "rawSql": "SELECT COUNT(DISTINCT address) as value FROM extrinsics WHERE address != '' AND ('${netuid:csv}' = '*' OR netuid::text = ANY (string_to_array('${netuid:csv}', ','))) AND ('${status:csv}' = '*' OR success::text = ANY (string_to_array('${status:csv}', ','))) AND ('${call_module:csv}' = '*' OR call_module = ANY (string_to_array('${call_module:csv}', ','))) AND ('${call_function:csv}' = '*' OR call_function = ANY (string_to_array('${call_function:csv}', ','))) AND ('${address:csv}' = '*' OR address = ANY (string_to_array('${address:csv}', ','))) AND block_timestamp BETWEEN $__from AND $__to",
           "refId": "A",
           "format": "table"
         }
@@ -255,7 +255,7 @@
             "uid": "postgresql"
           },
           "rawQuery": true,
-          "rawSql": "SELECT COALESCE(1.0 - (SUM(CASE WHEN success THEN 1 ELSE 0 END)::float / NULLIF(COUNT(*), 0)), 0) as value FROM extrinsics WHERE ('${netuid:csv}' = '*' OR netuid::text = ANY (string_to_array('${netuid:csv}', ','))) AND ('${status:csv}' = '*' OR success::text = ANY (string_to_array('${status:csv}', ','))) AND ('${call_module:csv}' = '*' OR call_module = ANY (string_to_array('${call_module:csv}', ','))) AND ('${call_function:csv}' = '*' OR call_function = ANY (string_to_array('${call_function:csv}', ','))) AND ('${address:csv}' = '*' OR address = ANY (string_to_array('${address:csv}', ','))) AND block_number BETWEEN (SELECT MAX(block_number) FROM extrinsics) - ((extract(epoch FROM now()) * 1000)::bigint - $__from) / 12000 AND (SELECT MAX(block_number) FROM extrinsics) - ((extract(epoch FROM now()) * 1000)::bigint - $__to) / 12000",
+          "rawSql": "SELECT COALESCE(1.0 - (SUM(CASE WHEN success THEN 1 ELSE 0 END)::float / NULLIF(COUNT(*), 0)), 0) as value FROM extrinsics WHERE ('${netuid:csv}' = '*' OR netuid::text = ANY (string_to_array('${netuid:csv}', ','))) AND ('${status:csv}' = '*' OR success::text = ANY (string_to_array('${status:csv}', ','))) AND ('${call_module:csv}' = '*' OR call_module = ANY (string_to_array('${call_module:csv}', ','))) AND ('${call_function:csv}' = '*' OR call_function = ANY (string_to_array('${call_function:csv}', ','))) AND ('${address:csv}' = '*' OR address = ANY (string_to_array('${address:csv}', ','))) AND block_timestamp BETWEEN $__from AND $__to",
           "refId": "A",
           "format": "table"
         }
@@ -314,7 +314,7 @@
             "uid": "postgresql"
           },
           "rawQuery": true,
-          "rawSql": "SELECT COUNT(*) as value FROM extrinsics WHERE ('${netuid:csv}' = '*' OR netuid::text = ANY (string_to_array('${netuid:csv}', ','))) AND ('${status:csv}' = '*' OR success::text = ANY (string_to_array('${status:csv}', ','))) AND ('${call_module:csv}' = '*' OR call_module = ANY (string_to_array('${call_module:csv}', ','))) AND ('${call_function:csv}' = '*' OR call_function = ANY (string_to_array('${call_function:csv}', ','))) AND ('${address:csv}' = '*' OR address = ANY (string_to_array('${address:csv}', ','))) AND block_number BETWEEN (SELECT MAX(block_number) FROM extrinsics) - ((extract(epoch FROM now()) * 1000)::bigint - $__from) / 12000 AND (SELECT MAX(block_number) FROM extrinsics) - ((extract(epoch FROM now()) * 1000)::bigint - $__to) / 12000",
+          "rawSql": "SELECT COUNT(*) as value FROM extrinsics WHERE ('${netuid:csv}' = '*' OR netuid::text = ANY (string_to_array('${netuid:csv}', ','))) AND ('${status:csv}' = '*' OR success::text = ANY (string_to_array('${status:csv}', ','))) AND ('${call_module:csv}' = '*' OR call_module = ANY (string_to_array('${call_module:csv}', ','))) AND ('${call_function:csv}' = '*' OR call_function = ANY (string_to_array('${call_function:csv}', ','))) AND ('${address:csv}' = '*' OR address = ANY (string_to_array('${address:csv}', ','))) AND block_timestamp BETWEEN $__from AND $__to",
           "refId": "A",
           "format": "table"
         }
@@ -393,13 +393,85 @@
             "uid": "postgresql"
           },
           "rawQuery": true,
-          "rawSql": "SELECT date_trunc('hour', to_timestamp(block_timestamp / 1000.0)) AS time, call_module AS metric, COUNT(*) AS value FROM extrinsics WHERE ('${netuid:csv}' = '*' OR netuid::text = ANY (string_to_array('${netuid:csv}', ','))) AND ('${status:csv}' = '*' OR success::text = ANY (string_to_array('${status:csv}', ','))) AND ('${call_module:csv}' = '*' OR call_module = ANY (string_to_array('${call_module:csv}', ','))) AND ('${call_function:csv}' = '*' OR call_function = ANY (string_to_array('${call_function:csv}', ','))) AND ('${address:csv}' = '*' OR address = ANY (string_to_array('${address:csv}', ','))) AND block_number BETWEEN (SELECT MAX(block_number) FROM extrinsics) - ((extract(epoch FROM now()) * 1000)::bigint - $__from) / 12000 AND (SELECT MAX(block_number) FROM extrinsics) - ((extract(epoch FROM now()) * 1000)::bigint - $__to) / 12000 GROUP BY 1, 2 ORDER BY 1",
+          "rawSql": "SELECT to_timestamp(bucket_sec) AS time, call_module AS metric, value FROM (SELECT (block_timestamp / 3600000) * 3600 AS bucket_sec, call_module, COUNT(*) AS value FROM extrinsics WHERE block_timestamp >= (extract(epoch from now() - interval '24 hours') * 1000)::bigint AND ('${netuid:csv}' = '*' OR netuid::text = ANY (string_to_array('${netuid:csv}', ','))) AND ('${status:csv}' = '*' OR success::text = ANY (string_to_array('${status:csv}', ','))) AND ('${call_module:csv}' = '*' OR call_module = ANY (string_to_array('${call_module:csv}', ','))) AND ('${call_function:csv}' = '*' OR call_function = ANY (string_to_array('${call_function:csv}', ','))) AND ('${address:csv}' = '*' OR address = ANY (string_to_array('${address:csv}', ','))) GROUP BY 1, 2) hourly ORDER BY time",
           "refId": "A",
           "format": "time_series"
         }
       ],
-      "title": "Extrinsics by Module Over Time",
-      "type": "heatmap"
+      "title": "Extrinsics by Module Over Time (last 24h)",
+      "type": "heatmap",
+      "description": "Hourly buckets, hardcoded to the last 24 hours regardless of dashboard time range. Decoupled from $__from/$__to to keep rendering fast on wide dashboard windows.",
+      "timeFrom": "24h",
+      "hideTimeOverride": false
+    },
+    {
+      "datasource": {
+        "type": "postgres",
+        "uid": "postgresql"
+      },
+      "description": "Seconds since the most recent ingested extrinsic. If this grows, the indexer is lagging or stalled.",
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "thresholds"
+          },
+          "mappings": [],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": null
+              },
+              {
+                "color": "yellow",
+                "value": 60
+              },
+              {
+                "color": "red",
+                "value": 300
+              }
+            ]
+          },
+          "unit": "s"
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 4,
+        "w": 8,
+        "x": 0,
+        "y": 13
+      },
+      "id": 17,
+      "options": {
+        "colorMode": "value",
+        "graphMode": "area",
+        "justifyMode": "auto",
+        "orientation": "auto",
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "",
+          "values": false
+        },
+        "textMode": "auto"
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "postgres",
+            "uid": "postgresql"
+          },
+          "rawQuery": true,
+          "rawSql": "SELECT EXTRACT(EPOCH FROM (now() - to_timestamp(block_timestamp/1000.0)))::int AS value FROM extrinsics WHERE block_number = (SELECT MAX(block_number) FROM extrinsics) ORDER BY block_timestamp DESC LIMIT 1",
+          "refId": "A",
+          "format": "table"
+        }
+      ],
+      "title": "Latest extrinsic age",
+      "type": "stat"
     },
     {
       "datasource": {
@@ -459,7 +531,7 @@
             "uid": "postgresql"
           },
           "rawQuery": true,
-          "rawSql": "SELECT call_module as metric, COUNT(*) as value FROM extrinsics WHERE ('${netuid:csv}' = '*' OR netuid::text = ANY (string_to_array('${netuid:csv}', ','))) AND ('${status:csv}' = '*' OR success::text = ANY (string_to_array('${status:csv}', ','))) AND ('${call_module:csv}' = '*' OR call_module = ANY (string_to_array('${call_module:csv}', ','))) AND ('${call_function:csv}' = '*' OR call_function = ANY (string_to_array('${call_function:csv}', ','))) AND ('${address:csv}' = '*' OR address = ANY (string_to_array('${address:csv}', ','))) AND block_number BETWEEN (SELECT MAX(block_number) FROM extrinsics) - ((extract(epoch FROM now()) * 1000)::bigint - $__from) / 12000 AND (SELECT MAX(block_number) FROM extrinsics) - ((extract(epoch FROM now()) * 1000)::bigint - $__to) / 12000 GROUP BY call_module ORDER BY value DESC LIMIT 10",
+          "rawSql": "SELECT call_module as metric, COUNT(*) as value FROM extrinsics WHERE ('${netuid:csv}' = '*' OR netuid::text = ANY (string_to_array('${netuid:csv}', ','))) AND ('${status:csv}' = '*' OR success::text = ANY (string_to_array('${status:csv}', ','))) AND ('${call_module:csv}' = '*' OR call_module = ANY (string_to_array('${call_module:csv}', ','))) AND ('${call_function:csv}' = '*' OR call_function = ANY (string_to_array('${call_function:csv}', ','))) AND ('${address:csv}' = '*' OR address = ANY (string_to_array('${address:csv}', ','))) AND block_timestamp BETWEEN $__from AND $__to GROUP BY call_module ORDER BY value DESC LIMIT 10",
           "refId": "A",
           "format": "table"
         }
@@ -472,21 +544,106 @@
         "type": "postgres",
         "uid": "postgresql"
       },
+      "description": "Top failing call_module.call_function combinations in the selected time range. Respects all template filters \u2014 clear filters to see global failures.",
       "fieldConfig": {
         "defaults": {
           "color": {
-            "mode": "palette-classic"
+            "mode": "thresholds"
           },
           "custom": {
-            "hideFrom": {
-              "legend": false,
-              "tooltip": false,
-              "viz": false
-            }
+            "align": "auto",
+            "cellOptions": {
+              "type": "auto"
+            },
+            "inspect": false
           },
-          "mappings": []
+          "mappings": [],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": null
+              }
+            ]
+          }
         },
-        "overrides": []
+        "overrides": [
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "failures"
+            },
+            "properties": [
+              {
+                "id": "custom.cellOptions",
+                "value": {
+                  "mode": "gradient",
+                  "type": "gauge"
+                }
+              },
+              {
+                "id": "custom.width",
+                "value": 110
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "failure_rate_pct"
+            },
+            "properties": [
+              {
+                "id": "unit",
+                "value": "percent"
+              },
+              {
+                "id": "custom.cellOptions",
+                "value": {
+                  "type": "color-background",
+                  "mode": "gradient"
+                }
+              },
+              {
+                "id": "thresholds",
+                "value": {
+                  "mode": "absolute",
+                  "steps": [
+                    {
+                      "color": "green",
+                      "value": null
+                    },
+                    {
+                      "color": "yellow",
+                      "value": 25
+                    },
+                    {
+                      "color": "red",
+                      "value": 75
+                    }
+                  ]
+                }
+              },
+              {
+                "id": "custom.width",
+                "value": 130
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "total"
+            },
+            "properties": [
+              {
+                "id": "custom.width",
+                "value": 90
+              }
+            ]
+          }
+        ]
       },
       "gridPos": {
         "h": 8,
@@ -494,28 +651,23 @@
         "x": 12,
         "y": 28
       },
-      "id": 16,
+      "id": 18,
       "options": {
-        "legend": {
-          "displayMode": "list",
-          "placement": "right",
-          "showLegend": true
-        },
-        "pieType": "donut",
-        "reduceOptions": {
-          "calcs": [
-            "lastNotNull"
+        "cellHeight": "sm",
+        "footer": {
+          "countRows": false,
+          "fields": "",
+          "reducer": [
+            "sum"
           ],
-          "fields": "/^value$/",
-          "values": true
+          "show": false
         },
-        "tooltip": {
-          "mode": "single",
-          "sort": "none"
-        },
-        "displayLabels": [
-          "name",
-          "percent"
+        "showHeader": true,
+        "sortBy": [
+          {
+            "desc": true,
+            "displayName": "failures"
+          }
         ]
       },
       "targets": [
@@ -525,13 +677,13 @@
             "uid": "postgresql"
           },
           "rawQuery": true,
-          "rawSql": "SELECT call_module || '.' || call_function as metric, COUNT(*) as value FROM extrinsics WHERE ('${netuid:csv}' = '*' OR netuid::text = ANY (string_to_array('${netuid:csv}', ','))) AND ('${status:csv}' = '*' OR success::text = ANY (string_to_array('${status:csv}', ','))) AND ('${call_module:csv}' = '*' OR call_module = ANY (string_to_array('${call_module:csv}', ','))) AND ('${call_function:csv}' = '*' OR call_function = ANY (string_to_array('${call_function:csv}', ','))) AND ('${address:csv}' = '*' OR address = ANY (string_to_array('${address:csv}', ','))) AND block_number BETWEEN (SELECT MAX(block_number) FROM extrinsics) - ((extract(epoch FROM now()) * 1000)::bigint - $__from) / 12000 AND (SELECT MAX(block_number) FROM extrinsics) - ((extract(epoch FROM now()) * 1000)::bigint - $__to) / 12000 GROUP BY 1 ORDER BY value DESC LIMIT 15",
+          "rawSql": "SELECT call_module || '.' || call_function AS function, COUNT(*) FILTER (WHERE NOT success) AS failures, ROUND(100.0 * COUNT(*) FILTER (WHERE NOT success) / COUNT(*), 1) AS failure_rate_pct, COUNT(*) AS total FROM extrinsics WHERE ('${netuid:csv}' = '*' OR netuid::text = ANY (string_to_array('${netuid:csv}', ','))) AND ('${status:csv}' = '*' OR success::text = ANY (string_to_array('${status:csv}', ','))) AND ('${call_module:csv}' = '*' OR call_module = ANY (string_to_array('${call_module:csv}', ','))) AND ('${call_function:csv}' = '*' OR call_function = ANY (string_to_array('${call_function:csv}', ','))) AND ('${address:csv}' = '*' OR address = ANY (string_to_array('${address:csv}', ','))) AND block_timestamp BETWEEN $__from AND $__to GROUP BY 1 HAVING COUNT(*) FILTER (WHERE NOT success) > 0 ORDER BY failures DESC LIMIT 20",
           "refId": "A",
           "format": "table"
         }
       ],
-      "title": "Distribution by Module + Function",
-      "type": "piechart"
+      "title": "Top Failure Types",
+      "type": "table"
     },
     {
       "datasource": {
@@ -622,7 +774,7 @@
             "uid": "postgresql"
           },
           "rawQuery": true,
-          "rawSql": "SELECT CASE WHEN success THEN 'Success' ELSE 'Failed' END as metric, COUNT(*) as value FROM extrinsics WHERE ('${netuid:csv}' = '*' OR netuid::text = ANY (string_to_array('${netuid:csv}', ','))) AND ('${status:csv}' = '*' OR success::text = ANY (string_to_array('${status:csv}', ','))) AND ('${call_module:csv}' = '*' OR call_module = ANY (string_to_array('${call_module:csv}', ','))) AND ('${call_function:csv}' = '*' OR call_function = ANY (string_to_array('${call_function:csv}', ','))) AND ('${address:csv}' = '*' OR address = ANY (string_to_array('${address:csv}', ','))) AND block_number BETWEEN (SELECT MAX(block_number) FROM extrinsics) - ((extract(epoch FROM now()) * 1000)::bigint - $__from) / 12000 AND (SELECT MAX(block_number) FROM extrinsics) - ((extract(epoch FROM now()) * 1000)::bigint - $__to) / 12000 GROUP BY success",
+          "rawSql": "SELECT CASE WHEN success THEN 'Success' ELSE 'Failed' END as metric, COUNT(*) as value FROM extrinsics WHERE ('${netuid:csv}' = '*' OR netuid::text = ANY (string_to_array('${netuid:csv}', ','))) AND ('${status:csv}' = '*' OR success::text = ANY (string_to_array('${status:csv}', ','))) AND ('${call_module:csv}' = '*' OR call_module = ANY (string_to_array('${call_module:csv}', ','))) AND ('${call_function:csv}' = '*' OR call_function = ANY (string_to_array('${call_function:csv}', ','))) AND ('${address:csv}' = '*' OR address = ANY (string_to_array('${address:csv}', ','))) AND block_timestamp BETWEEN $__from AND $__to GROUP BY success",
           "refId": "A",
           "format": "table"
         }
@@ -724,7 +876,7 @@
             "uid": "postgresql"
           },
           "rawQuery": true,
-          "rawSql": "SELECT address, COUNT(*) as count FROM extrinsics WHERE address != '' AND ('${netuid:csv}' = '*' OR netuid::text = ANY (string_to_array('${netuid:csv}', ','))) AND ('${status:csv}' = '*' OR success::text = ANY (string_to_array('${status:csv}', ','))) AND ('${call_module:csv}' = '*' OR call_module = ANY (string_to_array('${call_module:csv}', ','))) AND ('${call_function:csv}' = '*' OR call_function = ANY (string_to_array('${call_function:csv}', ','))) AND ('${address:csv}' = '*' OR address = ANY (string_to_array('${address:csv}', ','))) AND block_number BETWEEN (SELECT MAX(block_number) FROM extrinsics) - ((extract(epoch FROM now()) * 1000)::bigint - $__from) / 12000 AND (SELECT MAX(block_number) FROM extrinsics) - ((extract(epoch FROM now()) * 1000)::bigint - $__to) / 12000 GROUP BY address ORDER BY count DESC LIMIT 15",
+          "rawSql": "SELECT address, COUNT(*) as count FROM extrinsics WHERE address != '' AND ('${netuid:csv}' = '*' OR netuid::text = ANY (string_to_array('${netuid:csv}', ','))) AND ('${status:csv}' = '*' OR success::text = ANY (string_to_array('${status:csv}', ','))) AND ('${call_module:csv}' = '*' OR call_module = ANY (string_to_array('${call_module:csv}', ','))) AND ('${call_function:csv}' = '*' OR call_function = ANY (string_to_array('${call_function:csv}', ','))) AND ('${address:csv}' = '*' OR address = ANY (string_to_array('${address:csv}', ','))) AND block_timestamp BETWEEN $__from AND $__to GROUP BY address ORDER BY count DESC LIMIT 15",
           "refId": "A",
           "format": "table"
         }
@@ -823,7 +975,7 @@
             "uid": "postgresql"
           },
           "rawQuery": true,
-          "rawSql": "SELECT call_module, call_function, COUNT(*) as count, ROUND(100.0 * SUM(CASE WHEN success THEN 1 ELSE 0 END) / COUNT(*), 1) as success_rate FROM extrinsics WHERE ('${netuid:csv}' = '*' OR netuid::text = ANY (string_to_array('${netuid:csv}', ','))) AND ('${status:csv}' = '*' OR success::text = ANY (string_to_array('${status:csv}', ','))) AND ('${call_module:csv}' = '*' OR call_module = ANY (string_to_array('${call_module:csv}', ','))) AND ('${call_function:csv}' = '*' OR call_function = ANY (string_to_array('${call_function:csv}', ','))) AND ('${address:csv}' = '*' OR address = ANY (string_to_array('${address:csv}', ','))) AND block_number BETWEEN (SELECT MAX(block_number) FROM extrinsics) - ((extract(epoch FROM now()) * 1000)::bigint - $__from) / 12000 AND (SELECT MAX(block_number) FROM extrinsics) - ((extract(epoch FROM now()) * 1000)::bigint - $__to) / 12000 GROUP BY call_module, call_function ORDER BY count DESC LIMIT 20",
+          "rawSql": "SELECT call_module, call_function, COUNT(*) as count, ROUND(100.0 * SUM(CASE WHEN success THEN 1 ELSE 0 END) / COUNT(*), 1) as success_rate FROM extrinsics WHERE ('${netuid:csv}' = '*' OR netuid::text = ANY (string_to_array('${netuid:csv}', ','))) AND ('${status:csv}' = '*' OR success::text = ANY (string_to_array('${status:csv}', ','))) AND ('${call_module:csv}' = '*' OR call_module = ANY (string_to_array('${call_module:csv}', ','))) AND ('${call_function:csv}' = '*' OR call_function = ANY (string_to_array('${call_function:csv}', ','))) AND ('${address:csv}' = '*' OR address = ANY (string_to_array('${address:csv}', ','))) AND block_timestamp BETWEEN $__from AND $__to GROUP BY call_module, call_function ORDER BY count DESC LIMIT 20",
           "refId": "A",
           "format": "table"
         }
@@ -938,7 +1090,7 @@
             "uid": "postgresql"
           },
           "rawQuery": true,
-          "rawSql": "SELECT to_timestamp(block_timestamp / 1000.0) as time, call_module, call_function, netuid, address, success, block_number FROM extrinsics WHERE ('${netuid:csv}' = '*' OR netuid::text = ANY (string_to_array('${netuid:csv}', ','))) AND ('${status:csv}' = '*' OR success::text = ANY (string_to_array('${status:csv}', ','))) AND ('${call_module:csv}' = '*' OR call_module = ANY (string_to_array('${call_module:csv}', ','))) AND ('${call_function:csv}' = '*' OR call_function = ANY (string_to_array('${call_function:csv}', ','))) AND ('${address:csv}' = '*' OR address = ANY (string_to_array('${address:csv}', ','))) ORDER BY block_timestamp DESC LIMIT 50",
+          "rawSql": "SELECT to_timestamp(block_timestamp / 1000.0) as time, call_module, call_function, netuid, address, success, block_number FROM extrinsics WHERE ('${netuid:csv}' = '*' OR netuid::text = ANY (string_to_array('${netuid:csv}', ','))) AND ('${status:csv}' = '*' OR success::text = ANY (string_to_array('${status:csv}', ','))) AND ('${call_module:csv}' = '*' OR call_module = ANY (string_to_array('${call_module:csv}', ','))) AND ('${call_function:csv}' = '*' OR call_function = ANY (string_to_array('${call_function:csv}', ','))) AND ('${address:csv}' = '*' OR address = ANY (string_to_array('${address:csv}', ','))) ORDER BY block_number DESC LIMIT 50",
           "refId": "A",
           "format": "table"
         }
