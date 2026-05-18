@@ -14,6 +14,7 @@
         "type": "postgres",
         "uid": "postgresql"
       },
+      "description": "First (lowest) block number present in `metagraph_block`. Indicates how far back the backfill or live sync has captured data.",
       "fieldConfig": {
         "defaults": {
           "color": {
@@ -36,7 +37,7 @@
       },
       "gridPos": {
         "h": 4,
-        "w": 8,
+        "w": 4,
         "x": 0,
         "y": 0
       },
@@ -65,11 +66,11 @@
           "editorMode": "code",
           "format": "table",
           "rawQuery": true,
-          "rawSql": "WITH latest_block AS (\n    SELECT MAX(b.number) AS block_number\n    FROM metagraph_block b\n    WHERE b.timestamp <= $__timeTo()::timestamp\n)\nSELECT\n    SUM(ns.total_stake) / 1e9 AS total_tao_staked\nFROM metagraph_neuron_snapshot ns\nJOIN latest_block lb ON ns.block_id = lb.block_number",
+          "rawSql": "SELECT MIN(number)::bigint AS first_block FROM metagraph_block",
           "refId": "A"
         }
       ],
-      "title": "Total Tao Staked",
+      "title": "First synced block",
       "type": "stat"
     },
     {
@@ -77,6 +78,7 @@
         "type": "postgres",
         "uid": "postgresql"
       },
+      "description": "Latest (highest) block number present in `metagraph_block`. For live sync this is near chain head; for backfill it is the most recent block processed.",
       "fieldConfig": {
         "defaults": {
           "color": {
@@ -87,7 +89,7 @@
             "mode": "absolute",
             "steps": [
               {
-                "color": "red",
+                "color": "blue",
                 "value": null
               }
             ]
@@ -99,8 +101,8 @@
       },
       "gridPos": {
         "h": 4,
-        "w": 8,
-        "x": 8,
+        "w": 4,
+        "x": 4,
         "y": 0
       },
       "id": 2,
@@ -128,11 +130,11 @@
           "editorMode": "code",
           "format": "table",
           "rawQuery": true,
-          "rawSql": "-- Derived root TAO contribution: (total_stake - alpha_stake) / tao_weight\n-- tao_weight is the dTAO chain constant (~0.18) controlling root-stake weighting\nWITH latest_block AS (\n    SELECT MAX(b.number) AS block_number\n    FROM metagraph_block b\n    WHERE b.timestamp <= $__timeTo()::timestamp\n)\nSELECT\n    SUM(GREATEST(ns.total_stake - ns.alpha_stake, 0)) / 1e9 / 0.18 AS root_stake_tao\nFROM metagraph_neuron_snapshot ns\nJOIN latest_block lb ON ns.block_id = lb.block_number",
+          "rawSql": "SELECT MAX(number)::bigint AS latest_block FROM metagraph_block",
           "refId": "A"
         }
       ],
-      "title": "Total Root Stake",
+      "title": "Latest synced block",
       "type": "stat"
     },
     {
@@ -140,6 +142,7 @@
         "type": "postgres",
         "uid": "postgresql"
       },
+      "description": "Total number of rows in `metagraph_block`. Each row represents one block that has at least one netuid's epoch-start dump. Roughly proportional to (block span) × (active netuids) / tempo.",
       "fieldConfig": {
         "defaults": {
           "color": {
@@ -150,7 +153,7 @@
             "mode": "absolute",
             "steps": [
               {
-                "color": "yellow",
+                "color": "green",
                 "value": null
               }
             ]
@@ -162,8 +165,8 @@
       },
       "gridPos": {
         "h": 4,
-        "w": 8,
-        "x": 16,
+        "w": 4,
+        "x": 8,
         "y": 0
       },
       "id": 3,
@@ -191,11 +194,11 @@
           "editorMode": "code",
           "format": "table",
           "rawQuery": true,
-          "rawSql": "WITH latest_block AS (\n    SELECT MAX(b.number) AS block_number\n    FROM metagraph_block b\n    WHERE b.timestamp <= $__timeTo()::timestamp\n)\nSELECT\n    SUM(ns.total_stake) / 1e9 AS alpha_stake\nFROM metagraph_neuron_snapshot ns\nJOIN metagraph_neuron n ON ns.neuron_id = n.id\nJOIN latest_block lb ON ns.block_id = lb.block_number\nWHERE n.subnet_id > 0",
+          "rawSql": "SELECT COUNT(*)::bigint AS total_blocks FROM metagraph_block",
           "refId": "A"
         }
       ],
-      "title": "Total Alpha Stake",
+      "title": "Total blocks synced",
       "type": "stat"
     },
     {
@@ -203,46 +206,13 @@
         "type": "postgres",
         "uid": "postgresql"
       },
+      "description": "Wall-clock span between the earliest and latest synced block, in days. Computed from `metagraph_block.timestamp`.",
       "fieldConfig": {
         "defaults": {
           "color": {
-            "mode": "palette-classic"
-          },
-          "custom": {
-            "axisBorderShow": false,
-            "axisCenteredZero": false,
-            "axisColorMode": "text",
-            "axisLabel": "",
-            "axisPlacement": "auto",
-            "barAlignment": 0,
-            "drawStyle": "line",
-            "fillOpacity": 50,
-            "gradientMode": "opacity",
-            "hideFrom": {
-              "legend": false,
-              "tooltip": false,
-              "viz": false
-            },
-            "insertNulls": false,
-            "lineInterpolation": "smooth",
-            "lineWidth": 2,
-            "pointSize": 5,
-            "scaleDistribution": {
-              "type": "linear"
-            },
-            "showPoints": "never",
-            "spanNulls": true,
-            "stacking": {
-              "group": "A",
-              "mode": "none"
-            },
-            "thresholdsStyle": {
-              "mode": "off"
-            }
+            "mode": "thresholds"
           },
           "mappings": [],
-          "max": 100,
-          "min": 0,
           "thresholds": {
             "mode": "absolute",
             "steps": [
@@ -252,61 +222,31 @@
               }
             ]
           },
-          "unit": "percent"
+          "unit": "d",
+          "decimals": 1
         },
-        "overrides": [
-          {
-            "matcher": {
-              "id": "byName",
-              "options": "Total Root Stake"
-            },
-            "properties": [
-              {
-                "id": "color",
-                "value": {
-                  "fixedColor": "red",
-                  "mode": "fixed"
-                }
-              }
-            ]
-          },
-          {
-            "matcher": {
-              "id": "byName",
-              "options": "Total Alpha Stake"
-            },
-            "properties": [
-              {
-                "id": "color",
-                "value": {
-                  "fixedColor": "yellow",
-                  "mode": "fixed"
-                }
-              }
-            ]
-          }
-        ]
+        "overrides": []
       },
       "gridPos": {
-        "h": 10,
-        "w": 24,
-        "x": 0,
-        "y": 4
+        "h": 4,
+        "w": 4,
+        "x": 12,
+        "y": 0
       },
       "id": 4,
       "options": {
-        "legend": {
+        "colorMode": "value",
+        "graphMode": "none",
+        "justifyMode": "auto",
+        "orientation": "auto",
+        "reduceOptions": {
           "calcs": [
             "lastNotNull"
           ],
-          "displayMode": "list",
-          "placement": "bottom",
-          "showLegend": true
+          "fields": "",
+          "values": false
         },
-        "tooltip": {
-          "mode": "multi",
-          "sort": "none"
-        }
+        "textMode": "auto"
       },
       "pluginVersion": "10.2.0",
       "targets": [
@@ -316,20 +256,147 @@
             "uid": "postgresql"
           },
           "editorMode": "code",
-          "format": "time_series",
+          "format": "table",
           "rawQuery": true,
-          "rawSql": "-- Per-block effective-stake split into root-TAO contribution vs alpha contribution.\n-- root_contrib = total_stake - alpha_stake (the tao_weight*root_stake portion of effective stake)\n-- alpha_contrib = alpha_stake (the alpha portion of effective stake)\n-- Both are in the same units (rao of effective consensus stake); sum to total_stake.\nWITH stake_by_block AS (\n    SELECT\n        b.timestamp AS time,\n        SUM(GREATEST(ns.total_stake - ns.alpha_stake, 0)) AS root_contrib,\n        SUM(ns.alpha_stake)                               AS alpha_contrib,\n        SUM(ns.total_stake)                               AS total_stake\n    FROM metagraph_neuron_snapshot ns\n    JOIN metagraph_block b ON ns.block_id = b.number\n    WHERE b.timestamp BETWEEN $__timeFrom()::timestamp AND $__timeTo()::timestamp\n    GROUP BY b.timestamp\n)\nSELECT\n    time,\n    CASE WHEN total_stake > 0 THEN (root_contrib::numeric / total_stake * 100)  ELSE 0 END AS \"Total Root Stake\",\n    CASE WHEN total_stake > 0 THEN (alpha_contrib::numeric / total_stake * 100) ELSE 0 END AS \"Total Alpha Stake\"\nFROM stake_by_block\nORDER BY time",
+          "rawSql": "SELECT ROUND(EXTRACT(EPOCH FROM (MAX(timestamp) - MIN(timestamp))) / 86400.0, 1)::float AS span_days FROM metagraph_block",
           "refId": "A"
         }
       ],
-      "title": "Root vs Alpha Stake Distribution",
-      "type": "timeseries"
+      "title": "Span (days)",
+      "type": "stat"
     },
     {
       "datasource": {
         "type": "postgres",
         "uid": "postgresql"
       },
+      "description": "Chain-time timestamp of the earliest synced block.",
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "thresholds"
+          },
+          "mappings": [],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "blue",
+                "value": null
+              }
+            ]
+          },
+          "unit": "none"
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 4,
+        "w": 4,
+        "x": 16,
+        "y": 0
+      },
+      "id": 5,
+      "options": {
+        "colorMode": "value",
+        "graphMode": "none",
+        "justifyMode": "auto",
+        "orientation": "auto",
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "",
+          "values": false
+        },
+        "textMode": "auto"
+      },
+      "pluginVersion": "10.2.0",
+      "targets": [
+        {
+          "datasource": {
+            "type": "postgres",
+            "uid": "postgresql"
+          },
+          "editorMode": "code",
+          "format": "table",
+          "rawQuery": true,
+          "rawSql": "SELECT to_char(MIN(timestamp), 'YYYY-MM-DD HH24:MI') AS earliest FROM metagraph_block",
+          "refId": "A"
+        }
+      ],
+      "title": "Earliest timestamp",
+      "type": "stat"
+    },
+    {
+      "datasource": {
+        "type": "postgres",
+        "uid": "postgresql"
+      },
+      "description": "Chain-time timestamp of the latest synced block. The two APY panels below anchor their windows (1h / 1d / 1w / 1m) to a per-subnet variant of this latest timestamp.",
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "thresholds"
+          },
+          "mappings": [],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "blue",
+                "value": null
+              }
+            ]
+          },
+          "unit": "none"
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 4,
+        "w": 4,
+        "x": 20,
+        "y": 0
+      },
+      "id": 6,
+      "options": {
+        "colorMode": "value",
+        "graphMode": "none",
+        "justifyMode": "auto",
+        "orientation": "auto",
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "",
+          "values": false
+        },
+        "textMode": "auto"
+      },
+      "pluginVersion": "10.2.0",
+      "targets": [
+        {
+          "datasource": {
+            "type": "postgres",
+            "uid": "postgresql"
+          },
+          "editorMode": "code",
+          "format": "table",
+          "rawQuery": true,
+          "rawSql": "SELECT to_char(MAX(timestamp), 'YYYY-MM-DD HH24:MI') AS latest FROM metagraph_block",
+          "refId": "A"
+        }
+      ],
+      "title": "Latest timestamp",
+      "type": "stat"
+    },
+    {
+      "datasource": {
+        "type": "postgres",
+        "uid": "postgresql"
+      },
+      "description": "Per-validator APY for the selected subnet, computed with **total_stake** (effective consensus stake = alpha_stake + tao_weight × root_stake) as the denominator. This is the delegator-perspective yield — what a TAO-equivalent staker earns on this subnet. Aligns with taostats convention and is comparable across validators regardless of their alpha-vs-root mix. Formula: `dividend × (alpha_out_emission / total_stake) × (1 − owner_cut) × 0.5 × BLOCKS_PER_YEAR × 100`. Windows (1h / 1d / 1w / 1m) anchor to MAX(block.timestamp) for this subnet's validator snapshots — Grafana's time picker is ignored. Caveats: owner_cut hardcoded to 0.09 (chain value not synced); alpha_out_emission falls back to 1 TAO/block when DB column is 0; validator_take (commission) not included — APY is gross.",
       "fieldConfig": {
         "defaults": {
           "color": {
@@ -499,9 +566,9 @@
         "h": 14,
         "w": 24,
         "x": 0,
-        "y": 14
+        "y": 4
       },
-      "id": 5,
+      "id": 7,
       "options": {
         "cellHeight": "sm",
         "footer": {
@@ -542,6 +609,7 @@
         "type": "postgres",
         "uid": "postgresql"
       },
+      "description": "Per-validator APY for the selected subnet, computed with **alpha_stake** as the denominator (excludes the root TAO contribution to effective stake). This is the alpha-denominated yield — what a unit of alpha exposure earns on this subnet. Validators with significant root TAO stake show inflated values vs the delegator view: alpha-paid rewards divided by a smaller alpha base. Useful for alpha-yield comparisons. For validators with no root stake, this value equals the delegator-view APY. Formula: `dividend × (alpha_out_emission / alpha_stake) × (1 − owner_cut) × 0.5 × BLOCKS_PER_YEAR × 100`. Same window-anchor and caveats as the delegator panel.",
       "fieldConfig": {
         "defaults": {
           "color": {
@@ -711,9 +779,9 @@
         "h": 14,
         "w": 24,
         "x": 0,
-        "y": 28
+        "y": 18
       },
-      "id": 6,
+      "id": 8,
       "options": {
         "cellHeight": "sm",
         "footer": {
@@ -748,146 +816,6 @@
       ],
       "title": "Subnet Validators APY (alpha-only view / yield on alpha exposure)",
       "type": "table"
-    },
-    {
-      "datasource": {
-        "type": "postgres",
-        "uid": "postgresql"
-      },
-      "fieldConfig": {
-        "defaults": {
-          "color": {
-            "mode": "thresholds"
-          },
-          "mappings": [],
-          "thresholds": {
-            "mode": "absolute",
-            "steps": [
-              {
-                "color": "blue",
-                "value": null
-              }
-            ]
-          },
-          "unit": "none",
-          "decimals": 0
-        },
-        "overrides": [
-          {
-            "matcher": {
-              "id": "byName",
-              "options": "first_block"
-            },
-            "properties": [
-              {
-                "id": "displayName",
-                "value": "First synced block"
-              }
-            ]
-          },
-          {
-            "matcher": {
-              "id": "byName",
-              "options": "latest_block"
-            },
-            "properties": [
-              {
-                "id": "displayName",
-                "value": "Latest synced block"
-              }
-            ]
-          },
-          {
-            "matcher": {
-              "id": "byName",
-              "options": "total_blocks"
-            },
-            "properties": [
-              {
-                "id": "displayName",
-                "value": "Total blocks synced"
-              }
-            ]
-          },
-          {
-            "matcher": {
-              "id": "byName",
-              "options": "span_days"
-            },
-            "properties": [
-              {
-                "id": "displayName",
-                "value": "Span (days)"
-              },
-              {
-                "id": "decimals",
-                "value": 1
-              }
-            ]
-          },
-          {
-            "matcher": {
-              "id": "byName",
-              "options": "earliest"
-            },
-            "properties": [
-              {
-                "id": "displayName",
-                "value": "Earliest"
-              }
-            ]
-          },
-          {
-            "matcher": {
-              "id": "byName",
-              "options": "latest"
-            },
-            "properties": [
-              {
-                "id": "displayName",
-                "value": "Latest"
-              }
-            ]
-          }
-        ]
-      },
-      "gridPos": {
-        "h": 4,
-        "w": 24,
-        "x": 0,
-        "y": 42
-      },
-      "id": 7,
-      "options": {
-        "colorMode": "value",
-        "graphMode": "none",
-        "justifyMode": "auto",
-        "orientation": "horizontal",
-        "reduceOptions": {
-          "calcs": [
-            "lastNotNull"
-          ],
-          "fields": "",
-          "values": false
-        },
-        "textMode": "auto"
-      },
-      "pluginVersion": "10.2.0",
-      "targets": [
-        {
-          "datasource": {
-            "type": "postgres",
-            "uid": "postgresql"
-          },
-          "editorMode": "code",
-          "format": "table",
-          "rawQuery": true,
-          "rawSql": "SELECT\n    MIN(number)::bigint AS first_block,\n    MAX(number)::bigint AS latest_block,\n    COUNT(*)::bigint    AS total_blocks,\n    ROUND(EXTRACT(EPOCH FROM (MAX(timestamp) - MIN(timestamp))) / 86400.0, 1)::float AS span_days,\n    to_char(MIN(timestamp), 'YYYY-MM-DD HH24:MI') AS earliest,\n    to_char(MAX(timestamp), 'YYYY-MM-DD HH24:MI') AS latest\nFROM metagraph_block",
-          "refId": "A"
-        }
-      ],
-      "title": "Sync coverage",
-      "type": "stat"
     }
   ],
   "refresh": "",
