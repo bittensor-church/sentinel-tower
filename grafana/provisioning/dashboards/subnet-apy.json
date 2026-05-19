@@ -54,7 +54,7 @@
           "fields": "",
           "values": false
         },
-        "textMode": "value_and_name"
+        "textMode": "value"
       },
       "pluginVersion": "10.2.0",
       "targets": [
@@ -118,7 +118,7 @@
           "fields": "",
           "values": false
         },
-        "textMode": "value_and_name"
+        "textMode": "value"
       },
       "pluginVersion": "10.2.0",
       "targets": [
@@ -182,7 +182,7 @@
           "fields": "",
           "values": false
         },
-        "textMode": "value_and_name"
+        "textMode": "value"
       },
       "pluginVersion": "10.2.0",
       "targets": [
@@ -194,7 +194,7 @@
           "editorMode": "code",
           "format": "table",
           "rawQuery": true,
-          "rawSql": "SELECT MIN(timestamp) AS earliest FROM metagraph_block",
+          "rawSql": "SELECT (EXTRACT(EPOCH FROM MIN(timestamp)) * 1000)::bigint AS earliest_ms FROM metagraph_block",
           "refId": "A"
         }
       ],
@@ -246,7 +246,7 @@
           "fields": "",
           "values": false
         },
-        "textMode": "value_and_name"
+        "textMode": "value"
       },
       "pluginVersion": "10.2.0",
       "targets": [
@@ -258,7 +258,7 @@
           "editorMode": "code",
           "format": "table",
           "rawQuery": true,
-          "rawSql": "SELECT MAX(timestamp) AS latest FROM metagraph_block",
+          "rawSql": "SELECT (EXTRACT(EPOCH FROM MAX(timestamp)) * 1000)::bigint AS latest_ms FROM metagraph_block",
           "refId": "A"
         }
       ],
@@ -286,7 +286,7 @@
               }
             ]
           },
-          "unit": "d",
+          "unit": "none",
           "decimals": 1
         },
         "overrides": []
@@ -310,7 +310,7 @@
           "fields": "",
           "values": false
         },
-        "textMode": "value_and_name"
+        "textMode": "value"
       },
       "pluginVersion": "10.2.0",
       "targets": [
@@ -374,7 +374,7 @@
           "fields": "",
           "values": false
         },
-        "textMode": "value_and_name"
+        "textMode": "value"
       },
       "pluginVersion": "10.2.0",
       "targets": [
@@ -438,7 +438,7 @@
           "fields": "",
           "values": false
         },
-        "textMode": "value_and_name"
+        "textMode": "value"
       },
       "pluginVersion": "10.2.0",
       "targets": [
@@ -502,7 +502,7 @@
           "fields": "",
           "values": false
         },
-        "textMode": "value_and_name"
+        "textMode": "value"
       },
       "pluginVersion": "10.2.0",
       "targets": [
