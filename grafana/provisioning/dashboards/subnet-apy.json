@@ -14,7 +14,7 @@
         "type": "postgres",
         "uid": "postgresql"
       },
-      "description": "First (lowest) block number present in `metagraph_block`. Indicates how far back the backfill or live sync has captured data.",
+      "description": "Lowest block number present in `metagraph_block`. Indicates how far back the backfill or live sync has captured data.",
       "fieldConfig": {
         "defaults": {
           "color": {
@@ -37,7 +37,7 @@
       },
       "gridPos": {
         "h": 4,
-        "w": 4,
+        "w": 6,
         "x": 0,
         "y": 0
       },
@@ -54,7 +54,7 @@
           "fields": "",
           "values": false
         },
-        "textMode": "auto"
+        "textMode": "value_and_name"
       },
       "pluginVersion": "10.2.0",
       "targets": [
@@ -78,7 +78,7 @@
         "type": "postgres",
         "uid": "postgresql"
       },
-      "description": "Latest (highest) block number present in `metagraph_block`. For live sync this is near chain head; for backfill it is the most recent block processed.",
+      "description": "Highest block number present in `metagraph_block`. For live sync this is near chain head; for backfill it is the most recent block processed.",
       "fieldConfig": {
         "defaults": {
           "color": {
@@ -101,8 +101,8 @@
       },
       "gridPos": {
         "h": 4,
-        "w": 4,
-        "x": 4,
+        "w": 6,
+        "x": 6,
         "y": 0
       },
       "id": 2,
@@ -118,7 +118,7 @@
           "fields": "",
           "values": false
         },
-        "textMode": "auto"
+        "textMode": "value_and_name"
       },
       "pluginVersion": "10.2.0",
       "targets": [
@@ -142,7 +142,7 @@
         "type": "postgres",
         "uid": "postgresql"
       },
-      "description": "Total number of rows in `metagraph_block`. Each row represents one block that has at least one netuid's epoch-start dump. Roughly proportional to (block span) \u00d7 (active netuids) / tempo.",
+      "description": "Chain-time timestamp of the earliest synced block (returned as a Postgres timestamp; Grafana renders with `dateTimeAsLocal`).",
       "fieldConfig": {
         "defaults": {
           "color": {
@@ -153,20 +153,20 @@
             "mode": "absolute",
             "steps": [
               {
-                "color": "green",
+                "color": "blue",
                 "value": null
               }
             ]
           },
-          "unit": "none",
+          "unit": "dateTimeAsLocal",
           "decimals": 0
         },
         "overrides": []
       },
       "gridPos": {
         "h": 4,
-        "w": 4,
-        "x": 8,
+        "w": 6,
+        "x": 12,
         "y": 0
       },
       "id": 3,
@@ -182,7 +182,7 @@
           "fields": "",
           "values": false
         },
-        "textMode": "auto"
+        "textMode": "value_and_name"
       },
       "pluginVersion": "10.2.0",
       "targets": [
@@ -194,11 +194,11 @@
           "editorMode": "code",
           "format": "table",
           "rawQuery": true,
-          "rawSql": "SELECT COUNT(*)::bigint AS total_blocks FROM metagraph_block",
+          "rawSql": "SELECT MIN(timestamp) AS earliest FROM metagraph_block",
           "refId": "A"
         }
       ],
-      "title": "Total blocks synced",
+      "title": "Earliest timestamp",
       "type": "stat"
     },
     {
@@ -206,7 +206,71 @@
         "type": "postgres",
         "uid": "postgresql"
       },
-      "description": "Wall-clock span between the earliest and latest synced block, in days. Computed from `metagraph_block.timestamp`.",
+      "description": "Chain-time timestamp of the latest synced block. The APY panel anchors its 1h / 1d / 1w / 1m windows to a per-subnet variant of this.",
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "thresholds"
+          },
+          "mappings": [],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "blue",
+                "value": null
+              }
+            ]
+          },
+          "unit": "dateTimeAsLocal",
+          "decimals": 0
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 4,
+        "w": 6,
+        "x": 18,
+        "y": 0
+      },
+      "id": 4,
+      "options": {
+        "colorMode": "value",
+        "graphMode": "none",
+        "justifyMode": "auto",
+        "orientation": "auto",
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "",
+          "values": false
+        },
+        "textMode": "value_and_name"
+      },
+      "pluginVersion": "10.2.0",
+      "targets": [
+        {
+          "datasource": {
+            "type": "postgres",
+            "uid": "postgresql"
+          },
+          "editorMode": "code",
+          "format": "table",
+          "rawQuery": true,
+          "rawSql": "SELECT MAX(timestamp) AS latest FROM metagraph_block",
+          "refId": "A"
+        }
+      ],
+      "title": "Latest timestamp",
+      "type": "stat"
+    },
+    {
+      "datasource": {
+        "type": "postgres",
+        "uid": "postgresql"
+      },
+      "description": "Wall-clock span between earliest and latest synced block, in days. Computed from `metagraph_block.timestamp`.",
       "fieldConfig": {
         "defaults": {
           "color": {
@@ -229,11 +293,11 @@
       },
       "gridPos": {
         "h": 4,
-        "w": 4,
-        "x": 12,
-        "y": 0
+        "w": 6,
+        "x": 0,
+        "y": 4
       },
-      "id": 4,
+      "id": 5,
       "options": {
         "colorMode": "value",
         "graphMode": "none",
@@ -246,7 +310,7 @@
           "fields": "",
           "values": false
         },
-        "textMode": "auto"
+        "textMode": "value_and_name"
       },
       "pluginVersion": "10.2.0",
       "targets": [
@@ -270,7 +334,7 @@
         "type": "postgres",
         "uid": "postgresql"
       },
-      "description": "Chain-time timestamp of the earliest synced block.",
+      "description": "Rows in `metagraph_block` \u2014 one per unique block number that any netuid has dumped. NOT the same as work units; see 'Total dumps'. Different netuids hit epoch-start at different block numbers (per `(block + netuid + 2) mod 361 == 0`), so many of the same chain blocks collapse into one row here.",
       "fieldConfig": {
         "defaults": {
           "color": {
@@ -281,83 +345,21 @@
             "mode": "absolute",
             "steps": [
               {
-                "color": "blue",
+                "color": "green",
                 "value": null
               }
             ]
           },
-          "unit": "none"
+          "unit": "none",
+          "decimals": 0
         },
         "overrides": []
       },
       "gridPos": {
         "h": 4,
-        "w": 4,
-        "x": 16,
-        "y": 0
-      },
-      "id": 5,
-      "options": {
-        "colorMode": "value",
-        "graphMode": "none",
-        "justifyMode": "auto",
-        "orientation": "auto",
-        "reduceOptions": {
-          "calcs": [
-            "lastNotNull"
-          ],
-          "fields": "",
-          "values": false
-        },
-        "textMode": "auto"
-      },
-      "pluginVersion": "10.2.0",
-      "targets": [
-        {
-          "datasource": {
-            "type": "postgres",
-            "uid": "postgresql"
-          },
-          "editorMode": "code",
-          "format": "table",
-          "rawQuery": true,
-          "rawSql": "SELECT to_char(MIN(timestamp), 'YYYY-MM-DD HH24:MI') AS earliest FROM metagraph_block",
-          "refId": "A"
-        }
-      ],
-      "title": "Earliest timestamp",
-      "type": "stat"
-    },
-    {
-      "datasource": {
-        "type": "postgres",
-        "uid": "postgresql"
-      },
-      "description": "Chain-time timestamp of the latest synced block. The two APY panels below anchor their windows (1h / 1d / 1w / 1m) to a per-subnet variant of this latest timestamp.",
-      "fieldConfig": {
-        "defaults": {
-          "color": {
-            "mode": "thresholds"
-          },
-          "mappings": [],
-          "thresholds": {
-            "mode": "absolute",
-            "steps": [
-              {
-                "color": "blue",
-                "value": null
-              }
-            ]
-          },
-          "unit": "none"
-        },
-        "overrides": []
-      },
-      "gridPos": {
-        "h": 4,
-        "w": 4,
-        "x": 20,
-        "y": 0
+        "w": 6,
+        "x": 6,
+        "y": 4
       },
       "id": 6,
       "options": {
@@ -372,7 +374,7 @@
           "fields": "",
           "values": false
         },
-        "textMode": "auto"
+        "textMode": "value_and_name"
       },
       "pluginVersion": "10.2.0",
       "targets": [
@@ -384,11 +386,139 @@
           "editorMode": "code",
           "format": "table",
           "rawQuery": true,
-          "rawSql": "SELECT to_char(MAX(timestamp), 'YYYY-MM-DD HH24:MI') AS latest FROM metagraph_block",
+          "rawSql": "SELECT COUNT(*)::bigint AS unique_blocks FROM metagraph_block",
           "refId": "A"
         }
       ],
-      "title": "Latest timestamp",
+      "title": "Unique blocks",
+      "type": "stat"
+    },
+    {
+      "datasource": {
+        "type": "postgres",
+        "uid": "postgresql"
+      },
+      "description": "Rows in `metagraph_dump` \u2014 one per `(netuid, block)` pair. This is the backfill's work-unit counter; matches the `count=N missing dumps` line in the backfill log. Equals (unique blocks) \u00d7 (average netuids dumping at that block) \u2248 unique_blocks \u00d7 8 with 128 netuids on tempo 360.",
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "thresholds"
+          },
+          "mappings": [],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": null
+              }
+            ]
+          },
+          "unit": "none",
+          "decimals": 0
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 4,
+        "w": 6,
+        "x": 12,
+        "y": 4
+      },
+      "id": 7,
+      "options": {
+        "colorMode": "value",
+        "graphMode": "none",
+        "justifyMode": "auto",
+        "orientation": "auto",
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "",
+          "values": false
+        },
+        "textMode": "value_and_name"
+      },
+      "pluginVersion": "10.2.0",
+      "targets": [
+        {
+          "datasource": {
+            "type": "postgres",
+            "uid": "postgresql"
+          },
+          "editorMode": "code",
+          "format": "table",
+          "rawQuery": true,
+          "rawSql": "SELECT COUNT(*)::bigint AS total_dumps FROM metagraph_dump",
+          "refId": "A"
+        }
+      ],
+      "title": "Total dumps",
+      "type": "stat"
+    },
+    {
+      "datasource": {
+        "type": "postgres",
+        "uid": "postgresql"
+      },
+      "description": "Rows in `metagraph_neuron_snapshot` \u2014 one per `(neuron, block)`. Roughly: total_dumps \u00d7 neurons_per_subnet (commonly 64 or 256). The denominator most downstream queries hit.",
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "thresholds"
+          },
+          "mappings": [],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": null
+              }
+            ]
+          },
+          "unit": "none",
+          "decimals": 0
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 4,
+        "w": 6,
+        "x": 18,
+        "y": 4
+      },
+      "id": 8,
+      "options": {
+        "colorMode": "value",
+        "graphMode": "none",
+        "justifyMode": "auto",
+        "orientation": "auto",
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "",
+          "values": false
+        },
+        "textMode": "value_and_name"
+      },
+      "pluginVersion": "10.2.0",
+      "targets": [
+        {
+          "datasource": {
+            "type": "postgres",
+            "uid": "postgresql"
+          },
+          "editorMode": "code",
+          "format": "table",
+          "rawQuery": true,
+          "rawSql": "SELECT COUNT(*)::bigint AS neuron_snapshots FROM metagraph_neuron_snapshot",
+          "refId": "A"
+        }
+      ],
+      "title": "Neuron snapshots",
       "type": "stat"
     },
     {
@@ -566,9 +696,9 @@
         "h": 14,
         "w": 24,
         "x": 0,
-        "y": 4
+        "y": 8
       },
-      "id": 7,
+      "id": 9,
       "options": {
         "cellHeight": "sm",
         "footer": {
