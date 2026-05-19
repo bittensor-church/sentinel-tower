@@ -134,6 +134,13 @@ CELERY_TASK_ROUTES = {
     "*": {"queue": "celery"},
 }
 CELERY_TASK_TIME_LIMIT = int(timedelta(minutes=5).total_seconds())
+
+CELERY_BEAT_SCHEDULE = {
+    "refresh-validator-apy-windows": {
+        "task": "apps.metagraph.tasks.refresh_validator_apy_windows",
+        "schedule": timedelta(minutes=15),
+    },
+}
 CELERY_TASK_ALWAYS_EAGER = env.bool("CELERY_TASK_ALWAYS_EAGER", default=False)
 CELERY_TASK_EAGER_PROPAGATES = env.bool("CELERY_TASK_EAGER_PROPAGATES", default=False)
 
