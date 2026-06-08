@@ -1,6 +1,6 @@
 """Tests for concrete notification handlers (format_message output)."""
 
-from unittest.mock import MagicMock, patch
+from unittest.mock import patch
 
 import pytest
 from sentinel.v1.testing import (
@@ -15,6 +15,7 @@ from sentinel.v1.testing import (
 
 from apps.notifications.handlers.coldkey_swap import ColdkeyRoles
 from tests.notifications.conftest import flatten_extrinsic
+from tests.notifications.test_base import FakeChannel
 
 # ── AdminUtilsNotification ─────────────────────────────────────────────
 
@@ -359,36 +360,86 @@ def test_coldkey_format_no_labels(coldkey_handler):
     assert "(" not in content.split("signer")[1].split("\n")[0]
 
 
-# ── ColdkeySwapNotification uses DB webhooks per subnet ──────────────
+# ── ColdkeySwapNotification routing: central always, owned subnet extra ──
 
 
 @pytest.mark.django_db
-@patch("apps.notifications.channels.httpx.Client")
-def test_coldkey_notify_uses_db_webhook_for_subnet(mock_client_cls, coldkey_handler):
-    """When a SubnetWebhook exists for the extrinsic's netuid, it is used."""
+@patch("apps.notifications.handlers.coldkey_swap.resolve_coldkey_roles")
+@patch("apps.notifications.channels._http_client")
+def test_coldkey_notify_owner_swap_goes_to_central_and_owned_subnet(mock_http, mock_resolve, coldkey_handler):
+    """An owner swap reaches the central channel AND the owned subnet's DB webhook."""
     from apps.notifications.models import SubnetWebhook
 
     SubnetWebhook.objects.create(netuid=7, url="https://discord.com/api/webhooks/db/subnet7")
+    mock_resolve.return_value = ColdkeyRoles(owned_subnets=[7])
 
-    mock_response = MagicMock()
-    mock_response.raise_for_status = MagicMock()
-    mock_client = MagicMock()
-    mock_client.post.return_value = mock_response
-    mock_client.__enter__ = MagicMock(return_value=mock_client)
-    mock_client.__exit__ = MagicMock(return_value=False)
-    mock_client_cls.return_value = mock_client
+    central = FakeChannel()
+    coldkey_handler.fallback_channel = central
 
     dto = AnnounceColdkeySwapExtrinsicDTOFactory.build_for_hash("0xabc")
-    ext = flatten_extrinsic(
-        dto,
-        extrinsic_index=0,
-        address="5Gold...",
-        netuid=7,
-    )
+    ext = flatten_extrinsic(dto, extrinsic_index=0, address="5Gowner...")
 
-    count = coldkey_handler.notify(100, [ext])
+    coldkey_handler.notify(100, [ext])
 
-    assert count == 1
-    mock_client.post.assert_called_once()
-    called_url = mock_client.post.call_args[0][0]
-    assert called_url == "https://discord.com/api/webhooks/db/subnet7"
+    # central channel always receives it
+    assert len(central.payloads) == 1
+    # owned subnet's DB webhook additionally receives it
+    assert mock_http.post.call_args[0][0] == "https://discord.com/api/webhooks/db/subnet7"
+
+
+@pytest.mark.django_db
+@patch("apps.notifications.handlers.coldkey_swap.resolve_coldkey_roles")
+def test_coldkey_notify_owner_swap_without_webhook_posts_central_once(mock_resolve, coldkey_handler):
+    """An owner swap whose subnet has no webhook reaches central exactly once (no double-post)."""
+    mock_resolve.return_value = ColdkeyRoles(owned_subnets=[7])  # no SubnetWebhook configured
+
+    central = FakeChannel()
+    coldkey_handler.fallback_channel = central
+
+    dto = AnnounceColdkeySwapExtrinsicDTOFactory.build_for_hash("0xabc")
+    ext = flatten_extrinsic(dto, extrinsic_index=0, address="5Gowner...")
+
+    coldkey_handler.notify(100, [ext])
+
+    assert len(central.payloads) == 1
+
+
+@pytest.mark.django_db
+@patch("apps.notifications.handlers.coldkey_swap.resolve_coldkey_roles")
+@patch("apps.notifications.channels._http_client")
+def test_coldkey_notify_non_owner_swap_central_only(mock_http, mock_resolve, coldkey_handler):
+    """A validator/miner (non-owner) swap goes to central only — never a subnet webhook."""
+    from apps.notifications.models import SubnetWebhook
+
+    SubnetWebhook.objects.create(netuid=7, url="https://discord.com/api/webhooks/db/subnet7")
+    mock_resolve.return_value = ColdkeyRoles(validator_subnets=[7], miner_subnets=[9])
+
+    central = FakeChannel()
+    coldkey_handler.fallback_channel = central
+
+    dto = AnnounceColdkeySwapExtrinsicDTOFactory.build_for_hash("0xabc")
+    ext = flatten_extrinsic(dto, extrinsic_index=0, address="5Gvali...")
+
+    coldkey_handler.notify(100, [ext])
+
+    assert len(central.payloads) == 1
+    mock_http.post.assert_not_called()
+
+
+@pytest.mark.django_db
+@patch("apps.notifications.handlers.coldkey_swap.resolve_coldkey_roles")
+@patch("apps.notifications.channels._http_client")
+def test_coldkey_notify_unknown_signer_central_only(mock_http, mock_resolve, coldkey_handler):
+    """A swap by a signer with no known roles still goes to the central channel."""
+    mock_resolve.return_value = ColdkeyRoles()  # unknown coldkey, no roles
+
+    central = FakeChannel()
+    coldkey_handler.fallback_channel = central
+
+    dto = AnnounceColdkeySwapExtrinsicDTOFactory.build_for_hash("0xabc")
+    ext = flatten_extrinsic(dto, extrinsic_index=0, address="5Gunknown...", netuid=None)
+
+    coldkey_handler.notify(100, [ext])
+
+    assert len(central.payloads) == 1
+    mock_http.post.assert_not_called()

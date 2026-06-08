@@ -55,14 +55,15 @@ class ColdkeySwapNotification(SubnetRoutedNotification):
     fallback_channel: ClassVar = DiscordWebhookChannel("DISCORD_COLDKEY_SWAP_WEBHOOK_URL")
 
     def notify(self, block_number: int, extrinsics: list[dict[str, Any]]) -> int:
-        """Enrich extrinsics with coldkey roles and discovered netuids, then route."""
+        """Announce every coldkey swap in the central channel; subnet owners' swaps
+        are additionally posted to the owned subnet's own channel."""
         if self.success_only:
             extrinsics = [e for e in extrinsics if e.get("success", False)]
 
         if not extrinsics:
             return 0
 
-        # Resolve roles for each unique signer and attach to extrinsics
+        # Resolve roles for each unique signer and attach them to each extrinsic.
         roles_cache: dict[str, ColdkeyRoles] = {}
         enriched: list[dict[str, Any]] = []
         for ext in extrinsics:
@@ -73,18 +74,30 @@ class ColdkeySwapNotification(SubnetRoutedNotification):
                 except Exception:  # noqa: BLE001
                     logger.warning("Failed to resolve coldkey roles", address=address, exc_info=True)
                     roles_cache[address] = ColdkeyRoles()
+            enriched.append({**ext, "_coldkey_roles": roles_cache.get(address, ColdkeyRoles())})
 
-            roles = roles_cache.get(address, ColdkeyRoles())
-            netuids = roles.all_netuids
+        # 1. Every coldkey swap is announced in the central channel.
+        total = 0
+        if self.fallback_channel and self.fallback_channel.send(self.format_message(block_number, enriched)):
+            logger.info(
+                "Coldkey-swap notification sent",
+                notification=self.__class__.__name__,
+                block_number=block_number,
+                extrinsic_count=len(enriched),
+            )
+            total = len(enriched)
 
-            if netuids:
-                # Fan out to each associated subnet for routing
-                for netuid in netuids:
-                    enriched.append({**ext, "netuid": netuid, "_coldkey_roles": roles})
-            else:
-                enriched.append({**ext, "_coldkey_roles": roles})
+        # 2. Swaps by a subnet owner are additionally posted to that subnet's own
+        #    channel. Only owned subnets route here — validator/miner associations
+        #    do not trigger a per-subnet notification.
+        owned: list[dict[str, Any]] = []
+        for ext in enriched:
+            for netuid in dict.fromkeys(ext["_coldkey_roles"].owned_subnets):
+                owned.append({**ext, "netuid": netuid})
+        if owned:
+            self._route_to_subnets(block_number, owned)
 
-        return super().notify(block_number, enriched)
+        return total
 
     def _resolve_labels(self, extrinsics: list[dict[str, Any]]) -> dict[str, str]:
         """Collect all coldkey addresses from extrinsics and resolve their labels."""

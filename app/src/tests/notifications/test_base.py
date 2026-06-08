@@ -282,7 +282,8 @@ class StubSubnetNotification(SubnetRoutedNotification):
 
 
 @pytest.mark.django_db
-def test_subnet_routed_sends_to_db_channel():
+@patch("apps.notifications.channels._http_client")
+def test_subnet_routed_sends_to_db_channel(mock_client):
     from apps.notifications.models import SubnetWebhook
 
     SubnetWebhook.objects.create(netuid=1, url="https://discord.com/api/webhooks/111/aaa")
@@ -290,11 +291,7 @@ def test_subnet_routed_sends_to_db_channel():
     n = StubSubnetNotification()
     extrinsics = [{"success": True, "netuid": 1}]
 
-    with patch("apps.notifications.channels.httpx.Client") as mock_client_cls:
-        mock_response = _mock_http_response()
-        mock_client = _mock_http_client(mock_client_cls, mock_response)
-
-        count = n.notify(100, extrinsics)
+    count = n.notify(100, extrinsics)
 
     assert count == 1
     mock_client.post.assert_called_once()
@@ -349,7 +346,8 @@ def test_subnet_routed_skips_none_netuid_without_fallback():
 
 
 @pytest.mark.django_db
-def test_subnet_routed_groups_by_netuid():
+@patch("apps.notifications.channels._http_client")
+def test_subnet_routed_groups_by_netuid(mock_client):
     from apps.notifications.models import SubnetWebhook
 
     SubnetWebhook.objects.create(netuid=1, url="https://discord.com/api/webhooks/111/aaa")
@@ -362,13 +360,10 @@ def test_subnet_routed_groups_by_netuid():
         {"success": True, "netuid": 1},
     ]
 
-    with patch("apps.notifications.channels.httpx.Client") as mock_client_cls:
-        mock_response = _mock_http_response()
-        _mock_http_client(mock_client_cls, mock_response)
-
-        count = n.notify(100, extrinsics)
+    count = n.notify(100, extrinsics)
 
     assert count == 3
+    assert mock_client.post.call_count == 2  # one POST per netuid group
 
 
 @pytest.mark.django_db
@@ -390,23 +385,3 @@ def test_subnet_routed_channel_property_raises():
     n = StubSubnetNotification()
     with pytest.raises(AttributeError):
         _ = n.channel
-
-
-# ── Test helpers ─────────────────────────────────────────────────────
-
-from unittest.mock import MagicMock  # noqa: E402
-
-
-def _mock_http_response():
-    mock_response = MagicMock()
-    mock_response.raise_for_status = MagicMock()
-    return mock_response
-
-
-def _mock_http_client(mock_client_cls, mock_response):
-    mock_client = MagicMock()
-    mock_client.post.return_value = mock_response
-    mock_client.__enter__ = MagicMock(return_value=mock_client)
-    mock_client.__exit__ = MagicMock(return_value=False)
-    mock_client_cls.return_value = mock_client
-    return mock_client

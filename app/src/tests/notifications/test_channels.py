@@ -71,17 +71,9 @@ def test_send_returns_false_when_no_url(channel, monkeypatch):
     assert channel.send({"content": "test"}) is False
 
 
-@patch("apps.notifications.channels.httpx.Client")
-def test_send_posts_to_webhook(mock_client_cls, channel, monkeypatch):
+@patch("apps.notifications.channels._http_client")
+def test_send_posts_to_webhook(mock_client, channel, monkeypatch):
     monkeypatch.setenv("TEST_WEBHOOK_URL", "https://discord.com/api/webhooks/123/abc")
-
-    mock_response = MagicMock()
-    mock_response.raise_for_status = MagicMock()
-    mock_client = MagicMock()
-    mock_client.post.return_value = mock_response
-    mock_client.__enter__ = MagicMock(return_value=mock_client)
-    mock_client.__exit__ = MagicMock(return_value=False)
-    mock_client_cls.return_value = mock_client
 
     result = channel.send({"content": "hello"})
 
@@ -92,20 +84,12 @@ def test_send_posts_to_webhook(mock_client_cls, channel, monkeypatch):
     )
 
 
-@patch("apps.notifications.channels.httpx.Client")
-def test_send_posts_to_multiple_webhooks(mock_client_cls, channel, monkeypatch):
+@patch("apps.notifications.channels._http_client")
+def test_send_posts_to_multiple_webhooks(mock_client, channel, monkeypatch):
     monkeypatch.setenv(
         "TEST_WEBHOOK_URL",
         "https://discord.com/api/webhooks/123/abc,https://discord.com/api/webhooks/456/def",
     )
-
-    mock_response = MagicMock()
-    mock_response.raise_for_status = MagicMock()
-    mock_client = MagicMock()
-    mock_client.post.return_value = mock_response
-    mock_client.__enter__ = MagicMock(return_value=mock_client)
-    mock_client.__exit__ = MagicMock(return_value=False)
-    mock_client_cls.return_value = mock_client
 
     result = channel.send({"content": "hello"})
 
@@ -115,8 +99,8 @@ def test_send_posts_to_multiple_webhooks(mock_client_cls, channel, monkeypatch):
     mock_client.post.assert_any_call("https://discord.com/api/webhooks/456/def", json={"content": "hello"})
 
 
-@patch("apps.notifications.channels.httpx.Client")
-def test_send_partial_failure_still_returns_true(mock_client_cls, channel, monkeypatch):
+@patch("apps.notifications.channels._http_client")
+def test_send_partial_failure_still_returns_true(mock_client, channel, monkeypatch):
     """If one URL fails but another succeeds, send() returns True."""
     monkeypatch.setenv(
         "TEST_WEBHOOK_URL",
@@ -124,7 +108,6 @@ def test_send_partial_failure_still_returns_true(mock_client_cls, channel, monke
     )
 
     mock_response_ok = MagicMock()
-    mock_response_ok.raise_for_status = MagicMock()
 
     mock_response_fail = MagicMock()
     mock_response_fail.status_code = 429
@@ -132,17 +115,13 @@ def test_send_partial_failure_still_returns_true(mock_client_cls, channel, monke
         "rate limited", request=MagicMock(), response=mock_response_fail
     )
 
-    mock_client = MagicMock()
     mock_client.post.side_effect = [mock_response_fail, mock_response_ok]
-    mock_client.__enter__ = MagicMock(return_value=mock_client)
-    mock_client.__exit__ = MagicMock(return_value=False)
-    mock_client_cls.return_value = mock_client
 
     assert channel.send({"content": "hello"}) is True
 
 
-@patch("apps.notifications.channels.httpx.Client")
-def test_send_returns_false_on_http_error(mock_client_cls, channel, monkeypatch):
+@patch("apps.notifications.channels._http_client")
+def test_send_returns_false_on_http_error(mock_client, channel, monkeypatch):
     monkeypatch.setenv("TEST_WEBHOOK_URL", "https://discord.com/api/webhooks/123/abc")
 
     mock_response = MagicMock()
@@ -150,24 +129,16 @@ def test_send_returns_false_on_http_error(mock_client_cls, channel, monkeypatch)
     mock_response.raise_for_status.side_effect = httpx.HTTPStatusError(
         "rate limited", request=MagicMock(), response=mock_response
     )
-    mock_client = MagicMock()
     mock_client.post.return_value = mock_response
-    mock_client.__enter__ = MagicMock(return_value=mock_client)
-    mock_client.__exit__ = MagicMock(return_value=False)
-    mock_client_cls.return_value = mock_client
 
     assert channel.send({"content": "hello"}) is False
 
 
-@patch("apps.notifications.channels.httpx.Client")
-def test_send_returns_false_on_connection_error(mock_client_cls, channel, monkeypatch):
+@patch("apps.notifications.channels._http_client")
+def test_send_returns_false_on_connection_error(mock_client, channel, monkeypatch):
     monkeypatch.setenv("TEST_WEBHOOK_URL", "https://discord.com/api/webhooks/123/abc")
 
-    mock_client = MagicMock()
     mock_client.post.side_effect = httpx.ConnectError("connection failed")
-    mock_client.__enter__ = MagicMock(return_value=mock_client)
-    mock_client.__exit__ = MagicMock(return_value=False)
-    mock_client_cls.return_value = mock_client
 
     assert channel.send({"content": "hello"}) is False
 
@@ -222,19 +193,11 @@ def test_db_channel_send_returns_false_when_no_urls():
 
 
 @pytest.mark.django_db
-@patch("apps.notifications.channels.httpx.Client")
-def test_db_channel_send_posts_to_urls(mock_client_cls):
+@patch("apps.notifications.channels._http_client")
+def test_db_channel_send_posts_to_urls(mock_client):
     from apps.notifications.models import SubnetWebhook
 
     SubnetWebhook.objects.create(netuid=1, url="https://discord.com/api/webhooks/111/aaa")
-
-    mock_response = MagicMock()
-    mock_response.raise_for_status = MagicMock()
-    mock_client = MagicMock()
-    mock_client.post.return_value = mock_response
-    mock_client.__enter__ = MagicMock(return_value=mock_client)
-    mock_client.__exit__ = MagicMock(return_value=False)
-    mock_client_cls.return_value = mock_client
 
     ch = DatabaseWebhookChannel(netuid=1)
     assert ch.send({"content": "hello"}) is True

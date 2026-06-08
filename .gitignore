@@ -31,3 +31,4 @@ db_access_certs/*
 docs/superpowers/
 webhooks.csv
 webhooks.sql
+.claude

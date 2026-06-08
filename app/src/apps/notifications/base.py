@@ -183,16 +183,17 @@ class SubnetRoutedNotification(ExtrinsicNotification):
     def channel(self) -> NotificationChannel:  # type: ignore[override]
         raise AttributeError("SubnetRoutedNotification does not use a static channel")
 
-    def notify(self, block_number: int, extrinsics: list[dict[str, Any]]) -> int:
-        """Filter, group by netuid, and send to per-subnet webhook URLs."""
-        if self.success_only:
-            extrinsics = [e for e in extrinsics if e.get("success", False)]
+    def _route_to_subnets(
+        self, block_number: int, extrinsics: list[dict[str, Any]]
+    ) -> tuple[int, list[dict[str, Any]]]:
+        """Send each netuid group to its DB webhooks.
 
-        if not extrinsics:
-            return 0
-
-        total = 0
-        fallback_extrinsics: list[dict[str, Any]] = []
+        Returns ``(routed_count, unrouted)`` where ``unrouted`` holds the
+        extrinsics with no netuid or no working DB webhook, left for the caller
+        to deliver via the fallback channel.
+        """
+        routed = 0
+        unrouted: list[dict[str, Any]] = []
 
         for netuid, group in self.group_by_netuid(extrinsics).items():
             if netuid is not None:
@@ -206,21 +207,33 @@ class SubnetRoutedNotification(ExtrinsicNotification):
                         block_number=block_number,
                         extrinsic_count=len(group),
                     )
-                    total += len(group)
+                    routed += len(group)
                     continue
             # No DB webhook or netuid is None — collect for fallback
-            fallback_extrinsics.extend(group)
+            unrouted.extend(group)
 
-        if fallback_extrinsics and self.fallback_channel:
-            payload = self.format_message(block_number, fallback_extrinsics)
+        return routed, unrouted
+
+    def notify(self, block_number: int, extrinsics: list[dict[str, Any]]) -> int:
+        """Filter, group by netuid, and send to per-subnet webhook URLs."""
+        if self.success_only:
+            extrinsics = [e for e in extrinsics if e.get("success", False)]
+
+        if not extrinsics:
+            return 0
+
+        total, unrouted = self._route_to_subnets(block_number, extrinsics)
+
+        if unrouted and self.fallback_channel:
+            payload = self.format_message(block_number, unrouted)
             sent = self.fallback_channel.send(payload)
             if sent:
                 logger.info(
                     "Fallback notification sent",
                     notification=self.__class__.__name__,
                     block_number=block_number,
-                    extrinsic_count=len(fallback_extrinsics),
+                    extrinsic_count=len(unrouted),
                 )
-                total += len(fallback_extrinsics)
+                total += len(unrouted)
 
         return total
