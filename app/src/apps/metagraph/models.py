@@ -92,6 +92,14 @@ class Subnet(models.Model):
         default=0.09,
         help_text="Subnet owner cut fraction (0-1)",
     )
+    tempo = models.PositiveIntegerField(
+        default=0,
+        help_text="Epoch length in blocks (0 if not exposed)",
+    )
+    moving_price = models.FloatField(
+        default=0.0,
+        help_text="Alpha->TAO moving price (0.0 if not exposed)",
+    )
 
     class Meta:
         db_table = "metagraph_subnet"
@@ -174,6 +182,18 @@ class NeuronSnapshot(models.Model):
         decimal_places=0,
         default=0,
         help_text="Alpha stake in rao",
+    )
+    alpha_dividends = models.DecimalField(
+        max_digits=30,
+        decimal_places=0,
+        default=0,
+        help_text="Net alpha dividends this epoch in rao (AlphaDividendsPerSubnet, index 71)",
+    )
+    tao_dividends = models.DecimalField(
+        max_digits=30,
+        decimal_places=0,
+        default=0,
+        help_text="Net TAO dividends this epoch in rao",
     )
     dividend_apy = models.FloatField(
         default=0.0,

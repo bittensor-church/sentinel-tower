@@ -49,6 +49,8 @@ class SubnetFactory(DjangoModelFactory):
     name = factory.LazyAttribute(lambda o: f"subnet-{o.netuid}")
     alpha_out_emission = 0
     owner_cut = 0.09
+    tempo = 360
+    moving_price = 0.0
 
 
 class NeuronFactory(DjangoModelFactory):
@@ -74,6 +76,8 @@ class NeuronSnapshotFactory(DjangoModelFactory):
     trust = 0.0
     emissions = 0
     alpha_stake = 0
+    alpha_dividends = 0
+    tao_dividends = 0
     dividend_apy = 0.0
     is_active = False
     is_validator = False
