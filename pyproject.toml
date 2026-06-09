@@ -92,7 +92,7 @@ ignore = [
 
 [tool.codespell]
 skip = '*.min.js,*.lock,*/monitoring_certs/*,*/media/*'
-ignore-words-list = 'datas'
+ignore-words-list = 'datas,brin'
 
 [tool.pyright]
 reportIncompatibleVariableOverride = false
