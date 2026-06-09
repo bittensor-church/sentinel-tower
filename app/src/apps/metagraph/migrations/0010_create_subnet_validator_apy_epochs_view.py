@@ -5,6 +5,12 @@ accurate dТАО single-epoch-annualized APY directly from the net index-71
 alpha dividends — no reconstruction correction factors. Backs the per-epoch
 APY time-series chart. Wired into the `refresh_validator_apy_windows` beat task
 (alongside mv_validator_apy_windows) in the following change.
+
+Tempo note: `COALESCE(NULLIF(s.tempo, 0), 360)` falls back to 360 (Bittensor's
+standard tempo) when Subnet.tempo was never populated. This is an intentional
+divergence from the SDK's `single_epoch_apy`, which returns 0.0 for tempo <= 0 —
+here 360 yields a correct chart instead of a spurious 0. Do not "fix" it to match
+the SDK.
 """
 
 from django.db import migrations
