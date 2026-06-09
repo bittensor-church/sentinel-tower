@@ -17,7 +17,6 @@ repo before being seeded; tracked in `docs/todo.md`.
 
 from django.db import migrations, models
 
-
 SEED_SQL = """
 INSERT INTO subtensor_error_codes (pallet_index, error_code, name, category, description, remediation) VALUES
 (7, '0x1d000000', 'CommitRevealEnabled', 'commit_reveal',
@@ -27,7 +26,6 @@ INSERT INTO subtensor_error_codes (pallet_index, error_code, name, category, des
 
 
 class Migration(migrations.Migration):
-
     dependencies = [
         ("extrinsics", "0008_add_block_timestamp_brin_index"),
     ]
@@ -47,9 +45,7 @@ class Migration(migrations.Migration):
                 ),
                 (
                     "pallet_index",
-                    models.SmallIntegerField(
-                        help_text="Substrate pallet index (e.g. 7 = SubtensorModule)"
-                    ),
+                    models.SmallIntegerField(help_text="Substrate pallet index (e.g. 7 = SubtensorModule)"),
                 ),
                 (
                     "error_code",
@@ -60,9 +56,7 @@ class Migration(migrations.Migration):
                 ),
                 (
                     "name",
-                    models.CharField(
-                        help_text="The `Error<T>` enum variant name", max_length=100
-                    ),
+                    models.CharField(help_text="The `Error<T>` enum variant name", max_length=100),
                 ),
                 (
                     "category",
@@ -75,9 +69,7 @@ class Migration(migrations.Migration):
                 ("description", models.TextField(blank=True)),
                 (
                     "remediation",
-                    models.TextField(
-                        blank=True, help_text="Operator action when this error occurs"
-                    ),
+                    models.TextField(blank=True, help_text="Operator action when this error occurs"),
                 ),
             ],
             options={

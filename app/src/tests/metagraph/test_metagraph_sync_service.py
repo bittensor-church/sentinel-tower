@@ -79,4 +79,4 @@ def test_sync_neuron_snapshot_persists_dividends_in_rao():
     snapshot.refresh_from_db()
 
     assert int(snapshot.alpha_dividends) == 50_000_000  # 0.05 * 1e9
-    assert int(snapshot.tao_dividends) == 1_000_000     # 0.001 * 1e9
+    assert int(snapshot.tao_dividends) == 1_000_000  # 0.001 * 1e9

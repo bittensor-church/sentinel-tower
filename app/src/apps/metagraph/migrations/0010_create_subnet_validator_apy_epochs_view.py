@@ -18,8 +18,8 @@ from django.db import migrations
 
 class Migration(migrations.Migration):
     atomic = False  # CREATE MATERIALIZED VIEW WITH DATA runs the full SELECT;
-                    # keep it outside the migration transaction so a slow build
-                    # doesn't hold locks beyond what the refresh itself needs.
+    # keep it outside the migration transaction so a slow build
+    # doesn't hold locks beyond what the refresh itself needs.
 
     dependencies = [
         ("metagraph", "0009_add_apy_data_points"),

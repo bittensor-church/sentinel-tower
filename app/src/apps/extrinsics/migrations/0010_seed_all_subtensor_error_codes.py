@@ -18,7 +18,6 @@ which was attached to the wrong error name.
 
 from django.db import migrations
 
-
 ERRORS: list[tuple[str, str, str]] = [
     ("0x00000000", "RootNetworkDoesNotExist", "The root network does not exist."),
     ("0x01000000", "InvalidIpType", "The user is trying to serve an axon which is not of type 4 (IPv4) or 6 (IPv6)."),
@@ -50,14 +49,22 @@ ERRORS: list[tuple[str, str, str]] = [
     ("0x1b000000", "HotKeyAlreadyDelegate", "Hotkey is becoming a delegate but is already a delegate."),
     ("0x1c000000", "SettingWeightsTooFast", "Transactor exceeded the rate limit for setting weights."),
     ("0x1d000000", "IncorrectWeightVersionKey", "Validator is setting weights with an incorrect weight version key."),
-    ("0x1e000000", "ServingRateLimitExceeded", "Axon/prometheus serving exceeded the rate limit for a registered neuron."),
+    (
+        "0x1e000000",
+        "ServingRateLimitExceeded",
+        "Axon/prometheus serving exceeded the rate limit for a registered neuron.",
+    ),
     ("0x1f000000", "UidsLengthExceedUidsInSubNet", "Setting weights with more UIDs than allowed."),
     ("0x20000000", "NetworkTxRateLimitExceeded", "Transactor exceeded the rate limit for add network transaction."),
     ("0x21000000", "DelegateTxRateLimitExceeded", "Transactor exceeded the rate limit for delegate transaction."),
     ("0x22000000", "HotKeySetTxRateLimitExceeded", "Transactor exceeded rate limit for setting/swapping hotkey."),
     ("0x23000000", "StakingRateLimitExceeded", "Transactor exceeded the rate limit for staking."),
     ("0x24000000", "SubNetRegistrationDisabled", "Registration is disabled."),
-    ("0x25000000", "TooManyRegistrationsThisInterval", "Registration attempts exceeded the allowed number in the interval."),
+    (
+        "0x25000000",
+        "TooManyRegistrationsThisInterval",
+        "Registration attempts exceeded the allowed number in the interval.",
+    ),
     ("0x26000000", "TransactorAccountShouldBeHotKey", "The hotkey is required to be the origin."),
     ("0x27000000", "FaucetDisabled", "Faucet is disabled."),
     ("0x28000000", "NotSubnetOwner", "Caller is not the subnet owner."),
@@ -87,7 +94,11 @@ ERRORS: list[tuple[str, str, str]] = [
     ("0x40000000", "ColdkeySwapAnnouncementNotFound", "Coldkey swap announcement not found."),
     ("0x41000000", "ColdkeySwapTooEarly", "Coldkey swap too early."),
     ("0x42000000", "ColdkeySwapReannouncedTooEarly", "Coldkey swap reannounced too early."),
-    ("0x43000000", "AnnouncedColdkeyHashDoesNotMatch", "The announced coldkey hash does not match the new coldkey hash."),
+    (
+        "0x43000000",
+        "AnnouncedColdkeyHashDoesNotMatch",
+        "The announced coldkey hash does not match the new coldkey hash.",
+    ),
     ("0x44000000", "ColdkeySwapAlreadyDisputed", "Coldkey swap already disputed."),
     ("0x45000000", "NewColdKeyIsHotkey", "New coldkey is a hotkey."),
     ("0x46000000", "InvalidChildkeyTake", "Childkey take is invalid."),
@@ -108,7 +119,11 @@ ERRORS: list[tuple[str, str, str]] = [
     ("0x55000000", "ActivityCutoffTooLow", "Activity cutoff is being set too low."),
     ("0x56000000", "CallDisabled", "Call is disabled."),
     ("0x57000000", "FirstEmissionBlockNumberAlreadySet", "FirstEmissionBlockNumber is already set."),
-    ("0x58000000", "NeedWaitingMoreBlocksToStarCall", "Need to wait for more blocks to accept the start call extrinsic."),
+    (
+        "0x58000000",
+        "NeedWaitingMoreBlocksToStarCall",
+        "Need to wait for more blocks to accept the start call extrinsic.",
+    ),
     ("0x59000000", "NotEnoughAlphaOutToRecycle", "Not enough AlphaOut on the subnet to recycle."),
     ("0x5a000000", "CannotBurnOrRecycleOnRootSubnet", "Cannot burn or recycle TAO from root subnet."),
     ("0x5b000000", "UnableToRecoverPublicKey", "Public key cannot be recovered."),
@@ -128,7 +143,11 @@ ERRORS: list[tuple[str, str, str]] = [
     ("0x69000000", "Overflow", "An overflow occurred."),
     ("0x6a000000", "BeneficiaryDoesNotOwnHotkey", "Beneficiary does not own hotkey."),
     ("0x6b000000", "ExpectedBeneficiaryOrigin", "Expected beneficiary origin."),
-    ("0x6c000000", "AdminActionProhibitedDuringWeightsWindow", "Admin operation is prohibited during the protected weights window."),
+    (
+        "0x6c000000",
+        "AdminActionProhibitedDuringWeightsWindow",
+        "Admin operation is prohibited during the protected weights window.",
+    ),
     ("0x6d000000", "SymbolDoesNotExist", "Symbol does not exist."),
     ("0x6e000000", "SymbolAlreadyInUse", "Symbol already in use."),
     ("0x6f000000", "IncorrectCommitRevealVersion", "Incorrect commit-reveal version."),
@@ -140,7 +159,11 @@ ERRORS: list[tuple[str, str, str]] = [
     ("0x75000000", "EvmKeyAssociateRateLimitExceeded", "Exceeded the rate limit for associating an EVM key."),
     ("0x76000000", "SameAutoStakeHotkeyAlreadySet", "Same auto stake hotkey already set."),
     ("0x77000000", "UidMapCouldNotBeCleared", "The UID map for the subnet could not be cleared."),
-    ("0x78000000", "TrimmingWouldExceedMaxImmunePercentage", "Trimming would exceed the max immune neurons percentage."),
+    (
+        "0x78000000",
+        "TrimmingWouldExceedMaxImmunePercentage",
+        "Trimming would exceed the max immune neurons percentage.",
+    ),
     ("0x79000000", "ChildParentInconsistency", "Violating the rules of childkey/parentkey consistency."),
     ("0x7a000000", "InvalidNumRootClaim", "Invalid number of root claims."),
     ("0x7b000000", "InvalidRootClaimThreshold", "Invalid value of root claim threshold."),
@@ -182,7 +205,6 @@ def seed_errors(apps, schema_editor):
 
 
 class Migration(migrations.Migration):
-
     dependencies = [
         ("extrinsics", "0009_subtensor_error_code"),
     ]

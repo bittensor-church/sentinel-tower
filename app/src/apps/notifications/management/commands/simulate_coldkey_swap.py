@@ -69,9 +69,7 @@ class Command(BaseCommand):
             .values_list("netuid", "url")
         )
         if not targets:
-            raise CommandError(
-                f"No enabled SubnetWebhook rows for {netuids}. Insert rows first."
-            )
+            raise CommandError(f"No enabled SubnetWebhook rows for {netuids}. Insert rows first.")
 
         self.stdout.write(self.style.MIGRATE_HEADING("Routing targets:"))
         for netuid, url in targets:
@@ -81,9 +79,7 @@ class Command(BaseCommand):
             self.stdout.write(self.style.WARNING("\n--dry-run: skipping POST."))
             return
 
-        _, created = Coldkey.objects.get_or_create(
-            coldkey=SIM_SIGNER, defaults={"label": SIM_LABEL}
-        )
+        _, created = Coldkey.objects.get_or_create(coldkey=SIM_SIGNER, defaults={"label": SIM_LABEL})
         self.stdout.write(
             f"Coldkey row for signer: {'created' if created else 'already present'} "
             f"(label resolution will return {SIM_LABEL!r})"
@@ -111,6 +107,4 @@ class Command(BaseCommand):
         ]
 
         sent = SubnetRoutedNotification.notify(handler, block_number, enriched)
-        self.stdout.write(
-            self.style.SUCCESS(f"\nDone. Routed extrinsic count: {sent}")
-        )
+        self.stdout.write(self.style.SUCCESS(f"\nDone. Routed extrinsic count: {sent}"))

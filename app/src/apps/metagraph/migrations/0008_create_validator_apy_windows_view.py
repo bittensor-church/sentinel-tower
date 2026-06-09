@@ -13,8 +13,8 @@ from django.db import migrations
 
 class Migration(migrations.Migration):
     atomic = False  # CREATE MATERIALIZED VIEW with data runs the full SELECT;
-                    # keep it outside the migration transaction so a slow build
-                    # doesn't hold locks beyond what the refresh itself needs.
+    # keep it outside the migration transaction so a slow build
+    # doesn't hold locks beyond what the refresh itself needs.
 
     dependencies = [
         ("metagraph", "0007_drop_unused_indexes"),

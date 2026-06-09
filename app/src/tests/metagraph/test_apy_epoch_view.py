@@ -44,8 +44,8 @@ def test_epoch_view_apy_matches_sdk_formula():
         block=block,
         uid=1,
         is_validator=True,
-        alpha_stake=1000 * 10**9,            # 1000 alpha in rao
-        alpha_dividends=int(0.05 * 10**9),   # 0.05 alpha in rao
+        alpha_stake=1000 * 10**9,  # 1000 alpha in rao
+        alpha_dividends=int(0.05 * 10**9),  # 0.05 alpha in rao
     )
     MetagraphDumpFactory(netuid=subnet.netuid, block=block, epoch_position=2)
 
@@ -72,8 +72,12 @@ def test_epoch_view_dedups_to_one_row_per_epoch():
 
     for blk, pos in ((end_block, 2), (inside_block, 1)):
         NeuronSnapshotFactory(
-            neuron=neuron, block=blk, uid=1, is_validator=True,
-            alpha_stake=1000 * 10**9, alpha_dividends=int(0.05 * 10**9),
+            neuron=neuron,
+            block=blk,
+            uid=1,
+            is_validator=True,
+            alpha_stake=1000 * 10**9,
+            alpha_dividends=int(0.05 * 10**9),
         )
         MetagraphDumpFactory(netuid=subnet.netuid, block=blk, epoch_position=pos)
 
@@ -99,8 +103,12 @@ def test_epoch_view_emits_one_row_per_distinct_epoch():
     for offset in (1000, 2000):  # two different end-of-epoch blocks
         block = BlockFactory(number=offset, timestamp=timezone.now())
         NeuronSnapshotFactory(
-            neuron=neuron, block=block, uid=1, is_validator=True,
-            alpha_stake=1000 * 10**9, alpha_dividends=int(0.05 * 10**9),
+            neuron=neuron,
+            block=block,
+            uid=1,
+            is_validator=True,
+            alpha_stake=1000 * 10**9,
+            alpha_dividends=int(0.05 * 10**9),
         )
         MetagraphDumpFactory(netuid=subnet.netuid, block=block, epoch_position=2)
 
@@ -123,13 +131,21 @@ def test_epoch_view_excludes_zero_dividend_and_non_validator():
 
     zero_div = NeuronFactory(subnet=subnet, uid=1)
     NeuronSnapshotFactory(
-        neuron=zero_div, block=block, uid=1, is_validator=True,
-        alpha_stake=1000 * 10**9, alpha_dividends=0,
+        neuron=zero_div,
+        block=block,
+        uid=1,
+        is_validator=True,
+        alpha_stake=1000 * 10**9,
+        alpha_dividends=0,
     )
     non_val = NeuronFactory(subnet=subnet, uid=2)
     NeuronSnapshotFactory(
-        neuron=non_val, block=block, uid=2, is_validator=False,
-        alpha_stake=1000 * 10**9, alpha_dividends=int(0.05 * 10**9),
+        neuron=non_val,
+        block=block,
+        uid=2,
+        is_validator=False,
+        alpha_stake=1000 * 10**9,
+        alpha_dividends=int(0.05 * 10**9),
     )
     MetagraphDumpFactory(netuid=subnet.netuid, block=block, epoch_position=2)
 
