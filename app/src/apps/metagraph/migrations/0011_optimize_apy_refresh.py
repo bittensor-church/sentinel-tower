@@ -9,8 +9,11 @@
    A validator with dust `alpha_stake` but real `alpha_dividends` makes
    `(1 + alpha_dividends/alpha_stake) ^ (2629800/(tempo+1))` blow past `numeric`'s
    limit; one such row raised NumericValueOutOfRange and aborted the entire
-   REFRESH, leaving the view permanently empty. The per-epoch ratio is now clamped
-   (so `power()` stays finite) and the resulting APY is capped.
+   REFRESH, leaving the view permanently empty. Postgres evaluates `power(b, e)`
+   as `exp(e * ln(b))`, so clamping the *base* doesn't help — `exp()` still
+   overflows on a huge argument. Instead we compute APY as `exp(LEAST(e*ln(1+r),
+   14))`: identical to `power()` for real values, but `exp()` never sees an
+   argument large enough to overflow, and the result is then capped at 1e6 %.
 """
 
 from django.db import migrations
@@ -34,10 +37,11 @@ EPOCHS_VIEW_GUARDED = [
         ns.alpha_stake,
         COALESCE(NULLIF(s.tempo, 0), 360) AS tempo,
         LEAST(
-            (power(
-                1 + LEAST(ns.alpha_dividends::numeric / ns.alpha_stake::numeric, 1000::numeric),
-                2629800.0 / (COALESCE(NULLIF(s.tempo, 0), 360) + 1)
-             ) - 1) * 100,
+            (exp(LEAST(
+                (2629800.0 / (COALESCE(NULLIF(s.tempo, 0), 360) + 1))
+                * ln(1 + ns.alpha_dividends::numeric / ns.alpha_stake::numeric),
+                14::numeric
+            )) - 1) * 100,
             1000000::numeric
         ) AS apy_pct
     FROM metagraph_neuron_snapshot ns
