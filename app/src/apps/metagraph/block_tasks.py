@@ -91,11 +91,11 @@ def sync_metagraph_for_block(
     return {"neurons": stats["neurons"], "weights": stats["weights"], "bonds": stats["bonds"], "elapsed_ms": elapsed_ms}
 
 
-@block_task(
-    condition=lambda block_number, netuid: MetagraphService.is_dumpable_block(block_number, netuid),
-    args=[{"netuid": netuid} for netuid in MetagraphService.netuids_to_sync()],
-    celery_kwargs={"queue": "metagraph"},
-)
+# @block_task(
+#     condition=lambda block_number, netuid: MetagraphService.is_dumpable_block(block_number, netuid),
+#     args=[{"netuid": netuid} for netuid in MetagraphService.netuids_to_sync()],
+#     celery_kwargs={"queue": "metagraph"},
+# )
 def store_metagraph(block_number: int, netuid: int) -> dict | None:
     """
     Store the metagraph for the given netuid at the specified block number.

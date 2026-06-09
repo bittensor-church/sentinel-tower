@@ -42,10 +42,9 @@ WORKDIR /root/src/
 ENV PYTHONUNBUFFERED=1
 ENV PATH="/root/src/.venv/bin:$PATH"
 
-COPY --from=base-image /root/src/ /root/src/
+COPY --from=base-image --chown=appuser:appuser /root/src/ /root/src/
 
 RUN chmod 755 /root \
-	&& chown -R appuser:appuser /root/src/ \
 	&& mkdir -p /prometheus-multiproc-dir && chown appuser:appuser /prometheus-multiproc-dir
 
 COPY ./app/envs/prod/docker-entrypoint.sh /docker-entrypoint.sh
