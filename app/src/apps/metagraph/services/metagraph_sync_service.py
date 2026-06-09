@@ -208,6 +208,8 @@ class MetagraphSyncService:
                 "owner_hotkey": owner_hotkey,
                 "registered_at": registered_at,
                 "alpha_out_emission": alpha_out_emission_rao,
+                "tempo": subnet_model.tempo,
+                "moving_price": subnet_model.moving_price,
             },
         )
 
@@ -221,6 +223,15 @@ class MetagraphSyncService:
                 updated = True
             if alpha_out_emission_rao and subnet.alpha_out_emission != alpha_out_emission_rao:
                 subnet.alpha_out_emission = alpha_out_emission_rao
+                updated = True
+            # Guard: 0 is the model default / sentinel-for-missing. Do not
+            # overwrite a real persisted tempo/moving_price with a missing-data
+            # zero from the SDK (mirrors the alpha_out_emission guard above).
+            if subnet_model.tempo and subnet.tempo != subnet_model.tempo:
+                subnet.tempo = subnet_model.tempo
+                updated = True
+            if subnet_model.moving_price and subnet.moving_price != subnet_model.moving_price:
+                subnet.moving_price = subnet_model.moving_price
                 updated = True
             if updated:
                 subnet.save()
@@ -281,6 +292,8 @@ class MetagraphSyncService:
                 "axon_address": snapshot_model.axon_address or "",
                 "total_stake": _to_rao(snapshot_model.total_stake),
                 "alpha_stake": _to_rao(snapshot_model.alpha_stake),
+                "alpha_dividends": _to_rao(snapshot_model.alpha_dividends),
+                "tao_dividends": _to_rao(snapshot_model.tao_dividends),
                 "normalized_stake": snapshot_model.normalized_stake,
                 "rank": snapshot_model.rank,
                 "trust": snapshot_model.trust,
