@@ -9,9 +9,10 @@ WORKERS="master worker metagraph"
 MAX_TASKS_PER_CHILD="${CELERY_WORKER_MAX_TASKS_PER_CHILD:-50}"
 
 # The container runs as the unprivileged "appuser", which cannot write to
-# /var/log; worker logs go to /tmp/logs (pidfiles use the writable /run tmpfs).
+# /var/log or the root-owned /run tmpfs; worker logs and pidfiles both go
+# to /tmp, which is writable by appuser.
 mkdir -p /tmp/logs
-OPTIONS="-A project -E -l ERROR --pidfile=/var/run/celery-%n.pid --logfile=/tmp/logs/celery-%n.log --max-tasks-per-child=$MAX_TASKS_PER_CHILD"
+OPTIONS="-A project -E -l ERROR --pidfile=/tmp/celery-%n.pid --logfile=/tmp/logs/celery-%n.log --max-tasks-per-child=$MAX_TASKS_PER_CHILD"
 
 # set up settings for workers and run the latter;
 # here events from "celery" queue (default one, will be used if queue not specified)
