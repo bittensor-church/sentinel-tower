@@ -733,6 +733,63 @@
       ],
       "title": "Subnet Validators APY",
       "type": "table"
+    },
+    {
+      "datasource": {
+        "type": "postgres",
+        "uid": "postgresql"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "percent",
+          "custom": {
+            "drawStyle": "line",
+            "lineWidth": 1,
+            "showPoints": "never"
+          }
+        },
+        "overrides": [
+          {
+            "matcher": { "id": "byName", "options": "Subnet avg" },
+            "properties": [
+              { "id": "custom.lineWidth", "value": 3 },
+              { "id": "color", "value": { "mode": "fixed", "fixedColor": "yellow" } }
+            ]
+          }
+        ]
+      },
+      "gridPos": { "h": 10, "w": 24, "x": 0, "y": 22 },
+      "id": 10,
+      "options": {
+        "legend": { "displayMode": "list", "placement": "bottom" },
+        "tooltip": { "mode": "multi" }
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "postgres",
+            "uid": "postgresql"
+          },
+          "editorMode": "code",
+          "format": "time_series",
+          "rawQuery": true,
+          "rawSql": "SELECT epoch_ts AS time, validator_name AS metric, apy_pct AS value FROM mv_subnet_validator_apy_epochs WHERE subnet_id = ${subnet} ORDER BY time",
+          "refId": "A"
+        },
+        {
+          "datasource": {
+            "type": "postgres",
+            "uid": "postgresql"
+          },
+          "editorMode": "code",
+          "format": "time_series",
+          "rawQuery": true,
+          "rawSql": "SELECT epoch_ts AS time, 'Subnet avg' AS metric, (power(1 + SUM(alpha_dividends)::numeric / NULLIF(SUM(alpha_stake), 0), 2629800.0 / (MIN(tempo) + 1)) - 1) * 100 AS value FROM mv_subnet_validator_apy_epochs WHERE subnet_id = ${subnet} GROUP BY epoch_ts ORDER BY time",
+          "refId": "B"
+        }
+      ],
+      "title": "Validator APY per epoch",
+      "type": "timeseries"
     }
   ],
   "refresh": "",
