@@ -1,95 +1,160 @@
-# Validator APY — formula reference
+# Subtensor Validator APY — Formula & Definitions
 
-How Sentinel Tower computes per-validator APY for Bittensor subnets, what each
-input means, and where the values come from.
+Self-contained reference for **how validator/staker APY is computed** on Subtensor
+(dTAO era) and the on-chain data points it depends on. Collection/infrastructure
+details live separately in [historical-apy-collection-requirements.md](historical-apy-collection-requirements.md).
 
-## Formula
+---
 
-Two related APYs answer different questions; the dashboard shows both:
+## TL;DR
+
+Per epoch, a staker's return is `dividends_earned / stake`. Dividends are
+auto-re-staked, so the annualized figure compounds:
 
 ```
-delegator_apy% = dividend × (alpha_out_emission / total_stake) × (1 − owner_cut) × 0.5 × BLOCKS_PER_YEAR × 100
-alpha_only_apy% = dividend × (alpha_out_emission / alpha_stake) × (1 − owner_cut) × 0.5 × BLOCKS_PER_YEAR × 100
+r_epoch = alpha_earned / alpha_staked                       # net return for one epoch
+
+APY  = (∏ over the year (1 + r_epoch)) − 1                   # compounded (what we report)
+APR  = (Σ r_epoch) × (seconds_per_year / period_seconds)    # linear (reference only)
 ```
 
-`BLOCKS_PER_YEAR = 2_629_800` — derived from `31_557_600 s/yr ÷ 12 s/block` (Julian year, 12-second blocks).
+Use **APY**. `alpha_earned` is already **net** of subnet-owner cut and validator
+(delegate) take — no extra multipliers (see [Net vs. gross](#net-vs-gross)).
 
-The two views differ only in the denominator:
+---
 
-- **Delegator view (`total_stake`):** What a delegator's TAO-equivalent stake earns. Matches taostats' convention; comparable across validators regardless of alpha-vs-root mix. See [Why two denominators](#why-two-denominators) below.
-- **Alpha-only view (`alpha_stake`):** Yield on alpha exposure only. Higher for root-heavy validators (rewards attributed to a small alpha base); useful when reasoning about alpha-denominated returns.
+## Data points
 
-Both produce per-validator, per-block APY at a single snapshot. Dashboards average per-block APY over a time window (1h / 1d / 1w / 1m).
+Each is a per-epoch, per-hotkey value unless noted. "Source" is the chain storage
+item (dTAO era).
 
-## Inputs
+| Symbol | Meaning | Source | Units |
+|---|---|---|---|
+| `alpha_earned` | Net dividends distributed to this hotkey's nominators this epoch | `AlphaDividendsPerSubnet[(netuid, hotkey)]` (= metagraph index 71) | rao (1e-9 alpha) |
+| `alpha_staked` | Stake base the dividend was computed against | `TotalHotkeyAlphaLastEpoch[(hotkey, netuid)]` | rao |
+| `tempo` | Epoch length parameter | `Tempo[netuid]` | blocks |
+| `moving_price` | Alpha→TAO price (only for TAO-denominated APY) | `MovingPrice[netuid]` | TAO/alpha |
+| `owner_cut` | Subnet-owner cut fraction (already applied in `alpha_earned`) | `SubnetOwnerCut / 65535` | 0–1 |
+| `hotkey_take` | Validator/delegate take fraction (already applied in `alpha_earned`) | `Delegates[hotkey] / 65535` | 0–1 |
 
-| Symbol | Meaning | DB column | Unit | Source |
-|---|---|---|---|---|
-| `dividend` | Validator's share of the subnet's dividend pool at this block, normalised to `[0, 1]` and summing to ~1 across the subnet's validators | `metagraph_mechanism_metrics.dividend` (per `(snapshot, mech_id)`) | dimensionless | `metagraph.dividends[i]` per mechanism |
-| `alpha_out_emission` | Per-block alpha emission of the subnet, in TAO equivalent | `metagraph_subnet.alpha_out_emission`; dashboards fall back to `1e9` rao (= 1 TAO/block) when the column is `0` — see [Fallback for `alpha_out_emission`](#fallback-for-alpha_out_emission) | rao (after `_to_rao()`); on chain it's TAO | `metagraph.emissions.alpha_out_emission` |
-| `total_stake` | Validator's total effective stake (alpha + root TAO equivalent) | `metagraph_neuron_snapshot.total_stake` (per `(block, neuron)`) | rao | `metagraph.S[i]` |
-| `owner_cut` | Fraction the subnet owner skims before the validator/miner split | `metagraph_subnet.owner_cut` | `[0, 1]` | not synced from chain today; falls back to `settings.SUBNET_OWNER_CUT = 0.09` for every subnet |
-| `0.5` | Validator/miner split (chain constant) | — | — | encoded by Yuma consensus, applied after the owner cut |
+`owner_cut` and `hotkey_take` are **not** needed to compute APY from `alpha_earned`
+(they're already deducted). Record them only for reproducibility / reconstructing
+gross figures.
 
-The `alpha_out_emission / total_stake` ratio is unit-safe: both sides are stored in rao, so the rao→TAO conversion factor (10⁹) cancels.
+---
 
-## Why two denominators
+## Per-epoch return
 
-In dynamic TAO, a validator's effective consensus stake is `alpha_stake + tao_weight × root_stake` (with `tao_weight ≈ 0.18`). Their dividend share reflects that effective stake — but the rewards are paid in alpha and accrue to the hotkey regardless of which staking source backed them.
+```
+r_epoch = alpha_earned / alpha_staked
+```
 
-This means there are two valid questions, and the dashboard answers both:
+- The return is denominated in **alpha** (the subnet token), not TAO/USD.
+- `alpha_staked` is the **last-epoch stake snapshot** (`TotalHotkeyAlphaLastEpoch`,
+  set at `run_coinbase.rs:606-607`) — the exact base the chain used, preferable to
+  "stake at query time".
+- Guard `alpha_staked == 0` (registration edge) → treat `r_epoch = 0`.
 
-- **Delegator view (divide by `total_stake`)** — "what does a TAO-equivalent staker earn here?" Aligns with [taostats' convention][taostats]; APYs are in the same range across validators with similar consensus performance regardless of their alpha-vs-root mix.
-- **Alpha-only view (divide by `alpha_stake`)** — "what does my alpha stake earn here?" Validators with significant root TAO stake show *inflated* APYs vs. the delegator view — that's intentional: rewards (paid in alpha) divided by a smaller alpha base. Useful for alpha-denominated yield comparisons.
+### Epoch timing
 
-For a validator with no root stake, the two views collapse to the same number. The bigger the root component, the more they diverge.
+```
+period_blocks   = tempo + 1
+epoch_seconds   = (tempo + 1) × 12      # block time = 12s
+```
 
-## What the formula does **not** account for
+An epoch fires when `(block + netuid + 1) % (tempo + 1) == tempo`
+(`run_coinbase.rs:946`). `AlphaDividendsPerSubnet` is cleared and rewritten each
+epoch, so it holds **only the latest epoch's** value — every epoch is a distinct
+data point and cannot be recovered later if skipped.
 
-These are deliberate omissions worth knowing about:
+---
 
-- **Validator take (commission).** Per-hotkey on chain. Not collected today. To compute *delegator-net* APY rather than gross, multiply by `(1 − validator_take)`. Historically capped at ~0.18; varies per validator.
-- **Per-subnet `owner_cut`.** We use a constant `0.09` for every subnet. Real per-subnet cuts vary; absolute APY is biased per-subnet, relative ranking inside a subnet is fine.
-- **Historical accuracy of `alpha_out_emission` and `owner_cut`.** Both stored as a single mutable column on `metagraph_subnet`, overwritten on every sync. APYs computed for past blocks use *today's* emission, not the emission that was actually in effect at that block. For windows < a few weeks the error is small; for multi-month windows it can be material.
-- **Multi-mechanism subnets.** The dashboard joins `mech_id = 0`. For subnets with >1 mechanism whose dividends are split across them, this under-counts. Most subnets run one mechanism today.
+## APY (compounded — the reported figure)
 
-## Practical observations on the inputs
+Dividends are re-staked each epoch, so returns compound. Over an arbitrary window:
 
-- **`alpha_out_emission` is effectively a chain constant.** For active subnets in dynamic TAO it's `1.0 TAO/block`; for halted/dissolved subnets it's `0`. We verified this across multiple netuids and historical offsets; it does not vary materially per subnet or over time.
-- **`dividend` is stored normalised** (`0..1`) on prod. The dashboard's `CASE WHEN mm.dividend > 1 THEN mm.dividend / 65535.0` guard handles the raw-u16 edge case (some SDK paths return `[0, 65535]`) but is a no-op against current data.
-- **`is_validator = true` filter** is required: only validators (not miners) earn dividends.
+```
+window_growth = ∏ over epochs in window (1 + r_epoch) − 1     # realized growth
+APY%          = ((1 + window_growth) ^ (seconds_per_year / window_seconds) − 1) × 100
+```
 
-### Fallback for `alpha_out_emission`
+- `window_seconds = Σ epoch_seconds` over the epochs in the window.
+- The annualization exponent `seconds_per_year / window_seconds` rescales any
+  window (hourly / daily / monthly) to a full year — change only the grouping.
+- Numerically use `exp(Σ ln(1 + r_epoch))` for the product.
 
-Both dashboard panels evaluate `COALESCE(NULLIF(s.alpha_out_emission, 0), 1e9)` instead of using the column directly. The reason is operational:
+## APR (linear — reference / sanity check only)
 
-- `Subnet.alpha_out_emission` is a single mutable column, populated by `MetagraphSyncService` only when the SDK returns a non-zero value (`if alpha_out_emission_rao and ...`).
-- The historical-backfill code path hits an upstream Bittensor SDK bug on every block and falls back to a legacy workaround that calls `get_metagraph_info` without `block=`. When `get_metagraph_info` returns `None` or its result fails to apply, `metagraph.emissions` stays empty and `_read_alpha_out_emission` returns `0` — which the sync then refuses to write. Result: the column stays at `0` indefinitely on backfill-only deployments.
-- Since the value is a chain invariant (`1 TAO/block` for active subnets), the dashboard substitutes `1e9` rao when the column is `0`. This keeps the panel useful without depending on the column being correctly populated.
+```
+APR% = (Σ alpha_earned / avg(alpha_staked)) × (seconds_per_year / Σ period_seconds) × 100
+```
 
-For halted/dissolved subnets the column may legitimately be `0`, but those subnets have no validator earning activity anyway, so the substituted value doesn't change the dashboard output meaningfully.
+No compounding. Always ≤ APY. Keep it only to show the compounding gap.
 
-## Reading the dashboard
+---
 
-Two panels share the same shape; they differ only in denominator:
+## Net vs. gross
 
-- **"Subnet Validators APY (delegator view / total stake)"** — divides by `total_stake`. Use this for taostats-style cross-validator comparison.
-- **"Subnet Validators APY (alpha-only view / yield on alpha exposure)"** — divides by `alpha_stake`. Use this for alpha-denominated yield.
+This is the one detail that's easy to get wrong.
 
-Each panel computes per-block APY for every snapshot in the last month, then aggregates with `AVG(...) FILTER (WHERE block_ts >= start_NN)` to produce 1h / 1d / 1w / 1m windows. Each row is one validator on the selected subnet. Sort defaults to alpha stake descending.
+Per block the chain splits each subnet's `alpha_out` emission
+(`run_coinbase.rs:184-218`):
 
-A 0% APY row means either no `dividend > 0` rows in the window (validator wasn't earning during the period) or the denominator (`total_stake` or `alpha_stake` depending on view) is `0`. A non-zero APY in the 50–200% range is typical for an active dTAO subnet in the delegator view — alpha emission is high relative to total subnet stake and that's by design. The alpha-only view will sit higher for root-heavy validators.
+```
+owner_cut  = alpha_out × (SubnetOwnerCut / 65535)     # to subnet owner
+remaining  = alpha_out − owner_cut
+validators = remaining × 0.5                          # dividend pool (0.5 is hardcoded)
+miners     = remaining × 0.5                          # incentive pool
+```
 
-## Sanity-check against external data
+Then, distributing the validator pool to each hotkey, the **delegate take** is
+removed and credited to the validator's own coldkey; the rest goes to nominators
+(`run_coinbase.rs:585-602`):
 
-To validate the formula against an external reference, compute APY for a few well-known validators on a busy subnet and compare with [taostats' validator APY][taostats]. They should agree within a few % relative; systematic discrepancy points at the missing `validator_take`, the hardcoded `owner_cut`, or a normalisation issue.
+```
+validator_take = hotkey_pool × (Delegates[hotkey] / 65535)
+nominator_pool = hotkey_pool − validator_take
+```
 
-## Related models / files
+**`AlphaDividendsPerSubnet` (index 71) records the `nominator_pool` — net of both
+owner cut and validator take** (`rpc_info/metagraph.rs:649`). So:
 
-- `apps.metagraph.models.NeuronSnapshot` — `alpha_stake`, `total_stake` per (block, neuron)
-- `apps.metagraph.models.MechanismMetrics` — `dividend` per (snapshot, mech_id)
-- `apps.metagraph.models.Subnet` — `alpha_out_emission`, `owner_cut`
-- `apps.metagraph.services.metagraph_sync_service.MetagraphSyncService` — writes the snapshot fields each block
-- `grafana/provisioning/dashboards/subnet-apy.json` — the live "Subnet Validators APY" panel that implements this formula
+| `alpha_earned` source | owner cut | delegate take | correction needed |
+|---|---|---|---|
+| `AlphaDividendsPerSubnet` (dTAO era) | already applied | already applied | **none** |
+| reconstructed from normalized scores (pre-dTAO) | no | no | `× (1 − owner_cut) × 0.5 × (1 − hotkey_take)` |
 
-[taostats]: https://docs.taostats.io/docs/some-of-the-math-behind-taostats
+Do **not** apply the correction factors to dTAO-era data — it double-counts.
+
+### `(1 − owner_cut) × 0.5 = 0.41` shortcut
+
+Valid only as today's default: `SubnetOwnerCut` is **chain-configurable storage**
+(default `11_796 / 65535 = 0.18`, settable via governance), so `(1 − 0.18) × 0.5 = 0.41`.
+The `0.5` is hardcoded. For historical accuracy in the reconstruction path, read
+`SubnetOwnerCut` per block rather than hardcoding `0.41`.
+
+---
+
+## Constants
+
+| Constant | Value | Note |
+|---|---|---|
+| Block time | 12 s | |
+| `seconds_per_year` | 31_557_600 | 365.25 days |
+| `blocks_per_year` | 2_629_800 | 31_557_600 / 12 |
+| u16 normalization | 65535 | for `SubnetOwnerCut`, `Delegates`, `Dividends` |
+
+---
+
+## Notes / caveats
+
+- **Denomination:** APY above is in **alpha**. For TAO-denominated APY, weight each
+  epoch's earned/staked alpha by `moving_price` (alpha→TAO) at that epoch.
+  Pre-dTAO blocks have no `moving_price`.
+- **Per-validator vs per-nominator:** `alpha_earned` is the nominators' net pool.
+  A specific delegator earns their pro-rata share of it; the validator-operator
+  additionally receives `validator_take`.
+- **Configurable parameters:** `owner_cut` and `hotkey_take` can change over time;
+  for long historical windows read them per block if you need exact reconstruction.
+- **Sampling:** because the dividend storage is overwritten each epoch, a true APY
+  needs every epoch. Sampling (e.g. one epoch/day) yields only an approximation.
