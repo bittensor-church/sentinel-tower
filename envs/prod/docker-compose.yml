@@ -214,8 +214,6 @@ services:
     tmpfs: /run
     depends_on:
       - redis
-    profiles:
-      - scheduler
     logging:
       <<: *logging
 
@@ -231,8 +229,6 @@ services:
       - ./logs:/tmp/logs
     depends_on:
       - redis
-    profiles:
-      - scheduler
     logging:
       <<: *logging
 
@@ -251,8 +247,6 @@ services:
       - celery-worker
     ports:
       - 127.0.0.1:5555:5555
-    profiles:
-      - scheduler
     logging:
       <<: *logging
 
