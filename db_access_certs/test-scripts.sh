@@ -27,12 +27,6 @@ assert() {
     if "$@" >/dev/null 2>&1; then ok "$name"; else fail "$name"; fi
 }
 
-# Asserts the command exits NON-zero (used for refuse-to-overwrite checks).
-assert_fails() {
-    local name="$1"; shift
-    if "$@" >/dev/null 2>&1; then fail "$name (should have errored)"; else ok "$name"; fi
-}
-
 # Returns the path to a fresh per-test working directory with init.sh and
 # issue-client.sh copied in.
 new_workdir() {
@@ -68,7 +62,7 @@ WORK="$(new_workdir)"
 ( cd "$WORK" && ./init.sh test.example.com ) >/dev/null 2>&1
 # Capture the ca.crt fingerprint so we can prove the second run did not touch it.
 FP_BEFORE="$(openssl x509 -in "$WORK/ca.crt" -noout -fingerprint -sha256)"
-SECOND_OUTPUT="$( cd "$WORK" && ./init.sh test.example.com 2>&1 || true )"
+SECOND_OUTPUT="$( cd "$WORK" && ./init.sh test.example.com 2>&1 )" || true
 FP_AFTER="$(openssl x509 -in "$WORK/ca.crt" -noout -fingerprint -sha256)"
 assert "second init.sh exits non-zero" \
     bash -c "( cd '$WORK' && ./init.sh test.example.com ) >/dev/null 2>&1; [ \$? -ne 0 ]"
@@ -122,7 +116,7 @@ group "issue-client.sh preconditions"
 WORK="$(new_workdir)"
 
 # Case 1: no CA at all.
-NO_CA_OUTPUT="$( cd "$WORK" && ./issue-client.sh alice 2>&1 || true )"
+NO_CA_OUTPUT="$( cd "$WORK" && ./issue-client.sh alice 2>&1 )" || true
 assert "fails when ca.crt is missing" \
     bash -c "( cd '$WORK' && ./issue-client.sh alice ) >/dev/null 2>&1; [ \$? -ne 0 ]"
 assert "missing-CA error message mentions ca.key" \
@@ -131,7 +125,7 @@ assert "missing-CA error message mentions ca.key" \
 # Case 2: existing client directory.
 ( cd "$WORK" && ./init.sh test.example.com ) >/dev/null 2>&1
 ( cd "$WORK" && ./issue-client.sh alice )    >/dev/null 2>&1
-EXISTING_OUTPUT="$( cd "$WORK" && ./issue-client.sh alice 2>&1 || true )"
+EXISTING_OUTPUT="$( cd "$WORK" && ./issue-client.sh alice 2>&1 )" || true
 assert "fails when clients/<cn>/ already exists" \
     bash -c "( cd '$WORK' && ./issue-client.sh alice ) >/dev/null 2>&1; [ \$? -ne 0 ]"
 assert "existing-client error mentions re-issuance" \
@@ -141,7 +135,7 @@ assert "issued.log unchanged after refused re-issuance" \
     bash -c "[ \"\$(wc -l < '$WORK/issued.log')\" = '1' ]"
 
 # Case 3: bad CN (with a slash).
-BAD_CN_OUTPUT="$( cd "$WORK" && ./issue-client.sh 'evil/cn' 2>&1 || true )"
+BAD_CN_OUTPUT="$( cd "$WORK" && ./issue-client.sh 'evil/cn' 2>&1 )" || true
 assert "rejects CN containing a slash" \
     bash -c "( cd '$WORK' && ./issue-client.sh 'evil/cn' ) >/dev/null 2>&1; [ \$? -ne 0 ]"
 assert "bad-CN error names the CN" \
