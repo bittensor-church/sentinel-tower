@@ -156,3 +156,35 @@ def test_epoch_view_excludes_zero_dividend_and_non_validator():
         (count,) = cursor.fetchone()
 
     assert count == 0
+
+
+@pytest.mark.django_db
+def test_epoch_view_dust_stake_does_not_overflow():
+    # A validator with dust alpha_stake but real dividends makes
+    # (1 + alpha_dividends/alpha_stake) ^ N overflow `numeric`, which used to
+    # raise NumericValueOutOfRange and abort the whole REFRESH (view stayed
+    # empty). The guarded formula clamps the ratio and caps the result instead.
+    subnet = SubnetFactory(tempo=360)
+    neuron = NeuronFactory(subnet=subnet, uid=1)
+    block = BlockFactory(timestamp=timezone.now())
+    NeuronSnapshotFactory(
+        neuron=neuron,
+        block=block,
+        uid=1,
+        is_validator=True,
+        alpha_stake=1,  # 1 rao — dust, gives an astronomically large ratio
+        alpha_dividends=10**9,  # 1 alpha in rao
+    )
+    MetagraphDumpFactory(netuid=subnet.netuid, block=block, epoch_position=2)
+
+    _refresh_epoch_view()  # must not raise NumericValueOutOfRange
+
+    with connection.cursor() as cursor:
+        cursor.execute(
+            "SELECT apy_pct FROM mv_subnet_validator_apy_epochs WHERE neuron_id = %s",
+            [neuron.id],
+        )
+        row = cursor.fetchone()
+
+    assert row is not None
+    assert float(row[0]) == pytest.approx(1_000_000.0)  # clamped to the APY cap
