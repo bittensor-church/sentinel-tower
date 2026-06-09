@@ -3,7 +3,6 @@
 import pytest
 from django.db import connection
 from django.utils import timezone
-
 from sentinel.v1.services.apy import single_epoch_apy
 
 from tests.factories.metagraph import (
