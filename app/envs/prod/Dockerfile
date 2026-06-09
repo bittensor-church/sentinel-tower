@@ -32,7 +32,7 @@ FROM $BASE_IMAGE AS secondary-image
 LABEL builder=false
 
 RUN apt-get update \
-	&& apt-get install -y wget gosu \
+	&& apt-get install -y wget gosu procps \
 	&& rm -rf /var/lib/apt/lists/*
 
 RUN groupadd --gid 1000 appuser \
