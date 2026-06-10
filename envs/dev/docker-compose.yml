@@ -16,6 +16,9 @@ x-backend: &backend
     MEDIA_ROOT: ${MEDIA_ROOT:-/root/src/media}
     CELERY_BROKER_URL: redis://redis:6379/0
     PYLON_URL: http://pylon:8000
+    PROMETHEUS_MULTIPROC_DIR: /prometheus-multiproc-dir
+  tmpfs:
+    - /prometheus-multiproc-dir
   volumes:
     - ./app/src:/root/src
     - app-venv:/root/src/.venv
@@ -135,7 +138,9 @@ services:
       PYLON_URL: http://pylon:8000
       LOG_LEVEL: ${LOG_LEVEL:-DEBUG}
     command: ./celery-entrypoint.sh
-    tmpfs: /run
+    tmpfs:
+      - /run
+      - /prometheus-multiproc-dir
     depends_on:
       redis:
         condition: service_healthy

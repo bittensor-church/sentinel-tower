@@ -14,7 +14,7 @@ class RecursiveMultiProcessCollector(multiprocess.MultiProcessCollector):
     """A multiprocess collector that scans the directory recursively"""
 
     def collect(self):
-        files = glob.glob(os.path.join(self._path, "**/*.db"), recursive=True)
+        files = [f for f in glob.glob(os.path.join(self._path, "**/*.db"), recursive=True) if os.path.exists(f)]
         return self.merge(files, accumulate=True)
 
 

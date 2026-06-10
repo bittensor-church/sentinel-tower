@@ -43,20 +43,24 @@ def snapshot_health_view(request):
         start_block = latest_block.number - block_delta
         end_block = latest_block.number
 
+        covered_by_netuid: dict[int, set[int]] = {}
+        for block_id, subnet_id in (
+            NeuronSnapshot.objects.filter(
+                block_id__gte=start_block,
+                block_id__lte=end_block,
+                neuron__subnet_id__in=netuids,
+            )
+            .values_list("block_id", "neuron__subnet_id")
+            .distinct()
+        ):
+            covered_by_netuid.setdefault(subnet_id, set()).add(block_id)
+
         for netuid in netuids:
-            dumpable = _dumpable_blocks_in_range(start_block, end_block, netuid)
+            dumpable = set(_dumpable_blocks_in_range(start_block, end_block, netuid))
             if not dumpable:
                 continue
-
-            covered = set(
-                NeuronSnapshot.objects.filter(
-                    block_id__in=dumpable,
-                    neuron__subnet_id=netuid,
-                )
-                .values_list("block_id", flat=True)
-                .distinct()
+            missing_gauge.labels(netuid=str(netuid), window=window_name).set(
+                len(dumpable - covered_by_netuid.get(netuid, set()))
             )
-
-            missing_gauge.labels(netuid=str(netuid), window=window_name).set(len(set(dumpable) - covered))
 
     return HttpResponse(generate_latest(registry), content_type=CONTENT_TYPE_LATEST)
