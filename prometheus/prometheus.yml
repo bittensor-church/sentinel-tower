@@ -40,3 +40,9 @@ scrape_configs:
     static_configs:
       - targets: ['block-scheduler:8000']
     scrape_interval: 60s
+
+  - job_name: 'metagraph-snapshot-health'
+    metrics_path: /metagraph-snapshot-health
+    static_configs:
+      - targets: ['app:8000']
+    scrape_interval: 4320s   # one epoch ≈ 72 min

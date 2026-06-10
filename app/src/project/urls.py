@@ -3,6 +3,8 @@ from django.contrib.admin.sites import site
 from django.http import HttpResponse
 from django.urls import include, path
 
+from apps.metagraph.views import snapshot_health_view
+
 from .core.business_metrics import metrics_manager
 from .core.metrics import metrics_view
 
@@ -11,6 +13,7 @@ urlpatterns = [
     path("admin/", site.urls),
     path("metrics", metrics_view, name="prometheus-django-metrics"),
     path("business-metrics", metrics_manager.view, name="prometheus-business-metrics"),
+    path("metagraph-snapshot-health", snapshot_health_view, name="metagraph-snapshot-health"),
     path("", include("django.contrib.auth.urls")),
 ]
 
