@@ -22,6 +22,29 @@ def get_dumpable_blocks(epoch: range) -> tuple[int, ...]:
     return tuple(ranges)
 
 
+def get_dumpable_blocks_in_range(start_block: int, end_block: int, netuid: int) -> list[int]:
+    """
+    Get the blocks that should be dumped within a specified range.
+
+    Args:
+        start_block: The first block to check.
+        end_block: The last block to check (inclusive).
+        netuid: The netuid of the subnet for which to check.
+
+    Returns:
+        A list of block numbers
+    """
+    result: set[int] = set()
+    block = start_block
+    while block <= end_block:
+        epoch = get_epoch_containing_block(block, netuid)
+        for b in get_dumpable_blocks(epoch):
+            if start_block <= b <= end_block:
+                result.add(b)
+        block = epoch.stop
+    return sorted(result)
+
+
 def get_epoch_containing_block(block: int, netuid: int = 0) -> range:
     """For given subnet returns range of blocks for epoch containing given block."""
     next_epoch_block = get_next_epoch_block(block, netuid, TEMPO)

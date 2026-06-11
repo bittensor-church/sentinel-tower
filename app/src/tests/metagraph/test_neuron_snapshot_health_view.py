@@ -4,7 +4,8 @@ from unittest.mock import patch
 import pytest
 from django.test import RequestFactory
 
-from apps.metagraph.views import _dumpable_blocks_in_range, snapshot_health_view
+from apps.metagraph.utils import get_dumpable_blocks_in_range
+from apps.metagraph.views import snapshot_health_view
 from tests.factories.metagraph import BlockFactory, NeuronFactory, NeuronSnapshotFactory, SubnetFactory
 
 
@@ -46,7 +47,7 @@ def test_no_latest_block_returns_empty_response(rf):
 @patch("apps.metagraph.views._WINDOWS", {"72m": 361})
 def test_all_dumpable_blocks_covered_reports_zero_missing(rf, latest_block, neuron):
     # Insert all expected snapshots within the window
-    dumpable_blocks = _dumpable_blocks_in_range(latest_block.number - 361, latest_block.number, neuron.subnet_id)
+    dumpable_blocks = get_dumpable_blocks_in_range(latest_block.number - 361, latest_block.number, neuron.subnet_id)
     for bnum in dumpable_blocks:
         NeuronSnapshotFactory(neuron=neuron, block=BlockFactory(number=bnum))
 
@@ -60,7 +61,7 @@ def test_all_dumpable_blocks_covered_reports_zero_missing(rf, latest_block, neur
 @patch("apps.metagraph.views._WINDOWS", {"72m": 361})
 def test_missing_dumpable_blocks_are_counted(rf, latest_block, neuron):
     # Insert some of the expected snapshots within the window
-    dumpable_blocks = _dumpable_blocks_in_range(latest_block.number - 361, latest_block.number, neuron.subnet_id)
+    dumpable_blocks = get_dumpable_blocks_in_range(latest_block.number - 361, latest_block.number, neuron.subnet_id)
     for bnum in dumpable_blocks[:-3]:
         NeuronSnapshotFactory(neuron=neuron, block=BlockFactory(number=bnum))
 

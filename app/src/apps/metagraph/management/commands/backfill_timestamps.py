@@ -4,6 +4,7 @@ import os
 from datetime import UTC, datetime, timedelta
 
 import structlog
+from django.conf import settings
 from django.core.management.base import BaseCommand
 from django.db.models import Min
 from sentinel.v1.providers.bittensor import bittensor_provider
@@ -12,9 +13,6 @@ from sentinel.v1.services.sentinel import sentinel_service
 from apps.metagraph.models import Block
 
 logger = structlog.get_logger()
-
-# Bittensor block time is 12 seconds
-BLOCK_TIME_SECONDS = 12
 
 
 class Command(BaseCommand):
@@ -133,7 +131,7 @@ class Command(BaseCommand):
         self.stdout.write(f"  Reference block: {reference_block}")
         self.stdout.write(f"  Reference timestamp: {reference_timestamp.isoformat()}")
         self.stdout.write(f"  Blocks to update: {total_blocks}")
-        self.stdout.write(f"  Block time: {BLOCK_TIME_SECONDS} seconds")
+        self.stdout.write(f"  Block time: {settings.BITTENSOR_SECONDS_PER_BLOCK} seconds")
         self.stdout.write(f"  Batch size: {batch_size}")
         self.stdout.write(f"  Overwrite existing: {overwrite}")
 
@@ -144,7 +142,9 @@ class Command(BaseCommand):
             self.stdout.write("Sample timestamp calculations:")
             for block_num in sample_blocks:
                 delta_blocks = block_num - reference_block
-                calculated_ts = reference_timestamp + timedelta(seconds=delta_blocks * BLOCK_TIME_SECONDS)
+                calculated_ts = reference_timestamp + timedelta(
+                    seconds=delta_blocks * settings.BITTENSOR_SECONDS_PER_BLOCK
+                )
                 self.stdout.write(f"  Block {block_num}: {calculated_ts.isoformat()}")
             if total_blocks > 5:
                 self.stdout.write(f"  ... and {total_blocks - 5} more blocks")
@@ -165,7 +165,9 @@ class Command(BaseCommand):
                 updates = []
                 for block_num in batch:
                     delta_blocks = block_num - reference_block
-                    calculated_ts = reference_timestamp + timedelta(seconds=delta_blocks * BLOCK_TIME_SECONDS)
+                    calculated_ts = reference_timestamp + timedelta(
+                        seconds=delta_blocks * settings.BITTENSOR_SECONDS_PER_BLOCK
+                    )
                     updates.append((block_num, calculated_ts))
 
                 # Bulk update

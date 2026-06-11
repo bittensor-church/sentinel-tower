@@ -12,8 +12,6 @@ from apps.metagraph.services.metagraph_service import MetagraphService
 
 logger = structlog.get_logger()
 
-POLL_INTERVAL = 12  # seconds, matches bittensor block time
-
 
 class Command(BaseCommand):
     help = "Long-running daemon that syncs metagraph snapshots from the blockchain using a persistent connection."
@@ -62,7 +60,9 @@ class Command(BaseCommand):
         netuids = MetagraphService.netuids_to_sync()
 
         self.stdout.write("Starting sync_metagraph daemon...")
-        logger.info("sync_metagraph daemon starting", poll_interval=POLL_INTERVAL, netuids=netuids)
+        logger.info(
+            "sync_metagraph daemon starting", poll_interval=settings.BITTENSOR_SECONDS_PER_BLOCK, netuids=netuids
+        )
 
         provider = self._create_provider(provider_name)
         last_processed_block = None
@@ -82,7 +82,7 @@ class Command(BaseCommand):
                     logger.info("Starting from head", head=head)
 
                 if head <= last_processed_block:
-                    time.sleep(POLL_INTERVAL)
+                    time.sleep(settings.BITTENSOR_SECONDS_PER_BLOCK)
                     continue
 
                 # Process all blocks from last_processed + 1 to head
@@ -126,7 +126,7 @@ class Command(BaseCommand):
                         last_processed_block = block_number
                         break
 
-                time.sleep(POLL_INTERVAL)
+                time.sleep(settings.BITTENSOR_SECONDS_PER_BLOCK)
         finally:
             self._close_provider(provider)
             logger.info("sync_metagraph daemon stopped")

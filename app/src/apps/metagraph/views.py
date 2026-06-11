@@ -3,28 +3,27 @@ from django.http import HttpResponse
 from prometheus_client import CONTENT_TYPE_LATEST, CollectorRegistry, Gauge, generate_latest
 
 from apps.metagraph.models import Block, NeuronSnapshot, Subnet
-from apps.metagraph.utils import get_dumpable_blocks, get_epoch_containing_block
+from apps.metagraph.utils import get_dumpable_blocks_in_range
 
-_BLOCK_SECONDS = 12
 _WINDOWS = {
-    "7d": 7 * 24 * 3600 // _BLOCK_SECONDS,
-    "12d": 12 * 24 * 3600 // _BLOCK_SECONDS,
+    "7d": 7 * 24 * 3600 // settings.BITTENSOR_SECONDS_PER_BLOCK,
+    "12d": 12 * 24 * 3600 // settings.BITTENSOR_SECONDS_PER_BLOCK,
 }
 
 
-def _dumpable_blocks_in_range(start: int, end: int, netuid: int) -> list[int]:
-    result: set[int] = set()
-    block = start
-    while block <= end:
-        epoch = get_epoch_containing_block(block, netuid)
-        for b in get_dumpable_blocks(epoch):
-            if start <= b <= end:
-                result.add(b)
-        block = epoch.stop
-    return sorted(result)
+def snapshot_health_view(request) -> HttpResponse:
+    """
+    Determine for all subnets if and how many metagraph dumps have missing NeuronSnapshots.
 
+    This view determines the blocks for which neuron snapshots are expected for each netuid using
+    the logic defined in apps.metagraph.utils.get_dumpable_blocks_in_range and verifies that there
+    is at least one neuron snapshot for each expected block/netuid pair.
 
-def snapshot_health_view(request):
+    This endpoint is meant to be scraped by Prometheus.
+
+    Returns:
+        Prometheus-compatible metrics as an HttpResponse.
+    """
     latest_block = Block.objects.filter(timestamp__isnull=False).order_by("-number").first()
     if not latest_block:
         return HttpResponse(b"", content_type=CONTENT_TYPE_LATEST)
@@ -56,7 +55,7 @@ def snapshot_health_view(request):
             covered_by_netuid.setdefault(subnet_id, set()).add(block_id)
 
         for netuid in netuids:
-            dumpable = set(_dumpable_blocks_in_range(start_block, end_block, netuid))
+            dumpable = set(get_dumpable_blocks_in_range(start_block, end_block, netuid))
             if not dumpable:
                 continue
             missing_gauge.labels(netuid=str(netuid), window=window_name).set(
