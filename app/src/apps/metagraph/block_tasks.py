@@ -1,14 +1,12 @@
 from datetime import UTC, datetime
 
 import structlog
-from abstract_block_dumper.v1.decorators import block_task
 from django.conf import settings
 from sentinel.v1.providers import pylon_provider
 from sentinel.v1.providers.base import BlockchainProvider
 from sentinel.v1.services.sentinel import sentinel_service
 
 import apps.metagraph.utils as metagraph_utils
-from apps.metagraph.services.metagraph_service import MetagraphService
 from apps.metagraph.services.metagraph_sync_service import DumpMetadata, MetagraphSyncService
 
 logger = structlog.get_logger()

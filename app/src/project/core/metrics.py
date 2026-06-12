@@ -7,6 +7,7 @@ from django.http import HttpResponse
 from django_prometheus.exports import ExportToDjangoView
 from prometheus_client import REGISTRY, multiprocess
 
+from apps.metagraph.tasks import set_snapshot_health_metrics
 from project.celery import get_num_tasks_in_queue, num_tasks_in_queue
 
 
@@ -14,7 +15,7 @@ class RecursiveMultiProcessCollector(multiprocess.MultiProcessCollector):
     """A multiprocess collector that scans the directory recursively"""
 
     def collect(self):
-        files = glob.glob(os.path.join(self._path, "**/*.db"), recursive=True)
+        files = [f for f in glob.glob(os.path.join(self._path, "**/*.db"), recursive=True) if os.path.exists(f)]
         return self.merge(files, accumulate=True)
 
 
@@ -29,6 +30,8 @@ def metrics_view(request):
     """Exports metrics as a Django view"""
     for queue in settings.CELERY_TASK_QUEUES:
         num_tasks_in_queue.labels(queue.name).set(get_num_tasks_in_queue(queue.name))
+
+    set_snapshot_health_metrics()
 
     if is_multiprocess:
         return HttpResponse(

@@ -220,6 +220,10 @@ class NeuronSnapshot(models.Model):
                 condition=Q(is_validator=True),
                 name="idx_validator_snaps_by_neuron",
             ),
+            models.Index(
+                fields=["block_id"],
+                name="idx_nsnapshot_block",
+            ),
         ]
 
     def __str__(self) -> str:
@@ -398,3 +402,32 @@ class MetagraphDump(models.Model):
 
     def __str__(self) -> str:
         return f"Dump for subnet {self.netuid} at block {self.block.pk}"
+
+
+class SnapshotHealthMetric(models.Model):
+    """Pre-computed snapshot-health metric, refreshed periodically by Celery.
+
+    Stores, per (netuid, look-back window), the number of dumpable blocks that
+    have no NeuronSnapshot entries. Computing this scans the large
+    neuron_snapshot table, so it is kept off the Prometheus scrape path: the
+    Celery task ``apps.metagraph.tasks.update_snapshot_health_metrics`` refreshes
+    these rows on a schedule, and the ``/metrics`` endpoint reads them cheaply on
+    each scrape to expose the ``metagraph_missing_snapshot_blocks`` gauge.
+    """
+
+    netuid = models.PositiveIntegerField()
+    window = models.CharField(max_length=16)
+    missing_blocks = models.PositiveIntegerField(default=0)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        db_table = "metagraph_snapshot_health_metric"
+        constraints = [
+            models.UniqueConstraint(
+                fields=["netuid", "window"],
+                name="unique_snapshot_health_metric",
+            ),
+        ]
+
+    def __str__(self) -> str:
+        return f"netuid={self.netuid} window={self.window} missing={self.missing_blocks}"

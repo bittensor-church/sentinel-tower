@@ -140,6 +140,10 @@ CELERY_BEAT_SCHEDULE = {
         "task": "apps.metagraph.tasks.refresh_validator_apy_windows",
         "schedule": timedelta(minutes=15),
     },
+    "update-snapshot-health-metrics": {
+        "task": "apps.metagraph.tasks.update_snapshot_health_metrics",
+        "schedule": timedelta(minutes=72),
+    },
 }
 CELERY_TASK_ALWAYS_EAGER = env.bool("CELERY_TASK_ALWAYS_EAGER", default=False)
 CELERY_TASK_EAGER_PROPAGATES = env.bool("CELERY_TASK_EAGER_PROPAGATES", default=False)
@@ -253,6 +257,7 @@ PROMETHEUS_EXPORT_MIGRATIONS = env.bool("PROMETHEUS_EXPORT_MIGRATIONS", default=
 # Bittensor / Block Dumper
 
 BITTENSOR_NETWORK = env.str("BITTENSOR_NETWORK", default="finney")
+BITTENSOR_SECONDS_PER_BLOCK = env.int("BITTENSOR_SECONDS_PER_BLOCK", default=12)
 PYLON_URL = env("PYLON_URL", default="http://localhost:8090")
 
 BLOCK_DUMPER_START_FROM_BLOCK = "current"

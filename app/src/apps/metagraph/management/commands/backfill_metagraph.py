@@ -9,7 +9,7 @@ from sentinel.v1.providers.bittensor import bittensor_provider
 from apps.metagraph.block_tasks import sync_metagraph_for_block
 from apps.metagraph.models import MetagraphDump
 from apps.metagraph.services.metagraph_service import MetagraphService
-from apps.metagraph.utils import get_dumpable_blocks, get_epoch_containing_block
+from apps.metagraph.utils import get_dumpable_blocks_in_range
 from project.core.utils import get_archive_provider
 
 logger = structlog.get_logger()
@@ -24,20 +24,6 @@ def _get_lookback_default() -> int:
 
 def _get_rate_limit_default() -> float:
     return float(os.environ.get("BACKFILL_RATE_LIMIT", DEFAULT_RATE_LIMIT))
-
-
-def _get_dumpable_blocks_in_range(min_block: int, max_block: int, netuid: int) -> set[int]:
-    """Get all dumpable block numbers for a netuid within a range."""
-    dumpable = set()
-    block = min_block
-    while block <= max_block:
-        epoch = get_epoch_containing_block(block, netuid)
-        for b in get_dumpable_blocks(epoch):
-            if min_block <= b <= max_block:
-                dumpable.add(b)
-        # Jump to next epoch
-        block = epoch.stop
-    return dumpable
 
 
 class Command(BaseCommand):
@@ -93,7 +79,7 @@ class Command(BaseCommand):
         # Find missing (block, netuid) pairs
         missing: list[tuple[int, int]] = []
         for netuid in netuids:
-            expected = _get_dumpable_blocks_in_range(min_block, max_block, netuid)
+            expected = get_dumpable_blocks_in_range(min_block, max_block, netuid)
             existing = set(
                 MetagraphDump.objects.filter(
                     netuid=netuid,

@@ -2,6 +2,7 @@ import signal
 import time
 
 import structlog
+from django.conf import settings
 from django.core.management.base import BaseCommand
 from sentinel.v1.providers.base import BlockchainProvider
 from sentinel.v1.providers.bittensor import bittensor_provider
@@ -9,8 +10,6 @@ from sentinel.v1.providers.bittensor import bittensor_provider
 from apps.extrinsics.block_tasks import store_block_extrinsics
 
 logger = structlog.get_logger()
-
-POLL_INTERVAL = 12  # seconds, matches bittensor block time
 
 
 class Command(BaseCommand):
@@ -41,7 +40,7 @@ class Command(BaseCommand):
         signal.signal(signal.SIGINT, self._handle_signal)
 
         self.stdout.write("Starting sync_extrinsics daemon...")
-        logger.info("sync_extrinsics daemon starting", poll_interval=POLL_INTERVAL)
+        logger.info("sync_extrinsics daemon starting", poll_interval=settings.BITTENSOR_SECONDS_PER_BLOCK)
 
         provider = self._create_provider()
         last_processed_block = None
@@ -61,7 +60,7 @@ class Command(BaseCommand):
                     logger.info("Starting from head", head=head)
 
                 if head <= last_processed_block:
-                    time.sleep(POLL_INTERVAL)
+                    time.sleep(settings.BITTENSOR_SECONDS_PER_BLOCK)
                     continue
 
                 # Process all blocks from last_processed + 1 to head
@@ -90,7 +89,7 @@ class Command(BaseCommand):
                         last_processed_block = block_number
                         break
 
-                time.sleep(POLL_INTERVAL)
+                time.sleep(settings.BITTENSOR_SECONDS_PER_BLOCK)
         finally:
             self._close_provider(provider)
             logger.info("sync_extrinsics daemon stopped")
