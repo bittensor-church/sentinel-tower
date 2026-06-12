@@ -55,7 +55,9 @@ def test_no_latest_block_persists_nothing():
 @override_settings(METAGRAPH_NETUIDS=[])
 def test_dumpable_blocks_are_counted_correctly(latest_block, neuron):
     # Insert all but three of the expected snapshots within the wider window
-    dumpable_blocks = get_dumpable_blocks_in_range(latest_block.number - 722, latest_block.number - 361, neuron.subnet_id)
+    dumpable_blocks = get_dumpable_blocks_in_range(
+        latest_block.number - 722, latest_block.number - 361, neuron.subnet_id
+    )
     for bnum in sorted(dumpable_blocks)[:-3]:
         NeuronSnapshotFactory(neuron=neuron, block=BlockFactory(number=bnum))
     # Insert all expected snapshots within the smaller window
@@ -84,7 +86,9 @@ def test_partially_missing_snapshots_are_disregarded(latest_block, neuron, other
     for bnum in sorted(dumpable_blocks)[:-3]:
         NeuronSnapshotFactory(neuron=neuron, block=BlockFactory(number=bnum))
     # Insert all expected snapshots of the other neuron
-    dumpable_blocks = get_dumpable_blocks_in_range(latest_block.number - 361, latest_block.number, other_neuron.subnet_id)
+    dumpable_blocks = get_dumpable_blocks_in_range(
+        latest_block.number - 361, latest_block.number, other_neuron.subnet_id
+    )
     for bnum in sorted(dumpable_blocks):
         NeuronSnapshotFactory(neuron=other_neuron, block=BlockFactory(number=bnum))
 

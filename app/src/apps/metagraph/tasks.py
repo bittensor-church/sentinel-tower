@@ -124,7 +124,7 @@ def update_snapshot_health_metrics() -> None:
     Recompute snapshot-health counts and persist them for the /metrics endpoint.
 
     The celery task does not update the metric itself as this would result in chaos on
-    account of the intentionally recycled child processes (see 
+    account of the intentionally recycled child processes (see
     settings.CELERY_WORKER_MAX_TASKS_PER_CHILD). Instead, the health metrics are persisted to a
     database table that the Prometheus /metrics endpoint can scrape.
 
