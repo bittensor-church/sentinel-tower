@@ -160,6 +160,5 @@ def test(session):
             "-n",
             "auto",
             "project",
-            "tests",
             *session.posargs,
         )
