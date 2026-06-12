@@ -140,6 +140,10 @@ CELERY_BEAT_SCHEDULE = {
         "task": "apps.metagraph.tasks.refresh_validator_apy_windows",
         "schedule": timedelta(minutes=15),
     },
+    "update-snapshot-health-metrics": {
+        "task": "apps.metagraph.tasks.update_snapshot_health_metrics",
+        "schedule": timedelta(minutes=72),
+    },
 }
 CELERY_TASK_ALWAYS_EAGER = env.bool("CELERY_TASK_ALWAYS_EAGER", default=False)
 CELERY_TASK_EAGER_PROPAGATES = env.bool("CELERY_TASK_EAGER_PROPAGATES", default=False)

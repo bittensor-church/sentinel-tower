@@ -22,7 +22,7 @@ def get_dumpable_blocks(epoch: range) -> tuple[int, ...]:
     return tuple(ranges)
 
 
-def get_dumpable_blocks_in_range(start_block: int, end_block: int, netuid: int) -> list[int]:
+def get_dumpable_blocks_in_range(start_block: int, end_block: int, netuid: int) -> set[int]:
     """
     Get the blocks that should be dumped within a specified range.
 
@@ -41,8 +41,9 @@ def get_dumpable_blocks_in_range(start_block: int, end_block: int, netuid: int) 
         for b in get_dumpable_blocks(epoch):
             if start_block <= b <= end_block:
                 result.add(b)
+        # Jump to next epoch
         block = epoch.stop
-    return sorted(result)
+    return result
 
 
 def get_epoch_containing_block(block: int, netuid: int = 0) -> range:
