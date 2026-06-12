@@ -121,7 +121,7 @@ class Migration(migrations.Migration):
     atomic = False
 
     dependencies = [
-        ("metagraph", "0011_optimize_apy_refresh"),
+        ("metagraph", "0012_neuronsnapshot_subnet_id"),
     ]
 
     operations = [
