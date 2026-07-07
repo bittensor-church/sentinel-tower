@@ -196,7 +196,14 @@ services:
     image: project/app
     init: true
     healthcheck:
-      test: celery -A project status > /dev/null || exit 1
+      # Cheap pidfile liveness check: `celery -A project status` boots the whole
+      # Django+Bittensor app (~2s of a full core) every interval. The entrypoint's
+      # watchdog loop still runs a real `celery status` as the deep check.
+      # NOTE: only master+metagraph — the "worker" node has been dead on prod for a
+      # while (empty log, unused queue) and needs a separate cleanup.
+      test: ["CMD-SHELL", "for w in master metagraph; do kill -0 $$(cat /tmp/celery-$$w.pid) 2>/dev/null || exit 1; done"]
+      interval: 30s
+      timeout: 10s
     restart: unless-stopped
     env_file: ./.env
     extra_hosts:

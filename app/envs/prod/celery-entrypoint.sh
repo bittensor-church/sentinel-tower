@@ -30,9 +30,11 @@ trap "celery multi stop $WORKERS $OPTIONS; exit 0" INT TERM
 
 tail -f /tmp/logs/celery-*.log &
 
-# check celery status periodically to exit if it crashed
+# check celery status periodically to exit if it crashed;
+# each check boots the full Django app (~2s of CPU), so keep it infrequent —
+# the container healthcheck does cheap pidfile liveness every 30s
 while true; do
-    sleep 120
+    sleep 600
     echo "Checking celery status"
     celery -A project status -t 30 > /dev/null 2>&1 || exit 1
     echo "Celery status OK"
