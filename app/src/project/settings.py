@@ -270,6 +270,14 @@ BLOCK_TASK_MAX_RETRY_DELAY_MINUTES = 1440
 METAGRAPH_NETUIDS: list[int] | None = env.list("METAGRAPH_NETUIDS", default=[], cast=int) or None
 METAGRAPH_LITE = env.bool("METAGRAPH_LITE", default=False)
 
+# Data retention (docs/superpowers/specs/2026-07-07-data-retention-design.md):
+# rows in high-volume tables older than this many days are pruned daily,
+# except validator neuron snapshots (+ their mechanism metrics), which are
+# kept forever because the APY materialized views read them.
+DATA_RETENTION_DAYS = env.int("DATA_RETENTION_DAYS", default=90)
+RETENTION_DELETE_BATCH_SIZE = env.int("RETENTION_DELETE_BATCH_SIZE", default=20000)
+RETENTION_BATCH_SLEEP_SECONDS = env.float("RETENTION_BATCH_SLEEP_SECONDS", default=0.2)
+
 
 SENTINEL_STORAGES = {
     "local": {
