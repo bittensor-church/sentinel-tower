@@ -25,6 +25,12 @@ def test_cutoff_none_when_nothing_expired():
     assert retention.compute_cutoff_block(days=90) is None
 
 
+def test_rejects_nonpositive_days():
+    # No django_db marker: the guard fires before any DB access.
+    with pytest.raises(ValueError):
+        retention.run(days=0)
+
+
 @pytest.mark.django_db
 def test_run_is_noop_without_cutoff():
     BlockFactory(number=20, timestamp=timezone.now() - timedelta(days=1))

@@ -46,6 +46,9 @@ class Command(BaseCommand):
             dry_run=options["dry_run"],
             max_batches=options["max_batches"],
         )
+        # Deliberately exit 0 on lock-skip: another active run means the work
+        # is happening, not a failure. Operators chaining the one-shot should
+        # check the output, not the exit code.
         if result.get("skipped") == "lock":
             self.stdout.write(self.style.WARNING("Another retention run is in progress; nothing done."))
             return

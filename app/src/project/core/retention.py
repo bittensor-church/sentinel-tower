@@ -8,9 +8,14 @@ cannot overlap; this also defuses Celery redelivery of long-running tasks
 (acks_late is enabled globally). Both supported entry points (the management
 command and the beat task) MUST go through :func:`run` — never call the
 per-app ``prune_expired`` functions directly in production code.
+
+The advisory lock is session-scoped: if the DB connection drops and is
+re-established mid-run, serialization is no longer guaranteed for the
+remainder of that run.
 """
 
 from datetime import timedelta
+from typing import Any
 
 import structlog
 from django.conf import settings
@@ -48,9 +53,11 @@ def run(
     batch_size: int | None = None,
     dry_run: bool = False,
     max_batches: int | None = None,
-) -> dict:
+) -> dict[str, Any]:
     """Compute the cutoff and prune both apps. Returns cutoff + per-table counts."""
     days = days if days is not None else settings.DATA_RETENTION_DAYS
+    if days < 1:
+        raise ValueError("days must be >= 1")
 
     with connection.cursor() as cursor:
         if not _try_advisory_lock(cursor):
@@ -74,4 +81,9 @@ def run(
             logger.info("Retention run finished", cutoff_block=cutoff_block, dry_run=dry_run, **deleted)
             return {"cutoff_block": cutoff_block, "deleted": deleted}
         finally:
-            cursor.execute("SELECT pg_advisory_unlock(%s)", [RETENTION_LOCK_KEY])
+            # Best-effort: if the connection died, the lock died with the
+            # session anyway, and a raise here would mask the prune exception.
+            try:
+                cursor.execute("SELECT pg_advisory_unlock(%s)", [RETENTION_LOCK_KEY])
+            except Exception:
+                logger.warning("Failed to release retention advisory lock", exc_info=True)
