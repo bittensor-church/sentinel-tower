@@ -292,6 +292,9 @@ class Weight(models.Model):
                 name="unique_weight",
             ),
         ]
+        indexes = [
+            models.Index(fields=["block"], name="idx_weight_block"),
+        ]
 
     def __str__(self) -> str:
         return f"Weight {self.weight} from {self.source_neuron.pk} to {self.target_neuron.pk}"
@@ -329,6 +332,9 @@ class Bond(models.Model):
                 fields=["source_neuron", "target_neuron", "block", "mech_id"],
                 name="unique_bond",
             ),
+        ]
+        indexes = [
+            models.Index(fields=["block"], name="idx_bond_block"),
         ]
 
     def __str__(self) -> str:

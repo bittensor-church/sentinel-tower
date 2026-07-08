@@ -4,6 +4,7 @@ from datetime import timedelta
 
 import environ
 import structlog
+from celery.schedules import crontab
 from kombu import Queue
 
 root = environ.Path(__file__) - 2
@@ -144,6 +145,10 @@ CELERY_BEAT_SCHEDULE = {
         "task": "apps.metagraph.tasks.update_snapshot_health_metrics",
         "schedule": timedelta(minutes=72),
     },
+    "cleanup-expired-data": {
+        "task": "project.core.tasks.cleanup_expired_data",
+        "schedule": crontab(hour=3, minute=30),  # daily, low-traffic UTC hour
+    },
 }
 CELERY_TASK_ALWAYS_EAGER = env.bool("CELERY_TASK_ALWAYS_EAGER", default=False)
 CELERY_TASK_EAGER_PROPAGATES = env.bool("CELERY_TASK_EAGER_PROPAGATES", default=False)
@@ -269,6 +274,14 @@ BLOCK_TASK_MAX_RETRY_DELAY_MINUTES = 1440
 # Metagraph
 METAGRAPH_NETUIDS: list[int] | None = env.list("METAGRAPH_NETUIDS", default=[], cast=int) or None
 METAGRAPH_LITE = env.bool("METAGRAPH_LITE", default=False)
+
+# Data retention (docs/superpowers/specs/2026-07-07-data-retention-design.md):
+# rows in high-volume tables older than this many days are pruned daily,
+# except validator neuron snapshots (+ their mechanism metrics), which are
+# kept forever because the APY materialized views read them.
+DATA_RETENTION_DAYS = env.int("DATA_RETENTION_DAYS", default=90)
+DATA_RETENTION_BATCH_SIZE = env.int("DATA_RETENTION_BATCH_SIZE", default=20000)
+DATA_RETENTION_BATCH_SLEEP_SECONDS = env.float("DATA_RETENTION_BATCH_SLEEP_SECONDS", default=0.2)
 
 
 SENTINEL_STORAGES = {
