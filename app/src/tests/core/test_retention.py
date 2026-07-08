@@ -1,6 +1,8 @@
 from datetime import timedelta
+from io import StringIO
 
 import pytest
+from django.core.management import call_command
 from django.utils import timezone
 
 from project.core import retention
@@ -61,3 +63,28 @@ def test_run_skips_when_lock_held(monkeypatch):
 
     assert result == {"cutoff_block": None, "deleted": {}, "skipped": "lock"}
     assert type(snapshot).objects.filter(pk=snapshot.pk).exists()
+
+
+@pytest.mark.django_db
+def test_command_dry_run_reports_and_deletes_nothing():
+    old_block = BlockFactory(number=10, timestamp=timezone.now() - timedelta(days=91))
+    BlockFactory(number=20, timestamp=timezone.now() - timedelta(days=1))
+    snapshot = NeuronSnapshotFactory(block=old_block, is_validator=False)
+
+    out = StringIO()
+    call_command("prune_retention", "--dry-run", stdout=out)
+
+    assert "metagraph_neuron_snapshot: 1" in out.getvalue()
+    assert type(snapshot).objects.filter(pk=snapshot.pk).exists()
+
+
+@pytest.mark.django_db
+def test_command_prunes_for_real():
+    old_block = BlockFactory(number=10, timestamp=timezone.now() - timedelta(days=91))
+    BlockFactory(number=20, timestamp=timezone.now() - timedelta(days=1))
+    snapshot = NeuronSnapshotFactory(block=old_block, is_validator=False)
+
+    out = StringIO()
+    call_command("prune_retention", "--batch-size", "10", stdout=out)
+
+    assert not type(snapshot).objects.filter(pk=snapshot.pk).exists()
