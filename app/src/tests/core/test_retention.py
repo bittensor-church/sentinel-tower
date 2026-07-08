@@ -97,6 +97,14 @@ def test_command_prunes_for_real():
     assert not type(snapshot).objects.filter(pk=snapshot.pk).exists()
 
 
+def test_command_keyboard_interrupt_exits_cleanly():
+    out = StringIO()
+    with patch.object(retention, "run", side_effect=KeyboardInterrupt):
+        call_command("prune_retention", stdout=out)
+
+    assert "Interrupted — committed batches are kept; re-run to resume." in out.getvalue()
+
+
 def test_cleanup_task_calls_orchestrator():
     from project.core import tasks
 

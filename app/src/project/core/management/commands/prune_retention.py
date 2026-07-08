@@ -40,12 +40,16 @@ class Command(BaseCommand):
         )
 
     def handle(self, *args, **options) -> None:
-        result = retention.run(
-            days=options["days"],
-            batch_size=options["batch_size"],
-            dry_run=options["dry_run"],
-            max_batches=options["max_batches"],
-        )
+        try:
+            result = retention.run(
+                days=options["days"],
+                batch_size=options["batch_size"],
+                dry_run=options["dry_run"],
+                max_batches=options["max_batches"],
+            )
+        except KeyboardInterrupt:
+            self.stdout.write(self.style.WARNING("Interrupted — committed batches are kept; re-run to resume."))
+            return
         # Deliberately exit 0 on lock-skip: another active run means the work
         # is happening, not a failure. Operators chaining the one-shot should
         # check the output, not the exit code.

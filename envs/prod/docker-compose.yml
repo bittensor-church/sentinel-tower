@@ -200,10 +200,14 @@ services:
       - "host.docker.internal:host-gateway"
     environment:
       - MEDIA_ROOT=${MEDIA_ROOT:-/root/src/media}
-    # One-shot: run with `docker compose run --rm prune-retention`, optionally
-    # appending --dry-run / --max-batches N. Daily steady-state pruning runs
-    # via the cleanup-expired-data Celery beat task; the shared advisory lock
-    # makes concurrent runs a no-op.
+    # One-shot: `docker compose run --rm prune-retention` runs the default
+    # command below. NOTE: anything after the service name REPLACES the
+    # command (the entrypoint is just `gosu appuser`), so to pass flags spell
+    # the whole command out, e.g.:
+    #   docker compose run --rm prune-retention python manage.py prune_retention --dry-run
+    #   docker compose run --rm prune-retention python manage.py prune_retention --max-batches 1000
+    # Daily steady-state pruning runs via the cleanup-expired-data Celery beat
+    # task; the shared advisory lock makes concurrent runs a no-op.
     command: python manage.py prune_retention
     volumes:
       - ${MEDIA_VOLUME_PATH:-./media}:/root/src/media
