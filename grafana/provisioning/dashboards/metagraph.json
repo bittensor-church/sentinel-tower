@@ -456,13 +456,13 @@
       {
         "current": { "text": "0", "value": "0" },
         "datasource": { "type": "postgres", "uid": "postgresql" },
-        "definition": "SELECT DISTINCT mm.mech_id FROM metagraph_mechanism_metrics mm JOIN metagraph_neuron_snapshot ns ON mm.snapshot_id = ns.id JOIN metagraph_neuron n ON ns.neuron_id = n.id WHERE n.subnet_id = ${subnet} ORDER BY mm.mech_id",
+        "definition": "SELECT DISTINCT mm.mech_id FROM metagraph_mechanism_metrics mm JOIN metagraph_neuron_snapshot ns ON mm.snapshot_id = ns.id JOIN metagraph_neuron n ON ns.neuron_id = n.id WHERE n.subnet_id = ${subnet} AND ns.block_id = (SELECT MAX(block_id) FROM metagraph_dump WHERE netuid = ${subnet}) ORDER BY mm.mech_id",
         "description": "Mechanism ID",
         "label": "mech_id",
         "name": "mech_id",
         "options": [],
-        "query": "SELECT DISTINCT mm.mech_id FROM metagraph_mechanism_metrics mm JOIN metagraph_neuron_snapshot ns ON mm.snapshot_id = ns.id JOIN metagraph_neuron n ON ns.neuron_id = n.id WHERE n.subnet_id = ${subnet} ORDER BY mm.mech_id",
-        "refresh": 2,
+        "query": "SELECT DISTINCT mm.mech_id FROM metagraph_mechanism_metrics mm JOIN metagraph_neuron_snapshot ns ON mm.snapshot_id = ns.id JOIN metagraph_neuron n ON ns.neuron_id = n.id WHERE n.subnet_id = ${subnet} AND ns.block_id = (SELECT MAX(block_id) FROM metagraph_dump WHERE netuid = ${subnet}) ORDER BY mm.mech_id",
+        "refresh": 1,
         "regex": "",
         "type": "query"
       }

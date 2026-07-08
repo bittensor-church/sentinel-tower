@@ -149,7 +149,7 @@ services:
     volumes:
       - ${MEDIA_VOLUME_PATH:-./media}:/root/src/media
     profiles:
-      - backfill
+      - metagraph
     depends_on:
       - db
     logging:
