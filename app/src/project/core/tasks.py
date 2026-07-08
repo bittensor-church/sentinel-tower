@@ -5,7 +5,11 @@ and prunes rows past the retention window. Steady-state runs delete roughly
 one day of data; the generous time limit covers post-deploy catch-up. The
 orchestrator's advisory lock makes overlapping runs (or a concurrent manual
 ``prune_retention``) a no-op, which also defuses broker redelivery of
-long-running tasks (acks_late is enabled globally).
+long-running tasks (acks_late is enabled globally). If the hard time limit
+kills the worker child, ``reject_on_worker_lost`` + ``acks_late`` requeue the
+task; the killed session's advisory lock dies with its connection and
+per-batch commits mean the requeued run resumes where the previous one
+stopped — this is deliberate, not accidental looping.
 """
 
 from datetime import timedelta

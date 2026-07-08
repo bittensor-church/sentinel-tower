@@ -155,10 +155,10 @@ def _refresh_and_fetch_views() -> tuple[list, list]:
     with connection.cursor() as cursor:
         cursor.execute("REFRESH MATERIALIZED VIEW mv_validator_apy_windows")
         cursor.execute("REFRESH MATERIALIZED VIEW mv_subnet_validator_apy_epochs")
-        cursor.execute("SELECT * FROM mv_validator_apy_windows ORDER BY 1, 2")
-        windows = cursor.fetchall()
-        cursor.execute("SELECT * FROM mv_subnet_validator_apy_epochs ORDER BY 1, 2, 3")
-        epochs = cursor.fetchall()
+        cursor.execute("SELECT * FROM mv_validator_apy_windows")
+        windows = sorted(cursor.fetchall())
+        cursor.execute("SELECT * FROM mv_subnet_validator_apy_epochs")
+        epochs = sorted(cursor.fetchall())
     return windows, epochs
 
 
