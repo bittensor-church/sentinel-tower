@@ -275,8 +275,8 @@ METAGRAPH_LITE = env.bool("METAGRAPH_LITE", default=False)
 # except validator neuron snapshots (+ their mechanism metrics), which are
 # kept forever because the APY materialized views read them.
 DATA_RETENTION_DAYS = env.int("DATA_RETENTION_DAYS", default=90)
-RETENTION_DELETE_BATCH_SIZE = env.int("RETENTION_DELETE_BATCH_SIZE", default=20000)
-RETENTION_BATCH_SLEEP_SECONDS = env.float("RETENTION_BATCH_SLEEP_SECONDS", default=0.2)
+DATA_RETENTION_BATCH_SIZE = env.int("DATA_RETENTION_BATCH_SIZE", default=20000)
+DATA_RETENTION_BATCH_SLEEP_SECONDS = env.float("DATA_RETENTION_BATCH_SLEEP_SECONDS", default=0.2)
 
 
 SENTINEL_STORAGES = {

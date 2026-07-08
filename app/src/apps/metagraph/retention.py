@@ -9,6 +9,9 @@ There are no DB-level cascades (all FKs are NO ACTION, DEFERRABLE INITIALLY
 DEFERRED), so each snapshot batch deletes child mechanism_metrics rows and
 the snapshots in one data-modifying CTE statement; the deferred FK check
 passes at COMMIT.
+
+Do not run concurrently with a historical backfill that inserts blocks below
+the cutoff.
 """
 
 import time
@@ -84,8 +87,24 @@ def prune_expired(
     dry_run: bool = False,
     max_batches: int | None = None,
 ) -> dict[str, int]:
-    """Prune metagraph rows at or below ``cutoff_block``. Returns rows per table."""
-    batch_size = batch_size or settings.RETENTION_DELETE_BATCH_SIZE
+    """Prune metagraph rows at or below ``cutoff_block``. Returns rows per table.
+
+    ``max_batches`` caps batches PER TABLE (so a run may use up to
+    4×``max_batches`` batches total) and makes runs resumable — a capped run
+    deletes the oldest rows first, and the next run picks up where it left off.
+
+    ``dry_run=True`` returns would-delete counts without deleting anything and
+    ignores ``max_batches``.
+
+    Single-flight/serialization is the caller's job — the
+    ``project.core.retention`` orchestrator wraps this in a Postgres advisory
+    lock, so concurrent runs can't overlap; do not call this concurrently from
+    elsewhere.
+    """
+    if batch_size is None:
+        batch_size = settings.DATA_RETENTION_BATCH_SIZE
+    if batch_size < 1:
+        raise ValueError("batch_size must be >= 1")
     params = {"cutoff": cutoff_block, "batch_size": batch_size}
 
     if dry_run:
@@ -109,6 +128,8 @@ def prune_expired(
             },
         }
 
+    logger.info("Retention prune starting", cutoff_block=cutoff_block, batch_size=batch_size)
+
     deleted = {
         "metagraph_neuron_snapshot": 0,
         "metagraph_mechanism_metrics": 0,
@@ -123,8 +144,13 @@ def prune_expired(
         batches += 1
         if ns_count == 0:
             break
-        logger.info("retention batch", table="metagraph_neuron_snapshot", deleted=ns_count)
-        time.sleep(settings.RETENTION_BATCH_SLEEP_SECONDS)
+        logger.info(
+            "Pruned retention batch",
+            table="metagraph_neuron_snapshot",
+            snapshots=ns_count,
+            mechanism_metrics=mm_count,
+        )
+        time.sleep(settings.DATA_RETENTION_BATCH_SLEEP_SECONDS)
 
     for table, col in _SIMPLE_TABLES:
         batches = 0
@@ -134,7 +160,8 @@ def prune_expired(
             batches += 1
             if count == 0:
                 break
-            logger.info("retention batch", table=table, deleted=count)
-            time.sleep(settings.RETENTION_BATCH_SLEEP_SECONDS)
+            logger.info("Pruned retention batch", table=table, rows=count)
+            time.sleep(settings.DATA_RETENTION_BATCH_SLEEP_SECONDS)
 
+    logger.info("Retention prune finished", cutoff_block=cutoff_block, **deleted)
     return deleted

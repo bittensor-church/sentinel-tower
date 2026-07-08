@@ -117,3 +117,30 @@ def test_dry_run_counts_without_deleting(old_block):
     assert counted["metagraph_weight"] == 1
     assert NeuronSnapshot.objects.filter(pk=snapshot.pk).exists()
     assert Weight.objects.exists()
+
+
+@pytest.mark.django_db
+def test_snapshot_with_multiple_mechanism_metrics(old_block):
+    snapshot = NeuronSnapshotFactory(block=old_block, is_validator=False)
+    MechanismMetricsFactory(snapshot=snapshot, mech_id=0)
+    MechanismMetricsFactory(snapshot=snapshot, mech_id=1)
+
+    deleted = retention.prune_expired(cutoff_block=CUTOFF, batch_size=10)
+
+    assert deleted["metagraph_neuron_snapshot"] == 1
+    assert deleted["metagraph_mechanism_metrics"] == 2
+    assert not MechanismMetrics.objects.exists()
+
+
+@pytest.mark.django_db
+def test_noop_when_nothing_below_cutoff(new_block):
+    NeuronSnapshotFactory(block=new_block, is_validator=False)
+
+    deleted = retention.prune_expired(cutoff_block=CUTOFF, batch_size=10)
+
+    assert all(count == 0 for count in deleted.values())
+
+
+def test_rejects_nonpositive_batch_size():
+    with pytest.raises(ValueError):
+        retention.prune_expired(cutoff_block=CUTOFF, batch_size=0)
