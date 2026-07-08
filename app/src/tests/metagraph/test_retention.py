@@ -5,7 +5,11 @@ validator snapshots + their mechanism metrics survive forever; everything
 else at block_id <= cutoff is deleted.
 """
 
+from datetime import timedelta
+
 import pytest
+from django.db import connection
+from django.utils import timezone
 
 from apps.metagraph import retention
 from apps.metagraph.models import MechanismMetrics, NeuronSnapshot, Weight
@@ -14,6 +18,7 @@ from tests.factories.metagraph import (
     BondFactory,
     CollateralFactory,
     MechanismMetricsFactory,
+    MetagraphDumpFactory,
     NeuronSnapshotFactory,
     WeightFactory,
 )
@@ -144,3 +149,47 @@ def test_noop_when_nothing_below_cutoff(new_block):
 def test_rejects_nonpositive_batch_size():
     with pytest.raises(ValueError):
         retention.prune_expired(cutoff_block=CUTOFF, batch_size=0)
+
+
+def _refresh_and_fetch_views() -> tuple[list, list]:
+    with connection.cursor() as cursor:
+        cursor.execute("REFRESH MATERIALIZED VIEW mv_validator_apy_windows")
+        cursor.execute("REFRESH MATERIALIZED VIEW mv_subnet_validator_apy_epochs")
+        cursor.execute("SELECT * FROM mv_validator_apy_windows ORDER BY 1, 2")
+        windows = cursor.fetchall()
+        cursor.execute("SELECT * FROM mv_subnet_validator_apy_epochs ORDER BY 1, 2, 3")
+        epochs = cursor.fetchall()
+    return windows, epochs
+
+
+@pytest.mark.django_db
+def test_apy_views_identical_before_and_after_prune(old_block, new_block):
+    # The fixtures' Faker timestamps can fall outside the views' time windows;
+    # pin them so both views see the blocks (retention prunes by block NUMBER,
+    # so old_block stays prune-eligible regardless of its timestamp).
+    old_block.timestamp = timezone.now() - timedelta(days=1)
+    old_block.save(update_fields=["timestamp"])
+    new_block.timestamp = timezone.now()
+    new_block.save(update_fields=["timestamp"])
+
+    # validator data old enough to be prune-eligible if the policy were wrong,
+    # seeded to satisfy both views' filters (alpha_stake/alpha_dividends > 0,
+    # end-of-epoch dump row) so they emit real rows.
+    validator = NeuronSnapshotFactory(
+        block=old_block,
+        is_validator=True,
+        alpha_stake=10**12,
+        alpha_dividends=10**9,
+    )
+    MechanismMetricsFactory(snapshot=validator, dividend=0.5)
+    MetagraphDumpFactory(netuid=validator.neuron.subnet_id, block=old_block, epoch_position=2)
+    # non-validator noise that SHOULD be pruned
+    miner = NeuronSnapshotFactory(block=old_block, is_validator=False)
+    MechanismMetricsFactory(snapshot=miner)
+
+    before = _refresh_and_fetch_views()
+    retention.prune_expired(cutoff_block=CUTOFF, batch_size=10)
+    after = _refresh_and_fetch_views()
+
+    assert all(before), "both views should emit rows for the seeded validator"
+    assert before == after
