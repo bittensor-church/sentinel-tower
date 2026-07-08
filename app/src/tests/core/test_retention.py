@@ -1,5 +1,6 @@
 from datetime import timedelta
 from io import StringIO
+from unittest.mock import patch
 
 import pytest
 from django.core.management import call_command
@@ -94,3 +95,12 @@ def test_command_prunes_for_real():
     call_command("prune_retention", "--batch-size", "10", stdout=out)
 
     assert not type(snapshot).objects.filter(pk=snapshot.pk).exists()
+
+
+def test_cleanup_task_calls_orchestrator():
+    from project.core import tasks
+
+    with patch.object(tasks.retention, "run", return_value={"cutoff_block": 1, "deleted": {}}) as run:
+        tasks.cleanup_expired_data()
+
+    run.assert_called_once_with()

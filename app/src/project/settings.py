@@ -4,6 +4,7 @@ from datetime import timedelta
 
 import environ
 import structlog
+from celery.schedules import crontab
 from kombu import Queue
 
 root = environ.Path(__file__) - 2
@@ -143,6 +144,10 @@ CELERY_BEAT_SCHEDULE = {
     "update-snapshot-health-metrics": {
         "task": "apps.metagraph.tasks.update_snapshot_health_metrics",
         "schedule": timedelta(minutes=72),
+    },
+    "cleanup-expired-data": {
+        "task": "project.core.tasks.cleanup_expired_data",
+        "schedule": crontab(hour=3, minute=30),  # daily, low-traffic UTC hour
     },
 }
 CELERY_TASK_ALWAYS_EAGER = env.bool("CELERY_TASK_ALWAYS_EAGER", default=False)
