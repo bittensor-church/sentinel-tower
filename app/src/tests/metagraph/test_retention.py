@@ -161,6 +161,21 @@ def test_rejects_nonpositive_batch_size():
 
 
 @pytest.mark.django_db
+def test_partial_miner_block_index_replaces_duplicate_full_index():
+    # The prune scan (block_id walk over non-validator rows) needs a partial
+    # index so each batch doesn't restart across millions of forever-kept
+    # validator rows; the old full idx_nsnapshot_block duplicated the FK
+    # auto-index on block_id and was dropped (migration 0014).
+    with connection.cursor() as cursor:
+        cursor.execute("SELECT indexname, indexdef FROM pg_indexes WHERE tablename = 'metagraph_neuron_snapshot'")
+        indexes = dict(cursor.fetchall())
+
+    assert "idx_ns_miner_block" in indexes
+    assert "NOT is_validator" in indexes["idx_ns_miner_block"]
+    assert "idx_nsnapshot_block" not in indexes
+
+
+@pytest.mark.django_db
 def test_split_windows_prune_each_table_group_by_its_own_cutoff():
     # Three block ages: older than both windows, between the windows (older
     # than the bulk window only), newer than both windows.

@@ -220,9 +220,12 @@ class NeuronSnapshot(models.Model):
                 condition=Q(is_validator=True),
                 name="idx_validator_snaps_by_neuron",
             ),
+            # Retention prune scan: batched `block_id <= cutoff` walks over
+            # non-validator rows only (validator rows are kept forever).
             models.Index(
-                fields=["block_id"],
-                name="idx_nsnapshot_block",
+                fields=["block"],
+                condition=Q(is_validator=False),
+                name="idx_ns_miner_block",
             ),
         ]
 
