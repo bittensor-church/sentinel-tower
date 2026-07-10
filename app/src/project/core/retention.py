@@ -73,6 +73,10 @@ def run(
         raise ValueError("days must be >= 1")
     if bulk_days < 1:
         raise ValueError("bulk_days must be >= 1")
+    if bulk_days > days:
+        # Legal config, but almost certainly a typo: the bulk window is meant
+        # to be the shorter one.
+        logger.warning("Bulk retention window exceeds the snapshot window", bulk_days=bulk_days, days=days)
 
     with connection.cursor() as cursor:
         if not _try_advisory_lock(cursor):

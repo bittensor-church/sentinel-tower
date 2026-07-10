@@ -158,7 +158,7 @@ def test_command_bulk_days_flag_narrows_the_bulk_window():
     out = StringIO()
     call_command("prune_retention", "--bulk-days", "40", "--batch-size", "10", stdout=out)
 
-    assert "Snapshot cutoff block: None" in out.getvalue()
+    assert "Snapshot cutoff block: none (window empty)" in out.getvalue()
     assert "Bulk cutoff block: 15" in out.getvalue()
     assert not Weight.objects.filter(pk=weight.pk).exists()
 

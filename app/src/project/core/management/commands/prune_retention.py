@@ -71,8 +71,11 @@ class Command(BaseCommand):
             self.stdout.write(self.style.SUCCESS("Nothing older than either retention window."))
             return
 
+        def fmt(cutoff: int | None) -> str:
+            return "none (window empty)" if cutoff is None else str(cutoff)
+
         verb = "Would delete" if options["dry_run"] else "Deleted"
-        self.stdout.write(self.style.SUCCESS(f"Snapshot cutoff block: {result['cutoff_block']}"))
-        self.stdout.write(self.style.SUCCESS(f"Bulk cutoff block: {result['bulk_cutoff_block']}"))
+        self.stdout.write(self.style.SUCCESS(f"Snapshot cutoff block: {fmt(result['cutoff_block'])}"))
+        self.stdout.write(self.style.SUCCESS(f"Bulk cutoff block: {fmt(result['bulk_cutoff_block'])}"))
         for table, count in result["deleted"].items():
             self.stdout.write(f"  {verb} {table}: {count}")
