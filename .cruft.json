@@ -1,6 +1,6 @@
 {
   "template": "https://github.com/reef-technologies/cookiecutter-rt-django",
-  "commit": "370ab0e112a9e71688d170423878a6702fe225fe",
+  "commit": "52061536c6e97816a7b988e29ec9718e5a857710",
   "checkout": null,
   "context": {
     "cookiecutter": {
@@ -26,22 +26,6 @@
       "vulnerabilities_scanning": true,
       "sentry_dsn": "",
       "csp_enabled": false,
-      "csp_report_only": true,
-      "csp_report_url": "",
-      "csp_default_src": "'none'",
-      "csp_script_src": "'self'",
-      "csp_style_src": "'self'",
-      "csp_font_src": "'self'",
-      "csp_img_src": "'self'",
-      "csp_media_src": "'self'",
-      "csp_object_src": "'self'",
-      "csp_frame_src": "'self'",
-      "csp_connect_src": "'self'",
-      "csp_child_src": "'self'",
-      "csp_manifest_src": "'self'",
-      "csp_worker_src": "'self'",
-      "csp_block_all_mixed_content": true,
-      "csp_exclude_url_prefixes": "",
       "nginx_compression_enabled": false,
       "nginx_tls_early_data_enabled": false,
       "use_alpine_linux": false,
@@ -65,7 +49,7 @@
         "lstrip_blocks": true
       },
       "_template": "https://github.com/reef-technologies/cookiecutter-rt-django",
-      "_commit": "370ab0e112a9e71688d170423878a6702fe225fe"
+      "_commit": "52061536c6e97816a7b988e29ec9718e5a857710"
     }
   },
   "directory": null
