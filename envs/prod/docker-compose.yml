@@ -47,6 +47,9 @@ services:
       # Don't forget to also mount the prometheus-metrics volume in other containers too.
       - PROMETHEUS_MULTIPROC_DIR=/prometheus-multiproc-dir
       - MEDIA_ROOT=${MEDIA_ROOT:-/root/src/media}
+      # Migrations are applied manually (see deploy.sh) so long CONCURRENTLY
+      # index builds don't block app startup.
+      - AUTO_MIGRATE=${AUTO_MIGRATE:-0}
     volumes:
       - backend-static:/root/src/static
       - gunicorn-socket:/var/run/gunicorn

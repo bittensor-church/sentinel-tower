@@ -24,11 +24,14 @@ docker compose stop $SERVICES
 docker compose up -d db  # in case it hasn't been launched before
 # backup db before any database changes
 # docker compose run --rm backups ./backup-db.sh
-# start the app container only in order to perform migrations
-docker compose run --rm app sh -c "python manage.py wait_for_database --timeout 10; python manage.py migrate"
 
-# start everything
+# start everything; migrations are NOT run automatically (long CONCURRENTLY
+# index builds would keep the whole stack down) — run them manually while the
+# app serves traffic:
 docker compose up -d
+
+echo "Deploy done. If this release contains migrations, apply them now with:"
+echo "  docker compose run --rm app sh -c 'python manage.py wait_for_database --timeout 10; python manage.py migrate'"
 
 # Clean all dangling images
 docker images --quiet --filter=dangling=true \
