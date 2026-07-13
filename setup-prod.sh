@@ -12,8 +12,7 @@ cd "${PROJECT_DIR}"
 if [[ ! -f "${ENV_DIR}/.env" ]]; then
     cp "${ENV_DIR}/.env.template" "${ENV_DIR}/.env"
 fi
-   
- 
+
 # Create .vuln.env from the template if doesn't exist
 if [[ ! -f "${ENV_DIR}/.vuln.env" ]]; then
     cp "${ENV_DIR}/.vuln.env.template" "${ENV_DIR}/.vuln.env"
