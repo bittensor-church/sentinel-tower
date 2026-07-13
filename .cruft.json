@@ -1,6 +1,6 @@
 {
   "template": "https://github.com/reef-technologies/cookiecutter-rt-django",
-  "commit": "a285c794729f387544812c71ff70550d0f954e98",
+  "commit": "3f6044e545732979352514e705b39525a6b8ccf7",
   "checkout": null,
   "context": {
     "cookiecutter": {
@@ -65,7 +65,7 @@
         "lstrip_blocks": true
       },
       "_template": "https://github.com/reef-technologies/cookiecutter-rt-django",
-      "_commit": "a285c794729f387544812c71ff70550d0f954e98"
+      "_commit": "3f6044e545732979352514e705b39525a6b8ccf7"
     }
   },
   "directory": null
