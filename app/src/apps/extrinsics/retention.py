@@ -5,7 +5,9 @@ bounded batches (each batch is its own transaction, with a short sleep in
 between so autovacuum and live sync keep up). The ``extrinsics`` table has no
 foreign keys, so a plain indexed range delete on ``block_number`` suffices;
 the block numbers are on the same chain as the metagraph blocks, so the same
-integer cutoff applies to both apps.
+integer cutoff scale applies to both apps. Extrinsics are a bulk table: the
+orchestrator passes the BULK window cutoff (``DATA_RETENTION_BULK_DAYS``),
+not the longer snapshot window.
 
 Do not run concurrently with a historical backfill that inserts extrinsics
 below the cutoff.

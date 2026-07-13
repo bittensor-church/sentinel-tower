@@ -139,7 +139,10 @@ CELERY_TASK_TIME_LIMIT = int(timedelta(minutes=5).total_seconds())
 CELERY_BEAT_SCHEDULE = {
     "refresh-validator-apy-windows": {
         "task": "apps.metagraph.tasks.refresh_validator_apy_windows",
-        "schedule": timedelta(minutes=15),
+        # Each refresh costs ~3min of ~1.5 cores on the 4-core prod box; the
+        # 15min cadence caused constant CPU spikes. Dashboards tolerate 1h
+        # staleness.
+        "schedule": timedelta(minutes=60),
     },
     "update-snapshot-health-metrics": {
         "task": "apps.metagraph.tasks.update_snapshot_health_metrics",
@@ -275,11 +278,15 @@ BLOCK_TASK_MAX_RETRY_DELAY_MINUTES = 1440
 METAGRAPH_NETUIDS: list[int] | None = env.list("METAGRAPH_NETUIDS", default=[], cast=int) or None
 METAGRAPH_LITE = env.bool("METAGRAPH_LITE", default=False)
 
-# Data retention (docs/superpowers/specs/2026-07-07-data-retention-design.md):
-# rows in high-volume tables older than this many days are pruned daily,
-# except validator neuron snapshots (+ their mechanism metrics), which are
-# kept forever because the APY materialized views read them.
+# Data retention (docs/superpowers/specs/2026-07-07-data-retention-design.md).
+# Two windows: DATA_RETENTION_DAYS keeps non-validator neuron snapshots (+
+# their mechanism metrics); DATA_RETENTION_BULK_DAYS is a shorter window for
+# the bulk tables (weight, bond, collateral, extrinsics), which grow much
+# faster and have no analytics reading old rows. Validator neuron snapshots
+# (+ their mechanism metrics) are kept forever regardless of either window,
+# because the APY materialized views read them.
 DATA_RETENTION_DAYS = env.int("DATA_RETENTION_DAYS", default=90)
+DATA_RETENTION_BULK_DAYS = env.int("DATA_RETENTION_BULK_DAYS", default=40)
 DATA_RETENTION_BATCH_SIZE = env.int("DATA_RETENTION_BATCH_SIZE", default=20000)
 DATA_RETENTION_BATCH_SLEEP_SECONDS = env.float("DATA_RETENTION_BATCH_SLEEP_SECONDS", default=0.2)
 

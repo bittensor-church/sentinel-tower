@@ -1,8 +1,9 @@
 """Retention pruning for metagraph tables.
 
 Policy (docs/superpowers/specs/2026-07-07-data-retention-design.md):
-validator snapshots + their mechanism metrics survive forever; everything
-else at block_id <= cutoff is deleted.
+validator snapshots + their mechanism metrics survive forever; non-validator
+snapshots (+ their metrics) at block_id <= snapshot cutoff are deleted;
+weight/bond/collateral rows at block_id <= bulk cutoff are deleted.
 """
 
 from datetime import timedelta
@@ -24,6 +25,10 @@ from tests.factories.metagraph import (
 )
 
 CUTOFF = 100
+# For split-window tests: the snapshot window is longer than the bulk window,
+# so its cutoff is an OLDER (lower-numbered) block.
+SNAPSHOT_CUTOFF = 100
+BULK_CUTOFF = 200
 
 
 @pytest.fixture
@@ -42,7 +47,7 @@ def test_prunes_old_nonvalidator_snapshots_and_their_metrics(old_block, new_bloc
     old_miner_mm = MechanismMetricsFactory(snapshot=old_miner)
     new_miner = NeuronSnapshotFactory(block=new_block, is_validator=False)
 
-    deleted = retention.prune_expired(cutoff_block=CUTOFF, batch_size=10)
+    deleted = retention.prune_expired(snapshot_cutoff_block=CUTOFF, bulk_cutoff_block=CUTOFF, batch_size=10)
 
     assert not NeuronSnapshot.objects.filter(pk=old_miner.pk).exists()
     assert not MechanismMetrics.objects.filter(pk=old_miner_mm.pk).exists()
@@ -56,7 +61,7 @@ def test_validator_snapshots_and_metrics_survive_any_age(old_block):
     validator = NeuronSnapshotFactory(block=old_block, is_validator=True)
     validator_mm = MechanismMetricsFactory(snapshot=validator)
 
-    retention.prune_expired(cutoff_block=CUTOFF, batch_size=10)
+    retention.prune_expired(snapshot_cutoff_block=CUTOFF, bulk_cutoff_block=CUTOFF, batch_size=10)
 
     assert NeuronSnapshot.objects.filter(pk=validator.pk).exists()
     assert MechanismMetrics.objects.filter(pk=validator_mm.pk).exists()
@@ -75,7 +80,7 @@ def test_prunes_old_weight_bond_collateral(old_block, new_block):
         CollateralFactory(block=new_block),
     ]
 
-    deleted = retention.prune_expired(cutoff_block=CUTOFF, batch_size=10)
+    deleted = retention.prune_expired(snapshot_cutoff_block=CUTOFF, bulk_cutoff_block=CUTOFF, batch_size=10)
 
     for row in old_rows:
         assert not type(row).objects.filter(pk=row.pk).exists()
@@ -91,7 +96,7 @@ def test_batching_deletes_everything_across_batches(old_block):
     for _ in range(5):
         NeuronSnapshotFactory(block=old_block, is_validator=False)
 
-    deleted = retention.prune_expired(cutoff_block=CUTOFF, batch_size=2)
+    deleted = retention.prune_expired(snapshot_cutoff_block=CUTOFF, bulk_cutoff_block=CUTOFF, batch_size=2)
 
     assert deleted["metagraph_neuron_snapshot"] == 5
     assert not NeuronSnapshot.objects.filter(block=old_block, is_validator=False).exists()
@@ -102,7 +107,9 @@ def test_max_batches_caps_the_run(old_block):
     for _ in range(5):
         WeightFactory(block=old_block)
 
-    deleted = retention.prune_expired(cutoff_block=CUTOFF, batch_size=2, max_batches=1)
+    deleted = retention.prune_expired(
+        snapshot_cutoff_block=CUTOFF, bulk_cutoff_block=CUTOFF, batch_size=2, max_batches=1
+    )
 
     # one batch of 2 per table at most
     assert deleted["metagraph_weight"] == 2
@@ -115,7 +122,9 @@ def test_dry_run_counts_without_deleting(old_block):
     MechanismMetricsFactory(snapshot=snapshot)
     WeightFactory(block=old_block)
 
-    counted = retention.prune_expired(cutoff_block=CUTOFF, batch_size=10, dry_run=True)
+    counted = retention.prune_expired(
+        snapshot_cutoff_block=CUTOFF, bulk_cutoff_block=CUTOFF, batch_size=10, dry_run=True
+    )
 
     assert counted["metagraph_neuron_snapshot"] == 1
     assert counted["metagraph_mechanism_metrics"] == 1
@@ -130,7 +139,7 @@ def test_snapshot_with_multiple_mechanism_metrics(old_block):
     MechanismMetricsFactory(snapshot=snapshot, mech_id=0)
     MechanismMetricsFactory(snapshot=snapshot, mech_id=1)
 
-    deleted = retention.prune_expired(cutoff_block=CUTOFF, batch_size=10)
+    deleted = retention.prune_expired(snapshot_cutoff_block=CUTOFF, bulk_cutoff_block=CUTOFF, batch_size=10)
 
     assert deleted["metagraph_neuron_snapshot"] == 1
     assert deleted["metagraph_mechanism_metrics"] == 2
@@ -141,14 +150,104 @@ def test_snapshot_with_multiple_mechanism_metrics(old_block):
 def test_noop_when_nothing_below_cutoff(new_block):
     NeuronSnapshotFactory(block=new_block, is_validator=False)
 
-    deleted = retention.prune_expired(cutoff_block=CUTOFF, batch_size=10)
+    deleted = retention.prune_expired(snapshot_cutoff_block=CUTOFF, bulk_cutoff_block=CUTOFF, batch_size=10)
 
     assert all(count == 0 for count in deleted.values())
 
 
 def test_rejects_nonpositive_batch_size():
     with pytest.raises(ValueError):
-        retention.prune_expired(cutoff_block=CUTOFF, batch_size=0)
+        retention.prune_expired(snapshot_cutoff_block=CUTOFF, bulk_cutoff_block=CUTOFF, batch_size=0)
+
+
+@pytest.mark.django_db
+def test_partial_miner_block_index_replaces_duplicate_full_index():
+    # The prune scan (block_id walk over non-validator rows) needs a partial
+    # index so each batch doesn't restart across millions of forever-kept
+    # validator rows; the old full idx_nsnapshot_block duplicated the FK
+    # auto-index on block_id and was dropped (migration 0014).
+    with connection.cursor() as cursor:
+        cursor.execute("SELECT indexname, indexdef FROM pg_indexes WHERE tablename = 'metagraph_neuron_snapshot'")
+        indexes = dict(cursor.fetchall())
+
+    assert "idx_ns_miner_block" in indexes
+    assert "NOT is_validator" in indexes["idx_ns_miner_block"]
+    assert "idx_nsnapshot_block" not in indexes
+
+
+@pytest.mark.django_db
+def test_split_windows_prune_each_table_group_by_its_own_cutoff():
+    # Three block ages: older than both windows, between the windows (older
+    # than the bulk window only), newer than both windows.
+    oldest = BlockFactory(number=SNAPSHOT_CUTOFF - 1)
+    between = BlockFactory(number=SNAPSHOT_CUTOFF + 50)
+    newest = BlockFactory(number=BULK_CUTOFF + 1)
+
+    oldest_weight = WeightFactory(block=oldest)
+    oldest_miner = NeuronSnapshotFactory(block=oldest, is_validator=False)
+    between_weight = WeightFactory(block=between)
+    between_miner = NeuronSnapshotFactory(block=between, is_validator=False)
+    newest_weight = WeightFactory(block=newest)
+    newest_miner = NeuronSnapshotFactory(block=newest, is_validator=False)
+
+    deleted = retention.prune_expired(
+        snapshot_cutoff_block=SNAPSHOT_CUTOFF, bulk_cutoff_block=BULK_CUTOFF, batch_size=10
+    )
+
+    # weights follow the (shorter) bulk window
+    assert not Weight.objects.filter(pk=oldest_weight.pk).exists()
+    assert not Weight.objects.filter(pk=between_weight.pk).exists()
+    assert Weight.objects.filter(pk=newest_weight.pk).exists()
+    # a non-validator snapshot the same age as the deleted between_weight
+    # survives, because the snapshot window is longer
+    assert not NeuronSnapshot.objects.filter(pk=oldest_miner.pk).exists()
+    assert NeuronSnapshot.objects.filter(pk=between_miner.pk).exists()
+    assert NeuronSnapshot.objects.filter(pk=newest_miner.pk).exists()
+    assert deleted["metagraph_weight"] == 2
+    assert deleted["metagraph_neuron_snapshot"] == 1
+
+
+@pytest.mark.django_db
+def test_none_snapshot_cutoff_skips_snapshot_tables(old_block):
+    miner = NeuronSnapshotFactory(block=old_block, is_validator=False)
+    weight = WeightFactory(block=old_block)
+
+    deleted = retention.prune_expired(snapshot_cutoff_block=None, bulk_cutoff_block=CUTOFF, batch_size=10)
+
+    assert NeuronSnapshot.objects.filter(pk=miner.pk).exists()
+    assert not Weight.objects.filter(pk=weight.pk).exists()
+    assert deleted["metagraph_neuron_snapshot"] == 0
+    assert deleted["metagraph_mechanism_metrics"] == 0
+    assert deleted["metagraph_weight"] == 1
+
+
+@pytest.mark.django_db
+def test_none_bulk_cutoff_skips_bulk_tables(old_block):
+    miner = NeuronSnapshotFactory(block=old_block, is_validator=False)
+    weight = WeightFactory(block=old_block)
+
+    deleted = retention.prune_expired(snapshot_cutoff_block=CUTOFF, bulk_cutoff_block=None, batch_size=10)
+
+    assert not NeuronSnapshot.objects.filter(pk=miner.pk).exists()
+    assert Weight.objects.filter(pk=weight.pk).exists()
+    assert deleted["metagraph_neuron_snapshot"] == 1
+    assert deleted["metagraph_weight"] == 0
+    assert deleted["metagraph_bond"] == 0
+    assert deleted["metagraph_collateral"] == 0
+
+
+@pytest.mark.django_db
+def test_dry_run_with_none_cutoffs_counts_zero_for_skipped_tables(old_block):
+    NeuronSnapshotFactory(block=old_block, is_validator=False)
+    WeightFactory(block=old_block)
+
+    counted = retention.prune_expired(snapshot_cutoff_block=None, bulk_cutoff_block=CUTOFF, batch_size=10, dry_run=True)
+
+    assert counted["metagraph_neuron_snapshot"] == 0
+    assert counted["metagraph_mechanism_metrics"] == 0
+    assert counted["metagraph_weight"] == 1
+    assert NeuronSnapshot.objects.exists()
+    assert Weight.objects.exists()
 
 
 def _refresh_and_fetch_views() -> tuple[list, list]:
@@ -188,7 +287,7 @@ def test_apy_views_identical_before_and_after_prune(old_block, new_block):
     MechanismMetricsFactory(snapshot=miner)
 
     before = _refresh_and_fetch_views()
-    retention.prune_expired(cutoff_block=CUTOFF, batch_size=10)
+    retention.prune_expired(snapshot_cutoff_block=CUTOFF, bulk_cutoff_block=CUTOFF, batch_size=10)
     after = _refresh_and_fetch_views()
 
     assert all(before), "both views should emit rows for the seeded validator"

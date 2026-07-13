@@ -2,8 +2,11 @@
 
 Deletes rows whose block is at or below a cutoff block number, in bounded
 batches (each batch is its own transaction, with a short sleep in between so
-autovacuum and live sync keep up). Validator neuron snapshots and their
-mechanism metrics are never deleted — the APY materialized views read them.
+autovacuum and live sync keep up). Two independent cutoffs: non-validator
+neuron snapshots (+ their mechanism metrics) follow the snapshot cutoff,
+while the bulk tables (weight, bond, collateral) follow the — typically
+newer — bulk cutoff. Validator neuron snapshots and their mechanism metrics
+are never deleted — the APY materialized views read them.
 
 There are no DB-level cascades (all FKs are NO ACTION, DEFERRABLE INITIALLY
 DEFERRED), so each snapshot batch deletes child mechanism_metrics rows and
@@ -82,12 +85,18 @@ def _count(sql: str, params: dict) -> int:
 
 
 def prune_expired(
-    cutoff_block: int,
+    snapshot_cutoff_block: int | None,
+    bulk_cutoff_block: int | None,
     batch_size: int | None = None,
     dry_run: bool = False,
     max_batches: int | None = None,
 ) -> dict[str, int]:
-    """Prune metagraph rows at or below ``cutoff_block``. Returns rows per table.
+    """Prune metagraph rows past their table group's cutoff. Returns rows per table.
+
+    Non-validator neuron snapshots (+ their mechanism metrics) at or below
+    ``snapshot_cutoff_block`` are deleted; weight/bond/collateral rows at or
+    below ``bulk_cutoff_block`` are deleted. Either cutoff may be ``None``,
+    which skips that table group entirely (its counts are reported as 0).
 
     ``max_batches`` caps batches PER TABLE (so a run may use up to
     4×``max_batches`` batches total) and makes runs resumable — a capped run
@@ -105,30 +114,42 @@ def prune_expired(
         batch_size = settings.DATA_RETENTION_BATCH_SIZE
     if batch_size < 1:
         raise ValueError("batch_size must be >= 1")
-    params = {"cutoff": cutoff_block, "batch_size": batch_size}
 
     if dry_run:
+        snapshot_params = {"cutoff": snapshot_cutoff_block}
+        bulk_params = {"cutoff": bulk_cutoff_block}
         return {
-            "metagraph_neuron_snapshot": _count(
+            "metagraph_neuron_snapshot": 0
+            if snapshot_cutoff_block is None
+            else _count(
                 "SELECT count(*) FROM metagraph_neuron_snapshot WHERE block_id <= %(cutoff)s AND is_validator = false",
-                params,
+                snapshot_params,
             ),
-            "metagraph_mechanism_metrics": _count(
+            "metagraph_mechanism_metrics": 0
+            if snapshot_cutoff_block is None
+            else _count(
                 "SELECT count(*) FROM metagraph_mechanism_metrics mm"
                 " JOIN metagraph_neuron_snapshot ns ON ns.id = mm.snapshot_id"
                 " WHERE ns.block_id <= %(cutoff)s AND ns.is_validator = false",
-                params,
+                snapshot_params,
             ),
             **{
-                table: _count(
+                table: 0
+                if bulk_cutoff_block is None
+                else _count(
                     f"SELECT count(*) FROM {table} WHERE {col} <= %(cutoff)s",  # noqa: S608
-                    params,
+                    bulk_params,
                 )
                 for table, col in _SIMPLE_TABLES
             },
         }
 
-    logger.info("Retention prune starting", cutoff_block=cutoff_block, batch_size=batch_size)
+    logger.info(
+        "Retention prune starting",
+        snapshot_cutoff_block=snapshot_cutoff_block,
+        bulk_cutoff_block=bulk_cutoff_block,
+        batch_size=batch_size,
+    )
 
     deleted = {
         "metagraph_neuron_snapshot": 0,
@@ -136,32 +157,39 @@ def prune_expired(
         **{table: 0 for table, _ in _SIMPLE_TABLES},
     }
 
-    batches = 0
-    while max_batches is None or batches < max_batches:
-        mm_count, ns_count = _delete_snapshot_batch(cutoff_block, batch_size)
-        deleted["metagraph_mechanism_metrics"] += mm_count
-        deleted["metagraph_neuron_snapshot"] += ns_count
-        batches += 1
-        if ns_count == 0:
-            break
-        logger.info(
-            "Pruned retention batch",
-            table="metagraph_neuron_snapshot",
-            snapshots=ns_count,
-            mechanism_metrics=mm_count,
-        )
-        time.sleep(settings.DATA_RETENTION_BATCH_SLEEP_SECONDS)
-
-    for table, col in _SIMPLE_TABLES:
+    if snapshot_cutoff_block is not None:
         batches = 0
         while max_batches is None or batches < max_batches:
-            count = _delete_simple_batch(table, col, cutoff_block, batch_size)
-            deleted[table] += count
+            mm_count, ns_count = _delete_snapshot_batch(snapshot_cutoff_block, batch_size)
+            deleted["metagraph_mechanism_metrics"] += mm_count
+            deleted["metagraph_neuron_snapshot"] += ns_count
             batches += 1
-            if count == 0:
+            if ns_count == 0:
                 break
-            logger.info("Pruned retention batch", table=table, rows=count)
+            logger.info(
+                "Pruned retention batch",
+                table="metagraph_neuron_snapshot",
+                snapshots=ns_count,
+                mechanism_metrics=mm_count,
+            )
             time.sleep(settings.DATA_RETENTION_BATCH_SLEEP_SECONDS)
 
-    logger.info("Retention prune finished", cutoff_block=cutoff_block, **deleted)
+    if bulk_cutoff_block is not None:
+        for table, col in _SIMPLE_TABLES:
+            batches = 0
+            while max_batches is None or batches < max_batches:
+                count = _delete_simple_batch(table, col, bulk_cutoff_block, batch_size)
+                deleted[table] += count
+                batches += 1
+                if count == 0:
+                    break
+                logger.info("Pruned retention batch", table=table, rows=count)
+                time.sleep(settings.DATA_RETENTION_BATCH_SLEEP_SECONDS)
+
+    logger.info(
+        "Retention prune finished",
+        snapshot_cutoff_block=snapshot_cutoff_block,
+        bulk_cutoff_block=bulk_cutoff_block,
+        **deleted,
+    )
     return deleted
