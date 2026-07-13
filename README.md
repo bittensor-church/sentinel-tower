@@ -16,7 +16,10 @@ A platform that allows for tracking and alerting on specific events/patterns/ano
 
 ## Local Development Setup
 
-To set up the development environment using Docker Compose, run the following commands in your terminal:
+Requirements:
+
+- [docker](https://docs.docker.com)
+- [uv](https://docs.astral.sh/uv/)
 
 Run compose
 ```bash
@@ -193,6 +196,22 @@ my_storage = get_storage("my-storage")
 | `aws_access_key_id`     | No       | 
 | `aws_secret_access_key` | No       |
 
+
+## Tests / CI
+
+First install `nox` as a tool for running tests and other checks:
+
+```sh
+# pyyaml is required for nox to read `pyproject.toml`
+uv tool install --with pyyaml nox
+```
+
+Then run the desired Nox session:
+
+```sh
+uvx nox -s lint
+uvx nox -s test
+```
 
 ### Run whole stack locally
 
