@@ -2,7 +2,7 @@
 # Base cookiecutter-rt-django README
 
 - docker with [compose plugin](https://docs.docker.com/compose/install/linux/)
-- python 3.11
+- python 3.14
 - [uv](https://docs.astral.sh/uv/)
 - [nox](https://nox.thea.codes)
 

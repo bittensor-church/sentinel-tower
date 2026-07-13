@@ -160,7 +160,7 @@ def ingest_extrinsics_job() -> None:
 def extrinsics_sensor(
     context: dg.SensorEvaluationContext,
     jsonl_reader: JsonLinesReader,
-) -> Generator[dg.RunRequest | dg.SkipReason, None, None]:
+) -> Generator[dg.RunRequest | dg.SkipReason]:
     """Sensor to detect new extrinsics and trigger ingestion to Extrinsic model."""
     # Check if there's already a run in progress for this job
     in_progress_runs = context.instance.get_runs(
@@ -340,7 +340,7 @@ def ingest_metagraph_job() -> None:
 def metagraph_sensor(
     context: dg.SensorEvaluationContext,
     jsonl_reader: JsonLinesReader,
-) -> Generator[dg.RunRequest | dg.SkipReason, None, None]:
+) -> Generator[dg.RunRequest | dg.SkipReason]:
     """Sensor to detect new metagraph files and trigger ingestion."""
     # Check if there's already a run in progress for this job
     in_progress_runs = context.instance.get_runs(
