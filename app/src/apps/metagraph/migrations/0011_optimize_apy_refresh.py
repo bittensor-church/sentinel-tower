@@ -19,7 +19,7 @@
 from django.db import migrations
 
 # fmt: off
-EPOCHS_VIEW_GUARDED = [
+EPOCHS_VIEW_GUARDED = (
     "DROP MATERIALIZED VIEW IF EXISTS mv_subnet_validator_apy_epochs;",
     # Big one-time build of ~90 days of validator snapshots; default 4 MB work_mem
     # would spill to disk. Raised for this (autocommit) migration session only.
@@ -60,10 +60,10 @@ EPOCHS_VIEW_GUARDED = [
     "ON mv_subnet_validator_apy_epochs (subnet_id, neuron_id, epoch_block);",
     "CREATE INDEX idx_mv_subnet_validator_apy_epochs_subnet_ts "
     "ON mv_subnet_validator_apy_epochs (subnet_id, epoch_ts);",
-]
+)
 
 # Reverse: restore the original (unguarded) view from migration 0010.
-EPOCHS_VIEW_ORIGINAL = [
+EPOCHS_VIEW_ORIGINAL = (
     "DROP MATERIALIZED VIEW IF EXISTS mv_subnet_validator_apy_epochs;",
     """
     CREATE MATERIALIZED VIEW mv_subnet_validator_apy_epochs AS
@@ -97,7 +97,7 @@ EPOCHS_VIEW_ORIGINAL = [
     "ON mv_subnet_validator_apy_epochs (subnet_id, neuron_id, epoch_block);",
     "CREATE INDEX idx_mv_subnet_validator_apy_epochs_subnet_ts "
     "ON mv_subnet_validator_apy_epochs (subnet_id, epoch_ts);",
-]
+)
 # fmt: on
 
 
