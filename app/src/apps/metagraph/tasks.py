@@ -47,11 +47,17 @@ def refresh_validator_apy_windows() -> None:
             return
         try:
             cursor.execute("SELECT set_config('work_mem', %s, false)", [_REFRESH_WORK_MEM])
+            # No parallel workers: parallel hash joins share their hash table via
+            # dynamic shared memory in the db container's /dev/shm (256MB), and a
+            # plan flip after index rebuilds made the refresh exhaust it
+            # (psycopg DiskFull, 2026-07-14). Single-process is slower but bounded.
+            cursor.execute("SELECT set_config('max_parallel_workers_per_gather', '0', false)")
             cursor.execute("REFRESH MATERIALIZED VIEW CONCURRENTLY mv_validator_apy_windows;")
             cursor.execute("REFRESH MATERIALIZED VIEW CONCURRENTLY mv_subnet_validator_apy_epochs;")
             logger.info("Refreshed mv_validator_apy_windows and mv_subnet_validator_apy_epochs")
         finally:
             cursor.execute("RESET work_mem")
+            cursor.execute("RESET max_parallel_workers_per_gather")
             cursor.execute("SELECT pg_advisory_unlock(%s)", [_REFRESH_LOCK_KEY])
 
 
