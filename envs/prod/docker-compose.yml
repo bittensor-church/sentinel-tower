@@ -51,7 +51,7 @@ services:
       # index builds don't block app startup.
       - AUTO_MIGRATE=${AUTO_MIGRATE:-0}
     volumes:
-      - backend-static:${STATIC_ROOT}
+      - backend-static:/var/static
       - gunicorn-socket:/var/run/gunicorn
       - ${MEDIA_VOLUME_PATH:-./media}:${MEDIA_ROOT}
       # Add this mount to each container that should dump Prometheus metrics.
@@ -80,7 +80,7 @@ services:
       - BLOCK_END=${BLOCK_END:-}
       - BACKFILL_RATE_LIMIT=${BACKFILL_RATE_LIMIT:-1.0}
     volumes:
-      - backend-static:${STATIC_ROOT}
+      - backend-static:/var/static
       - ${MEDIA_VOLUME_PATH:-./media}:${MEDIA_ROOT}
       - ./prometheus-metrics:/prometheus-multiproc-dir
     depends_on:
