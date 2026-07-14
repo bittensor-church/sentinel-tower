@@ -28,7 +28,7 @@ C_FORCE_ROOT=1 nice celery multi start $WORKERS $OPTIONS \
 # shellcheck disable=2064
 trap "celery multi stop $WORKERS $OPTIONS; exit 0" INT TERM
 
-tail -f /tmp/logs/celery-*.log &
+tail -q -f /tmp/logs/celery-*.log &
 
 # check celery status periodically to exit if it crashed;
 # each check boots the full Django app (~2s of CPU), so keep it infrequent —

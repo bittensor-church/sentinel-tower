@@ -7,6 +7,7 @@ from typing import TypedDict
 import environ
 import structlog
 from celery.schedules import crontab
+from django.utils.log import CallbackFilter
 from kombu import Queue
 from structlog.typing import Processor, WrappedLogger
 
@@ -177,19 +178,66 @@ DJANGO_STRUCTLOG_CELERY_ENABLED = True
 
 LOG_LEVEL = env("LOG_LEVEL", default="INFO")
 
+
+def exclude_pidbox_notifications(record: logging.LogRecord) -> bool:
+    """Exclude Flower worker-ping notifications from Celery logs."""
+    return "pidbox received method" not in record.getMessage()
+
+
+class StructlogEnvProcessor:
+    """Add env vars to structlog event dict, so that they become part of all log messages."""
+
+    def __init__(self, vars: list[str]):
+        self.env_data = {var.lower(): value for var in vars if (value := env(var, default=None))}
+
+    def __call__(self, logger, method_name, event_dict):
+        return event_dict | self.env_data
+
+
+LOGGING_ENV_VARS_PROCESSOR = StructlogEnvProcessor(vars=["INSTANCE_ID_SUBST"])
+
+LOGGING_CALLSITE_PARAMETERS_PROCESSOR = structlog.processors.CallsiteParameterAdder(
+    [
+        structlog.processors.CallsiteParameter.PATHNAME,
+        structlog.processors.CallsiteParameter.FUNC_NAME,
+        structlog.processors.CallsiteParameter.LINENO,
+    ]
+)
+
+LOGGING_FOREIGN_PRE_CHAIN = [
+    structlog.stdlib.add_log_level,
+    LOGGING_ENV_VARS_PROCESSOR,
+    structlog.processors.TimeStamper(fmt="iso"),
+    structlog.processors.format_exc_info,
+    LOGGING_CALLSITE_PARAMETERS_PROCESSOR,
+]
+
 LOGGING = {
     "version": 1,
     "disable_existing_loggers": False,
     "formatters": {
-        "main": {
+        "console": {
             "()": structlog.stdlib.ProcessorFormatter,
             "processor": structlog.dev.ConsoleRenderer(),
+            "foreign_pre_chain": LOGGING_FOREIGN_PRE_CHAIN,
+        },
+        "json": {
+            "()": structlog.stdlib.ProcessorFormatter,
+            "processor": structlog.processors.JSONRenderer(),
+            "foreign_pre_chain": LOGGING_FOREIGN_PRE_CHAIN,
+        },
+    },
+    "filters": {
+        "exclude_pidbox_notifications": {
+            # these are notifications about Flower pinging workers
+            "()": CallbackFilter,
+            "callback": exclude_pidbox_notifications,
         },
     },
     "handlers": {
         "console": {
             "class": "logging.StreamHandler",
-            "formatter": "main",
+            "formatter": "console" if DEBUG else "json",
         },
     },
     "root": {
@@ -235,6 +283,8 @@ STRUCTLOG_CONFIGURATION: _StructlogConfiguration = {
         structlog.processors.TimeStamper(fmt="iso"),
         structlog.stdlib.add_logger_name,
         structlog.stdlib.add_log_level,
+        LOGGING_ENV_VARS_PROCESSOR,
+        LOGGING_CALLSITE_PARAMETERS_PROCESSOR,
         structlog.stdlib.PositionalArgumentsFormatter(),
         structlog.processors.StackInfoRenderer(),
         structlog.processors.format_exc_info,
