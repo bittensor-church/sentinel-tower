@@ -171,7 +171,7 @@ server {
         proxy_redirect off;
         proxy_set_header Host $http_host;
         proxy_set_header X-Real-IP $remote_addr;
-        proxy_set_header X_SCHEME $scheme;
+        proxy_set_header X-Forwarded-Proto $scheme;
         proxy_pass http://node_exporter/metrics;
     }
 
@@ -180,7 +180,7 @@ server {
         proxy_redirect off;
         proxy_set_header Host $http_host;
         proxy_set_header X-Real-IP $remote_addr;
-        proxy_set_header X_SCHEME $scheme;
+        proxy_set_header X-Forwarded-Proto $scheme;
         proxy_pass http://cadvisor:8080/metrics;
     }
 
@@ -194,7 +194,7 @@ server {
         proxy_redirect off;
         proxy_set_header Host $http_host;
         proxy_set_header X-Real-IP $remote_addr;
-        proxy_set_header X_SCHEME $scheme;
+        proxy_set_header X-Forwarded-Proto $scheme;
         proxy_pass http://gunicorn/metrics;
     }
 
@@ -203,7 +203,7 @@ server {
         proxy_redirect off;
         proxy_set_header Host $http_host;
         proxy_set_header X-Real-IP $remote_addr;
-        proxy_set_header X_SCHEME $scheme;
+        proxy_set_header X-Forwarded-Proto $scheme;
         proxy_pass http://gunicorn/business-metrics;
     }
 
@@ -212,7 +212,7 @@ server {
     #     proxy_redirect off;
     #     proxy_set_header Host $http_host;
     #     proxy_set_header X-Real-IP $remote_addr;
-    #     proxy_set_header X_SCHEME $scheme;
+    #     proxy_set_header X-Forwarded-Proto $scheme;
     #     proxy_pass http://celery-flower:5555/metrics;
     # }
 }
