@@ -26,6 +26,7 @@ class Command(BaseCommand):
         self._shutdown = True
 
     def _create_provider(self, provider_name: str) -> BlockchainProvider:
+        provider: BlockchainProvider
         if provider_name == "bittensor":
             provider = bittensor_provider()
         elif provider_name == "pylon":

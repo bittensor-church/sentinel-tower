@@ -23,7 +23,7 @@ class StubNotification(ExtrinsicNotification):
     """Minimal concrete notification for testing base class behavior."""
 
     extrinsics: ClassVar[list[str]] = ["TestModule:test_function"]
-    channels: ClassVar = []
+    channels: ClassVar[list[NotificationChannel]] = []
 
     def format_message(self, block_number: int, extrinsics: list[dict[str, Any]]) -> dict[str, Any]:
         return {"content": f"Block {block_number}, {len(extrinsics)} extrinsics"}
