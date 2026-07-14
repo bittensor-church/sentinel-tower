@@ -118,6 +118,21 @@ Monitor backfill progress with:
 celery -A project inspect active
 ```
 
+## Log aggregation
+
+Generate new access credentials for the Loki server.
+
+- Take the server group from Grafana's `client_server_group` option so logs can be shown automatically in Grafana.
+- The environment is usually `prod`.
+
+```sh
+uvx cadm exec prometheus -- /home/ubuntu/apps/prometheus-grafana-monitoring/scripts/add_loki_target.sh <client_server_group> bittensor_sentinel <env>
+```
+
+Put the generated credentials in the `.env` file's `LOKI_USER` and `LOKI_PASSWORD` fields.
+
+See the [log aggregation configuration](https://github.com/reef-technologies/prometheus-grafana-monitoring?tab=readme-ov-file#adding-log-aggregation-targets) for more details.
+
 ## Sentinel Core
 
 Core is a standalone Python package for monitoring the Bittensor blockchain. Located in `app/src/sentinel`.
