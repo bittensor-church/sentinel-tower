@@ -8,6 +8,8 @@ set -eu
 #   - fast_backfill: Fast APY-only backfill with single tasks (fast_backfill)
 #   - apy_backfill: Fast APY-only backfill with batch tasks (fast_backfill --async)
 
+./prometheus-cleanup.sh
+
 SENTINEL_MODE="${SENTINEL_MODE:-live}"
 
 case "$SENTINEL_MODE" in

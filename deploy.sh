@@ -27,6 +27,18 @@ if [ -n "$SERVICES" ]; then
     # shellcheck disable=2086
     docker compose stop $SERVICES
 fi
+# All shared metrics writers are stopped, so clearing every known writer directory is safe.
+# This remains necessary while runtime pickle compaction is deliberately disabled.
+docker compose run --rm --no-deps app sh -c '
+    set -e
+    for metrics_dir in \
+        /prometheus-multiproc-dir \
+        /prometheus-multiproc-dir/celery-worker \
+        /prometheus-multiproc-dir/block-scheduler
+    do
+        PROMETHEUS_MULTIPROC_DIR="$metrics_dir" ./prometheus-cleanup.sh
+    done
+'
 
 # start everything; migrations are NOT run automatically (long CONCURRENTLY
 # index builds would keep the whole stack down) — run them manually while the
@@ -39,7 +51,7 @@ if [ -n "$SERVICES" ]; then
 fi
 
 echo "Deploy done. If this release contains migrations, apply them now with:"
-echo "  docker compose run --rm app sh -c 'python manage.py wait_for_database --timeout 10; python manage.py migrate'"
+echo "  docker compose run --rm app sh -c 'unset PROMETHEUS_MULTIPROC_DIR PROMETHEUS_USE_FLOCK; python manage.py wait_for_database --timeout 10 && python manage.py migrate'"
 
 # Clean up older dangling images without killing recent build cache
 docker image prune -f --filter "until=168h" || true

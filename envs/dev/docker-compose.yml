@@ -17,6 +17,7 @@ x-backend: &backend
     CELERY_BROKER_URL: redis://redis:6379/0
     PYLON_URL: http://pylon:8000
     PROMETHEUS_MULTIPROC_DIR: /prometheus-multiproc-dir
+    PROMETHEUS_USE_FLOCK: "1"
   tmpfs:
     - /prometheus-multiproc-dir
   volumes:
