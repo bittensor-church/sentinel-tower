@@ -15,7 +15,7 @@ services:
       # Don't forget to also mount the prometheus-metrics volume in other containers too.
       - PROMETHEUS_MULTIPROC_DIR=/prometheus-multiproc-dir
     volumes:
-      - backend-static:${STATIC_ROOT}
+      - backend-static:/var/static
       - gunicorn-socket:/var/run/gunicorn
       - ./media:${MEDIA_ROOT}
       # Add this mount to each container that should dump Prometheus metrics.
