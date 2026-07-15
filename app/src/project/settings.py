@@ -309,6 +309,11 @@ if SENTRY_DSN:
     sentry_sdk.init(
         dsn=SENTRY_DSN,
         environment=SENTRY_ENVIRONMENT,
+        ignore_errors=[
+            KeyboardInterrupt,
+            SystemExit,
+            BrokenPipeError,
+        ],
         integrations=[
             DjangoIntegration(),
             CeleryIntegration(),
