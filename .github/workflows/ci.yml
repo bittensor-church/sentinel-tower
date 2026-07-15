@@ -76,6 +76,7 @@ jobs:
           hide-badge: false
           hide-report: false
           report-only-changed-files: false
+          remove-links-to-lines: true
       - name: Stop dockerized services
         if: success() || failure()
         run: docker compose down -v
