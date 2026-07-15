@@ -84,7 +84,7 @@ services:
     volumes:
       - backend-static:/var/static
       - ${MEDIA_VOLUME_PATH:-./media}:${MEDIA_ROOT}
-      - ./prometheus-metrics:/prometheus-multiproc-dir
+      - ./prometheus-metrics/block-scheduler:/prometheus-multiproc-dir/block-scheduler
     depends_on:
       - celery-worker
       - redis
@@ -249,7 +249,7 @@ services:
     command: ./celery-entrypoint.sh
     volumes:
       - ${MEDIA_VOLUME_PATH:-./media}:${MEDIA_ROOT}
-      - ./prometheus-metrics:/prometheus-multiproc-dir
+      - ./prometheus-metrics/celery-worker:/prometheus-multiproc-dir/celery-worker
     tmpfs: /run
     depends_on:
       - redis
