@@ -1,3 +1,8 @@
+x-logging: &logging
+  driver: journald
+  options:
+    tag: '{{.Name}}'
+
 services:
   redis:
     image: mirror.gcr.io/valkey/valkey:8.1-alpine
@@ -7,10 +12,8 @@ services:
     restart: unless-stopped
     volumes:
       - ./redis/data:/data
-    logging: &logging
-      driver: journald
-      options:
-        tag: '{{.Name}}'
+    logging:
+      <<: *logging
 
   db:
     image: postgres:14.0-alpine
