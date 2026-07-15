@@ -19,6 +19,8 @@ media/
 .nox/
 __pycache__
 app/src/celerybeat-schedule.db
+/app/src/.coverage*
+/app/src/coverage.xml
 logs/
 .gitdo/
 .DS_Store
