@@ -183,6 +183,11 @@ def test(session):
             "-vv",
             "-n",
             "auto",
+            "--cov=.",
+            "--cov-config=../../pyproject.toml",
+            "--cov-report=term-missing",
+            "--cov-report=xml",
             "project",
+            "tests",
             *session.posargs,
         )
