@@ -183,6 +183,10 @@ def test(session):
             "-vv",
             "-n",
             "auto",
+            "--cov=.",
+            "--cov-config=../../pyproject.toml",
+            "--cov-report=term-missing",
+            "--cov-report=xml",
             "project",
             "tests/core",
             "tests/extrinsics",
@@ -193,7 +197,7 @@ def test(session):
         )
 
 
-@nox.session(name="test_e2e", python=PYTHON_DEFAULT_VERSION)
+@nox.session(name="test_e2e", python=PYTHON_VERSION)
 def test_e2e(session):
     """Run end-to-end tests against a subtensor localnet.
 

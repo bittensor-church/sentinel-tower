@@ -50,6 +50,7 @@ distribution = false
 [dependency-groups]
 test = [
     'pytest',
+    'pytest-cov',
     'pytest-django',
     'pytest-xdist',
     'ipdb',
@@ -100,3 +101,19 @@ ignore-words-list = 'datas,brin'
 
 [tool.pyright]
 reportIncompatibleVariableOverride = false
+
+[tool.coverage.run]
+source = ["."]
+branch = true
+omit = [
+    "*/migrations/*",
+    "*/tests/*",
+    "project/settings.py",
+    "project/asgi.py",
+    "project/wsgi.py",
+    "manage.py",
+]
+
+[tool.coverage.report]
+show_missing = true
+skip_covered = false
