@@ -103,6 +103,8 @@ ignore-words-list = 'datas,brin'
 reportIncompatibleVariableOverride = false
 
 [tool.uv]
+exclude-newer = "14 days"
+exclude-newer-package = { django = false, cryptography = false, dagster = false, dagster-graphql = false, dagster-pipes = false, dagster-shared = false, dagster-webserver = false }
 constraint-dependencies = [
     "urllib3>=2.7.0",
     "idna>=3.15",
