@@ -116,11 +116,12 @@ celery -A project inspect active
 
 Generate new access credentials for the Loki server.
 
-- Take the server group from Grafana's `client_server_group` option so logs can be shown automatically in Grafana.
-- The environment is usually `prod`.
+- `<CLUSTER>` is usually `rt`.
+- Take `<SERVER_GROUP>` from Grafana's `client_server_group` option so logs can be shown automatically in Grafana.
+- `<ENVIRONMENT>` is usually `prod`.
 
 ```sh
-uvx cadm exec prometheus -- /home/ubuntu/apps/prometheus-grafana-monitoring/scripts/add_loki_target.sh <client_server_group> bittensor_sentinel <env>
+uvx cadm exec prometheus -- "cd /home/ubuntu/apps/prometheus-grafana-monitoring/scripts && ./add_loki_target.sh <CLUSTER> <SERVER_GROUP> <ENVIRONMENT>"
 ```
 
 Put the generated credentials in the `.env` file's `LOKI_USER` and `LOKI_PASSWORD` fields.
