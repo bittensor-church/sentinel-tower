@@ -124,8 +124,8 @@ else:
 if CORS_ENABLED := env.bool("CORS_ENABLED"):
     INSTALLED_APPS.append("corsheaders")
     MIDDLEWARE = ["corsheaders.middleware.CorsMiddleware", *MIDDLEWARE]
-    CORS_ALLOWED_ORIGINS = env.list("CORS_ALLOWED_ORIGINS")
-    CORS_ALLOWED_ORIGIN_REGEXES = env.list("CORS_ALLOWED_ORIGIN_REGEXES")
+    CORS_ALLOWED_ORIGINS = env.list("CORS_ALLOWED_ORIGINS", default=[])
+    CORS_ALLOWED_ORIGIN_REGEXES = env.list("CORS_ALLOWED_ORIGIN_REGEXES", default=[])
     CORS_ALLOW_ALL_ORIGINS = env.bool("CORS_ALLOW_ALL_ORIGINS")
 
 REDIS_HOST = env("REDIS_HOST")
