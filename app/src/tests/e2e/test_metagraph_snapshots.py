@@ -72,7 +72,9 @@ def test_explorer_lists_only_dumped_blocks(localnet: Localnet, synced_block: int
     assert returned_blocks == dumped_blocks
 
 
-def test_explorer_returns_metagraph_state_for_a_block(localnet: Localnet, synced_block: int, admin_client, expected_hotkey: str) -> None:
+def test_explorer_returns_metagraph_state_for_a_block(
+    localnet: Localnet, synced_block: int, admin_client, expected_hotkey: str
+) -> None:
     """§3.1 — picking a subnet + block returns that subnet's full metagraph state."""
     response = admin_client.get(
         "/admin/metagraph/explorer/api/data/",
