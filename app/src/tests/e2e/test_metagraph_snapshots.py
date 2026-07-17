@@ -23,6 +23,11 @@ pytestmark = pytest.mark.django_db
 
 
 @pytest.fixture
+def expected_hotkey() -> str:
+    return "5C4hrfjw9DjXZTzV3MwzrrAr9P1MJhSrvWGWqi1eSuyUpnhM"
+
+
+@pytest.fixture
 def synced_block(localnet: Localnet) -> int:
     """Sync subnet 1's real metagraph at a recent block (recent to dodge state pruning).
 
@@ -36,7 +41,7 @@ def synced_block(localnet: Localnet) -> int:
     return block_number
 
 
-def test_metagraph_snapshot_is_persisted(localnet: Localnet, synced_block: int) -> None:
+def test_metagraph_snapshot_is_persisted(localnet: Localnet, synced_block: int, expected_hotkey: str) -> None:
     """§2.1 — a real snapshot lands as queryable Subnet / Block / Neuron / NeuronSnapshot rows."""
     assert Subnet.objects.filter(netuid=GENESIS_NETUID).exists()
     assert Block.objects.filter(number=synced_block).exists()
@@ -45,10 +50,10 @@ def test_metagraph_snapshot_is_persisted(localnet: Localnet, synced_block: int) 
     assert neurons.exists(), "expected at least one neuron on subnet 1"
 
     snapshots = NeuronSnapshot.objects.filter(block_id=synced_block, neuron__subnet_id=GENESIS_NETUID)
-    assert snapshots.count() == neurons.count()
-    # Every neuron's hotkey is a real SS58 address recovered from the chain.
-    for snap in snapshots.select_related("neuron__hotkey"):
-        assert snap.neuron.hotkey.hotkey.startswith("5")
+    assert snapshots.count() == neurons.count() == 1
+    snap = snapshots.select_related("neuron__hotkey").first()
+    assert snap is not None
+    assert snap.neuron.hotkey.hotkey == expected_hotkey
 
 
 def test_explorer_lists_only_dumped_blocks(localnet: Localnet, synced_block: int, admin_client) -> None:
@@ -67,7 +72,7 @@ def test_explorer_lists_only_dumped_blocks(localnet: Localnet, synced_block: int
     assert returned_blocks == dumped_blocks
 
 
-def test_explorer_returns_metagraph_state_for_a_block(localnet: Localnet, synced_block: int, admin_client) -> None:
+def test_explorer_returns_metagraph_state_for_a_block(localnet: Localnet, synced_block: int, admin_client, expected_hotkey: str) -> None:
     """§3.1 — picking a subnet + block returns that subnet's full metagraph state."""
     response = admin_client.get(
         "/admin/metagraph/explorer/api/data/",
@@ -79,5 +84,5 @@ def test_explorer_returns_metagraph_state_for_a_block(localnet: Localnet, synced
     stored_snapshots = NeuronSnapshot.objects.filter(block_id=synced_block, neuron__subnet_id=GENESIS_NETUID)
     assert payload["summary"]["total_neurons"] == stored_snapshots.count()
     assert payload["neurons"], "expected neuron rows in the explorer response"
-    for neuron in payload["neurons"]:
-        assert neuron["hotkey_full"].startswith("5")
+    assert len(payload["neurons"])
+    assert payload["neurons"][0]["hotkey_full"] == expected_hotkey

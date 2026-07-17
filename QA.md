@@ -110,10 +110,3 @@ That shapes the whole design:
   (`§1.5`) surfaced that migration 0010 seeded `subtensor_error_codes` from a stale enum
   ordering — off by one from index 23, so 94 of 135 codes decoded to the wrong name.
   Migration 0013 regenerates all 147 codes from the runtime-424 metadata.
-
-## Known pre-existing issues (not introduced by e2e work)
-
-- `nox -s test` passes `project` to pytest, so it collects **only**
-  `app/src/project/**/tests/` (43 tests) — the entire `app/src/tests/` tree (the 164
-  unit tests) is not run by `nox -s test` or by CI's unit-test job. Flagged, not changed,
-  to avoid silently widening the unit-test surface; decide deliberately.
