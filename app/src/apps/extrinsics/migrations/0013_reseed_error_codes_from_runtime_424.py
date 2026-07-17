@@ -39,7 +39,7 @@ ERRORS: list[tuple[str, str, str]] = [
     (
         "0x08000000",
         "NotEnoughStake",
-        "DEPRECATED: Stake amount to withdraw is zero.\nThe caller does not have enought stake to perform this action.",
+        "DEPRECATED: Stake amount to withdraw is zero.\nThe caller does not have enough stake to perform this action.",
     ),
     (
         "0x09000000",
@@ -170,7 +170,7 @@ ERRORS: list[tuple[str, str, str]] = [
     ),
     ("0x34000000", "InvalidRevealCommitHashNotMatch", "Committed hash does not equal the hashed reveal data."),
     ("0x35000000", "CommitRevealEnabled", "Attempting to call set_weights when commit/reveal is enabled"),
-    ("0x36000000", "CommitRevealDisabled", "Attemtping to commit/reveal weights when disabled."),
+    ("0x36000000", "CommitRevealDisabled", "Attempting to commit/reveal weights when disabled."),
     ("0x37000000", "LiquidAlphaDisabled", "Attempting to set alpha high/low while disabled"),
     ("0x38000000", "AlphaHighTooLow", "Alpha high is too low: alpha_high > 0.8"),
     ("0x39000000", "AlphaLowOutOfRange", "Alpha low is out of range: alpha_low > 0 && alpha_low < 0.8"),
@@ -200,7 +200,7 @@ ERRORS: list[tuple[str, str, str]] = [
     ("0x4d000000", "TooManyUnrevealedCommits", "Maximum commit limit reached"),
     ("0x4e000000", "ExpiredWeightCommit", "Attempted to reveal weights that are expired."),
     ("0x4f000000", "RevealTooEarly", "Attempted to reveal weights too early."),
-    ("0x50000000", "InputLengthsUnequal", "Attempted to batch reveal weights with mismatched vector input lenghts."),
+    ("0x50000000", "InputLengthsUnequal", "Attempted to batch reveal weights with mismatched vector input lengths."),
     ("0x51000000", "CommittingWeightsTooFast", "A transactor exceeded the rate limit for setting weights."),
     ("0x52000000", "AmountTooLow", "Stake amount is too low."),
     ("0x53000000", "InsufficientLiquidity", "Not enough liquidity."),
