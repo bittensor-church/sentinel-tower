@@ -243,7 +243,7 @@ if SENTRY_DSN:
     from sentry_sdk.integrations.redis import RedisIntegration
 
     SENTRY_ENVIRONMENT = env("SENTRY_ENVIRONMENT", default=ENV)
-    sentry_sdk.init(
+    sentry_sdk.init(  # type: ignore[abstract]
         dsn=SENTRY_DSN,
         environment=SENTRY_ENVIRONMENT,
         integrations=[
