@@ -107,9 +107,15 @@ def _compute_missing_snapshot_blocks() -> dict[tuple[int, str], int]:
         # A separate query for each subnet is necessary as querying all dumpable blocks for all
         # subnets in one query causes memory-related server issues. Since this is meant to be run
         # as a Celery task every 72 minutes, the longer runtime isn't critical.
+        # Bound by block range rather than `block_id__in=widest_dumpable`: the range becomes part
+        # of the (neuron_id, block_id) index condition, while the ~1000-element IN-list is applied
+        # as a per-row filter (~230M array comparisons per subnet on prod). Rows at non-dumpable
+        # blocks may enter `covered`, but they are never in `dumpable`, so `dumpable - covered`
+        # below is unaffected.
         covered = set(
             NeuronSnapshot.objects.filter(
-                block_id__in=widest_dumpable,
+                block_id__gte=widest_start_block,
+                block_id__lte=end_block,
                 neuron__subnet_id=netuid,
             )
             .values_list("block_id", flat=True)
