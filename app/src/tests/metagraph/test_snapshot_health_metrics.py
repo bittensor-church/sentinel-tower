@@ -101,6 +101,32 @@ def test_partially_missing_snapshots_are_disregarded(latest_block, neuron, other
 @pytest.mark.django_db
 @patch("apps.metagraph.tasks._SNAPSHOT_HEALTH_WINDOWS", {"72m": 361})
 @override_settings(METAGRAPH_NETUIDS=[])
+def test_snapshots_at_non_dumpable_blocks_do_not_affect_missing_count(latest_block, neuron):
+    """
+    Snapshots stored at blocks that are not dumpable for the subnet must neither
+    count as coverage for a dumpable block nor otherwise change the missing count.
+    """
+    dumpable_blocks = get_dumpable_blocks_in_range(latest_block.number - 361, latest_block.number, neuron.subnet_id)
+    # Cover all dumpable blocks except three.
+    for bnum in sorted(dumpable_blocks)[:-3]:
+        NeuronSnapshotFactory(neuron=neuron, block=BlockFactory(number=bnum))
+    # Add snapshots at in-window blocks that are NOT dumpable for this subnet.
+    non_dumpable = [
+        bnum for bnum in range(latest_block.number - 361, latest_block.number + 1) if bnum not in dumpable_blocks
+    ][:5]
+    assert non_dumpable, "test setup: expected non-dumpable blocks inside the window"
+    for bnum in non_dumpable:
+        NeuronSnapshotFactory(neuron=neuron, block=BlockFactory(number=bnum))
+
+    update_snapshot_health_metrics()
+
+    row = SnapshotHealthMetric.objects.get(netuid=neuron.subnet_id, window="72m")
+    assert row.missing_blocks == 3
+
+
+@pytest.mark.django_db
+@patch("apps.metagraph.tasks._SNAPSHOT_HEALTH_WINDOWS", {"72m": 361})
+@override_settings(METAGRAPH_NETUIDS=[])
 def test_task_replaces_previous_rows(latest_block, neuron):
     # A stale row that should be removed on the next run.
     SnapshotHealthMetric.objects.create(netuid=999, window="72m", missing_blocks=7)
