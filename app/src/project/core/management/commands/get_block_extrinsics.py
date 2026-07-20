@@ -42,6 +42,9 @@ class Command(BaseCommand):
         self.stdout.write(self.style.SUCCESS(f"Block #{block_number} (hash: {block_hash or 'latest'})"))
 
         block = substrate.get_block(block_hash=block_hash)
+        if block is None:
+            self.stderr.write(self.style.ERROR(f"Block {block_number} not found"))
+            return
         extrinsics = block["block"]["extrinsics"]
 
         if not extrinsics:
