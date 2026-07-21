@@ -3,6 +3,13 @@
 Binding guidance for test work in this repository. Read before adding, deleting, or
 auditing tests.
 
+The project-wide testing rules — concrete-value assertions, mock and `Contact`
+boundaries, public-API testing, real-contact integration, stateful infrastructure — live
+in [engineering-standards.md](engineering-standards.md) and are not repeated here. This
+file records only what is *specific to Sentinel Tower*: how to run the suites, what
+deserves an e2e test here, the localnet constraints, and the QA decision log. Where the
+two ever disagree, engineering-standards.md wins.
+
 ## Test suites and how to run them
 
 Two suites, both under `app/src`:
@@ -27,18 +34,6 @@ image's 431) types `NetUid` as a composite newtype that bittensor 10.x cannot en
 every metagraph/hyperparam call fails with `Invalid type for data`. The e2e conftest
 asserts the runtime version up front and fails loudly if it is wrong. Override the node
 URL with `E2E_LOCALNET_URL` if needed.
-
-## Unit test assertions
-
-Unit/integration tests must assert real, concrete values — specific field values,
-counts, IDs, or content — not just the shape of the response (type, key presence,
-non-null, length). A test that only checks shape proves almost nothing.
-
-If a value cannot be asserted concretely because an external service makes it
-non-deterministic, that is a gap in the `Contact` boundary, not a reason to settle for
-a shape check: add or extend the `Contact` and its mock (per
-[engineering-standards.md](engineering-standards.md#value-assertion-rules)), configure
-the mock to a known value, and assert exactly that value.
 
 ## What deserves an e2e test here
 
