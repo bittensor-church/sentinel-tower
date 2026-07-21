@@ -160,5 +160,35 @@ def test(session):
             "-n",
             "auto",
             "project",
+            "tests/core",
+            "tests/extrinsics",
+            "tests/factories",
+            "tests/metagraph",
+            "tests/notifications",
+            *session.posargs,
+        )
+
+
+@nox.session(name="test_e2e", python=PYTHON_DEFAULT_VERSION)
+def test_e2e(session):
+    """Run end-to-end tests against a subtensor localnet.
+
+    The localnet is a manual prerequisite (like the other Docker services). Start it with:
+
+        docker compose --profile e2e up -d localnet
+
+    Runs serially (``-n0``): the tests share one chain and one sudo account, so parallel
+    workers would collide on nonces. Override the node URL with E2E_LOCALNET_URL.
+    """
+    install(session, "test")
+    with session.chdir(str(APP_ROOT)):
+        session.run(
+            "pytest",
+            "-W",
+            "ignore::DeprecationWarning",
+            "-s",
+            "-vv",
+            "-n0",
+            "tests/e2e",
             *session.posargs,
         )

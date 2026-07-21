@@ -39,6 +39,12 @@ Start abstract block dumper
 uv run manage.py block_tasks_v1
 ```
 
+End-to-end tests are run against a localnet instance running in a Docker container
+```bash
+docker compose --profile e2e up -d localnet
+nox -s test_e2e
+```
+
 **Sentinel mode**
 
 The block scheduler supports four modes controlled by `SENTINEL_MODE` environment variable:
