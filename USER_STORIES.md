@@ -38,9 +38,6 @@ Responsible for keeping the ingestion pipeline healthy and trusting the data it 
 - **As a chain operator**, I want stuck or misrouted Celery tasks to be movable or flushable
   (`move_tasks`, `flush_queue`) without redeploying, so I can recover from a bad queue state during an
   incident.
-- **As a chain operator**, if I ever need to wipe and re-ingest extrinsics from a JSONL export
-  (`resync_blockchain_events`), I want the ingestion checkpoint reset atomically with the data, so the
-  re-ingest starts from a known-consistent state.
 - **As a chain operator**, I want a debug tool (`get_block_extrinsics`) that dumps raw extrinsics for
   one block directly from the node, so I can compare "what the chain says" against "what Sentinel
   Tower stored" when investigating a discrepancy.
@@ -55,18 +52,15 @@ Wants trustworthy point-in-time snapshots of subnet state without touching the c
 - **As an analyst**, I want snapshots taken at meaningful points in the epoch (epoch start, two
   intermediate points, epoch end) rather than every block, so storage stays bounded while I still get
   enough resolution to see how a subnet evolves within an epoch.
-- **As an analyst**, when I don't need weights/bonds (e.g., for APY-only backfills), I want a "lite"
-  snapshot mode that skips the expensive relationship tables, so large historical backfills finish in
-  reasonable time.
 - **As a validator operator**, I want my validator's APY computed from actual per-epoch dividend/stake
   data and exposed on a Grafana dashboard (`subnet-apy.json`), so I can verify my returns without
   building the computation myself.
 - **As a subnet owner or miner**, I want per-subnet Grafana dashboards (`metagraph-miner.json`,
   `metagraph-validator.json`, `metagraph-multi-miner.json`) so I can track my own neurons' stake,
   incentive, and emissions over time.
-- **As an analyst**, I want the materialized APY views refreshed on a predictable schedule (every 15
-  minutes) without ever overlapping, so dashboard numbers are consistent and refreshes don't compete
-  for database resources.
+- **As an analyst**, I want the materialized APY views refreshed on a predictable schedule (every 1h)
+  without ever overlapping, so dashboard numbers are consistent and refreshes don't compete for database
+  resources.
 - **As an operator historically missing data**, I want a long-running backfill daemon
   (`historical_metagraph_backfill`) that walks a historical block range one epoch-start snapshot at a
   time, so I can populate months of missing APY history without babysitting the process.
@@ -134,10 +128,6 @@ Wants to know not just *that* a hyperparameter changed, but what it changed *fro
 
 Wants the system to be operable and debuggable, since there's no support team behind it.
 
-- **As a developer**, I want a documented set of `SENTINEL_MODE` values (`live`, `backfill`,
-  `fast_backfill`, `apy_backfill`) that reconfigure the block scheduler's behavior via environment
-  variables, so I can switch between real-time monitoring and historical backfill without code
-  changes or a separate binary.
 - **As a developer**, I want Celery tasks isolated onto separate queues by cost (`metagraph` vs.
   `celery`), so a burst of expensive metagraph dumps can't starve lightweight notification tasks.
 - **As a developer**, I want tasks to re-enqueue automatically if a worker crashes mid-task

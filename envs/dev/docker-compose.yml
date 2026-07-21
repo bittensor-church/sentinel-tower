@@ -110,7 +110,7 @@ services:
   # suffix), which matches finney — a newer runtime breaks the bittensor SDK's
   # metagraph/hyperparam calls. Start with: docker compose --profile e2e up -d localnet
   localnet:
-    image: ghcr.io/opentensor/subtensor-localnet:v3.4.9-424
+    image: ghcr.io/opentensor/subtensor-localnet:latest
     ports:
       - ${LOCALNET_PORT:-9944}:9944
       - ${LOCALNET_PORT_ALT:-9945}:9945

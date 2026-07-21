@@ -86,5 +86,5 @@ def test_explorer_returns_metagraph_state_for_a_block(
     stored_snapshots = NeuronSnapshot.objects.filter(block_id=synced_block, neuron__subnet_id=GENESIS_NETUID)
     assert payload["summary"]["total_neurons"] == stored_snapshots.count()
     assert payload["neurons"], "expected neuron rows in the explorer response"
-    assert len(payload["neurons"])
+    assert len(payload["neurons"]) == 1
     assert payload["neurons"][0]["hotkey_full"] == expected_hotkey

@@ -24,6 +24,10 @@ def test_backfill_detects_and_fills_the_missing_block(localnet: Localnet) -> Non
     first, missing, last = head - 4, head - 3, head - 2
 
     ingest_blocks(localnet, [first, last])
+    assert set(Extrinsic.objects.filter(block_number__in=[first, last]).values_list("block_number", flat=True)) == {
+        first,
+        last,
+    }, "expected both boundary blocks to persist at least one extrinsic"
     assert not Extrinsic.objects.filter(block_number=missing).exists()
 
     # Scan the exact [first, last] window: gap detection reports only the skipped block.

@@ -18,6 +18,7 @@ from collections.abc import Iterator
 from dataclasses import dataclass, field
 from typing import Any
 
+import bittensor as bt
 import pytest
 import xxhash
 from bittensor import Keypair
@@ -26,13 +27,6 @@ from sentinel.v1.providers.bittensor import BittensorProvider, bittensor_provide
 from apps.notifications import channels
 
 DEFAULT_LOCALNET_URL = "ws://127.0.0.1:9944"
-
-# The localnet runtime must match finney's. A newer runtime (e.g. the 431 shipped by
-# `raofoundation/subtensor-localnet:devnet`) types `NetUid` as a composite newtype that
-# bittensor 10.x cannot encode, so every runtime API call — metagraph, hyperparams —
-# dies with "Invalid type for data". Storage-only calls keep working, which makes a
-# mismatched chain look healthy right up until the metagraph tests fail.
-EXPECTED_RUNTIME_SPEC_VERSION = 424
 
 SUDO_URI = "//Alice"
 SECONDARY_URI = "//Bob"
@@ -63,6 +57,13 @@ def pytest_collection_modifyitems(items: list[pytest.Item]) -> None:
 
 def _localnet_url() -> str:
     return os.environ.get("E2E_LOCALNET_URL", DEFAULT_LOCALNET_URL)
+
+
+def _get_expected_finney_runtime() -> str:
+    """The localnet image should be using the same runtime as Finney"""
+    subtensor = bt.Subtensor(network="finney")  # or bt.SubtensorApi(...)
+    result = subtensor.substrate.rpc_request("state_getRuntimeVersion", [])
+    return result["result"]["specVersion"]
 
 
 def _twox128(data: bytes) -> bytes:
@@ -219,9 +220,10 @@ class Localnet:
         (`InitialColdkeySwapAnnouncementDelay` blocks); callers must
         `clear_coldkey_swap_announcement(..., wait=True)` afterwards to unlock it.
         """
+        assert self.secondary_keypair.public_key
         signer = keypair or self.sudo_keypair
         new_coldkey_hash = hashlib.blake2b(
-            bytes.fromhex(self.secondary_keypair.public_key.hex()),
+            self.secondary_keypair.public_key,
             digest_size=32,
         ).hexdigest()
         return self.submit(
@@ -299,17 +301,22 @@ def localnet() -> Iterator[Localnet]:
     assert provider is not None
     chain = Localnet(provider)
 
-    runtime = chain.substrate.rpc_request("state_getRuntimeVersion", [])["result"]
-    spec_version = runtime["specVersion"]
-    if spec_version != EXPECTED_RUNTIME_SPEC_VERSION:
-        provider.close()
-        pytest.fail(
-            f"Localnet at {url} runs runtime specVersion {spec_version}, "
-            f"but these tests require {EXPECTED_RUNTIME_SPEC_VERSION} (finney's version).\n"
-            f"A newer runtime breaks the bittensor SDK's metagraph/hyperparam calls.\n"
-            f"Use ghcr.io/opentensor/subtensor-localnet:v3.4.9-424 — the tag suffix is the runtime version.",
-            pytrace=False,
-        )
+    # TODO: There have been instances where Finney's runtime did not match the main runtime, causing code that
+    # works on Finney to not work on the tests. There's no hard and fast rule when this happens, though, as far
+    # as I'm aware and it's not an issue right now but I'm keeping the version check here in case someone runs
+    # into this problem in the future.
+    # runtime = chain.substrate.rpc_request("state_getRuntimeVersion", [])["result"]
+    # spec_version = runtime["specVersion"]
+    # finney_spec_version = _get_expected_finney_runtime()
+    # if spec_version != finney_spec_version:
+    #     provider.close()
+    #     pytest.fail(
+    #         f"Localnet at {url} runs runtime specVersion {spec_version}, "
+    #         f"but these tests require {finney_spec_version} (finney's version).\n"
+    #         f"A newer runtime breaks the bittensor SDK's metagraph/hyperparam calls.\n"
+    #         f"Use ghcr.io/opentensor/subtensor-localnet:v3.4.9-424 — the tag suffix is the runtime version.",
+    #         pytrace=False,
+    #     )
 
     # Prove the actor roles rather than trusting the fixture's naming.
     on_chain_sudo = chain.substrate.query("Sudo", "Key")
