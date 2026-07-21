@@ -144,7 +144,7 @@ class ExtrinsicNotification(abc.ABC):
         try:
             text = value.removeprefix("0x")
             return bytes.fromhex(text).decode("utf-8", errors="replace").strip("\x00")
-        except (ValueError, UnicodeDecodeError):
+        except ValueError, UnicodeDecodeError:
             return value
 
     @staticmethod

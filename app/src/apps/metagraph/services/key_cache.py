@@ -44,7 +44,7 @@ class KeyCacheService:
         if coldkey_data:
             coldkey = self.get_or_create_coldkey(coldkey_data["coldkey"])
 
-        hotkey, created = Hotkey.objects.get_or_create(
+        hotkey, created = Hotkey.objects.get_or_create(  # type: ignore[misc]
             hotkey=hotkey_address,
             defaults={"coldkey": coldkey, "last_seen": timezone.now()},
         )
