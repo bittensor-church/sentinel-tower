@@ -12,6 +12,8 @@ Currently, `cookiecutter-rt-django` has no explicit versioning amd we purely rel
 
 ## [Unreleased]
 
+* **BREAKING** Replaced the `log_aggregating` cookiecutter option with `observability`. Existing projects updating with `cruft update` should set `observability` to `true` if they used log aggregation before, and provide the new `traces_aggregator_url` value plus `TEMPO_URL`, `TEMPO_USER` and `TEMPO_PASSWORD` in production environments.
+* **BREAKING** Renamed the `monitor_view_execution_time_in_djagno` cookiecutter option to `monitor_view_execution_time_in_django`; update existing `cruft.json` files or `cruft update --variables-to-update` overrides accordingly.
 * **BREAKING** Switched from `pdm` to [`uv`](https://docs.astral.sh/uv/) for Python dependency management.
 * **BREAKING** Switched from `docker-compose` v1 script to `docker compose` v2 plugin (https://docs.docker.com/compose/cli-command/)
 * **BREAKING** Added formatting with ruff.
@@ -23,3 +25,21 @@ Currently, `cookiecutter-rt-django` has no explicit versioning amd we purely rel
 * **BREAKING** Updated Django from 3.2 to 4.2 (https://docs.djangoproject.com/en/4.2/releases/4.0/#backwards-incompatible-changes-in-4-0)
 * **BREAKING** Updated django-cors-headers from 3.7 to 4.0 (https://github.com/adamchainz/django-cors-headers/blob/main/CHANGELOG.rst#400-2023-05-12)
 * **BREAKING** Updated django-environ from 0.7 to 0.10 (https://django-environ.readthedocs.io/en/latest/changelog.html)
+* **BREAKING** Updated Python from 3.11 to 3.14
+* **BREAKING** Updated Django from 4.2 to 5.2 (https://docs.djangoproject.com/en/5.2/releases/5.0/#backwards-incompatible-changes-in-5-0)
+* **BREAKING** Updated `cruft.json` variables to boolean types, so `"n"` values are treated as `True` -> when doing cruft update, make sure to update `"n"` variables to `false`, like this:
+
+```sh
+cruft update --variables-to-update '{ "use_fingerprinting": false, "use_channels": false, "csp_enabled": false, "nginx_compression_enabled": false, "nginx_tls_early_data_enabled": false, "aws_use_packer": false }'
+```
+* **BREAKING** Updating to 3.14 causes prometheus files to corrupt and trigger an error:
+```
+app-1  |   File "/root/src/.venv/lib/python3.14/site-packages/prometheus_client/mmap_dict.py", line 40, in _read_all_values
+app-1  |     raise RuntimeError('Read beyond file size detected, file is corrupted.')
+```
+A simple solution is to stop all containers, remove prometheus data, and start the containers again:
+```sh
+docker compose stop
+rm -rf prometheus-metrics/*
+docker compose up -d
+```

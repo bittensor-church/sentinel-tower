@@ -14,10 +14,11 @@ services:
       # - PROMETHEUS_MULTIPROC_DIR=/prometheus-multiproc-dir/other-container
       # Don't forget to also mount the prometheus-metrics volume in other containers too.
       - PROMETHEUS_MULTIPROC_DIR=/prometheus-multiproc-dir
+      - PROMETHEUS_USE_FLOCK=1  # this needs to be added to each and every container running this same image/codebase, otherwise things will break
     volumes:
-      - backend-static:/root/src/static
+      - backend-static:/var/static
       - gunicorn-socket:/var/run/gunicorn
-      - ./media:/root/src/media
+      - ./media:$${MEDIA_ROOT}
       # Add this mount to each container that should dump Prometheus metrics.
       - ./prometheus-metrics:/prometheus-multiproc-dir
     logging: &app_logging
@@ -35,20 +36,20 @@ services:
     init: true
     restart: unless-stopped
     environment:
-      - DATABASE_URL=${DATABASE_URL}
+      - DATABASE_URL=$${DATABASE_URL}
       - BACKUP_LOCAL_DIR=/var/backups
-      - BACKUP_LOCAL_ROTATE_KEEP_LAST=${BACKUP_LOCAL_ROTATE_KEEP_LAST}
-      - B2_BUCKET=${BACKUP_B2_BUCKET}
-      - B2_FOLDER=${BACKUP_B2_FOLDER}
-      - B2_APPLICATION_KEY_ID=${BACKUP_B2_APPLICATION_KEY_ID}
-      - B2_APPLICATION_KEY=${BACKUP_B2_APPLICATION_KEY}
-      - EMAIL_HOST=${EMAIL_HOST}
-      - EMAIL_PORT=${EMAIL_PORT}
-      - EMAIL_HOST_USER=${EMAIL_HOST_USER}
-      - EMAIL_HOST_PASSWORD=${EMAIL_HOST_PASSWORD}
-      - EMAIL_TARGET=${EMAIL_TARGET}
-      - DEFAULT_FROM_EMAIL=${DEFAULT_FROM_EMAIL}
-      - SENTRY_DSN=${SENTRY_DSN}
+      - BACKUP_LOCAL_ROTATE_KEEP_LAST=$${BACKUP_LOCAL_ROTATE_KEEP_LAST}
+      - B2_BUCKET=$${BACKUP_B2_BUCKET}
+      - B2_FOLDER=$${BACKUP_B2_FOLDER}
+      - B2_APPLICATION_KEY_ID=$${BACKUP_B2_APPLICATION_KEY_ID}
+      - B2_APPLICATION_KEY=$${BACKUP_B2_APPLICATION_KEY}
+      - EMAIL_HOST=$${EMAIL_HOST}
+      - EMAIL_PORT=$${EMAIL_PORT}
+      - EMAIL_HOST_USER=$${EMAIL_HOST_USER}
+      - EMAIL_HOST_PASSWORD=$${EMAIL_HOST_PASSWORD}
+      - EMAIL_TARGET=$${EMAIL_TARGET}
+      - DEFAULT_FROM_EMAIL=$${DEFAULT_FROM_EMAIL}
+      - SENTRY_DSN=$${SENTRY_DSN}
     volumes:
       - backups:/var/backups
     logging:
@@ -73,7 +74,7 @@ services:
         tag: '{###{.Name}###}'
 
   cadvisor:
-    image: gcr.io/cadvisor/cadvisor:v0.40.0
+    image: ghcr.io/google/cadvisor:0.55.1
     container_name: cadvisor
     privileged: true
     devices:
@@ -83,7 +84,7 @@ services:
       - /var/run:/var/run:ro
       - /sys:/sys:ro
       - /var/lib/docker:/var/lib/docker:ro
-      - /cgroup:/cgroup:ro
+      - /dev/disk/:/dev/disk:ro
     restart: unless-stopped
     logging:
       <<: *exporter_logging

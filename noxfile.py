@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import functools
 import os
+import platform
 import subprocess
 import tempfile
 from pathlib import Path
@@ -11,9 +12,20 @@ import nox
 CI = os.environ.get("CI") is not None
 
 ROOT = Path(".")
-PYTHON_VERSIONS = ["3.11"]
-PYTHON_DEFAULT_VERSION = PYTHON_VERSIONS[-1]
+PYPROJECT = nox.project.load_toml("pyproject.toml")
+PYTHON_VERSION = PYPROJECT["project"]["requires-python"].strip("=~.*")
 APP_ROOT = ROOT / "app" / "src"
+SHELLCHECK_IMAGE = "koalaman/shellcheck:v0.9.0"
+SHELLCHECK_DIGESTS = {
+    "amd64": "sha256:a527e2077f11f28c1c1ad1dc784b5bc966baeb3e34ef304a0ffa72699b01ad9c",
+    "arm64": "sha256:beab2609164b01e8f90993c257fd2da5e09dfba23aa58f1acb1a3d2619909a46",
+}
+SHELLCHECK_ARCH_ALIASES = {
+    "amd64": "amd64",
+    "x86_64": "amd64",
+    "arm64": "arm64",
+    "aarch64": "arm64",
+}
 
 nox.options.default_venv_backend = "uv"
 nox.options.stop_on_first_error = True
@@ -74,19 +86,31 @@ def run_readable(session, mode="check"):
     )
 
 
+def shellcheck_platform_image(machine: str | None = None) -> tuple[str, str]:
+    detected_machine = (machine or platform.machine()).lower()
+    arch = SHELLCHECK_ARCH_ALIASES.get(detected_machine)
+    if arch is None:
+        supported = ", ".join(sorted(SHELLCHECK_ARCH_ALIASES))
+        raise RuntimeError(f"Unsupported shellcheck platform {detected_machine!r}; supported machines: {supported}")
+
+    digest = SHELLCHECK_DIGESTS[arch]
+    return f"linux/{arch}", f"{SHELLCHECK_IMAGE}@{digest}"
+
+
 def run_shellcheck(session, mode="check"):
+    shellcheck_platform, shellcheck_image = shellcheck_platform_image()
     shellcheck_cmd = [
         "docker",
         "run",
         "--platform",
-        "linux/amd64",  # while this image is multi-arch, we cannot use digest with multi-arch images
+        shellcheck_platform,
         "--rm",
         "-v",
         f"{ROOT.absolute()}:/mnt",
         "-w",
         "/mnt",
         "-q",
-        "koalaman/shellcheck:0.9.0@sha256:a527e2077f11f28c1c1ad1dc784b5bc966baeb3e34ef304a0ffa72699b01ad9c",
+        shellcheck_image,
     ]
 
     files = list_files(suffix=".sh")
@@ -118,7 +142,7 @@ def run_shellcheck(session, mode="check"):
     session.run(*shellcheck_cmd, external=True)
 
 
-@nox.session(name="format", python=PYTHON_DEFAULT_VERSION)
+@nox.session(name="format", python=PYTHON_VERSION)
 def format_(session):
     """Lint the code and apply fixes in-place whenever possible."""
     install(session, "format")
@@ -128,7 +152,7 @@ def format_(session):
     session.run("ruff", "format", ".")
 
 
-@nox.session(python=PYTHON_DEFAULT_VERSION)
+@nox.session(python=PYTHON_VERSION)
 def lint(session):
     """Run linters in readonly mode."""
     install(session, "lint")
@@ -139,14 +163,14 @@ def lint(session):
     session.run("ruff", "format", "--diff", ".")
 
 
-@nox.session(python=PYTHON_DEFAULT_VERSION)
+@nox.session(python=PYTHON_VERSION)
 def type_check(session):
     install(session, "type_check")
     with session.chdir(str(APP_ROOT)):
         session.run("mypy", "--config-file", "mypy.ini", ".", *session.posargs)
 
 
-@nox.session(python=PYTHON_VERSIONS)
+@nox.session(python=PYTHON_VERSION)
 def test(session):
     install(session, "test")
     with session.chdir(str(APP_ROOT)):
@@ -159,6 +183,10 @@ def test(session):
             "-vv",
             "-n",
             "auto",
+            "--cov=.",
+            "--cov-config=../../pyproject.toml",
+            "--cov-report=term-missing",
+            "--cov-report=xml",
             "project",
             "tests/core",
             "tests/extrinsics",
@@ -169,7 +197,7 @@ def test(session):
         )
 
 
-@nox.session(name="test_e2e", python=PYTHON_DEFAULT_VERSION)
+@nox.session(name="test_e2e", python=PYTHON_VERSION)
 def test_e2e(session):
     """Run end-to-end tests against a subtensor localnet.
 

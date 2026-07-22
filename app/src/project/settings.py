@@ -1,11 +1,15 @@
 # pyright: reportArgumentType=false, reportCallIssue=false, reportAssignmentType=false
 import logging
+from collections.abc import Callable
 from datetime import timedelta
+from typing import TypedDict
 
 import environ
 import structlog
 from celery.schedules import crontab
+from django.utils.log import CallbackFilter
 from kombu import Queue
+from structlog.typing import Processor, WrappedLogger
 
 root = environ.Path(__file__) - 2
 
@@ -92,9 +96,8 @@ USE_I18N = True
 USE_L10N = True
 USE_TZ = True
 
-
-STATIC_URL = env("STATIC_URL", default="/static/")
-STATIC_ROOT = env("STATIC_ROOT", default=root("static"))
+STATIC_URL = "/static/"
+STATIC_ROOT = "/var/static"
 STORAGES = {
     "default": {
         "BACKEND": "django.core.files.storage.FileSystemStorage",
@@ -103,23 +106,33 @@ STORAGES = {
         "BACKEND": "whitenoise.storage.CompressedStaticFilesStorage",
     },
 }
-MEDIA_URL = env("MEDIA_URL", default="/media/")
-MEDIA_ROOT = env("MEDIA_ROOT", default=root("media"))
+MEDIA_URL = "/media/"
+MEDIA_ROOT = env("MEDIA_ROOT")
 
 SECURE_PROXY_SSL_HEADER = ("HTTP_X_FORWARDED_PROTO", "https")
 
-if CORS_ENABLED := env.bool("CORS_ENABLED", default=True):
+# Security
+# redirect HTTP to HTTPS
+if env.bool("HTTPS_REDIRECT") and not DEBUG:
+    SECURE_SSL_REDIRECT = True
+    SECURE_REDIRECT_EXEMPT = []  # type: ignore
+    SESSION_COOKIE_SECURE = True
+    CSRF_COOKIE_SECURE = True
+else:
+    SECURE_SSL_REDIRECT = False
+
+if CORS_ENABLED := env.bool("CORS_ENABLED"):
     INSTALLED_APPS.append("corsheaders")
     MIDDLEWARE = ["corsheaders.middleware.CorsMiddleware", *MIDDLEWARE]
     CORS_ALLOWED_ORIGINS = env.list("CORS_ALLOWED_ORIGINS", default=[])
     CORS_ALLOWED_ORIGIN_REGEXES = env.list("CORS_ALLOWED_ORIGIN_REGEXES", default=[])
-    CORS_ALLOW_ALL_ORIGINS = env.bool("CORS_ALLOW_ALL_ORIGINS", default=False)
+    CORS_ALLOW_ALL_ORIGINS = env.bool("CORS_ALLOW_ALL_ORIGINS")
 
 REDIS_HOST = env("REDIS_HOST")
 REDIS_PORT = env.int("REDIS_PORT")
 REDIS_URL = f"redis://{REDIS_HOST}:{REDIS_PORT}"
 
-CELERY_BROKER_URL = env("CELERY_BROKER_URL", default="")
+CELERY_BROKER_URL = env("CELERY_BROKER_URL")
 CELERY_RESULT_BACKEND = CELERY_BROKER_URL
 CELERY_RESULT_EXPIRES = int(timedelta(days=1).total_seconds())
 CELERY_MESSAGE_COMPRESSION = "gzip"
@@ -135,7 +148,6 @@ CELERY_TASK_ROUTES = {
     "*": {"queue": "celery"},
 }
 CELERY_TASK_TIME_LIMIT = int(timedelta(minutes=5).total_seconds())
-
 CELERY_BEAT_SCHEDULE = {
     "refresh-validator-apy-windows": {
         "task": "apps.metagraph.tasks.refresh_validator_apy_windows",
@@ -153,33 +165,80 @@ CELERY_BEAT_SCHEDULE = {
         "schedule": crontab(hour=3, minute=30),  # daily, low-traffic UTC hour
     },
 }
-CELERY_TASK_ALWAYS_EAGER = env.bool("CELERY_TASK_ALWAYS_EAGER", default=False)
+CELERY_TASK_ALWAYS_EAGER = env.bool("CELERY_TASK_ALWAYS_EAGER")
 CELERY_TASK_EAGER_PROPAGATES = env.bool("CELERY_TASK_EAGER_PROPAGATES", default=False)
 
 CELERY_WORKER_SEND_TASK_EVENTS = True
 CELERY_TASK_SEND_SENT_EVENT = True
-CELERY_WORKER_PREFETCH_MULTIPLIER = env.int("CELERY_WORKER_PREFETCH_MULTIPLIER", default=1)
-CELERY_BROKER_POOL_LIMIT = env.int("CELERY_BROKER_POOL_LIMIT", default=50)
+CELERY_WORKER_PREFETCH_MULTIPLIER = env.int("CELERY_WORKER_PREFETCH_MULTIPLIER")
+CELERY_BROKER_POOL_LIMIT = env.int("CELERY_BROKER_POOL_LIMIT")
 CELERY_WORKER_MAX_TASKS_PER_CHILD = env.int("CELERY_WORKER_MAX_TASKS_PER_CHILD", default=50)
-
 
 DJANGO_STRUCTLOG_CELERY_ENABLED = True
 
 LOG_LEVEL = env("LOG_LEVEL", default="INFO")
 
+
+def exclude_pidbox_notifications(record: logging.LogRecord) -> bool:
+    """Exclude Flower worker-ping notifications from Celery logs."""
+    return "pidbox received method" not in record.getMessage()
+
+
+class StructlogEnvProcessor:
+    """Add env vars to structlog event dict, so that they become part of all log messages."""
+
+    def __init__(self, vars: list[str]):
+        self.env_data = {var.lower(): value for var in vars if (value := env(var, default=None))}
+
+    def __call__(self, logger, method_name, event_dict):
+        return event_dict | self.env_data
+
+
+LOGGING_ENV_VARS_PROCESSOR = StructlogEnvProcessor(vars=["INSTANCE_ID_SUBST"])
+
+LOGGING_CALLSITE_PARAMETERS_PROCESSOR = structlog.processors.CallsiteParameterAdder(
+    [
+        structlog.processors.CallsiteParameter.PATHNAME,
+        structlog.processors.CallsiteParameter.FUNC_NAME,
+        structlog.processors.CallsiteParameter.LINENO,
+    ]
+)
+
+LOGGING_FOREIGN_PRE_CHAIN = [
+    structlog.stdlib.add_log_level,
+    structlog.stdlib.add_logger_name,
+    LOGGING_ENV_VARS_PROCESSOR,
+    structlog.processors.TimeStamper(fmt="iso"),
+    structlog.processors.format_exc_info,
+    LOGGING_CALLSITE_PARAMETERS_PROCESSOR,
+]
+
 LOGGING = {
     "version": 1,
     "disable_existing_loggers": False,
     "formatters": {
-        "main": {
+        "console": {
             "()": structlog.stdlib.ProcessorFormatter,
             "processor": structlog.dev.ConsoleRenderer(),
+            "foreign_pre_chain": LOGGING_FOREIGN_PRE_CHAIN,
+        },
+        "json": {
+            "()": structlog.stdlib.ProcessorFormatter,
+            "processor": structlog.processors.JSONRenderer(),
+            "foreign_pre_chain": LOGGING_FOREIGN_PRE_CHAIN,
+        },
+    },
+    "filters": {
+        "exclude_pidbox_notifications": {
+            # these are notifications about Flower pinging workers
+            "()": CallbackFilter,
+            "callback": exclude_pidbox_notifications,
         },
     },
     "handlers": {
         "console": {
             "class": "logging.StreamHandler",
-            "formatter": "main",
+            "formatter": "console" if DEBUG else "json",
         },
     },
     "root": {
@@ -212,29 +271,33 @@ LOGGING = {
 }
 
 
-def configure_structlog():
-    structlog.configure(
-        processors=[
-            structlog.contextvars.merge_contextvars,
-            structlog.stdlib.filter_by_level,
-            structlog.processors.TimeStamper(fmt="iso"),
-            structlog.stdlib.add_logger_name,
-            structlog.stdlib.add_log_level,
-            structlog.stdlib.PositionalArgumentsFormatter(),
-            structlog.processors.StackInfoRenderer(),
-            structlog.processors.format_exc_info,
-            structlog.processors.UnicodeDecoder(),
-            structlog.stdlib.ProcessorFormatter.wrap_for_formatter,
-        ],
-        logger_factory=structlog.stdlib.LoggerFactory(),
-        cache_logger_on_first_use=True,
-    )
+class _StructlogConfiguration(TypedDict):
+    processors: list[Processor]
+    logger_factory: Callable[..., WrappedLogger]
+    cache_logger_on_first_use: bool
 
 
-configure_structlog()
+STRUCTLOG_CONFIGURATION: _StructlogConfiguration = {
+    "processors": [
+        structlog.contextvars.merge_contextvars,
+        structlog.stdlib.filter_by_level,
+        structlog.processors.TimeStamper(fmt="iso"),
+        structlog.stdlib.add_logger_name,
+        structlog.stdlib.add_log_level,
+        LOGGING_ENV_VARS_PROCESSOR,
+        LOGGING_CALLSITE_PARAMETERS_PROCESSOR,
+        structlog.stdlib.PositionalArgumentsFormatter(),
+        structlog.processors.StackInfoRenderer(),
+        structlog.processors.format_exc_info,
+        structlog.processors.UnicodeDecoder(),
+        structlog.stdlib.ProcessorFormatter.wrap_for_formatter,
+    ],
+    "logger_factory": structlog.stdlib.LoggerFactory(),
+    "cache_logger_on_first_use": True,
+}
+structlog.configure(**STRUCTLOG_CONFIGURATION)
 
-
-SENTRY_DSN = env("SENTRY_DSN", default="")
+SENTRY_DSN = env("SENTRY_DSN")
 if SENTRY_DSN:
     import sentry_sdk
     from sentry_sdk.integrations.celery import CeleryIntegration
@@ -246,6 +309,11 @@ if SENTRY_DSN:
     sentry_sdk.init(  # type: ignore[abstract]
         dsn=SENTRY_DSN,
         environment=SENTRY_ENVIRONMENT,
+        ignore_errors=[
+            KeyboardInterrupt,
+            SystemExit,
+            BrokenPipeError,
+        ],
         integrations=[
             DjangoIntegration(),
             CeleryIntegration(),
@@ -260,7 +328,7 @@ if SENTRY_DSN:
     ignore_logger("django_structlog.celery.receivers")
 
 
-PROMETHEUS_EXPORT_MIGRATIONS = env.bool("PROMETHEUS_EXPORT_MIGRATIONS", default=True)
+PROMETHEUS_EXPORT_MIGRATIONS = env.bool("PROMETHEUS_EXPORT_MIGRATIONS")
 
 # Bittensor / Block Dumper
 
@@ -309,8 +377,7 @@ SENTINEL_STORAGES = {
 }
 
 # Debug toolbar (dev only)
-if DEBUG_TOOLBAR := env.bool("DEBUG_TOOLBAR", default=False):
-    INTERNAL_IPS = ["127.0.0.1"]
+if DEBUG_TOOLBAR := env.bool("DEBUG_TOOLBAR"):
     DEBUG_TOOLBAR_CONFIG = {"SHOW_TOOLBAR_CALLBACK": lambda _request: True}
     INSTALLED_APPS.append("debug_toolbar")
     MIDDLEWARE = ["debug_toolbar.middleware.DebugToolbarMiddleware", *MIDDLEWARE]

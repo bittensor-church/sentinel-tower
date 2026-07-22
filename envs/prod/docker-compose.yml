@@ -1,3 +1,8 @@
+x-logging: &logging
+  driver: journald
+  options:
+    tag: '{{.Name}}'
+
 services:
   redis:
     image: mirror.gcr.io/valkey/valkey:8.1-alpine
@@ -7,10 +12,8 @@ services:
     restart: unless-stopped
     volumes:
       - ./redis/data:/data
-    logging: &logging
-      driver: journald
-      options:
-        tag: '{{.Name}}'
+    logging:
+      <<: *logging
 
   db:
     image: postgres:14.0-alpine
@@ -46,14 +49,15 @@ services:
       # - PROMETHEUS_MULTIPROC_DIR=/prometheus-multiproc-dir/other-container
       # Don't forget to also mount the prometheus-metrics volume in other containers too.
       - PROMETHEUS_MULTIPROC_DIR=/prometheus-multiproc-dir
-      - MEDIA_ROOT=${MEDIA_ROOT:-/root/src/media}
+      - PROMETHEUS_USE_FLOCK=1
+      - MEDIA_ROOT=${MEDIA_ROOT}
       # Migrations are applied manually (see deploy.sh) so long CONCURRENTLY
       # index builds don't block app startup.
       - AUTO_MIGRATE=${AUTO_MIGRATE:-0}
     volumes:
-      - backend-static:/root/src/static
+      - backend-static:/var/static
       - gunicorn-socket:/var/run/gunicorn
-      - ${MEDIA_VOLUME_PATH:-./media}:/root/src/media
+      - ${MEDIA_VOLUME_PATH:-./media}:${MEDIA_ROOT}
       # Add this mount to each container that should dump Prometheus metrics.
       - ./prometheus-metrics:/prometheus-multiproc-dir
     depends_on:
@@ -74,15 +78,16 @@ services:
       - "host.docker.internal:host-gateway"
     command: ./block-scheduler-entrypoint.sh
     environment:
-      - PROMETHEUS_MULTIPROC_DIR=/prometheus-multiproc-dir
+      - PROMETHEUS_MULTIPROC_DIR=/prometheus-multiproc-dir/block-scheduler
+      - PROMETHEUS_USE_FLOCK=1
       - SENTINEL_MODE=${SENTINEL_MODE:-live}
       - BLOCK_START=${BLOCK_START:-}
       - BLOCK_END=${BLOCK_END:-}
       - BACKFILL_RATE_LIMIT=${BACKFILL_RATE_LIMIT:-1.0}
     volumes:
-      - backend-static:/root/src/static
-      - ${MEDIA_VOLUME_PATH:-./media}:/root/src/media
-      - ./prometheus-metrics:/prometheus-multiproc-dir
+      - backend-static:/var/static
+      - ${MEDIA_VOLUME_PATH:-./media}:${MEDIA_ROOT}
+      - ./prometheus-metrics/block-scheduler:/prometheus-multiproc-dir/block-scheduler
     depends_on:
       - celery-worker
       - redis
@@ -105,10 +110,10 @@ services:
     extra_hosts:
       - "host.docker.internal:host-gateway"
     environment:
-      - MEDIA_ROOT=${MEDIA_ROOT:-/root/src/media}
+      - MEDIA_ROOT=${MEDIA_ROOT}
     command: python manage.py sync_extrinsics
     volumes:
-      - ${MEDIA_VOLUME_PATH:-./media}:/root/src/media
+      - ${MEDIA_VOLUME_PATH:-./media}:${MEDIA_ROOT}
     depends_on:
       - redis
       - db
@@ -128,10 +133,10 @@ services:
     extra_hosts:
       - "host.docker.internal:host-gateway"
     environment:
-      - MEDIA_ROOT=${MEDIA_ROOT:-/root/src/media}
+      - MEDIA_ROOT=${MEDIA_ROOT}
     command: python manage.py sync_metagraph
     volumes:
-      - ${MEDIA_VOLUME_PATH:-./media}:/root/src/media
+      - ${MEDIA_VOLUME_PATH:-./media}:${MEDIA_ROOT}
     depends_on:
       - redis
       - db
@@ -147,10 +152,10 @@ services:
     extra_hosts:
       - "host.docker.internal:host-gateway"
     environment:
-      - MEDIA_ROOT=${MEDIA_ROOT:-/root/src/media}
+      - MEDIA_ROOT=${MEDIA_ROOT}
     command: python manage.py backfill_metagraph
     volumes:
-      - ${MEDIA_VOLUME_PATH:-./media}:/root/src/media
+      - ${MEDIA_VOLUME_PATH:-./media}:${MEDIA_ROOT}
     profiles:
       - metagraph
     depends_on:
@@ -166,10 +171,10 @@ services:
     extra_hosts:
       - "host.docker.internal:host-gateway"
     environment:
-      - MEDIA_ROOT=${MEDIA_ROOT:-/root/src/media}
+      - MEDIA_ROOT=${MEDIA_ROOT}
     command: python manage.py historical_metagraph_backfill
     volumes:
-      - ${MEDIA_VOLUME_PATH:-./media}:/root/src/media
+      - ${MEDIA_VOLUME_PATH:-./media}:${MEDIA_ROOT}
     profiles:
       - historical-backfill
     depends_on:
@@ -184,10 +189,10 @@ services:
     extra_hosts:
       - "host.docker.internal:host-gateway"
     environment:
-      - MEDIA_ROOT=${MEDIA_ROOT:-/root/src/media}
+      - MEDIA_ROOT=${MEDIA_ROOT}
     command: python manage.py backfill_extrinsics
     volumes:
-      - ${MEDIA_VOLUME_PATH:-./media}:/root/src/media
+      - ${MEDIA_VOLUME_PATH:-./media}:${MEDIA_ROOT}
     profiles:
       - backfill
     depends_on:
@@ -202,7 +207,7 @@ services:
     extra_hosts:
       - "host.docker.internal:host-gateway"
     environment:
-      - MEDIA_ROOT=${MEDIA_ROOT:-/root/src/media}
+      - MEDIA_ROOT=${MEDIA_ROOT}
     # One-shot: `docker compose run --rm prune-retention` runs the default
     # command below. NOTE: anything after the service name REPLACES the
     # command (the entrypoint is just `gosu appuser`), so to pass flags spell
@@ -213,7 +218,7 @@ services:
     # task; the shared advisory lock makes concurrent runs a no-op.
     command: python manage.py prune_retention
     volumes:
-      - ${MEDIA_VOLUME_PATH:-./media}:/root/src/media
+      - ${MEDIA_VOLUME_PATH:-./media}:${MEDIA_ROOT}
     profiles:
       - retention
     depends_on:
@@ -241,12 +246,13 @@ services:
     environment:
       - DEBUG=off
       - PROMETHEUS_MULTIPROC_DIR=/prometheus-multiproc-dir/celery-worker
-      - MEDIA_ROOT=${MEDIA_ROOT:-/root/src/media}
+      - PROMETHEUS_USE_FLOCK=1
+      - MEDIA_ROOT=${MEDIA_ROOT}
       - SENTINEL_MODE=${SENTINEL_MODE:-live}
     command: ./celery-entrypoint.sh
     volumes:
-      - ${MEDIA_VOLUME_PATH:-./media}:/root/src/media
-      - ./prometheus-metrics:/prometheus-multiproc-dir
+      - ${MEDIA_VOLUME_PATH:-./media}:${MEDIA_ROOT}
+      - ./prometheus-metrics/celery-worker:/prometheus-multiproc-dir/celery-worker
     tmpfs: /run
     depends_on:
       - redis
@@ -296,10 +302,10 @@ services:
   #   environment:
   #     - DEBUG=off
   #     - DAGSTER_HOME=/root/src
-  #     - MEDIA_ROOT=${MEDIA_ROOT:-/root/src/media}
+  #     - MEDIA_ROOT=${MEDIA_ROOT}
   #   command: ./dagster-entrypoint.sh
   #   volumes:
-  #     - ${MEDIA_VOLUME_PATH:-./media}:/root/src/media
+  #     - ${MEDIA_VOLUME_PATH:-./media}:${MEDIA_ROOT}
   #     - dagster-storage:/root/src/.dagster
   #   depends_on:
   #     - redis
@@ -317,10 +323,10 @@ services:
   #   environment:
   #     - DEBUG=off
   #     - DAGSTER_HOME=/root/src
-  #     - MEDIA_ROOT=${MEDIA_ROOT:-/root/src/media}
+  #     - MEDIA_ROOT=${MEDIA_ROOT}
   #   command: dagster-daemon run -m project.dagster.definitions
   #   volumes:
-  #     - ${MEDIA_VOLUME_PATH:-./media}:/root/src/media
+  #     - ${MEDIA_VOLUME_PATH:-./media}:${MEDIA_ROOT}
   #     - dagster-storage:/root/src/.dagster
   #   depends_on:
   #     - dagster

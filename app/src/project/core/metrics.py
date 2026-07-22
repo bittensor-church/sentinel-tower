@@ -15,12 +15,27 @@ class RecursiveMultiProcessCollector(multiprocess.MultiProcessCollector):
     """A multiprocess collector that scans the directory recursively"""
 
     def collect(self):
-        files = [f for f in glob.glob(os.path.join(self._path, "**/*.db"), recursive=True) if os.path.exists(f)]
-        return self.merge(files, accumulate=True)
+        metrics = {}
+        for filename in glob.iglob(os.path.join(self._path, "**/*.db"), recursive=True):
+            try:
+                file_metrics = self._read_metrics([filename])
+            except FileNotFoundError:
+                # A service may clear its own stale files while a scrape walks
+                # the shared directory. Missing files are transient, not a 500.
+                continue
+            for name, metric in file_metrics.items():
+                if name in metrics:
+                    metrics[name].samples.extend(metric.samples)
+                else:
+                    metrics[name] = metric
+        return self._accumulate_metrics(metrics, accumulate=True)
 
 
 if is_multiprocess := bool(os.environ.get("PROMETHEUS_MULTIPROC_DIR")):
     registry = prometheus_client.CollectorRegistry()
+    # The pinned fork's compactor reads pickle data from this writable metrics
+    # volume without synchronizing with writers. Keep recursive collection and
+    # startup cleanup until the compactor has a safe storage/locking protocol.
     RecursiveMultiProcessCollector(registry)
 else:
     registry = REGISTRY

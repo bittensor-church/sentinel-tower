@@ -7,6 +7,8 @@ import structlog
 from celery import Celery
 from celery.signals import celeryd_init, setup_logging, task_postrun, worker_process_init, worker_process_shutdown
 from django.conf import settings
+from django.dispatch import receiver
+from django_structlog.celery.signals import bind_extra_task_metadata
 from django_structlog.celery.steps import DjangoStructLogInitStep
 from more_itertools import chunked
 from prometheus_client import Gauge, multiprocess
@@ -32,8 +34,17 @@ def receiver_setup_logging(loglevel, logfile, format, colorize, **kwargs):  # pr
     if logfile:
         config["handlers"]["console"]["class"] = "logging.FileHandler"
         config["handlers"]["console"]["filename"] = logfile
+    config["handlers"]["console"].setdefault("filters", []).append("exclude_pidbox_notifications")
     logging.config.dictConfig(config)
-    settings.configure_structlog()
+    structlog.configure(**settings.STRUCTLOG_CONFIGURATION)
+
+
+@receiver(bind_extra_task_metadata)
+def bind_worker_name(sender, signal, task, logger, **kwargs):
+    worker_name = task.request.hostname.split("@")[0]
+    structlog.contextvars.bind_contextvars(
+        worker_name=worker_name,
+    )
 
 
 def get_tasks_in_queue(queue_name: str) -> list[bytes]:
