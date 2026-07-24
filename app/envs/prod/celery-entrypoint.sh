@@ -3,9 +3,9 @@ set -eu
 
 ./prometheus-cleanup.sh
 
-# below we define three worker types (each may have any concurrency);
+# below we define two worker types (each may have any concurrency);
 # each worker may have its own settings
-WORKERS="master worker metagraph"
+WORKERS="master metagraph"
 MAX_TASKS_PER_CHILD="${CELERY_WORKER_MAX_TASKS_PER_CHILD:-50}"
 
 # The container runs as the unprivileged "appuser", which cannot write to
@@ -16,13 +16,12 @@ OPTIONS="-A project -E -l ERROR --pidfile=/tmp/celery-%n.pid --logfile=/tmp/logs
 
 # set up settings for workers and run the latter;
 # here events from "celery" queue (default one, will be used if queue not specified)
-# will go to "master" workers, and events from "worker" queue go to "worker" workers;
+# will go to "master" workers, and events from "metagraph" queue go to "metagraph" workers;
 # by default there are no workers, but each type of worker may scale up to 4 processes
 # C_FORCE_ROOT is a harmless no-op under appuser, kept in case this is ever run as root.
 # shellcheck disable=2086
 C_FORCE_ROOT=1 nice celery multi start $WORKERS $OPTIONS \
     -Q:master celery --autoscale:master=$CELERY_MASTER_CONCURRENCY,0 \
-    -Q:worker worker --autoscale:worker=$CELERY_WORKER_CONCURRENCY,0 \
     -Q:metagraph metagraph --autoscale:metagraph=${CELERY_METAGRAPH_CONCURRENCY:-2},0
 
 # shellcheck disable=2064
