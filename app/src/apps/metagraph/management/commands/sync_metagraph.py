@@ -129,12 +129,13 @@ class Command(BaseCommand):
                     reconnect.wait(delay, lambda: self._shutdown)
                     continue
 
+                reconnect.record_recovery(logger, provider=provider_name)
+
                 if last_processed_block is None:
                     last_processed_block = head - 1
                     logger.info("Starting from head", head=head)
 
                 if head <= last_processed_block:
-                    reconnect.record_recovery(logger, provider=provider_name)
                     reconnect.wait(settings.BITTENSOR_SECONDS_PER_BLOCK, lambda: self._shutdown)
                     continue
 
@@ -182,7 +183,6 @@ class Command(BaseCommand):
                         break
 
                 if provider is not None:
-                    reconnect.record_recovery(logger, provider=provider_name)
                     reconnect.wait(settings.BITTENSOR_SECONDS_PER_BLOCK, lambda: self._shutdown)
         finally:
             if provider is not None:

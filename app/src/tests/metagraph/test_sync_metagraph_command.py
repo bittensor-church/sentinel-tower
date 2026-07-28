@@ -149,3 +149,36 @@ def test_daemon_alerts_on_repeated_connection_failures_and_stops_when_signalled(
     assert factory.call_count == 4
     failures = [entry["log_level"] for entry in logs if entry["event"] == "Provider connection failed"]
     assert failures == ["warning", "warning", "error", "warning"]
+
+
+@override_settings(**RETRY_SETTINGS, BITTENSOR_RECONNECT_ALERT_AFTER_ATTEMPTS=2)
+def test_successful_head_rpc_resets_outage_before_catch_up_failure(monkeypatch):
+    command = sync_metagraph.Command()
+
+    def request_shutdown() -> None:
+        command._shutdown = True
+
+    unreachable = ScriptedProvider([], unreachable=True)
+    catch_up_failure = ScriptedProvider([DUMPABLE_BLOCK], fail_metagraph=True)
+    healthy = ScriptedProvider([NEXT_DUMPABLE_BLOCK], on_heads_exhausted=request_shutdown)
+    factory = ProviderFactory(unreachable, catch_up_failure, healthy)
+    monkeypatch.setattr(sync_metagraph, "bittensor_provider", factory)
+
+    with capture_logs() as logs:
+        call_command(command, provider="bittensor", stdout=StringIO())
+
+    failures = [
+        entry
+        for entry in logs
+        if entry["event"]
+        in {
+            "Provider connection failed",
+            "Error syncing metagraph, reconnecting...",
+        }
+    ]
+    assert [(entry["event"], entry["log_level"], entry["attempt"]) for entry in failures] == [
+        ("Provider connection failed", "warning", 1),
+        ("Error syncing metagraph, reconnecting...", "warning", 1),
+    ]
+    recoveries = [entry for entry in logs if entry["event"] == "Provider connection recovered"]
+    assert [entry["failed_attempts"] for entry in recoveries] == [1, 1]
