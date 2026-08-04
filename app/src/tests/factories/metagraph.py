@@ -136,3 +136,31 @@ class MetagraphDumpFactory(DjangoModelFactory):
 
     netuid = factory.Sequence(lambda n: n + 1)
     block = factory.SubFactory(BlockFactory)
+
+
+class MetaEpochFactory(DjangoModelFactory):
+    class Meta:
+        model = metagraph_models.MetaEpoch
+        django_get_or_create = ("block",)
+
+    block = factory.SubFactory(BlockFactory)
+
+
+class SubnetBurnFactory(DjangoModelFactory):
+    class Meta:
+        model = metagraph_models.SubnetBurn
+
+    subnet = factory.SubFactory(SubnetFactory)
+    meta_epoch = factory.SubFactory(MetaEpochFactory)
+    source_block_number = factory.LazyAttribute(lambda o: o.meta_epoch.block_id)
+    burn = 0.0
+    superburn = 0.0
+
+
+class SubnetEmissionFactory(DjangoModelFactory):
+    class Meta:
+        model = metagraph_models.SubnetEmission
+
+    subnet = factory.SubFactory(SubnetFactory)
+    meta_epoch = factory.SubFactory(MetaEpochFactory)
+    emission_enabled = True
