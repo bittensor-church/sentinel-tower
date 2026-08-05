@@ -396,6 +396,22 @@ class MetagraphDump(models.Model):
         on_delete=models.CASCADE,
         related_name="metagraph_dumps",
     )
+    # Freezes the subnet owner as observed at ``block``.
+    # :attr:`Subnet.owner_hotkey` only ever holds the *latest* owner, so anything
+    # recomputed from a historical dump — :class:`SubnetBurn` in particular — has to
+    # read the identity from here; using the subnet row would apply an ownership or
+    # coldkey change retroactively to every older epoch.
+    owner_hotkey = models.ForeignKey(
+        Hotkey,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="owned_subnet_dumps",
+        help_text=(
+            "Subnet owner hotkey at this dump's block. Null when the chain reported no owner, "
+            "or for dumps taken before per-block owners were recorded."
+        ),
+    )
     epoch_position = models.PositiveIntegerField(null=True, blank=True)
     created_at = models.DateTimeField(auto_now_add=True)
     started_at = models.DateTimeField(null=True, blank=True)

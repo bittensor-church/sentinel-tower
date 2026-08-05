@@ -179,13 +179,14 @@ class MetagraphDumpAdmin(admin.ModelAdmin):
         "id",
         "netuid",
         "block",
+        "owner_hotkey",
         "epoch_position",
         "started_at",
         "finished_at",
     )
-    search_fields = ("netuid",)
+    search_fields = ("netuid", "owner_hotkey__hotkey")
     list_filter = ("netuid", "block")
-    raw_id_fields = ("block",)
+    raw_id_fields = ("block", "owner_hotkey")
     readonly_fields = ("created_at",)
 
 

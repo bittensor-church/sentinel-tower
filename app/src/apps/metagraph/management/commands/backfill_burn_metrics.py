@@ -1,9 +1,11 @@
 """Backfill burn/superburn (and optionally subnet-emission) rows over a block range.
 
-Burn and superburn are pure functions of mechanism metrics that the metagraph
-sync already stored, so this recovers history for every epoch-start block still
-inside the snapshot retention window — enough to fill the Burns and Emissions
-dashboard the moment the feature is deployed.
+Burn and superburn are functions of the mechanism metrics the metagraph sync
+already stored plus the owner recorded on that block's dump, so this recovers
+history for every epoch-start block still inside the snapshot retention window —
+enough to fill the Burns and Emissions dashboard the moment the feature is
+deployed. Blocks whose dump is gone are skipped: attributing an old epoch's
+incentive to the subnet's present owner would persist a wrong value.
 
 The burn pass normally touches no chain connection: its meta-epoch anchor blocks
 are expected to have been ingested already. If an anchor is missing, the burn

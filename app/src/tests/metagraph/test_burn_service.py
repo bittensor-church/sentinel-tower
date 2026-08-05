@@ -11,7 +11,7 @@ from datetime import UTC, datetime
 import pytest
 from sentinel.v1.testing.providers import FakeBlockchainProvider
 
-from apps.metagraph.models import Block, MetaEpoch, SubnetBurn, SubnetEmission
+from apps.metagraph.models import Block, Hotkey, MetaEpoch, MetagraphDump, SubnetBurn, SubnetEmission
 from apps.metagraph.services.burn_service import BurnService
 from apps.metagraph.utils import get_epoch_containing_block
 from tests.factories.metagraph import (
@@ -19,6 +19,7 @@ from tests.factories.metagraph import (
     ColdkeyFactory,
     HotkeyFactory,
     MechanismMetricsFactory,
+    MetagraphDumpFactory,
     NeuronFactory,
     NeuronSnapshotFactory,
     SubnetFactory,
@@ -69,14 +70,18 @@ def build_subnet_with_incentives(
 ):
     """Create a subnet whose owner holds ``owner_coldkey``, plus the given metrics.
 
-    ``incentives`` entries are ``(coldkey, mech_id, incentive)``.
+    ``incentives`` entries are ``(coldkey, mech_id, incentive)``. The dump that
+    production writes alongside those metrics is created too, recording the owner
+    as of ``block_number``.
     """
     owner = ColdkeyFactory(coldkey=owner_coldkey)
-    subnet = SubnetFactory(netuid=netuid, owner_hotkey=HotkeyFactory(coldkey=owner))
+    owner_hotkey = HotkeyFactory(coldkey=owner)
+    subnet = SubnetFactory(netuid=netuid, owner_hotkey=owner_hotkey)
     anchor = BurnService.meta_epoch_block(block_number)
     if anchor >= 0:
         BlockFactory(number=anchor, timestamp=META_EPOCH_TIMESTAMP)
     block = BlockFactory(number=block_number, timestamp=SOURCE_BLOCK_TIMESTAMP)
+    MetagraphDumpFactory(netuid=netuid, block=block, owner_hotkey=owner_hotkey, epoch_position=0)
 
     snapshots: dict[str, object] = {}
     for coldkey_address, mech_id, incentive in incentives:
@@ -277,14 +282,16 @@ class TestSyncBurn:
         assert burn_service().sync_burn(block, netuid) is None
         assert SubnetBurn.objects.count() == 0
 
-    def test_records_zero_burn_when_the_subnet_has_no_owner_hotkey(self):
+    def test_records_zero_burn_when_the_dump_recorded_no_owner(self):
         netuid = 7
         block = epoch_start_for(netuid)
         BlockFactory(number=BurnService.meta_epoch_block(block), timestamp=META_EPOCH_TIMESTAMP)
         subnet = SubnetFactory(netuid=netuid, owner_hotkey=None)
+        source_block = BlockFactory(number=block, timestamp=SOURCE_BLOCK_TIMESTAMP)
+        MetagraphDumpFactory(netuid=netuid, block=source_block, owner_hotkey=None, epoch_position=0)
         snapshot = NeuronSnapshotFactory(
             neuron=NeuronFactory(subnet=subnet, hotkey=HotkeyFactory()),
-            block=BlockFactory(number=block, timestamp=SOURCE_BLOCK_TIMESTAMP),
+            block=source_block,
         )
         MechanismMetricsFactory(snapshot=snapshot, mech_id=0, incentive=0.8)
 
@@ -292,6 +299,54 @@ class TestSyncBurn:
 
         assert result is not None
         assert result.burn == pytest.approx(0.0)
+
+    def test_attributes_burn_to_the_owner_recorded_at_the_source_block(self):
+        """A later change of hands must not re-attribute an already-dumped epoch."""
+        netuid = 7
+        block = epoch_start_for(netuid)
+        subnet = build_subnet_with_incentives(
+            netuid,
+            block,
+            incentives=[("5OldOwner", 0, 0.4), ("5NewOwner", 0, 0.6)],
+            owner_coldkey="5OldOwner",
+        )
+        # The subnet is sold: later dumps rewrite Subnet.owner_hotkey, the dump
+        # of `block` keeps the identity that held the incentive back then.
+        subnet.owner_hotkey = HotkeyFactory(coldkey=ColdkeyFactory(coldkey="5NewOwner"))
+        subnet.save()
+
+        result = burn_service().sync_burn(block, netuid)
+
+        assert result is not None
+        assert result.burn == pytest.approx(0.4)
+
+    def test_a_coldkey_swap_keeps_the_burn_with_the_owner_hotkey(self):
+        """A swap moves every hotkey of a coldkey at once, so the dumped hotkey still resolves it."""
+        netuid = 7
+        block = epoch_start_for(netuid)
+        build_subnet_with_incentives(
+            netuid,
+            block,
+            incentives=[("5OwnerColdkey", 0, 0.4), ("5Miner", 0, 0.6)],
+            owner_coldkey="5OwnerColdkey",
+        )
+        swapped_to = ColdkeyFactory(coldkey="5SwappedColdkey")
+        Hotkey.objects.filter(coldkey__coldkey="5OwnerColdkey").update(coldkey=swapped_to)
+
+        result = burn_service().sync_burn(block, netuid)
+
+        assert result is not None
+        assert result.burn == pytest.approx(0.4)
+
+    def test_skips_when_no_dump_recorded_the_owner_at_the_block(self):
+        """Without provenance, guessing the owner would persist a wrong burn forever."""
+        netuid = 7
+        block = epoch_start_for(netuid)
+        build_subnet_with_incentives(netuid, block, [("5Owner", 0, 0.3)], owner_coldkey="5Owner")
+        MetagraphDump.objects.filter(netuid=netuid, block_id=block).delete()
+
+        assert burn_service().sync_burn(block, netuid) is None
+        assert SubnetBurn.objects.count() == 0
 
     def test_records_zero_superburn_when_no_coldkey_is_configured(self, settings):
         settings.METAGRAPH_SUPERBURN_COLDKEY = ""

@@ -89,9 +89,15 @@ Wants trustworthy point-in-time snapshots of subnet state without touching the c
 - **As an analyst**, I want those per-subnet values filed against a single shared time bucket (the
   *meta epoch* — the root subnet's epoch), so that 128 subnets running on 128 offset epoch schedules
   still line up column-by-column in one heatmap (`docs/grafana/burns-and-emissions.json`).
+- **As an analyst**, I want each subnet's burn attributed to whoever owned the subnet *at the sampled
+  block* — recorded on that block's `MetagraphDump` — so that a subnet changing hands does not
+  retroactively rewrite the burn of every earlier epoch. If a block's dump is missing, I want no burn
+  row at all rather than one scored against today's owner.
 - **As an analyst**, I want burn history recoverable for block ranges that predate this feature
   (`backfill_burn_metrics`), because it is derivable from snapshots already stored — and I accept
-  that emission history for those ranges needs an archive node instead.
+  that emission history for those ranges needs an archive node instead. For dumps taken before owners
+  were recorded per block, I accept the current owner as a best-effort stand-in (stamped once by
+  migration `0015`), recoverable exactly by re-running `historical_metagraph_backfill` over the range.
 
 ## 3. Metagraph Explorer User (Django admin)
 

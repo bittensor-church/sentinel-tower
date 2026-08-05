@@ -10,8 +10,11 @@ time axis:
 * ``emission_enabled`` — the chain's ``SubnetEmissionEnabled`` flag.
 
 Burn and superburn are computed from mechanism metrics already stored by the
-metagraph sync, sampled at each subnet's epoch-start block. Emission-enabled is
-read from chain storage once per meta epoch, at the meta epoch's own first block.
+metagraph sync, sampled at each subnet's epoch-start block, and attributed to the
+owner that the block's ``MetagraphDump`` recorded — never to the subnet's current
+owner, which would move historical rows whenever a subnet changes hands.
+Emission-enabled is read from chain storage once per meta epoch, at the meta
+epoch's own first block.
 
 Both paths resolve the shared root-epoch anchor through the ingested ``Block``
 table. A missing anchor is recovered from the current provider, with the archive
@@ -34,6 +37,7 @@ from apps.metagraph.models import (
     Block,
     MechanismMetrics,
     MetaEpoch,
+    MetagraphDump,
     Subnet,
     SubnetBurn,
     SubnetEmission,
@@ -163,9 +167,15 @@ class BurnService:
     ) -> SubnetBurn | None:
         """Cache burn and superburn for a subnet at one of its epoch-start blocks.
 
+        Burn is attributed to the owner recorded on the *dump* of that block, not
+        to the subnet's current owner: the same computation runs live and months
+        later from ``backfill_burn_metrics``, and an ownership or coldkey change
+        in between must not rewrite history.
+
         Returns None — without writing anything — when the block is not the
-        subnet's epoch start, when the subnet is the root subnet, or when no
-        mechanism metrics were stored for that block.
+        subnet's epoch start, when the subnet is the root subnet, when no
+        mechanism metrics were stored for that block, or when no dump recorded
+        who owned the subnet at that block.
         """
         log = logger.bind(block=block_number, netuid=netuid)
 
@@ -179,12 +189,21 @@ class BurnService:
             log.debug("Skipping burn, block precedes the chain's first root epoch")
             return None
 
-        subnet = Subnet.objects.select_related("owner_hotkey").filter(netuid=netuid).first()
+        subnet = Subnet.objects.filter(netuid=netuid).first()
         if subnet is None:
             log.warning("Skipping burn, subnet not stored")
             return None
 
-        owner_coldkey_id = subnet.owner_hotkey.coldkey_id if subnet.owner_hotkey else None
+        # Every path that writes the snapshots this reads writes the dump in the
+        # same transaction, so a missing dump means the block's provenance is gone.
+        # Skip rather than fall back to the subnet's current owner, which would
+        # silently attribute an old epoch's incentive to today's owner.
+        dump = MetagraphDump.objects.select_related("owner_hotkey").filter(netuid=netuid, block_id=block_number).first()
+        if dump is None:
+            log.warning("Skipping burn, no dump recorded the subnet owner at this block")
+            return None
+
+        owner_coldkey_id = dump.owner_hotkey.coldkey_id if dump.owner_hotkey else None
         shares = self._per_mechanism_shares(
             block_number=block_number,
             netuid=netuid,
