@@ -154,6 +154,9 @@ class NeuronSnapshot(models.Model):
         Neuron,
         on_delete=models.CASCADE,
         related_name="snapshots",
+        # Redundant: unique_neuron_block (neuron_id, block_id) already serves
+        # every neuron_id lookup as its leading column. See migration 0016.
+        db_index=False,
     )
     block = models.ForeignKey(
         Block,
@@ -240,6 +243,9 @@ class MechanismMetrics(models.Model):
         NeuronSnapshot,
         on_delete=models.CASCADE,
         related_name="mechanism_metrics",
+        # Redundant: unique_snapshot_mech (snapshot_id, mech_id) already serves
+        # every snapshot_id lookup as its leading column. See migration 0016.
+        db_index=False,
     )
     mech_id = models.PositiveIntegerField()
     incentive = models.FloatField(default=0.0)
@@ -297,6 +303,16 @@ class Weight(models.Model):
         ]
         indexes = [
             models.Index(fields=["block"], name="idx_weight_block"),
+            # Incoming-weight lookups for one miner over a block window
+            # ("who voted on this neuron, and how did it change over time").
+            # Equality columns first, range column last, so all three become
+            # index conditions; the INCLUDE payload makes it covering, so the
+            # scan never touches the heap. See migration 0016.
+            models.Index(
+                fields=["target_neuron", "mech_id", "block"],
+                include=["source_neuron", "weight"],
+                name="idx_weight_target_mech_block",
+            ),
         ]
 
     def __str__(self) -> str:
