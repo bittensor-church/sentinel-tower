@@ -45,6 +45,8 @@ no record of what any client actually ran.
 | `log_lock_waits` | off | **on** | Catches contention (e.g. during MV refresh) |
 | `log_temp_files` | -1 (off) | **10240** kB | Catches `work_mem` overflow spilling to disk |
 | `auto_explain.*` | absent | see below | Logs the *actual plan* for anything over 5 s |
+| `pg_stat_statements.track_utility` | on | **off** | Django savepoints have unique names; 47,953 of 48,014 entries were `SAVEPOINT`/`RELEASE` on 2026-09-02 |
+| `log_line_prefix` | `%m [%p] ` | `%m [%p] %q%u@%d app=%a ` | Slow-log lines carry user, database and application name |
 
 Two values are set via `ALTER SYSTEM` on prod and are deliberately **not**
 repeated in the compose file, so they keep working untouched:
@@ -124,6 +126,15 @@ docker compose logs -f db      # watch for a clean startup
 
 Expect a short outage (seconds to ~a minute). The app, celery and
 `sync-*` containers will throw connection errors and reconnect.
+
+After the first restart with `pg_stat_statements.track_utility=off`, reset the statement statistics once so the accumulated savepoint entries disappear:
+
+```sh
+docker compose exec db psql -U postgres -d project -c 'SELECT pg_stat_statements_reset();'
+```
+
+The `pg_stat_statements health` panel on the DB Query Performance dashboard should then show `savepoint_pct` at 0 and `evictions` staying at 0.
+That panel reads `pg_stat_statements_info`, which exists from extension version 1.9; an extension created at 1.8 on a PG14 binary needs a one-time `ALTER EXTENSION pg_stat_statements UPDATE;` (prod is already at 1.9).
 
 > The deployed `docker-compose.yml` on the server has drifted from
 > `envs/prod/docker-compose.yml` in this repo. Reconcile before deploying, or
