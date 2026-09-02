@@ -102,8 +102,8 @@ services:
       # one is a new entry: 47,953 of 48,014 entries and 221k evictions in 28
       # days (2026-09-02). Off = only plannable statements are tracked;
       # REFRESH/VACUUM/DDL drop out of the view but still reach the slow log.
-      # Reset the view once after
-      # the restart (docs/postgres-tuning.md, Rollout).
+      # Reset the view once after the restart (docs/postgres-tuning.md,
+      # Rollout).
       - -c
       - pg_stat_statements.track_utility=${POSTGRES_PGSS_TRACK_UTILITY:-off}
       # The default prefix ('%m [%p] ') makes slow-log lines unattributable.
