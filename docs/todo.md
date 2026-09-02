@@ -52,3 +52,83 @@ The DB size / index hygiene Grafana dashboard (see [docs/superpowers/specs/](sup
 **Action:** add `prometheuscommunity/postgres-exporter` as a service in `docker-compose.yml`, point Prometheus at it, and extend the dashboard with trended panels (table size over time, row counts over time, growth rate per table). Most of the metrics we want — `pg_table_size_bytes{relname}`, `pg_index_size_bytes{relname}`, `pg_stat_user_tables_n_live_tup` — are exposed by the default config; the rest can be added via a `queries.yaml`.
 
 **Why deferred:** the point-in-time dashboard already answers the immediate "which tables/indexes are biggest" question, and adding an exporter is a separate deploy-touching change (new container, new scrape target, secrets). Bundling them would slow the dashboard ship.
+
+## Sample `pg_stat_activity` into a history table
+
+The DB Query Performance dashboard is point-in-time, and `pg_stat_statements` never records a statement that was cancelled before it finished.
+On 2026-09-02 that blind spot hid the worst prod offenders: about 190 Grafana panel queries a day cancelled at the 60 s data-proxy timeout (see [postgres-query-performance.md](postgres-query-performance.md)).
+
+**Action:** add a `sample_db_activity` management command run as a compose profile service that samples `pg_stat_activity` every few seconds into a table keyed on `(pid, query_start)` with `usename`, `application_name`, `wait_event`, `state` and the statement text, with 7-day retention hooked into `cleanup_expired_data`.
+Then add "slow statements over time" panels to the dashboard.
+
+**Why deferred:** it is app code plus a migration, and the cancelled queries it would have caught are one known external dashboard that can be fixed directly.
+
+## Rewrite the APY-epoch reconcile DELETE to drive from the snapshot id range
+
+`_RECONCILE_TEMPLATE` in `apps/metagraph/services/apy_epoch_ingest.py` runs every 15 minutes at 65 to 80 s, reads 2.1 M buffers and deleted 0 rows in every run inspected on 2026-09-02.
+The planner sequential-scans the whole epoch table and probes snapshots per row, applying the id range only afterwards.
+
+**Action:** drive the delete from the `ns.id` range (a materialized CTE over the range joined to `metagraph_neuron`, then the anti-join), and verify with `EXPLAIN (ANALYZE, BUFFERS)` that the outer node is the primary-key range scan.
+
+**Why deferred:** correctness-sensitive SQL in the ingest path; needs its own tests against the retention and overlap semantics.
+
+## Derive snapshot-health coverage from `metagraph_dump`
+
+`_compute_missing_snapshot_blocks` in `apps/metagraph/tasks.py` runs `SELECT DISTINCT block_id` over about 245 k snapshot rows per subnet, 892 times a day at 2 to 7 s each, almost all of it I/O.
+`metagraph_dump` already records which `(netuid, block_id)` pairs were dumped.
+
+**Action:** compute `covered` from `metagraph_dump` for the block range and confirm on prod for several subnets that the resulting missing-block counts match the current implementation.
+
+**Why deferred:** the two sources can disagree for partially written dumps; equivalence must be checked before switching.
+
+## Bring the external Grafana rank panels into the repo and fix them
+
+The `danger`, `dereg`, `lowest`, `top immune` and hotkey-rank panels exist only on the external Grafana.
+They took 26 to 29 s when they completed and were cancelled about 187 times a day on 2026-09-02.
+
+**Action:** copy the panels into a repo dashboard, resolve the time window to a block-number range before joining (the trick from commit cb55ff1), restrict to epoch blocks via `metagraph_dump`, keep `mech_id = 0` on an index, and re-import into the external Grafana.
+
+**Why deferred:** needs access to the external Grafana to export the current panel JSON.
+
+## Replace per-neuron `update_or_create` with a per-subnet bulk upsert
+
+`MetagraphSyncService` calls `update_or_create` per neuron snapshot: a `SAVEPOINT`, a `SELECT ... FOR UPDATE` that returns nothing 67.6 M times, an `INSERT`, and a `RELEASE`.
+The savepoints polluted `pg_stat_statements` and the lookups cost 12 h over 28 days.
+
+**Action:** collect the subnet's snapshots and mechanism metrics and write them with `bulk_create(update_conflicts=True, unique_fields=..., update_fields=...)`; then measure index page reads on bond and weight inserts (31 h of read wait) and decide between reindexing and ordering rows by index key within a batch.
+
+**Why deferred:** touches the core ingestion path; `track_utility=off` already removes the statistics symptom.
+
+## Set `application_name` per service
+
+Slow-log lines and `pg_stat_activity` cannot tell `sync-metagraph` from `celery-worker` from Grafana; the new `log_line_prefix` prints `app=` but every service leaves it empty.
+
+**Action:** pass `application_name` through the `DATABASE_URL` options (or `DATABASES["default"]["OPTIONS"]`) from a per-service compose environment variable.
+
+**Why deferred:** small but touches every service definition in both compose files.
+
+## Drop the redundant ForeignKey indexes
+
+The dashboard's Redundant indexes panel lists 23 indexes (8.5 GB) that are a leading prefix of another valid index with the same access method, operator classes, collations and ordering.
+The two that matter are `metagraph_mechanism_metrics_snapshot_id_d4dc12fb` (6.5 GB, prefix of `unique_snapshot_mech`) and `metagraph_neuron_snapshot_neuron_id_75a757dc` (2 GB, prefix of `unique_neuron_block`), both created automatically by Django for a ForeignKey and shadowed by a `unique_together`.
+
+**Action:** set `db_index=False` on those fields, drop the indexes `CONCURRENTLY` in a migration following `0007_drop_unused_indexes`, and verify with `EXPLAIN` that leading-column lookups switch to the composite index.
+
+**Why deferred:** each drop is a prod-only, disk-space-sensitive operation that deserves its own review; the volume was 88 % full when measured.
+
+## Reset Django's database connection in the sync loops after a db restart
+
+`sync_extrinsics` and `sync_metagraph` reopen the chain provider on error but never reset Django's dead database connection, so a db restart puts them into a reconnect loop that leaked about 20 MB per iteration on 2026-07-21 until the container was restarted.
+The tuning doc now tells operators to restart them by hand after a manual `up -d db`; `deploy.sh` restarts them anyway.
+
+**Action:** call `django.db.close_old_connections()` (or `connection.close()`) in the `except Exception` paths of both management commands so the next iteration reconnects.
+
+**Why deferred:** touches the two long-running ingestion commands; needs a test that simulates a dropped connection.
+
+## Fix the `readable` glob in the lint session
+
+`noxfile.py` passes the markdown formatter the glob `![.]**/*.md`, which matches no files, so `readable check` has been a no-op in CI while several docs would fail it.
+
+**Action:** decide whether the repo wants one-sentence-per-line markdown; if yes, fix the glob (`**/*.md` plus an exclusion for `.venv`/`.nox`) and reformat the existing docs in one commit; if not, drop the step.
+
+**Why deferred:** reformatting every doc is noisy and unrelated to any feature branch.
