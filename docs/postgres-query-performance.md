@@ -9,7 +9,7 @@ Companion to [postgres-tuning.md](postgres-tuning.md), which documents the serve
 |---|---|---|
 | `pg_stat_statements` (dashboard row *Statement statistics*) | Cumulative cost per statement shape since the last reset: calls, time, I/O wait, temp spill | Statements that never completed (cancelled by a Grafana timeout), entries evicted from the 50,000-slot table, *when* something was slow |
 | `pg_stat_activity` (row *Right now*) | What is running or blocked at this instant, with role and application name | History |
-| `pg_stat_database`, `pg_stat_bgwriter`, catalog (rows *Health* and *Indexes*) | Cache hit ratio, read-wait share, checkpoint pressure, index coverage and redundancy | Per-statement attribution |
+| `pg_stat_database`, `pg_stat_bgwriter`, catalog (rows *Database & statistics health* and *Indexes*) | Cache hit ratio, read-wait share, checkpoint pressure, index coverage and redundancy | Per-statement attribution |
 | Postgres log (journald on the host, shipped to Loki by Alloy) | Every statement over 2 s with its text, every plan over 5 s with buffer counts, cancels, lock waits, temp files | Aggregates |
 
 The dashboard is `grafana/provisioning/dashboards/db-query-performance.json`.
@@ -48,18 +48,19 @@ All on the prod host.
 The database container logs to journald; `--since` accepts phrases like `"24 hours ago"`.
 
 ```sh
-alias pglog='journalctl -o cat CONTAINER_NAME=bittensor_sentinel-db-1 --since "24 hours ago"'
+pglog() { journalctl -o cat CONTAINER_NAME=bittensor_sentinel-db-1 --since "${1:-24 hours ago}"; }
 
-pglog | grep -c 'duration: '                    # statements over log_min_duration_statement (2 s)
-pglog | grep -c 'canceling statement'           # Grafana data-proxy timeouts
+pglog | grep 'duration: ' | grep -vc 'plan:'    # statements over log_min_duration_statement (2 s); plans are logged with their own duration line
+pglog | grep -c 'canceling statement due to user request'   # client-side cancels, mostly Grafana data-proxy timeouts
 pglog | grep -A2 'canceling statement' | grep -A1 'STATEMENT:' | cut -c1-160   # what was cancelled
 pglog | grep -c 'temporary file'                # work_mem spills over log_temp_files
-pglog | grep -c 'still waiting for'             # lock waits over 1 s
-pglog | grep -A60 'plan:' | grep -A58 'Query Text: DELETE FROM metagraph_validator_apy_epoch' | head -60   # one plan
+pglog | grep -c 'still waiting for'             # lock waits over deadlock_timeout (1 s)
+pglog | grep -A60 'plan:' | grep -A57 'DELETE FROM metagraph_validator_apy_epoch' | head -60   # one plan; the query text starts on the line after "Query Text:"
+pglog "7 days ago" | grep -c 'checkpoint complete'   # the function takes a journalctl --since phrase
 ```
 
 Multi-line statements continue on tab-indented journal lines, so use `-A` context rather than single-line greps when you need the text.
-With the `log_line_prefix` from the tuning doc each line also carries `user@db app=<application_name>`; the app services do not set an application name yet (follow-up in [todo.md](todo.md)).
+With the `log_line_prefix` from the tuning doc each session line also carries `user@db app=<application_name>`; the app services do not set an application name yet (follow-up in [todo.md](todo.md)).
 
 In a plan, compare `Buffers: shared hit=` against `read=`.
 Mostly `read=` means the query is I/O bound (cache or RAM); mostly `hit=` with a slow runtime means the plan itself is bad (query or index).
@@ -73,14 +74,14 @@ Measured over 28 days of `pg_stat_statements` (reset 2026-08-05) and the last 24
 | Finding | Evidence |
 |---|---|
 | `pg_stat_statements` was 99.9 % savepoint noise | 47,953 of 48,014 entries were uniquely named `SAVEPOINT`/`RELEASE` from Django's per-row `update_or_create`; 221,520 evictions since the reset despite the 50,000 cap; about 60 real statement shapes survived |
-| The APY-epoch reconcile DELETE burns about an hour a day and deletes nothing | 54 runs/day at 65 to 80 s, 2.1 M buffer hits per run, `actual rows=0`; the planner sequential-scans the whole 443 k-row epoch table and probes snapshots per row, applying the id range afterwards |
+| The APY-epoch reconcile DELETE burns about an hour a day and deletes nothing | 54 runs logged in 24 h at 65 to 80 s each, 2.1 M buffer hits per run, `actual rows=0`; the planner sequential-scans the whole 443 k-row epoch table and probes snapshots per row, applying the id range afterwards |
 | External Grafana rank panels are cancelled at the 60 s data-proxy timeout | 187 of 196 cancels/day were the `danger`, `dereg`, `lowest`, `top immune` and hotkey-rank panels on subnet 33 with a 7-day window; the ones that complete take 26 to 29 s; these panels are not in the repo |
 | Snapshot-health `DISTINCT block_id` query | 892 runs/day at 2 to 7 s, almost all I/O; `metagraph_dump` already holds the covered block set per subnet |
 | Per-neuron `update_or_create` dominates the write path | 67.6 M lookups returning 0 rows cost 12 h; bond and weight inserts spent 31 h waiting on index page reads; foreign-key checks ran about 950 M times |
 | 1.3 TB of temp spill since the reset, zero temp-file log lines in 24 h | Historical, from the retired materialized-view refresh |
 | Cache hit 94.6 %, read wait 44 % of active time | Up from 73 % before the August tuning; reads are still the bottleneck |
 
-Index coverage on the same day:
+Index coverage (foreign keys and sequential scans measured on 2026-09-02; redundant indexes re-derived on 2026-09-03 with the final query):
 
 | Check | Result |
 |---|---|
