@@ -17,6 +17,9 @@ Limitation: Grafana's frontend interpolates dashboard variables (`$netuid`, `${s
 and the global `${__from}` / `${__to}`; the query API does not, so panels that use them
 fail here with a syntax error near `$`. Datasource macros such as `$__timeFilter` work.
 Only dashboards without template variables are fully checkable.
+
+Postgres only: every target must use the provisioned `postgresql` datasource, so a
+Prometheus dashboard reports every target as a datasource error.
 """
 
 import base64

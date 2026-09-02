@@ -25,7 +25,7 @@ Idle-in-transaction sessions are listed on purpose: they hold locks and block va
 
 **Statement statistics.**
 Five top-20 tables from `pg_stat_statements`, grouped so that parameter-count variants of one Django query (`bulk_create` batches, `IN` lists) land on one row.
-Transaction-control and session-setting statements and the Grafana dashboards' own catalog queries are excluded; on prod, `track_utility=off` also hides DDL, `VACUUM` and `REFRESH MATERIALIZED VIEW`, which still reach the slow log.
+Transaction-control and session-setting statements and this dashboard's own catalog queries are excluded (DB Size & Retention's catalog queries can still appear); on prod, `track_utility=off` also hides DDL, `VACUUM` and `REFRESH MATERIALIZED VIEW`, which still reach the slow log.
 `s_per_day` and `calls_per_day` divide by days since the `pg_stat_statements` reset, so numbers stay comparable across resets.
 Two caveats apply to every panel here: entries can be evicted when the table is full, and a statement that was cancelled before it finished is never recorded.
 The second caveat is why the worst prod offenders on 2026-09-02 did not appear here at all; use the log recipes below for those.

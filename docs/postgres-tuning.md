@@ -2,8 +2,8 @@
 
 All settings live in the `db` service `command:` block of
 [`envs/prod/docker-compose.yml`](../envs/prod/docker-compose.yml) as `-c` flags,
-most of them overridable from `.env` (`log_line_prefix` is fixed because its value
-contains spaces and `%`). Command-line flags outrank both `postgresql.conf`
+most of them overridable from `.env` (`log_line_prefix` is fixed because a default with
+embedded spaces would need quoting in the template). Command-line flags outrank both `postgresql.conf`
 and `postgresql.auto.conf`, so this file is the single source of truth for
 anything listed there.
 

@@ -20,7 +20,22 @@
   "fiscalYearStartMonth": 0,
   "graphTooltip": 1,
   "id": null,
-  "links": [],
+  "links": [
+    {
+      "asDropdown": true,
+      "icon": "external link",
+      "includeVars": false,
+      "keepTime": false,
+      "tags": [
+        "database"
+      ],
+      "targetBlank": false,
+      "title": "Database dashboards",
+      "tooltip": "DB Size & Retention and this dashboard",
+      "type": "dashboards",
+      "url": ""
+    }
+  ],
   "panels": [
     {
       "collapsed": false,
@@ -512,7 +527,7 @@
         "type": "postgres",
         "uid": "postgresql"
       },
-      "description": "Where the database spends its time. s_per_day normalises by days since reset. Cumulative since the pg_stat_statements reset shown in the Database & statistics health row; entries can be evicted; statements cancelled before completion (Grafana timeouts) never appear here, see docs/postgres-query-performance.md for the log recipe. Rows group parameter-count variants of one query (IN lists, multi-row VALUES); stddev_ms, where shown, is the max over variants. Transaction-control and session-setting statements and the Grafana dashboards' own catalog queries are excluded; on prod, track_utility=off also hides DDL, VACUUM and REFRESH MATERIALIZED VIEW (those still reach the slow log).",
+      "description": "Where the database spends its time. s_per_day normalises by days since reset. Cumulative since the pg_stat_statements reset shown in the Database & statistics health row; entries can be evicted; statements cancelled before completion (Grafana timeouts) never appear here, see docs/postgres-query-performance.md for the log recipe. Rows group parameter-count variants of one query (IN lists, multi-row VALUES); stddev_ms, where shown, is the max over variants. Transaction-control and session-setting statements and this dashboard's own catalog queries are excluded; on prod, track_utility=off also hides DDL, VACUUM and REFRESH MATERIALIZED VIEW (those still reach the slow log).",
       "fieldConfig": {
         "defaults": {
           "color": {
@@ -639,7 +654,7 @@
         "type": "postgres",
         "uid": "postgresql"
       },
-      "description": "Slowest statements per call, ignoring one-offs. Cumulative since the pg_stat_statements reset shown in the Database & statistics health row; entries can be evicted; statements cancelled before completion (Grafana timeouts) never appear here, see docs/postgres-query-performance.md for the log recipe. Rows group parameter-count variants of one query (IN lists, multi-row VALUES); stddev_ms, where shown, is the max over variants. Transaction-control and session-setting statements and the Grafana dashboards' own catalog queries are excluded; on prod, track_utility=off also hides DDL, VACUUM and REFRESH MATERIALIZED VIEW (those still reach the slow log).",
+      "description": "Slowest statements per call, ignoring one-offs. Cumulative since the pg_stat_statements reset shown in the Database & statistics health row; entries can be evicted; statements cancelled before completion (Grafana timeouts) never appear here, see docs/postgres-query-performance.md for the log recipe. Rows group parameter-count variants of one query (IN lists, multi-row VALUES); stddev_ms, where shown, is the max over variants. Transaction-control and session-setting statements and this dashboard's own catalog queries are excluded; on prod, track_utility=off also hides DDL, VACUUM and REFRESH MATERIALIZED VIEW (those still reach the slow log).",
       "fieldConfig": {
         "defaults": {
           "color": {
@@ -766,7 +781,7 @@
         "type": "postgres",
         "uid": "postgresql"
       },
-      "description": "Time spent waiting for blocks from disk (needs track_io_timing=on; empty on dev). High stddev_ms plus high io_share_pct is the cold-cache signature: the plan is fine, the pages are not in memory. Cumulative since the pg_stat_statements reset shown in the Database & statistics health row; entries can be evicted; statements cancelled before completion (Grafana timeouts) never appear here, see docs/postgres-query-performance.md for the log recipe. Rows group parameter-count variants of one query (IN lists, multi-row VALUES); stddev_ms, where shown, is the max over variants. Transaction-control and session-setting statements and the Grafana dashboards' own catalog queries are excluded; on prod, track_utility=off also hides DDL, VACUUM and REFRESH MATERIALIZED VIEW (those still reach the slow log).",
+      "description": "Time spent waiting for blocks from disk (needs track_io_timing=on; empty on dev). High stddev_ms plus high io_share_pct is the cold-cache signature: the plan is fine, the pages are not in memory. Cumulative since the pg_stat_statements reset shown in the Database & statistics health row; entries can be evicted; statements cancelled before completion (Grafana timeouts) never appear here, see docs/postgres-query-performance.md for the log recipe. Rows group parameter-count variants of one query (IN lists, multi-row VALUES); stddev_ms, where shown, is the max over variants. Transaction-control and session-setting statements and this dashboard's own catalog queries are excluded; on prod, track_utility=off also hides DDL, VACUUM and REFRESH MATERIALIZED VIEW (those still reach the slow log).",
       "fieldConfig": {
         "defaults": {
           "color": {
@@ -893,7 +908,7 @@
         "type": "postgres",
         "uid": "postgresql"
       },
-      "description": "Statements that spilled sorts or hashes to disk: work_mem was too small for them. Cumulative since the pg_stat_statements reset shown in the Database & statistics health row; entries can be evicted; statements cancelled before completion (Grafana timeouts) never appear here, see docs/postgres-query-performance.md for the log recipe. Rows group parameter-count variants of one query (IN lists, multi-row VALUES); stddev_ms, where shown, is the max over variants. Transaction-control and session-setting statements and the Grafana dashboards' own catalog queries are excluded; on prod, track_utility=off also hides DDL, VACUUM and REFRESH MATERIALIZED VIEW (those still reach the slow log).",
+      "description": "Statements that spilled sorts or hashes to disk: work_mem was too small for them. Cumulative since the pg_stat_statements reset shown in the Database & statistics health row; entries can be evicted; statements cancelled before completion (Grafana timeouts) never appear here, see docs/postgres-query-performance.md for the log recipe. Rows group parameter-count variants of one query (IN lists, multi-row VALUES); stddev_ms, where shown, is the max over variants. Transaction-control and session-setting statements and this dashboard's own catalog queries are excluded; on prod, track_utility=off also hides DDL, VACUUM and REFRESH MATERIALIZED VIEW (those still reach the slow log).",
       "fieldConfig": {
         "defaults": {
           "color": {
@@ -1020,7 +1035,7 @@
         "type": "postgres",
         "uid": "postgresql"
       },
-      "description": "Chattiest statements. rows_per_call of 0 on a SELECT means a lookup that finds nothing, usually a get_or_create / update_or_create probe that could be a bulk operation. Cumulative since the pg_stat_statements reset shown in the Database & statistics health row; entries can be evicted; statements cancelled before completion (Grafana timeouts) never appear here, see docs/postgres-query-performance.md for the log recipe. Rows group parameter-count variants of one query (IN lists, multi-row VALUES); stddev_ms, where shown, is the max over variants. Transaction-control and session-setting statements and the Grafana dashboards' own catalog queries are excluded; on prod, track_utility=off also hides DDL, VACUUM and REFRESH MATERIALIZED VIEW (those still reach the slow log).",
+      "description": "Chattiest statements. rows_per_call of 0 on a SELECT means a lookup that finds nothing, usually a get_or_create / update_or_create probe that could be a bulk operation. Cumulative since the pg_stat_statements reset shown in the Database & statistics health row; entries can be evicted; statements cancelled before completion (Grafana timeouts) never appear here, see docs/postgres-query-performance.md for the log recipe. Rows group parameter-count variants of one query (IN lists, multi-row VALUES); stddev_ms, where shown, is the max over variants. Transaction-control and session-setting statements and this dashboard's own catalog queries are excluded; on prod, track_utility=off also hides DDL, VACUUM and REFRESH MATERIALIZED VIEW (those still reach the slow log).",
       "fieldConfig": {
         "defaults": {
           "color": {
