@@ -1141,6 +1141,625 @@
       ],
       "title": "Top 20 by calls",
       "type": "table"
+    },
+    {
+      "collapsed": false,
+      "gridPos": {
+        "h": 1,
+        "w": 24,
+        "x": 0,
+        "y": 70
+      },
+      "id": 300,
+      "panels": [],
+      "title": "Database & statistics health",
+      "type": "row"
+    },
+    {
+      "datasource": {
+        "type": "postgres",
+        "uid": "postgresql"
+      },
+      "description": "Share of block requests served from shared_buffers since the database stats reset. Healthy OLTP is above 99 %; prod was 73 % before the August 2026 tuning and 94.6 % on 2026-09-02.",
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "thresholds"
+          },
+          "mappings": [],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "red",
+                "value": null
+              },
+              {
+                "color": "yellow",
+                "value": 95
+              },
+              {
+                "color": "green",
+                "value": 99
+              }
+            ]
+          },
+          "unit": "percent"
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 4,
+        "w": 6,
+        "x": 0,
+        "y": 71
+      },
+      "id": 9,
+      "options": {
+        "colorMode": "value",
+        "graphMode": "none",
+        "justifyMode": "auto",
+        "orientation": "auto",
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "/^cache_hit_pct$/",
+          "values": false
+        },
+        "textMode": "auto"
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "postgres",
+            "uid": "postgresql"
+          },
+          "rawQuery": true,
+          "rawSql": "SELECT round(100.0 * blks_hit / NULLIF(blks_hit + blks_read, 0), 2) AS cache_hit_pct, round((100.0 * blk_read_time / NULLIF(active_time, 0))::numeric, 1) AS read_wait_pct, temp_files, temp_bytes, stats_reset FROM pg_stat_database WHERE datname = current_database()",
+          "refId": "A",
+          "format": "table"
+        }
+      ],
+      "title": "Cache hit ratio",
+      "type": "stat"
+    },
+    {
+      "datasource": {
+        "type": "postgres",
+        "uid": "postgresql"
+      },
+      "description": "blk_read_time as a share of active_time (PG14). Needs track_io_timing=on, reads 0 on dev. 44 % on prod on 2026-09-02: nearly half of all statement time was waiting for disk reads.",
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "thresholds"
+          },
+          "mappings": [],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": null
+              },
+              {
+                "color": "yellow",
+                "value": 20
+              },
+              {
+                "color": "red",
+                "value": 40
+              }
+            ]
+          },
+          "unit": "percent"
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 4,
+        "w": 6,
+        "x": 6,
+        "y": 71
+      },
+      "id": 10,
+      "options": {
+        "colorMode": "value",
+        "graphMode": "none",
+        "justifyMode": "auto",
+        "orientation": "auto",
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "/^read_wait_pct$/",
+          "values": false
+        },
+        "textMode": "auto"
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "postgres",
+            "uid": "postgresql"
+          },
+          "rawQuery": true,
+          "rawSql": "SELECT round(100.0 * blks_hit / NULLIF(blks_hit + blks_read, 0), 2) AS cache_hit_pct, round((100.0 * blk_read_time / NULLIF(active_time, 0))::numeric, 1) AS read_wait_pct, temp_files, temp_bytes, stats_reset FROM pg_stat_database WHERE datname = current_database()",
+          "refId": "A",
+          "format": "table"
+        }
+      ],
+      "title": "Read wait, share of active time",
+      "type": "stat"
+    },
+    {
+      "datasource": {
+        "type": "postgres",
+        "uid": "postgresql"
+      },
+      "description": "Files and bytes written to disk for sorts and hashes that exceeded work_mem. Cumulative since the database stats reset; the Top 20 by temp written panel attributes it to statements when they survived eviction.",
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "thresholds"
+          },
+          "mappings": [],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": null
+              }
+            ]
+          }
+        },
+        "overrides": [
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "temp_bytes"
+            },
+            "properties": [
+              {
+                "id": "unit",
+                "value": "bytes"
+              }
+            ]
+          }
+        ]
+      },
+      "gridPos": {
+        "h": 4,
+        "w": 6,
+        "x": 12,
+        "y": 71
+      },
+      "id": 11,
+      "options": {
+        "colorMode": "value",
+        "graphMode": "none",
+        "justifyMode": "auto",
+        "orientation": "auto",
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "/^temp_(files|bytes)$/",
+          "values": false
+        },
+        "textMode": "value_and_name"
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "postgres",
+            "uid": "postgresql"
+          },
+          "rawQuery": true,
+          "rawSql": "SELECT round(100.0 * blks_hit / NULLIF(blks_hit + blks_read, 0), 2) AS cache_hit_pct, round((100.0 * blk_read_time / NULLIF(active_time, 0))::numeric, 1) AS read_wait_pct, temp_files, temp_bytes, stats_reset FROM pg_stat_database WHERE datname = current_database()",
+          "refId": "A",
+          "format": "table"
+        }
+      ],
+      "title": "Temp spill since reset",
+      "type": "stat"
+    },
+    {
+      "datasource": {
+        "type": "postgres",
+        "uid": "postgresql"
+      },
+      "description": "When pg_stat_database counters were last reset (container recreation resets them too). Every cumulative panel on this dashboard counts from here or from the pg_stat_statements reset in the panel to the right.",
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "thresholds"
+          },
+          "mappings": [],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": null
+              }
+            ]
+          },
+          "unit": "dateTimeAsIso"
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 4,
+        "w": 6,
+        "x": 18,
+        "y": 71
+      },
+      "id": 12,
+      "options": {
+        "colorMode": "value",
+        "graphMode": "none",
+        "justifyMode": "auto",
+        "orientation": "auto",
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "/^stats_reset$/",
+          "values": false
+        },
+        "textMode": "auto"
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "postgres",
+            "uid": "postgresql"
+          },
+          "rawQuery": true,
+          "rawSql": "SELECT round(100.0 * blks_hit / NULLIF(blks_hit + blks_read, 0), 2) AS cache_hit_pct, round((100.0 * blk_read_time / NULLIF(active_time, 0))::numeric, 1) AS read_wait_pct, temp_files, temp_bytes, stats_reset FROM pg_stat_database WHERE datname = current_database()",
+          "refId": "A",
+          "format": "table"
+        }
+      ],
+      "title": "Stats reset (database)",
+      "type": "stat"
+    },
+    {
+      "datasource": {
+        "type": "postgres",
+        "uid": "postgresql"
+      },
+      "description": "From pg_stat_bgwriter. forced_pct: checkpoints triggered by WAL volume rather than the timer (max_wal_size too small). backend_to_ckpt_ratio: buffers written by backends themselves versus by the checkpointer; above 1 means backends stall evicting dirty pages mid-query (prod was 13x before the August 2026 tuning). buffers_backend_fsync should stay 0.",
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "thresholds"
+          },
+          "mappings": [],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": null
+              }
+            ]
+          }
+        },
+        "overrides": [
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "forced_pct"
+            },
+            "properties": [
+              {
+                "id": "unit",
+                "value": "percent"
+              },
+              {
+                "id": "thresholds",
+                "value": {
+                  "mode": "absolute",
+                  "steps": [
+                    {
+                      "color": "green",
+                      "value": null
+                    },
+                    {
+                      "color": "yellow",
+                      "value": 10
+                    },
+                    {
+                      "color": "red",
+                      "value": 30
+                    }
+                  ]
+                }
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "backend_to_ckpt_ratio"
+            },
+            "properties": [
+              {
+                "id": "thresholds",
+                "value": {
+                  "mode": "absolute",
+                  "steps": [
+                    {
+                      "color": "green",
+                      "value": null
+                    },
+                    {
+                      "color": "yellow",
+                      "value": 1
+                    },
+                    {
+                      "color": "red",
+                      "value": 3
+                    }
+                  ]
+                }
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "buffers_backend_fsync"
+            },
+            "properties": [
+              {
+                "id": "thresholds",
+                "value": {
+                  "mode": "absolute",
+                  "steps": [
+                    {
+                      "color": "green",
+                      "value": null
+                    },
+                    {
+                      "color": "red",
+                      "value": 1
+                    }
+                  ]
+                }
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "write_minutes"
+            },
+            "properties": [
+              {
+                "id": "unit",
+                "value": "m"
+              }
+            ]
+          }
+        ]
+      },
+      "gridPos": {
+        "h": 5,
+        "w": 12,
+        "x": 0,
+        "y": 75
+      },
+      "id": 13,
+      "options": {
+        "colorMode": "value",
+        "graphMode": "none",
+        "justifyMode": "auto",
+        "orientation": "auto",
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "",
+          "values": false
+        },
+        "textMode": "value_and_name"
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "postgres",
+            "uid": "postgresql"
+          },
+          "rawQuery": true,
+          "rawSql": "SELECT checkpoints_timed, checkpoints_req, round(100.0 * checkpoints_req / NULLIF(checkpoints_timed + checkpoints_req, 0), 1) AS forced_pct, round(buffers_backend::numeric / NULLIF(buffers_checkpoint, 0), 2) AS backend_to_ckpt_ratio, buffers_backend_fsync, round(checkpoint_write_time / 1000 / 60) AS write_minutes FROM pg_stat_bgwriter",
+          "refId": "A",
+          "format": "table"
+        }
+      ],
+      "title": "Checkpoints & buffers",
+      "type": "stat"
+    },
+    {
+      "datasource": {
+        "type": "postgres",
+        "uid": "postgresql"
+      },
+      "description": "Can the Statement statistics row be trusted? entries near max_entries plus growing evictions means rarely run statements are being dropped before anyone sees them. savepoint_pct above 0 means track_utility is still on and Django's uniquely named savepoints are flooding the table (prod: 99.9 % of entries on 2026-09-02). Reset with SELECT pg_stat_statements_reset() after changing the flag.",
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "thresholds"
+          },
+          "mappings": [],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": null
+              }
+            ]
+          }
+        },
+        "overrides": [
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "entries"
+            },
+            "properties": [
+              {
+                "id": "thresholds",
+                "value": {
+                  "mode": "absolute",
+                  "steps": [
+                    {
+                      "color": "green",
+                      "value": null
+                    },
+                    {
+                      "color": "yellow",
+                      "value": 40000
+                    }
+                  ]
+                }
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "evictions"
+            },
+            "properties": [
+              {
+                "id": "thresholds",
+                "value": {
+                  "mode": "absolute",
+                  "steps": [
+                    {
+                      "color": "green",
+                      "value": null
+                    },
+                    {
+                      "color": "yellow",
+                      "value": 1
+                    }
+                  ]
+                }
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "savepoint_pct"
+            },
+            "properties": [
+              {
+                "id": "unit",
+                "value": "percent"
+              },
+              {
+                "id": "thresholds",
+                "value": {
+                  "mode": "absolute",
+                  "steps": [
+                    {
+                      "color": "green",
+                      "value": null
+                    },
+                    {
+                      "color": "yellow",
+                      "value": 1
+                    }
+                  ]
+                }
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "track_utility"
+            },
+            "properties": [
+              {
+                "id": "mappings",
+                "value": [
+                  {
+                    "type": "value",
+                    "options": {
+                      "off": {
+                        "color": "green",
+                        "index": 0,
+                        "text": "off"
+                      },
+                      "on": {
+                        "color": "red",
+                        "index": 1,
+                        "text": "on"
+                      }
+                    }
+                  }
+                ]
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "days_since_reset"
+            },
+            "properties": [
+              {
+                "id": "unit",
+                "value": "d"
+              }
+            ]
+          }
+        ]
+      },
+      "gridPos": {
+        "h": 5,
+        "w": 12,
+        "x": 12,
+        "y": 75
+      },
+      "id": 14,
+      "options": {
+        "colorMode": "value",
+        "graphMode": "none",
+        "justifyMode": "auto",
+        "orientation": "auto",
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "/.*/",
+          "values": false
+        },
+        "textMode": "value_and_name"
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "postgres",
+            "uid": "postgresql"
+          },
+          "rawQuery": true,
+          "rawSql": "SELECT (SELECT count(*) FROM pg_stat_statements) AS entries, current_setting('pg_stat_statements.max')::int AS max_entries, i.dealloc AS evictions, (SELECT round(100.0 * count(*) FILTER (WHERE query ~* '^\\s*(SAVEPOINT|RELEASE|ROLLBACK)') / NULLIF(count(*), 0), 1) FROM pg_stat_statements) AS savepoint_pct, current_setting('pg_stat_statements.track_utility') AS track_utility, round(EXTRACT(EPOCH FROM (now() - i.stats_reset)) / 86400, 1) AS days_since_reset FROM pg_stat_statements_info i",
+          "refId": "A",
+          "format": "table"
+        }
+      ],
+      "title": "pg_stat_statements health",
+      "type": "stat"
     }
   ],
   "refresh": "1m",
