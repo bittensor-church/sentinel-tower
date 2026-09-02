@@ -40,7 +40,7 @@
         "type": "postgres",
         "uid": "postgresql"
       },
-      "description": "Live backend counts from pg_stat_activity. idle_in_txn holds locks and blocks vacuum; waiting_on_lock is contention right now; client_backends_pct is client backends over max_connections.",
+      "description": "Live client-backend counts from pg_stat_activity (autovacuum, parallel and WAL workers excluded). idle_in_txn holds locks and blocks vacuum; waiting_on_lock is contention right now; client_backends_pct is client backends over max_connections.",
       "fieldConfig": {
         "defaults": {
           "color": {
@@ -176,7 +176,7 @@
             "uid": "postgresql"
           },
           "rawQuery": true,
-          "rawSql": "SELECT count(*) FILTER (WHERE state = 'active') AS active, count(*) FILTER (WHERE state = 'idle') AS idle, count(*) FILTER (WHERE state LIKE 'idle in transaction%') AS idle_in_txn, count(*) FILTER (WHERE wait_event_type = 'Lock') AS waiting_on_lock, round(100.0 * count(*) FILTER (WHERE backend_type = 'client backend') / current_setting('max_connections')::int, 1) AS client_backends_pct, current_setting('max_connections')::int AS max_connections FROM pg_stat_activity",
+          "rawSql": "SELECT count(*) FILTER (WHERE state = 'active') AS active, count(*) FILTER (WHERE state = 'idle') AS idle, count(*) FILTER (WHERE state LIKE 'idle in transaction%') AS idle_in_txn, count(*) FILTER (WHERE wait_event_type = 'Lock') AS waiting_on_lock, round(100.0 * count(*) / current_setting('max_connections')::int, 1) AS client_backends_pct, current_setting('max_connections')::int AS max_connections FROM pg_stat_activity WHERE backend_type = 'client backend'",
           "refId": "A",
           "format": "table"
         }
@@ -343,7 +343,7 @@
             "uid": "postgresql"
           },
           "rawQuery": true,
-          "rawSql": "SELECT pid, usename AS role, COALESCE(NULLIF(application_name, ''), '-') AS app, COALESCE(client_addr::text, 'local') AS client, state, COALESCE(wait_event_type || ':' || wait_event, '-') AS wait, round(EXTRACT(EPOCH FROM (now() - query_start))::numeric, 1) AS age_s, left(regexp_replace(query, '\\s+', ' ', 'g'), 120) AS query FROM pg_stat_activity WHERE backend_type = 'client backend' AND state <> 'idle' AND pid <> pg_backend_pid() AND now() - query_start > interval '2 seconds' ORDER BY query_start",
+          "rawSql": "SELECT pid, usename AS role, COALESCE(NULLIF(application_name, ''), '-') AS app, COALESCE(host(client_addr), 'local') AS client, state, COALESCE(wait_event_type || ':' || wait_event, '-') AS wait, round(EXTRACT(EPOCH FROM (now() - query_start))::numeric, 1) AS age_s, left(regexp_replace(query, '\\s+', ' ', 'g'), 120) AS query FROM pg_stat_activity WHERE backend_type = 'client backend' AND state <> 'idle' AND pid <> pg_backend_pid() AND now() - query_start > interval '2 seconds' ORDER BY query_start",
           "refId": "A",
           "format": "table"
         }
