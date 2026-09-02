@@ -1488,7 +1488,7 @@
         "type": "postgres",
         "uid": "postgresql"
       },
-      "description": "From pg_stat_bgwriter (PG14 to 16 columns; PG17 moves them to pg_stat_checkpointer). forced_pct: checkpoints requested rather than timed. WAL volume beyond max_wal_size is the usual cause, but restarts, explicit CHECKPOINT and CREATE DATABASE count too, so a yellow right after a deploy is expected. backend_to_ckpt_ratio: buffers written by backends themselves versus by the checkpointer; above 1 means backends are writing dirty pages, either evictions mid-query or bulk loads through ring buffers (prod was 13x before the August 2026 tuning). buffers_backend_fsync should stay 0.",
+      "description": "From pg_stat_bgwriter (PG14 to 16 columns; PG17 moves them to pg_stat_checkpointer and pg_stat_io). forced_pct: checkpoints requested rather than timed. WAL volume beyond max_wal_size is the usual cause, but restarts, explicit CHECKPOINT and CREATE DATABASE count too, so a yellow right after a deploy is expected. backend_to_ckpt_ratio: buffers written by backends themselves versus by the checkpointer; above 1 means backends are writing dirty pages, either evictions mid-query or bulk loads through ring buffers (prod was 13x before the August 2026 tuning). buffers_backend_fsync should stay 0.",
       "fieldConfig": {
         "defaults": {
           "color": {
