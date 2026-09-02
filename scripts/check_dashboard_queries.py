@@ -1,4 +1,3 @@
-#!/usr/bin/env python3
 """Run every panel query of a provisioned Grafana dashboard through Grafana's query API.
 
 Usage:
@@ -9,8 +8,15 @@ Environment:
     GRAFANA_USER      default admin
     GRAFANA_PASSWORD  default admin
 
-Exits 1 when the file is invalid (duplicate panel ids, wrong datasource, empty SQL)
-or when any query returns an error from the datasource.
+Exits 1 when the file is invalid (duplicate panel ids, wrong datasource, empty SQL),
+when any query returns an error from the datasource, or when Grafana itself cannot be
+reached or refuses the request. The first such failure aborts the run, so a wrong
+password never trips Grafana's login lockout.
+
+Limitation: Grafana's frontend interpolates dashboard variables (`$netuid`, `${subnet}`)
+and the global `${__from}` / `${__to}`; the query API does not, so panels that use them
+fail here with a syntax error near `$`. Datasource macros such as `$__timeFilter` work.
+Only dashboards without template variables are fully checkable.
 """
 
 import base64
@@ -38,7 +44,7 @@ def validate_structure(dashboard):
             errors.append(f"duplicate panel id {pid}")
         seen.add(pid)
         for target in panel.get("targets", []):
-            uid = target.get("datasource", {}).get("uid")
+            uid = (target.get("datasource") or {}).get("uid")
             if uid != EXPECTED_DS_UID:
                 errors.append(f"panel {pid} ({panel.get('title')}): datasource uid {uid!r}")
             if not target.get("rawSql"):
@@ -70,16 +76,26 @@ def run_query(base_url, auth_header, sql):
         with urllib.request.urlopen(request, timeout=60) as response:  # noqa: S310 - local Grafana over http by design
             payload = json.load(response)
     except urllib.error.HTTPError as exc:
-        payload = json.load(exc)
+        text = exc.read().decode(errors="replace")
+        try:
+            payload = json.loads(text)
+        except json.JSONDecodeError:
+            raise SystemExit(f"ERROR HTTP {exc.code} from {exc.url}: {text[:200]}") from exc
+        if "results" not in payload:
+            raise SystemExit(f"ERROR HTTP {exc.code}: {payload.get('message', text[:200])}") from exc
+    except urllib.error.URLError as exc:
+        raise SystemExit(f"ERROR cannot reach {base_url}: {exc.reason}") from exc
     return payload.get("results", {}).get("A", {}).get("error")
 
 
 def main(argv):
     if len(argv) != 2:
-        print(__doc__)
+        print(__doc__, file=sys.stderr)
         return 2
     with open(argv[1]) as fh:
         dashboard = json.load(fh)
+    if "panels" not in dashboard:
+        raise SystemExit("ERROR not a dashboard file: no top-level 'panels' key (API exports wrap it in 'dashboard')")
     errors = validate_structure(dashboard)
     base_url = os.environ.get("GRAFANA_URL", "http://localhost:3001").rstrip("/")
     credentials = f"{os.environ.get('GRAFANA_USER', 'admin')}:{os.environ.get('GRAFANA_PASSWORD', 'admin')}"
@@ -87,6 +103,8 @@ def main(argv):
     checked = 0
     for panel in iter_panels(dashboard["panels"]):
         for target in panel.get("targets", []):
+            if not target.get("rawSql"):
+                continue
             checked += 1
             error = run_query(base_url, auth_header, target["rawSql"])
             if error:
