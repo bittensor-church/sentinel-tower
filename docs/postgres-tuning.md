@@ -173,33 +173,8 @@ docker compose run --rm db postgres -c shared_preload_libraries=pg_stat_statemen
 
 ## What to look at afterwards
 
-Once this has been running through a few dashboard views:
-
-```sql
--- Slowest statements, now with I/O time attributed
-SELECT round(mean_exec_time::numeric,1) AS mean_ms,
-       round(max_exec_time::numeric,1)  AS max_ms,
-       round(stddev_exec_time::numeric,1) AS stddev_ms,
-       calls,
-       round(blk_read_time::numeric)    AS io_read_ms,
-       left(query, 80) AS q
-FROM pg_stat_statements
-WHERE calls > 5
-ORDER BY mean_exec_time DESC LIMIT 20;
-```
-
-A high `stddev_ms` relative to `mean_ms`, plus large `io_read_ms`, is the
-signature of a cold-cache problem rather than a bad query.
-
-For plans, grep the container log for `auto_explain`:
-
-```sh
-docker compose logs db --since 24h | grep -A40 'duration:.*plan:'
-```
-
-Then compare `Buffers: shared hit=` against `read=`. Mostly `read=` means the
-query is I/O bound (cache/RAM problem); mostly `hit=` with a slow runtime means
-the plan itself is bad (query/index problem).
+Open the **DB Query Performance** Grafana dashboard (`grafana/provisioning/dashboards/db-query-performance.json`).
+How to read it, the log recipes for cancelled statements and plans, and the 2026-09-02 findings are in [postgres-query-performance.md](postgres-query-performance.md).
 
 ## Known constraints
 
