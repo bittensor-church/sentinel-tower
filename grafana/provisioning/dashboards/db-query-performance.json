@@ -493,6 +493,474 @@
       ],
       "title": "Blocked sessions",
       "type": "table"
+    },
+    {
+      "collapsed": false,
+      "gridPos": {
+        "h": 1,
+        "w": 24,
+        "x": 0,
+        "y": 19
+      },
+      "id": 200,
+      "panels": [],
+      "title": "Statement statistics (cumulative since reset)",
+      "type": "row"
+    },
+    {
+      "datasource": {
+        "type": "postgres",
+        "uid": "postgresql"
+      },
+      "description": "Where the database spends its time. s_per_day normalises by days since reset. Cumulative since the pg_stat_statements reset shown in the Health row; entries can be evicted; statements cancelled before completion (Grafana timeouts) never appear here, see docs/postgres-query-performance.md for the log recipe. Rows group parameter-count variants of one query; stddev_ms is the max over variants; utility statements and this dashboard's own queries are excluded.",
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "thresholds"
+          },
+          "custom": {
+            "align": "auto",
+            "cellOptions": {
+              "type": "auto"
+            },
+            "inspect": false
+          },
+          "mappings": [],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": null
+              }
+            ]
+          }
+        },
+        "overrides": [
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "query"
+            },
+            "properties": [
+              {
+                "id": "custom.width",
+                "value": 560
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "role"
+            },
+            "properties": [
+              {
+                "id": "custom.width",
+                "value": 100
+              }
+            ]
+          }
+        ]
+      },
+      "gridPos": {
+        "h": 10,
+        "w": 24,
+        "x": 0,
+        "y": 20
+      },
+      "id": 4,
+      "options": {
+        "cellHeight": "sm",
+        "footer": {
+          "countRows": false,
+          "fields": "",
+          "reducer": [
+            "sum"
+          ],
+          "show": false
+        },
+        "showHeader": true,
+        "sortBy": []
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "postgres",
+            "uid": "postgresql"
+          },
+          "rawQuery": true,
+          "rawSql": "WITH info AS ( SELECT GREATEST(EXTRACT(EPOCH FROM (now() - stats_reset)) / 86400, 1.0 / 24) AS days FROM pg_stat_statements_info ), s AS ( SELECT regexp_replace(regexp_replace(regexp_replace(query, '\\$\\d+', '?', 'g'), 'IN \\((\\?, )*\\?\\)', 'IN (...)', 'g'), ' VALUES \\(.*', ' VALUES (...)') AS family, userid, calls, total_exec_time, max_exec_time, stddev_exec_time, rows, shared_blks_hit, shared_blks_read, blk_read_time, temp_blks_read, temp_blks_written FROM pg_stat_statements WHERE dbid = (SELECT oid FROM pg_database WHERE datname = current_database()) AND query !~* '^\\s*(SAVEPOINT|RELEASE|ROLLBACK|BEGIN|COMMIT|SET |SHOW |DEALLOCATE|DISCARD)' AND query !~ 'pg_stat_|pg_statio_|pg_blocking_pids|pg_constraint' ) SELECT count(*) AS variants, sum(calls) AS calls, round(sum(total_exec_time)::numeric / 1000, 1) AS total_s, round((sum(total_exec_time) / 1000 / (SELECT days FROM info))::numeric, 1) AS s_per_day, round((sum(total_exec_time) / NULLIF(sum(calls), 0))::numeric, 2) AS mean_ms, round(max(max_exec_time)::numeric, 1) AS max_ms, round(max(stddev_exec_time)::numeric, 1) AS stddev_ms, round(sum(rows)::numeric / NULLIF(sum(calls), 0), 1) AS rows_per_call, round(100.0 * sum(shared_blks_hit) / NULLIF(sum(shared_blks_hit) + sum(shared_blks_read), 0), 1) AS hit_pct, round(sum(blk_read_time)::numeric / 1000, 1) AS io_read_s, pg_size_pretty(sum(temp_blks_written) * current_setting('block_size')::bigint) AS temp_written, string_agg(DISTINCT userid::regrole::text, ',') AS role, left(regexp_replace(family, '\\s+', ' ', 'g'), 120) AS query FROM s GROUP BY family ORDER BY sum(total_exec_time) DESC LIMIT 20",
+          "refId": "A",
+          "format": "table"
+        }
+      ],
+      "title": "Top 20 by total time",
+      "type": "table"
+    },
+    {
+      "datasource": {
+        "type": "postgres",
+        "uid": "postgresql"
+      },
+      "description": "Slowest statements per call, ignoring one-offs. Cumulative since the pg_stat_statements reset shown in the Health row; entries can be evicted; statements cancelled before completion (Grafana timeouts) never appear here, see docs/postgres-query-performance.md for the log recipe. Rows group parameter-count variants of one query; stddev_ms is the max over variants; utility statements and this dashboard's own queries are excluded.",
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "thresholds"
+          },
+          "custom": {
+            "align": "auto",
+            "cellOptions": {
+              "type": "auto"
+            },
+            "inspect": false
+          },
+          "mappings": [],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": null
+              }
+            ]
+          }
+        },
+        "overrides": [
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "query"
+            },
+            "properties": [
+              {
+                "id": "custom.width",
+                "value": 560
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "role"
+            },
+            "properties": [
+              {
+                "id": "custom.width",
+                "value": 100
+              }
+            ]
+          }
+        ]
+      },
+      "gridPos": {
+        "h": 10,
+        "w": 24,
+        "x": 0,
+        "y": 30
+      },
+      "id": 5,
+      "options": {
+        "cellHeight": "sm",
+        "footer": {
+          "countRows": false,
+          "fields": "",
+          "reducer": [
+            "sum"
+          ],
+          "show": false
+        },
+        "showHeader": true,
+        "sortBy": []
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "postgres",
+            "uid": "postgresql"
+          },
+          "rawQuery": true,
+          "rawSql": "WITH info AS ( SELECT GREATEST(EXTRACT(EPOCH FROM (now() - stats_reset)) / 86400, 1.0 / 24) AS days FROM pg_stat_statements_info ), s AS ( SELECT regexp_replace(regexp_replace(regexp_replace(query, '\\$\\d+', '?', 'g'), 'IN \\((\\?, )*\\?\\)', 'IN (...)', 'g'), ' VALUES \\(.*', ' VALUES (...)') AS family, userid, calls, total_exec_time, max_exec_time, stddev_exec_time, rows, shared_blks_hit, shared_blks_read, blk_read_time, temp_blks_read, temp_blks_written FROM pg_stat_statements WHERE dbid = (SELECT oid FROM pg_database WHERE datname = current_database()) AND query !~* '^\\s*(SAVEPOINT|RELEASE|ROLLBACK|BEGIN|COMMIT|SET |SHOW |DEALLOCATE|DISCARD)' AND query !~ 'pg_stat_|pg_statio_|pg_blocking_pids|pg_constraint' ) SELECT sum(calls) AS calls, round((sum(total_exec_time) / NULLIF(sum(calls), 0))::numeric, 2) AS mean_ms, round(max(max_exec_time)::numeric, 1) AS max_ms, round(max(stddev_exec_time)::numeric, 1) AS stddev_ms, round(100.0 * sum(shared_blks_hit) / NULLIF(sum(shared_blks_hit) + sum(shared_blks_read), 0), 1) AS hit_pct, round(sum(blk_read_time)::numeric / 1000, 1) AS io_read_s, round(sum(total_exec_time)::numeric / 1000, 1) AS total_s, string_agg(DISTINCT userid::regrole::text, ',') AS role, left(regexp_replace(family, '\\s+', ' ', 'g'), 120) AS query FROM s GROUP BY family HAVING sum(calls) >= 5 ORDER BY sum(total_exec_time) / NULLIF(sum(calls), 0) DESC LIMIT 20",
+          "refId": "A",
+          "format": "table"
+        }
+      ],
+      "title": "Top 20 by mean time (calls >= 5)",
+      "type": "table"
+    },
+    {
+      "datasource": {
+        "type": "postgres",
+        "uid": "postgresql"
+      },
+      "description": "Time spent waiting for blocks from disk (needs track_io_timing=on; reads 0 on dev). High stddev_ms plus high io_share_pct is the cold-cache signature: the plan is fine, the pages are not in memory. Cumulative since the pg_stat_statements reset shown in the Health row; entries can be evicted; statements cancelled before completion (Grafana timeouts) never appear here, see docs/postgres-query-performance.md for the log recipe. Rows group parameter-count variants of one query; stddev_ms is the max over variants; utility statements and this dashboard's own queries are excluded.",
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "thresholds"
+          },
+          "custom": {
+            "align": "auto",
+            "cellOptions": {
+              "type": "auto"
+            },
+            "inspect": false
+          },
+          "mappings": [],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": null
+              }
+            ]
+          }
+        },
+        "overrides": [
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "query"
+            },
+            "properties": [
+              {
+                "id": "custom.width",
+                "value": 560
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "role"
+            },
+            "properties": [
+              {
+                "id": "custom.width",
+                "value": 100
+              }
+            ]
+          }
+        ]
+      },
+      "gridPos": {
+        "h": 10,
+        "w": 24,
+        "x": 0,
+        "y": 40
+      },
+      "id": 6,
+      "options": {
+        "cellHeight": "sm",
+        "footer": {
+          "countRows": false,
+          "fields": "",
+          "reducer": [
+            "sum"
+          ],
+          "show": false
+        },
+        "showHeader": true,
+        "sortBy": []
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "postgres",
+            "uid": "postgresql"
+          },
+          "rawQuery": true,
+          "rawSql": "WITH info AS ( SELECT GREATEST(EXTRACT(EPOCH FROM (now() - stats_reset)) / 86400, 1.0 / 24) AS days FROM pg_stat_statements_info ), s AS ( SELECT regexp_replace(regexp_replace(regexp_replace(query, '\\$\\d+', '?', 'g'), 'IN \\((\\?, )*\\?\\)', 'IN (...)', 'g'), ' VALUES \\(.*', ' VALUES (...)') AS family, userid, calls, total_exec_time, max_exec_time, stddev_exec_time, rows, shared_blks_hit, shared_blks_read, blk_read_time, temp_blks_read, temp_blks_written FROM pg_stat_statements WHERE dbid = (SELECT oid FROM pg_database WHERE datname = current_database()) AND query !~* '^\\s*(SAVEPOINT|RELEASE|ROLLBACK|BEGIN|COMMIT|SET |SHOW |DEALLOCATE|DISCARD)' AND query !~ 'pg_stat_|pg_statio_|pg_blocking_pids|pg_constraint' ) SELECT sum(calls) AS calls, round(sum(blk_read_time)::numeric / 1000, 1) AS io_read_s, round((100.0 * sum(blk_read_time) / NULLIF(sum(total_exec_time), 0))::numeric, 1) AS io_share_pct, round(100.0 * sum(shared_blks_hit) / NULLIF(sum(shared_blks_hit) + sum(shared_blks_read), 0), 1) AS hit_pct, round((sum(total_exec_time) / NULLIF(sum(calls), 0))::numeric, 2) AS mean_ms, round(max(stddev_exec_time)::numeric, 1) AS stddev_ms, string_agg(DISTINCT userid::regrole::text, ',') AS role, left(regexp_replace(family, '\\s+', ' ', 'g'), 120) AS query FROM s GROUP BY family HAVING sum(blk_read_time) > 0 ORDER BY sum(blk_read_time) DESC LIMIT 20",
+          "refId": "A",
+          "format": "table"
+        }
+      ],
+      "title": "Top 20 by I/O read time",
+      "type": "table"
+    },
+    {
+      "datasource": {
+        "type": "postgres",
+        "uid": "postgresql"
+      },
+      "description": "Statements that spilled sorts or hashes to disk: work_mem was too small for them. Cumulative since the pg_stat_statements reset shown in the Health row; entries can be evicted; statements cancelled before completion (Grafana timeouts) never appear here, see docs/postgres-query-performance.md for the log recipe. Rows group parameter-count variants of one query; stddev_ms is the max over variants; utility statements and this dashboard's own queries are excluded.",
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "thresholds"
+          },
+          "custom": {
+            "align": "auto",
+            "cellOptions": {
+              "type": "auto"
+            },
+            "inspect": false
+          },
+          "mappings": [],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": null
+              }
+            ]
+          }
+        },
+        "overrides": [
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "query"
+            },
+            "properties": [
+              {
+                "id": "custom.width",
+                "value": 560
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "role"
+            },
+            "properties": [
+              {
+                "id": "custom.width",
+                "value": 100
+              }
+            ]
+          }
+        ]
+      },
+      "gridPos": {
+        "h": 10,
+        "w": 24,
+        "x": 0,
+        "y": 50
+      },
+      "id": 7,
+      "options": {
+        "cellHeight": "sm",
+        "footer": {
+          "countRows": false,
+          "fields": "",
+          "reducer": [
+            "sum"
+          ],
+          "show": false
+        },
+        "showHeader": true,
+        "sortBy": []
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "postgres",
+            "uid": "postgresql"
+          },
+          "rawQuery": true,
+          "rawSql": "WITH info AS ( SELECT GREATEST(EXTRACT(EPOCH FROM (now() - stats_reset)) / 86400, 1.0 / 24) AS days FROM pg_stat_statements_info ), s AS ( SELECT regexp_replace(regexp_replace(regexp_replace(query, '\\$\\d+', '?', 'g'), 'IN \\((\\?, )*\\?\\)', 'IN (...)', 'g'), ' VALUES \\(.*', ' VALUES (...)') AS family, userid, calls, total_exec_time, max_exec_time, stddev_exec_time, rows, shared_blks_hit, shared_blks_read, blk_read_time, temp_blks_read, temp_blks_written FROM pg_stat_statements WHERE dbid = (SELECT oid FROM pg_database WHERE datname = current_database()) AND query !~* '^\\s*(SAVEPOINT|RELEASE|ROLLBACK|BEGIN|COMMIT|SET |SHOW |DEALLOCATE|DISCARD)' AND query !~ 'pg_stat_|pg_statio_|pg_blocking_pids|pg_constraint' ) SELECT sum(calls) AS calls, pg_size_pretty(sum(temp_blks_written) * current_setting('block_size')::bigint) AS temp_written, pg_size_pretty(sum(temp_blks_read) * current_setting('block_size')::bigint) AS temp_read, pg_size_pretty((sum(temp_blks_written) * current_setting('block_size')::bigint / NULLIF(sum(calls), 0))::bigint) AS temp_per_call, round((sum(total_exec_time) / NULLIF(sum(calls), 0))::numeric, 2) AS mean_ms, string_agg(DISTINCT userid::regrole::text, ',') AS role, left(regexp_replace(family, '\\s+', ' ', 'g'), 120) AS query FROM s GROUP BY family HAVING sum(temp_blks_written) > 0 ORDER BY sum(temp_blks_written) DESC LIMIT 20",
+          "refId": "A",
+          "format": "table"
+        }
+      ],
+      "title": "Top 20 by temp written",
+      "type": "table"
+    },
+    {
+      "datasource": {
+        "type": "postgres",
+        "uid": "postgresql"
+      },
+      "description": "Chattiest statements. rows_per_call of 0 on a SELECT means a lookup that finds nothing, usually a get_or_create / update_or_create probe that could be a bulk operation. Cumulative since the pg_stat_statements reset shown in the Health row; entries can be evicted; statements cancelled before completion (Grafana timeouts) never appear here, see docs/postgres-query-performance.md for the log recipe. Rows group parameter-count variants of one query; stddev_ms is the max over variants; utility statements and this dashboard's own queries are excluded.",
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "thresholds"
+          },
+          "custom": {
+            "align": "auto",
+            "cellOptions": {
+              "type": "auto"
+            },
+            "inspect": false
+          },
+          "mappings": [],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": null
+              }
+            ]
+          }
+        },
+        "overrides": [
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "query"
+            },
+            "properties": [
+              {
+                "id": "custom.width",
+                "value": 560
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "role"
+            },
+            "properties": [
+              {
+                "id": "custom.width",
+                "value": 100
+              }
+            ]
+          }
+        ]
+      },
+      "gridPos": {
+        "h": 10,
+        "w": 24,
+        "x": 0,
+        "y": 60
+      },
+      "id": 8,
+      "options": {
+        "cellHeight": "sm",
+        "footer": {
+          "countRows": false,
+          "fields": "",
+          "reducer": [
+            "sum"
+          ],
+          "show": false
+        },
+        "showHeader": true,
+        "sortBy": []
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "postgres",
+            "uid": "postgresql"
+          },
+          "rawQuery": true,
+          "rawSql": "WITH info AS ( SELECT GREATEST(EXTRACT(EPOCH FROM (now() - stats_reset)) / 86400, 1.0 / 24) AS days FROM pg_stat_statements_info ), s AS ( SELECT regexp_replace(regexp_replace(regexp_replace(query, '\\$\\d+', '?', 'g'), 'IN \\((\\?, )*\\?\\)', 'IN (...)', 'g'), ' VALUES \\(.*', ' VALUES (...)') AS family, userid, calls, total_exec_time, max_exec_time, stddev_exec_time, rows, shared_blks_hit, shared_blks_read, blk_read_time, temp_blks_read, temp_blks_written FROM pg_stat_statements WHERE dbid = (SELECT oid FROM pg_database WHERE datname = current_database()) AND query !~* '^\\s*(SAVEPOINT|RELEASE|ROLLBACK|BEGIN|COMMIT|SET |SHOW |DEALLOCATE|DISCARD)' AND query !~ 'pg_stat_|pg_statio_|pg_blocking_pids|pg_constraint' ) SELECT sum(calls) AS calls, round(sum(calls) / (SELECT days FROM info)) AS calls_per_day, round(sum(rows)::numeric / NULLIF(sum(calls), 0), 1) AS rows_per_call, round((sum(total_exec_time) / NULLIF(sum(calls), 0))::numeric, 2) AS mean_ms, round(sum(total_exec_time)::numeric / 1000, 1) AS total_s, string_agg(DISTINCT userid::regrole::text, ',') AS role, left(regexp_replace(family, '\\s+', ' ', 'g'), 120) AS query FROM s GROUP BY family ORDER BY sum(calls) DESC LIMIT 20",
+          "refId": "A",
+          "format": "table"
+        }
+      ],
+      "title": "Top 20 by calls",
+      "type": "table"
     }
   ],
   "refresh": "1m",
