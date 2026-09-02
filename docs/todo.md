@@ -68,7 +68,7 @@ Then add "slow statements over time" panels to the dashboard.
 `_RECONCILE_TEMPLATE` in `apps/metagraph/services/apy_epoch_ingest.py` runs every 15 minutes at 65 to 80 s, reads 2.1 M buffers and deleted 0 rows in every run inspected on 2026-09-02.
 The planner sequential-scans the whole epoch table and probes snapshots per row, applying the id range only afterwards.
 
-**Action:** drive the delete from the `{range_predicate}` (the id range for the beat tick, the block range for the backfill command; both callers share the template) with a materialized CTE over the range joined to `metagraph_neuron`, then the anti-join, and verify with `EXPLAIN (ANALYZE, BUFFERS)` that the outer node is the range scan (primary key for the beat; the backfill has no full block-leading index on the snapshot table, only the partial `idx_ns_miner_block`, so check its plan rather than expect an index scan).
+**Action:** drive the delete from the `{range_predicate}` (the id range for the beat tick, the block range for the backfill command; both callers share the template) with a materialized CTE over the range joined to `metagraph_neuron`, then the anti-join, and verify with `EXPLAIN (ANALYZE, BUFFERS)` that the outer node is the range scan (primary key for the beat, the FK auto-index `metagraph_neuron_snapshot_block_id_96edc0ac` on `block_id` for the backfill; migration 0014 keeps that index on purpose).
 
 **Why deferred:** correctness-sensitive SQL in the ingest path; needs its own tests against the retention and overlap semantics.
 
