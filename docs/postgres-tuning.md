@@ -2,7 +2,8 @@
 
 All settings live in the `db` service `command:` block of
 [`envs/prod/docker-compose.yml`](../envs/prod/docker-compose.yml) as `-c` flags,
-each overridable from `.env`. Command-line flags outrank both `postgresql.conf`
+most of them overridable from `.env` (`log_line_prefix` is fixed because its value
+contains spaces and `%`). Command-line flags outrank both `postgresql.conf`
 and `postgresql.auto.conf`, so this file is the single source of truth for
 anything listed there.
 
@@ -45,7 +46,7 @@ no record of what any client actually ran.
 | `log_lock_waits` | off | **on** | Catches contention (e.g. during MV refresh) |
 | `log_temp_files` | -1 (off) | **10240** kB | Catches `work_mem` overflow spilling to disk |
 | `auto_explain.*` | absent | see below | Logs the *actual plan* for anything over 5 s |
-| `pg_stat_statements.track_utility` | on | **off** | Django savepoints have unique names; 47,953 of 48,014 entries were `SAVEPOINT`/`RELEASE` on 2026-09-02 |
+| `pg_stat_statements.track_utility` | on | **off** | Django savepoints have unique names; 47,953 of 48,014 entries were `SAVEPOINT`/`RELEASE` on 2026-09-02. Trade-off: `REFRESH MATERIALIZED VIEW`, `VACUUM` and DDL no longer appear in `pg_stat_statements` at all; use the slow log or `pg_stat_activity` for those |
 | `log_line_prefix` | `%m [%p] ` | `%m [%p] %q%u@%d app=%a ` | Slow-log lines carry user, database and application name |
 
 Two values are set via `ALTER SYSTEM` on prod and are deliberately **not**
@@ -127,13 +128,17 @@ docker compose logs -f db      # watch for a clean startup
 Expect a short outage (seconds to ~a minute). The app, celery and
 `sync-*` containers will throw connection errors and reconnect.
 
+Then restart the sync daemons: `docker compose restart sync-extrinsics sync-metagraph`.
+They reopen the chain connection on error but never reset Django's dead database connection, which looped and leaked memory after the 2026-07-21 restart; `./deploy.sh` restarts them for you, the bare `up -d db` above does not.
+
 After the first restart with `pg_stat_statements.track_utility=off`, reset the statement statistics once so the accumulated savepoint entries disappear:
 
 ```sh
 docker compose exec db psql -U postgres -d project -c 'SELECT pg_stat_statements_reset();'
 ```
 
-The `pg_stat_statements health` panel on the DB Query Performance dashboard should then show `savepoint_pct` at 0 and `evictions` staying at 0.
+The `pg_stat_statements health` panel on the DB Query Performance dashboard should then show `savepoint_pct` at 0 and `evictions` at 0.
+A slow climb of `evictions` months later is the churn of one-off DDL and refresh internals, not the savepoint problem returning; a second reset clears it.
 That panel reads `pg_stat_statements_info`, which exists from extension version 1.9; an extension created at 1.8 on a PG14 binary needs a one-time `ALTER EXTENSION pg_stat_statements UPDATE;` (prod is already at 1.9).
 
 > The deployed `docker-compose.yml` on the server has drifted from
@@ -148,6 +153,8 @@ docker compose exec db psql -U postgres -d project \
   -c 'SHOW shared_preload_libraries;' \
   -c 'SHOW random_page_cost;' \
   -c 'SHOW track_io_timing;' \
+  -c 'SHOW pg_stat_statements.track_utility;' \
+  -c 'SHOW log_line_prefix;' \
   -c 'SELECT count(*) FROM pg_stat_statements;'
 ```
 
