@@ -1841,7 +1841,7 @@
         "type": "postgres",
         "uid": "postgresql"
       },
-      "description": "Definitive gaps for parent-row deletes and reverse lookups. Empty is good. A row whose in_other_index is set means the column is indexed but not as the leading column: acceptable while parent_deletes stays 0 and nothing queries by that column alone. On prod the two rows (metagraph_bond and metagraph_weight target_neuron_id) are deliberate drops from migration 0007.",
+      "description": "Definitive gaps for parent-row deletes and reverse lookups: no valid, non-partial index has the FK columns as its leading key columns. Empty is good. A row whose in_other_index is set means the column is indexed but not as the leading column, or only by a partial index: acceptable while parent_deletes stays 0 and nothing queries by that column alone. On prod the two rows (metagraph_bond and metagraph_weight target_neuron_id) are deliberate drops from migration 0007.",
       "fieldConfig": {
         "defaults": {
           "color": {
@@ -1874,7 +1874,7 @@
             "properties": [
               {
                 "id": "custom.width",
-                "value": 180
+                "value": 240
               }
             ]
           },
@@ -1886,7 +1886,7 @@
             "properties": [
               {
                 "id": "custom.width",
-                "value": 160
+                "value": 200
               }
             ]
           },
@@ -1898,7 +1898,31 @@
             "properties": [
               {
                 "id": "custom.width",
-                "value": 160
+                "value": 240
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "size"
+            },
+            "properties": [
+              {
+                "id": "unit",
+                "value": "bytes"
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "in_other_index"
+            },
+            "properties": [
+              {
+                "id": "custom.width",
+                "value": 360
               }
             ]
           }
@@ -1906,7 +1930,7 @@
       },
       "gridPos": {
         "h": 7,
-        "w": 12,
+        "w": 24,
         "x": 0,
         "y": 81
       },
@@ -1931,7 +1955,7 @@
             "uid": "postgresql"
           },
           "rawQuery": true,
-          "rawSql": "SELECT c.conrelid::regclass::text AS \"table\", string_agg(a.attname, ',' ORDER BY x.n) AS columns, c.confrelid::regclass::text AS \"references\", pg_size_pretty(pg_relation_size(c.conrelid)) AS size, (SELECT string_agg(i.indexrelid::regclass::text, ',') FROM pg_index i WHERE i.indrelid = c.conrelid AND i.indkey::smallint[] @> c.conkey) AS in_other_index, (SELECT n_tup_del FROM pg_stat_user_tables t WHERE t.relid = c.confrelid) AS parent_deletes FROM pg_constraint c CROSS JOIN LATERAL unnest(c.conkey) WITH ORDINALITY AS x(attnum, n) JOIN pg_attribute a ON a.attrelid = c.conrelid AND a.attnum = x.attnum WHERE c.contype = 'f' AND NOT EXISTS ( SELECT 1 FROM pg_index i WHERE i.indrelid = c.conrelid AND (i.indkey::smallint[])[0:cardinality(c.conkey) - 1] @> c.conkey AND (i.indkey::smallint[])[0:cardinality(c.conkey) - 1] <@ c.conkey ) GROUP BY c.conrelid, c.conname, c.confrelid, c.conkey ORDER BY pg_relation_size(c.conrelid) DESC",
+          "rawSql": "SELECT c.conrelid::regclass::text AS \"table\", string_agg(a.attname, ',' ORDER BY x.n) AS columns, c.confrelid::regclass::text AS \"references\", pg_relation_size(c.conrelid) AS size, (SELECT string_agg(i.indexrelid::regclass::text, ',') FROM pg_index i WHERE i.indrelid = c.conrelid AND i.indkey::smallint[] @> c.conkey) AS in_other_index, (SELECT n_tup_del FROM pg_stat_user_tables t WHERE t.relid = c.confrelid) AS parent_deletes FROM pg_constraint c CROSS JOIN LATERAL unnest(c.conkey) WITH ORDINALITY AS x(attnum, n) JOIN pg_attribute a ON a.attrelid = c.conrelid AND a.attnum = x.attnum WHERE c.contype = 'f' AND NOT EXISTS ( SELECT 1 FROM pg_index i WHERE i.indrelid = c.conrelid AND i.indisvalid AND i.indpred IS NULL AND i.indnkeyatts >= cardinality(c.conkey) AND (i.indkey::smallint[])[0:cardinality(c.conkey) - 1] @> c.conkey AND (i.indkey::smallint[])[0:cardinality(c.conkey) - 1] <@ c.conkey ) GROUP BY c.conrelid, c.conname, c.confrelid, c.conkey ORDER BY pg_relation_size(c.conrelid) DESC",
           "refId": "A",
           "format": "table"
         }
@@ -1944,7 +1968,7 @@
         "type": "postgres",
         "uid": "postgresql"
       },
-      "description": "Every query the left index serves can use covered_by: same access method, operator classes and ordering, and the left index's columns are a leading prefix of the right one. Unique, primary, partial and expression indexes are never listed. Dropping one trades a slightly wider index per lookup for less write amplification and disk. Django creates one automatically per ForeignKey; a unique_together on the same leading column makes it redundant. Prod 2026-09-02: 26 indexes, 8.7 GB.",
+      "description": "Every query the left index serves can use one of covered_by: same access method, operator classes, collations and ordering, and the left index's key columns are a leading prefix of the right one (or an exact duplicate, such as a leftover from an interrupted REINDEX CONCURRENTLY). Unique, primary, partial and expression indexes are never listed as redundant, and invalid indexes never count as cover. Dropping one trades a slightly wider index per lookup for less write amplification and disk. Django creates one automatically per ForeignKey; a unique_together on the same leading column makes it redundant. Prod 2026-09-03: 23 indexes, 8.5 GB.",
       "fieldConfig": {
         "defaults": {
           "color": {
@@ -1977,7 +2001,7 @@
             "properties": [
               {
                 "id": "custom.width",
-                "value": 180
+                "value": 240
               }
             ]
           },
@@ -1989,7 +2013,7 @@
             "properties": [
               {
                 "id": "custom.width",
-                "value": 260
+                "value": 420
               }
             ]
           },
@@ -2001,17 +2025,29 @@
             "properties": [
               {
                 "id": "custom.width",
-                "value": 200
+                "value": 420
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "size"
+            },
+            "properties": [
+              {
+                "id": "unit",
+                "value": "bytes"
               }
             ]
           }
         ]
       },
       "gridPos": {
-        "h": 7,
-        "w": 12,
-        "x": 12,
-        "y": 81
+        "h": 8,
+        "w": 24,
+        "x": 0,
+        "y": 88
       },
       "id": 16,
       "options": {
@@ -2034,7 +2070,7 @@
             "uid": "postgresql"
           },
           "rawQuery": true,
-          "rawSql": "SELECT a.indrelid::regclass::text AS \"table\", a.indexrelid::regclass::text AS redundant_index, b.indexrelid::regclass::text AS covered_by, pg_size_pretty(pg_relation_size(a.indexrelid)) AS size, sa.idx_scan FROM pg_index a JOIN pg_index b ON b.indrelid = a.indrelid AND b.indexrelid <> a.indexrelid JOIN pg_class ca ON ca.oid = a.indexrelid JOIN pg_class cb ON cb.oid = b.indexrelid JOIN pg_stat_user_indexes sa ON sa.indexrelid = a.indexrelid WHERE ca.relam = cb.relam AND a.indpred IS NULL AND b.indpred IS NULL AND a.indexprs IS NULL AND b.indexprs IS NULL AND NOT a.indisprimary AND NOT a.indisunique AND b.indnatts > a.indnatts AND array_to_string((b.indkey::smallint[])[0:a.indnatts - 1], ',') = array_to_string(a.indkey::smallint[], ',') AND array_to_string((b.indclass::oid[])[0:a.indnatts - 1], ',') = array_to_string(a.indclass::oid[], ',') AND array_to_string((b.indoption::smallint[])[0:a.indnatts - 1], ',') = array_to_string(a.indoption::smallint[], ',') ORDER BY pg_relation_size(a.indexrelid) DESC",
+          "rawSql": "SELECT a.indrelid::regclass::text AS \"table\", a.indexrelid::regclass::text AS redundant_index, string_agg(b.indexrelid::regclass::text, ', ' ORDER BY b.indnatts, b.indexrelid::regclass::text) AS covered_by, pg_relation_size(a.indexrelid) AS size, sa.idx_scan FROM pg_index a JOIN pg_index b ON b.indrelid = a.indrelid AND b.indexrelid <> a.indexrelid JOIN pg_class ca ON ca.oid = a.indexrelid JOIN pg_class cb ON cb.oid = b.indexrelid JOIN pg_stat_user_indexes sa ON sa.indexrelid = a.indexrelid WHERE ca.relam = cb.relam AND a.indpred IS NULL AND b.indpred IS NULL AND a.indexprs IS NULL AND b.indexprs IS NULL AND b.indisvalid AND NOT a.indisprimary AND NOT a.indisunique AND b.indnkeyatts >= a.indnkeyatts AND (b.indnatts > a.indnatts OR (b.indnatts = a.indnatts AND a.indexrelid > b.indexrelid)) AND array_to_string((b.indkey::smallint[])[0:a.indnatts - 1], ',') = array_to_string(a.indkey::smallint[], ',') AND array_to_string((b.indclass::oid[])[0:a.indnatts - 1], ',') = array_to_string(a.indclass::oid[], ',') AND array_to_string((b.indoption::smallint[])[0:a.indnatts - 1], ',') = array_to_string(a.indoption::smallint[], ',') AND array_to_string((b.indcollation::oid[])[0:a.indnatts - 1], ',') = array_to_string(a.indcollation::oid[], ',') GROUP BY a.indrelid, a.indexrelid, sa.idx_scan ORDER BY pg_relation_size(a.indexrelid) DESC",
           "refId": "A",
           "format": "table"
         }
@@ -2083,6 +2119,18 @@
                 "value": 260
               }
             ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "size"
+            },
+            "properties": [
+              {
+                "id": "unit",
+                "value": "bytes"
+              }
+            ]
           }
         ]
       },
@@ -2090,7 +2138,7 @@
         "h": 8,
         "w": 24,
         "x": 0,
-        "y": 88
+        "y": 96
       },
       "id": 17,
       "options": {
@@ -2113,7 +2161,7 @@
             "uid": "postgresql"
           },
           "rawQuery": true,
-          "rawSql": "SELECT relname AS \"table\", pg_size_pretty(pg_relation_size(relid)) AS size, seq_scan, seq_tup_read, round(seq_tup_read::numeric / NULLIF(seq_scan, 0)) AS rows_per_seq_scan, idx_scan, round(100.0 * seq_scan / NULLIF(seq_scan + idx_scan, 0), 1) AS seq_scan_pct, n_live_tup FROM pg_stat_user_tables WHERE pg_relation_size(relid) > 100 * 1024 * 1024 AND seq_scan > 0 ORDER BY seq_tup_read DESC LIMIT 20",
+          "rawSql": "SELECT relname AS \"table\", pg_relation_size(relid) AS size, seq_scan, seq_tup_read, round(seq_tup_read::numeric / NULLIF(seq_scan, 0)) AS rows_per_seq_scan, COALESCE(idx_scan, 0) AS idx_scan, round(100.0 * seq_scan / NULLIF(seq_scan + COALESCE(idx_scan, 0), 0), 1) AS seq_scan_pct, n_live_tup FROM pg_stat_user_tables WHERE pg_relation_size(relid) > 100 * 1024 * 1024 AND seq_scan > 0 ORDER BY seq_tup_read DESC LIMIT 20",
           "refId": "A",
           "format": "table"
         }
@@ -2126,7 +2174,7 @@
         "type": "postgres",
         "uid": "postgresql"
       },
-      "description": "idx_blks_read counts index pages fetched from outside shared_buffers, cumulative since the database stats reset. Cost, not coverage: which indexes are cold. On prod, random-key inserts into the large unique indexes dominate (unique_neuron_block 1.6 TB, unique_bond 1.2 TB at 86 % hit on 2026-09-02).",
+      "description": "idx_blks_read counts index pages fetched from outside shared_buffers (OS cache or disk), cumulative since the database stats reset. Cost, not coverage: which indexes are cold. On prod, random-key inserts into the large unique indexes dominate (unique_neuron_block 1.6 TB, unique_bond 1.2 TB at 86 % hit on 2026-09-02).",
       "fieldConfig": {
         "defaults": {
           "color": {
@@ -2171,7 +2219,31 @@
             "properties": [
               {
                 "id": "custom.width",
-                "value": 320
+                "value": 360
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "size"
+            },
+            "properties": [
+              {
+                "id": "unit",
+                "value": "bytes"
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "read_from_disk"
+            },
+            "properties": [
+              {
+                "id": "unit",
+                "value": "bytes"
               }
             ]
           }
@@ -2181,7 +2253,7 @@
         "h": 8,
         "w": 24,
         "x": 0,
-        "y": 96
+        "y": 104
       },
       "id": 18,
       "options": {
@@ -2204,7 +2276,7 @@
             "uid": "postgresql"
           },
           "rawQuery": true,
-          "rawSql": "SELECT s.relname AS \"table\", s.indexrelname AS index, pg_size_pretty(pg_relation_size(s.indexrelid)) AS size, s.idx_scan, io.idx_blks_read, round(100.0 * io.idx_blks_hit / NULLIF(io.idx_blks_hit + io.idx_blks_read, 0), 1) AS hit_pct, pg_size_pretty(io.idx_blks_read * current_setting('block_size')::bigint) AS read_from_disk FROM pg_stat_user_indexes s JOIN pg_statio_user_indexes io ON io.indexrelid = s.indexrelid WHERE io.idx_blks_read > 0 ORDER BY io.idx_blks_read DESC LIMIT 20",
+          "rawSql": "SELECT s.relname AS \"table\", s.indexrelname AS index, pg_relation_size(s.indexrelid) AS size, s.idx_scan, io.idx_blks_read, round(100.0 * io.idx_blks_hit / NULLIF(io.idx_blks_hit + io.idx_blks_read, 0), 1) AS hit_pct, io.idx_blks_read * current_setting('block_size')::bigint AS read_from_disk FROM pg_stat_user_indexes s JOIN pg_statio_user_indexes io ON io.indexrelid = s.indexrelid WHERE io.idx_blks_read > 0 ORDER BY io.idx_blks_read DESC LIMIT 20",
           "refId": "A",
           "format": "table"
         }
