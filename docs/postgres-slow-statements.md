@@ -24,23 +24,37 @@ continuation lines into the entry that started them (`stage.multiline`), so
 each slow statement and each `STATEMENT` line arrives as one entry with its
 whole SQL.
 
-Grafana reads them back through the provisioned `Loki` data source, which
-uses the same `LOKI_URL`, `LOKI_USER` and `LOKI_PASSWORD` values Alloy uses.
+Grafana reads them back through the provisioned `Loki` data source. The
+central Loki has two separate credential systems, so `.env` needs both:
+
+| Variables | Opens | Where they come from |
+|---|---|---|
+| `LOKI_USER`, `LOKI_PASSWORD` | `/loki/api/v1/push` only (Alloy) | `add_loki_target.sh` on the monitoring server, see below |
+| `LOKI_READER_USER`, `LOKI_READER_PASSWORD` | the query API (Grafana data source) | a reader token issued at <https://loki.reef.pl/token/> |
 
 ## Credentials
 
-Nothing is shipped and the data source cannot query until the three `LOKI_*`
-values are set in `.env`. Credentials for the central Loki are created on the
-monitoring server, one pair per server group and environment, as described in
-the README under "Log aggregation":
+Nothing is shipped until `LOKI_URL`, `LOKI_USER` and `LOKI_PASSWORD` are set.
+Push credentials are created on the monitoring server, one pair per server
+group and environment (this project's group is `backend_developers_sentinel`),
+as described in the README under "Log aggregation":
 
 ```sh
-uvx cadm exec prometheus_and_grafana -- "cd /home/ubuntu/apps/prometheus-grafana-monitoring/scripts && ./add_loki_target.sh <SERVER_GROUP> <ENVIRONMENT>"
+uvx cadm exec prometheus_and_grafana -- "cd /home/ubuntu/apps/prometheus-grafana-monitoring/scripts && ./add_loki_target.sh backend_developers_sentinel prod"
 ```
 
 The script prints the username and password to put into `LOKI_USER` and
-`LOKI_PASSWORD`. After changing `.env`, restart `alloy` and `grafana`: both
-read their configuration at start.
+`LOKI_PASSWORD`.
+
+The dashboard cannot query until `LOKI_READER_USER` and `LOKI_READER_PASSWORD`
+are set. Open <https://loki.reef.pl/token/> in a browser, sign in, and copy the
+username and password it issues. Reader tokens are personal and shared by all
+readers of the `rt` tenant, so the data source sees every project's logs; the
+dashboard filters on the db container name.
+
+After changing `.env`, run `docker compose up -d alloy grafana`: both read
+their configuration at start, and compose recreates them when their
+environment changed.
 
 ## Reading it
 
