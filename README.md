@@ -133,6 +133,10 @@ Put the generated credentials in the `.env` file's `LOKI_USER` and `LOKI_PASSWOR
 
 See the [log aggregation configuration](https://github.com/reef-technologies/prometheus-grafana-monitoring?tab=readme-ov-file#adding-log-aggregation-targets) for more details.
 
+With the credentials in place, Alloy also ships the Postgres log, and the
+**Postgres Slow Statements** Grafana dashboard lists slow, cancelled and failed
+statements with their SQL. See [docs/postgres-slow-statements.md](docs/postgres-slow-statements.md).
+
 ## Sentinel Core
 
 Core is a standalone Python package for monitoring the Bittensor blockchain. Located in `app/src/sentinel`.
