@@ -15,7 +15,7 @@
       }
     ]
   },
-  "description": "Where this Grafana spends time answering dashboard queries: whole request vs time inside the data source plugin, per plugin. Source: Grafana's own /metrics scraped by Prometheus (job `grafana` in prometheus/prometheus.yml).",
+  "description": "Where a Grafana instance spends time answering dashboard queries: whole request vs time inside the data source plugin, per plugin. Source: the instance's own /metrics scraped by Prometheus; pick the instance with the Grafana instance dropdown.",
   "editable": true,
   "fiscalYearStartMonth": 0,
   "graphTooltip": 1,
@@ -26,7 +26,7 @@
       "id": 1,
       "type": "stat",
       "title": "Grafana metrics in Prometheus",
-      "description": "Counts Grafana instances whose /metrics Prometheus is scraping (grafana_build_info). 0 means Prometheus has no Grafana metrics and every panel below stays empty: the `grafana` job in prometheus/prometheus.yml must target grafana:3000, and Prometheus must be reloaded after the file changes (curl -X POST http://127.0.0.1:9090/-/reload on the host).",
+      "description": "Counts Grafana instances whose /metrics Prometheus is scraping for the selected job (grafana_build_info). 0 means Prometheus has no Grafana metrics and every panel below stays empty: the `grafana` job in prometheus/prometheus.yml must target grafana:3000, and Prometheus must be reloaded after the file changes (curl -X POST http://127.0.0.1:9090/-/reload on the host).",
       "datasource": {
         "type": "prometheus",
         "uid": "prometheus"
@@ -58,7 +58,7 @@
               "type": "value",
               "options": {
                 "0": {
-                  "text": "NOT SCRAPED — Prometheus has no Grafana metrics; check the grafana job in prometheus/prometheus.yml and reload Prometheus (see panel info)",
+                  "text": "NOT SCRAPED — Prometheus has no Grafana metrics; check the grafana scrape job and reload Prometheus (see panel info)",
                   "color": "red",
                   "index": 0
                 }
@@ -104,7 +104,7 @@
             "uid": "prometheus"
           },
           "editorMode": "code",
-          "expr": "count(grafana_build_info) or vector(0)",
+          "expr": "count(grafana_build_info{job=\"$job\"}) or vector(0)",
           "legendFormat": "__auto",
           "range": false,
           "instant": true
@@ -178,7 +178,7 @@
             "uid": "prometheus"
           },
           "editorMode": "code",
-          "expr": "histogram_quantile(0.95, sum by (le) (rate(grafana_http_request_duration_seconds_bucket{handler=\"/api/ds/query\"}[5m])))",
+          "expr": "histogram_quantile(0.95, sum by (le) (rate(grafana_http_request_duration_seconds_bucket{handler=\"/api/ds/query\",job=\"$job\"}[5m])))",
           "legendFormat": "__auto",
           "range": false,
           "instant": true
@@ -252,7 +252,7 @@
             "uid": "prometheus"
           },
           "editorMode": "code",
-          "expr": "histogram_quantile(0.95, sum by (le) (rate(grafana_plugin_request_duration_seconds_bucket{endpoint=\"queryData\",plugin_id=~\"postgres|grafana-postgresql-datasource\"}[5m])))",
+          "expr": "histogram_quantile(0.95, sum by (le) (rate(grafana_plugin_request_duration_seconds_bucket{endpoint=\"queryData\",plugin_id=~\"postgres|grafana-postgresql-datasource\",job=\"$job\"}[5m])))",
           "legendFormat": "__auto",
           "range": false,
           "instant": true
@@ -318,7 +318,7 @@
             "uid": "prometheus"
           },
           "editorMode": "code",
-          "expr": "sum(rate(grafana_http_request_duration_seconds_count{handler=\"/api/ds/query\"}[5m]))",
+          "expr": "sum(rate(grafana_http_request_duration_seconds_count{handler=\"/api/ds/query\",job=\"$job\"}[5m]))",
           "legendFormat": "__auto",
           "range": false,
           "instant": true
@@ -329,7 +329,7 @@
       "id": 5,
       "type": "stat",
       "title": "Failed query requests % (5m)",
-      "description": "Share of /api/ds/query requests that did not return 2xx, last 5 minutes. A failing SQL statement and a statement cancelled because the client went away (nginx's proxy_read_timeout, a closed browser tab) are both recorded as HTTP 400; pg_stat_statements never sees the cancelled ones. GF_DATAPROXY_TIMEOUT does not cancel SQL queries on this Grafana version.",
+      "description": "Share of /api/ds/query requests that did not return 2xx, last 5 minutes. A failing SQL statement and a statement cancelled because the client went away (nginx's proxy_read_timeout, a closed browser tab) are both recorded as HTTP 400; pg_stat_statements never sees the cancelled ones. GF_DATAPROXY_TIMEOUT does not cancel SQL queries (verified on Grafana 10.2).",
       "datasource": {
         "type": "prometheus",
         "uid": "prometheus"
@@ -392,7 +392,7 @@
             "uid": "prometheus"
           },
           "editorMode": "code",
-          "expr": "100 * (sum(rate(grafana_http_request_duration_seconds_count{handler=\"/api/ds/query\",status_code!~\"2..\"}[5m])) or vector(0)) / sum(rate(grafana_http_request_duration_seconds_count{handler=\"/api/ds/query\"}[5m]))",
+          "expr": "100 * (sum(rate(grafana_http_request_duration_seconds_count{handler=\"/api/ds/query\",status_code!~\"2..\",job=\"$job\"}[5m])) or vector(0)) / sum(rate(grafana_http_request_duration_seconds_count{handler=\"/api/ds/query\",job=\"$job\"}[5m]))",
           "legendFormat": "__auto",
           "range": false,
           "instant": true
@@ -530,7 +530,7 @@
             "uid": "prometheus"
           },
           "editorMode": "code",
-          "expr": "histogram_quantile(0.5, sum by (le) (rate(grafana_http_request_duration_seconds_bucket{handler=\"/api/ds/query\"}[$__rate_interval])))",
+          "expr": "histogram_quantile(0.5, sum by (le) (rate(grafana_http_request_duration_seconds_bucket{handler=\"/api/ds/query\",job=\"$job\"}[$__rate_interval])))",
           "legendFormat": "p50",
           "range": true,
           "instant": false
@@ -542,7 +542,7 @@
             "uid": "prometheus"
           },
           "editorMode": "code",
-          "expr": "histogram_quantile(0.95, sum by (le) (rate(grafana_http_request_duration_seconds_bucket{handler=\"/api/ds/query\"}[$__rate_interval])))",
+          "expr": "histogram_quantile(0.95, sum by (le) (rate(grafana_http_request_duration_seconds_bucket{handler=\"/api/ds/query\",job=\"$job\"}[$__rate_interval])))",
           "legendFormat": "p95",
           "range": true,
           "instant": false
@@ -554,7 +554,7 @@
             "uid": "prometheus"
           },
           "editorMode": "code",
-          "expr": "histogram_quantile(0.99, sum by (le) (rate(grafana_http_request_duration_seconds_bucket{handler=\"/api/ds/query\"}[$__rate_interval])))",
+          "expr": "histogram_quantile(0.99, sum by (le) (rate(grafana_http_request_duration_seconds_bucket{handler=\"/api/ds/query\",job=\"$job\"}[$__rate_interval])))",
           "legendFormat": "p99",
           "range": true,
           "instant": false
@@ -565,7 +565,7 @@
       "id": 7,
       "type": "timeseries",
       "title": "Query requests by HTTP status",
-      "description": "Rate of /api/ds/query requests split by HTTP status code. A failing SQL statement and a statement cancelled because the client went away (nginx's proxy_read_timeout, a closed browser tab) are both recorded as HTTP 400; pg_stat_statements never sees the cancelled ones. GF_DATAPROXY_TIMEOUT does not cancel SQL queries on this Grafana version.",
+      "description": "Rate of /api/ds/query requests split by HTTP status code. A failing SQL statement and a statement cancelled because the client went away (nginx's proxy_read_timeout, a closed browser tab) are both recorded as HTTP 400; pg_stat_statements never sees the cancelled ones. GF_DATAPROXY_TIMEOUT does not cancel SQL queries (verified on Grafana 10.2).",
       "datasource": {
         "type": "prometheus",
         "uid": "prometheus"
@@ -646,7 +646,7 @@
             "uid": "prometheus"
           },
           "editorMode": "code",
-          "expr": "sum by (status_code) (rate(grafana_http_request_duration_seconds_count{handler=\"/api/ds/query\"}[$__rate_interval]))",
+          "expr": "sum by (status_code) (rate(grafana_http_request_duration_seconds_count{handler=\"/api/ds/query\",job=\"$job\"}[$__rate_interval]))",
           "legendFormat": "{{status_code}}",
           "range": true,
           "instant": false
@@ -738,7 +738,7 @@
             "uid": "prometheus"
           },
           "editorMode": "code",
-          "expr": "histogram_quantile(0.95, sum by (le, plugin_id) (rate(grafana_plugin_request_duration_seconds_bucket{endpoint=\"queryData\",plugin_id=~\"$plugin\"}[$__rate_interval])))",
+          "expr": "histogram_quantile(0.95, sum by (le, plugin_id) (rate(grafana_plugin_request_duration_seconds_bucket{endpoint=\"queryData\",plugin_id=~\"$plugin\",job=\"$job\"}[$__rate_interval])))",
           "legendFormat": "{{plugin_id}}",
           "range": true,
           "instant": false
@@ -830,7 +830,7 @@
             "uid": "prometheus"
           },
           "editorMode": "code",
-          "expr": "sum by (plugin_id) (rate(grafana_plugin_request_duration_seconds_sum{endpoint=\"queryData\",plugin_id=~\"$plugin\"}[$__rate_interval])) / sum by (plugin_id) (rate(grafana_plugin_request_duration_seconds_count{endpoint=\"queryData\",plugin_id=~\"$plugin\"}[$__rate_interval]))",
+          "expr": "sum by (plugin_id) (rate(grafana_plugin_request_duration_seconds_sum{endpoint=\"queryData\",plugin_id=~\"$plugin\",job=\"$job\"}[$__rate_interval])) / sum by (plugin_id) (rate(grafana_plugin_request_duration_seconds_count{endpoint=\"queryData\",plugin_id=~\"$plugin\",job=\"$job\"}[$__rate_interval]))",
           "legendFormat": "{{plugin_id}}",
           "range": true,
           "instant": false
@@ -912,7 +912,7 @@
             "uid": "prometheus"
           },
           "editorMode": "code",
-          "expr": "sum by (le) (increase(grafana_plugin_request_duration_seconds_bucket{endpoint=\"queryData\",plugin_id=~\"$plugin\"}[$__rate_interval]))",
+          "expr": "sum by (le) (increase(grafana_plugin_request_duration_seconds_bucket{endpoint=\"queryData\",plugin_id=~\"$plugin\",job=\"$job\"}[$__rate_interval]))",
           "legendFormat": "{{le}}",
           "range": true,
           "instant": false,
@@ -924,7 +924,7 @@
       "id": 11,
       "type": "timeseries",
       "title": "Plugin-level failures by plugin and status",
-      "description": "Rate of queryData calls where the plugin call itself failed (status other than ok: the plugin crashed, could not be reached, or was cancelled before it answered). SQL errors and statements cancelled mid-query are not counted here: the plugin answers those with a per-query error and they appear as HTTP 400 in the request panels.",
+      "description": "Rate of queryData calls whose plugin status is not ok. On Grafana 11 (grafana-external) a failing SQL statement shows here as `error` and a statement cancelled because the client went away as `cancelled`. On Grafana 10.2 (this stack's own grafana) the plugin answers those with a per-query error and the status stays ok, so they appear only as HTTP 400 in the request panels.",
       "datasource": {
         "type": "prometheus",
         "uid": "prometheus"
@@ -1006,7 +1006,7 @@
             "uid": "prometheus"
           },
           "editorMode": "code",
-          "expr": "sum by (plugin_id, status) (rate(grafana_plugin_request_total{endpoint=\"queryData\",plugin_id=~\"$plugin\",status!=\"ok\"}[$__rate_interval]))",
+          "expr": "sum by (plugin_id, status) (rate(grafana_plugin_request_total{endpoint=\"queryData\",plugin_id=~\"$plugin\",job=\"$job\",status!=\"ok\"}[$__rate_interval]))",
           "legendFormat": "{{plugin_id}} {{status}}",
           "range": true,
           "instant": false
@@ -1145,7 +1145,7 @@
             "uid": "prometheus"
           },
           "editorMode": "code",
-          "expr": "1 - sum(rate(grafana_plugin_request_duration_seconds_bucket{endpoint=\"queryData\",plugin_id=~\"$plugin\",le=~\"1|1.0\"}[$__rate_interval])) / sum(rate(grafana_plugin_request_duration_seconds_count{endpoint=\"queryData\",plugin_id=~\"$plugin\"}[$__rate_interval]))",
+          "expr": "1 - sum(rate(grafana_plugin_request_duration_seconds_bucket{endpoint=\"queryData\",plugin_id=~\"$plugin\",job=\"$job\",le=~\"1|1.0\"}[$__rate_interval])) / sum(rate(grafana_plugin_request_duration_seconds_count{endpoint=\"queryData\",plugin_id=~\"$plugin\",job=\"$job\"}[$__rate_interval]))",
           "legendFormat": "> 1 s",
           "range": true,
           "instant": false
@@ -1157,7 +1157,7 @@
             "uid": "prometheus"
           },
           "editorMode": "code",
-          "expr": "1 - sum(rate(grafana_plugin_request_duration_seconds_bucket{endpoint=\"queryData\",plugin_id=~\"$plugin\",le=~\"5|5.0\"}[$__rate_interval])) / sum(rate(grafana_plugin_request_duration_seconds_count{endpoint=\"queryData\",plugin_id=~\"$plugin\"}[$__rate_interval]))",
+          "expr": "1 - sum(rate(grafana_plugin_request_duration_seconds_bucket{endpoint=\"queryData\",plugin_id=~\"$plugin\",job=\"$job\",le=~\"5|5.0\"}[$__rate_interval])) / sum(rate(grafana_plugin_request_duration_seconds_count{endpoint=\"queryData\",plugin_id=~\"$plugin\",job=\"$job\"}[$__rate_interval]))",
           "legendFormat": "> 5 s",
           "range": true,
           "instant": false
@@ -1169,7 +1169,7 @@
             "uid": "prometheus"
           },
           "editorMode": "code",
-          "expr": "1 - sum(rate(grafana_plugin_request_duration_seconds_bucket{endpoint=\"queryData\",plugin_id=~\"$plugin\",le=~\"10|10.0\"}[$__rate_interval])) / sum(rate(grafana_plugin_request_duration_seconds_count{endpoint=\"queryData\",plugin_id=~\"$plugin\"}[$__rate_interval]))",
+          "expr": "1 - sum(rate(grafana_plugin_request_duration_seconds_bucket{endpoint=\"queryData\",plugin_id=~\"$plugin\",job=\"$job\",le=~\"10|10.0\"}[$__rate_interval])) / sum(rate(grafana_plugin_request_duration_seconds_count{endpoint=\"queryData\",plugin_id=~\"$plugin\",job=\"$job\"}[$__rate_interval]))",
           "legendFormat": "> 10 s",
           "range": true,
           "instant": false
@@ -1261,7 +1261,7 @@
             "uid": "prometheus"
           },
           "editorMode": "code",
-          "expr": "sum by (plugin_id) (rate(grafana_plugin_request_total{endpoint=\"queryData\",plugin_id=~\"$plugin\"}[$__rate_interval]))",
+          "expr": "sum by (plugin_id) (rate(grafana_plugin_request_total{endpoint=\"queryData\",plugin_id=~\"$plugin\",job=\"$job\"}[$__rate_interval]))",
           "legendFormat": "{{plugin_id}}",
           "range": true,
           "instant": false
@@ -1278,6 +1278,35 @@
   "templating": {
     "list": [
       {
+        "name": "job",
+        "label": "Grafana instance",
+        "description": "Which Grafana's metrics to show. `grafana` is this stack's own Grafana; `grafana-external` is grafana.bactensor.io, whose dashboards query this database over the mTLS proxy.",
+        "type": "query",
+        "datasource": {
+          "type": "prometheus",
+          "uid": "prometheus"
+        },
+        "definition": "label_values(grafana_build_info, job)",
+        "query": {
+          "qryType": 1,
+          "query": "label_values(grafana_build_info, job)",
+          "refId": "PrometheusVariableQueryEditor-VariableQuery"
+        },
+        "current": {
+          "selected": true,
+          "text": "grafana-external",
+          "value": "grafana-external"
+        },
+        "hide": 0,
+        "includeAll": false,
+        "multi": false,
+        "options": [],
+        "refresh": 1,
+        "regex": "",
+        "sort": 1,
+        "skipUrlSync": false
+      },
+      {
         "name": "plugin",
         "label": "Plugin",
         "type": "query",
@@ -1285,10 +1314,10 @@
           "type": "prometheus",
           "uid": "prometheus"
         },
-        "definition": "label_values(grafana_plugin_request_total{endpoint=\"queryData\"}, plugin_id)",
+        "definition": "label_values(grafana_plugin_request_total{endpoint=\"queryData\",job=\"$job\"}, plugin_id)",
         "query": {
           "qryType": 1,
-          "query": "label_values(grafana_plugin_request_total{endpoint=\"queryData\"}, plugin_id)",
+          "query": "label_values(grafana_plugin_request_total{endpoint=\"queryData\",job=\"$job\"}, plugin_id)",
           "refId": "PrometheusVariableQueryEditor-VariableQuery"
         },
         "current": {
