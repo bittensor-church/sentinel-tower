@@ -97,6 +97,10 @@ services:
       - POSTGRES_DB=${POSTGRES_DB}
       - POSTGRES_USER=${POSTGRES_USER}
       - POSTGRES_PASSWORD=${POSTGRES_PASSWORD}
+      # Loki data source (Postgres Slow Statements dashboard); same values Alloy uses.
+      - LOKI_URL=${LOKI_URL}
+      - LOKI_USER=${LOKI_USER}
+      - LOKI_PASSWORD=${LOKI_PASSWORD}
       - BLOCK_END=${BLOCK_END:-5000000}
     volumes:
       - ./grafana/provisioning:/etc/grafana/provisioning:ro
