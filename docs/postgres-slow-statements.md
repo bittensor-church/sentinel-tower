@@ -48,9 +48,11 @@ The script prints the username and password to put into `LOKI_USER` and
 
 The dashboard cannot query until `LOKI_READER_USER` and `LOKI_READER_PASSWORD`
 are set. Open <https://loki.reef.pl/token/> in a browser, sign in, and copy the
-username and password it issues. Reader tokens are personal and shared by all
-readers of the `rt` tenant, so the data source sees every project's logs; the
-dashboard filters on the db container name.
+token it shows; that is the password. The username is your e-mail with the `@`
+URL-encoded, exactly as the token service stores it, for example
+`jane.doe%40reef.pl`. The plain e-mail is rejected with 401. Reader tokens are
+personal and shared by all readers of the `rt` tenant, so the data source sees
+every project's logs; the dashboard filters on the db container name.
 
 After changing `.env`, run `docker compose up -d alloy grafana`: both read
 their configuration at start, and compose recreates them when their
