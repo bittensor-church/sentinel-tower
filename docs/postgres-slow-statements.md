@@ -50,13 +50,18 @@ The dashboard cannot query until `LOKI_READER_USER` and `LOKI_READER_PASSWORD`
 are set. Open <https://loki.reef.pl/token/> in a browser, sign in, and copy the
 token it shows; that is the password. The username is your e-mail with the `@`
 URL-encoded, exactly as the token service stores it, for example
-`jane.doe%40reef.pl`. The plain e-mail is rejected with 401. Reader tokens are
-personal and shared by all readers of the `rt` tenant, so the data source sees
-every project's logs; the dashboard filters on the db container name.
+`jane.doe%40reef.pl`. The plain e-mail is rejected with 401. Every visit to the
+token page issues a new token and invalidates the previous one for that
+address, so do not reopen it to "check": the data source starts failing with
+401 until `.env` carries the new value. Reader tokens are personal and shared
+by all readers of the `rt` tenant, so the data source sees every project's
+logs; the dashboard filters on the db container name.
 
 After changing `.env`, run `docker compose up -d alloy grafana`: both read
 their configuration at start, and compose recreates them when their
-environment changed.
+environment changed. A recreated grafana container gets a new address, and
+nginx resolves its upstream only at start, so follow up with
+`docker exec <nginx container> nginx -s reload` or `/grafana/` answers 502.
 
 ## Reading it
 
