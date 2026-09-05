@@ -65,6 +65,12 @@ nginx resolves its upstream only at start, so follow up with
 
 ## Reading it
 
+- The **DB user** dropdown filters every panel by the Postgres role that ran
+  the statement (`postgres` is the application, the `*_ro` roles are the
+  Grafana readers). Alloy takes it from the `log_line_prefix`, which prod
+  writes since 2026-09-05 13:27 UTC; older lines have no user and only show
+  under "All". `app=` stays `[unknown]` until the services set
+  `application_name`.
 - The tiles count completed slow statements and cancelled statements in the
   selected range and show the longest and the total time spent.
 - The two charts bucket slow statements by duration band and show
