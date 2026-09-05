@@ -59,6 +59,12 @@ services:
 
   db:
     image: mirror.gcr.io/postgres:14.0-alpine
+    # pg_stat_statements must be preloaded or every query against the view errors;
+    # the extension itself is created by envs/dev/db-init on a fresh volume.
+    command:
+      - postgres
+      - -c
+      - shared_preload_libraries=pg_stat_statements
     healthcheck:
       test: pg_isready -U ${POSTGRES_USER} || exit 1
     environment:
@@ -67,6 +73,7 @@ services:
       - POSTGRES_PASSWORD=${POSTGRES_PASSWORD}
     volumes:
       - ${POSTGRES_DATA_PATH:-./db/data}:/var/lib/postgresql/data
+      - ./envs/dev/db-init:/docker-entrypoint-initdb.d:ro
     ports:
       - ${POSTGRES_PORT}:5432
 
