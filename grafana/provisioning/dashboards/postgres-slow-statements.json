@@ -15,7 +15,7 @@
       }
     ]
   },
-  "description": "Slow, cancelled and failed Postgres statements with their SQL, from the db container log in Loki. Complements DB Query Performance (pg_stat_statements: cumulative, no cancelled statements) and Grafana Query Timing (Grafana-side latency, no query identity).",
+  "description": "Slow, cancelled and failed Postgres statements with their SQL, from the db container log in Loki, filterable by the Postgres role. Complements DB Query Performance (pg_stat_statements: cumulative, no cancelled statements) and Grafana Query Timing (Grafana-side latency, no query identity).",
   "editable": true,
   "fiscalYearStartMonth": 0,
   "graphTooltip": 1,
@@ -26,7 +26,7 @@
       "id": 1,
       "type": "stat",
       "title": "Slow statements",
-      "description": "Statements over the log threshold that completed in the selected range. Source: the db container log shipped to Loki by Alloy. Postgres logs every statement slower than log_min_duration_statement (2 s on prod) with its duration and full SQL, and every cancelled or failed statement with its text. Nothing faster than that threshold appears here.",
+      "description": "Statements over the log threshold that completed in the selected range. Source: the db container log shipped to Loki by Alloy. Postgres logs every statement slower than log_min_duration_statement (2 s on prod) with its duration and full SQL, and every cancelled or failed statement with its text. Nothing faster than that threshold appears here. The DB user dropdown filters by the Postgres role from the log prefix (lines since 2026-09-05).",
       "datasource": {
         "type": "loki",
         "uid": "loki"
@@ -80,7 +80,7 @@
             "uid": "loki"
           },
           "editorMode": "code",
-          "expr": "sum(count_over_time({container=\"$db_container\"} |~ \"duration: [0-9.]+ ms  statement:\" [$__range]))",
+          "expr": "sum(count_over_time({container=\"$db_container\", db_user=~\"$db_user\"} |~ \"duration: [0-9.]+ ms  statement:\" [$__range]))",
           "queryType": "instant"
         }
       ]
@@ -89,7 +89,7 @@
       "id": 2,
       "type": "stat",
       "title": "Cancelled statements",
-      "description": "Statements cancelled because the client went away (nginx or browser timeout) in the selected range. These never reach pg_stat_statements. Source: the db container log shipped to Loki by Alloy. Postgres logs every statement slower than log_min_duration_statement (2 s on prod) with its duration and full SQL, and every cancelled or failed statement with its text. Nothing faster than that threshold appears here.",
+      "description": "Statements cancelled because the client went away (nginx or browser timeout) in the selected range. These never reach pg_stat_statements. Source: the db container log shipped to Loki by Alloy. Postgres logs every statement slower than log_min_duration_statement (2 s on prod) with its duration and full SQL, and every cancelled or failed statement with its text. Nothing faster than that threshold appears here. The DB user dropdown filters by the Postgres role from the log prefix (lines since 2026-09-05).",
       "datasource": {
         "type": "loki",
         "uid": "loki"
@@ -151,7 +151,7 @@
             "uid": "loki"
           },
           "editorMode": "code",
-          "expr": "sum(count_over_time({container=\"$db_container\"} |= \"canceling statement due to user request\" [$__range]))",
+          "expr": "sum(count_over_time({container=\"$db_container\", db_user=~\"$db_user\"} |= \"canceling statement due to user request\" [$__range]))",
           "queryType": "instant"
         }
       ]
@@ -222,7 +222,7 @@
             "uid": "loki"
           },
           "editorMode": "code",
-          "expr": "max(max_over_time({container=\"$db_container\"} |~ \"duration: [0-9.]+ ms  statement:\" | regexp \"duration: (?P<duration_ms>[0-9.]+) ms\" | unwrap duration_ms [$__range]))",
+          "expr": "max(max_over_time({container=\"$db_container\", db_user=~\"$db_user\"} |~ \"duration: [0-9.]+ ms  statement:\" | regexp \"duration: (?P<duration_ms>[0-9.]+) ms\" | unwrap duration_ms [$__range]))",
           "queryType": "instant"
         }
       ]
@@ -285,7 +285,7 @@
             "uid": "loki"
           },
           "editorMode": "code",
-          "expr": "sum(sum_over_time({container=\"$db_container\"} |~ \"duration: [0-9.]+ ms  statement:\" | regexp \"duration: (?P<duration_ms>[0-9.]+) ms\" | unwrap duration_ms [$__range]))",
+          "expr": "sum(sum_over_time({container=\"$db_container\", db_user=~\"$db_user\"} |~ \"duration: [0-9.]+ ms  statement:\" | regexp \"duration: (?P<duration_ms>[0-9.]+) ms\" | unwrap duration_ms [$__range]))",
           "queryType": "instant"
         }
       ]
@@ -294,7 +294,7 @@
       "id": 5,
       "type": "timeseries",
       "title": "Slow statements over time, by duration",
-      "description": "Completed slow statements per interval (5 min or wider on long ranges), bucketed by duration band. Legend totals are counts for the whole range. Source: the db container log shipped to Loki by Alloy. Postgres logs every statement slower than log_min_duration_statement (2 s on prod) with its duration and full SQL, and every cancelled or failed statement with its text. Nothing faster than that threshold appears here.",
+      "description": "Completed slow statements per interval (5 min or wider on long ranges), bucketed by duration band. Legend totals are counts for the whole range. Source: the db container log shipped to Loki by Alloy. Postgres logs every statement slower than log_min_duration_statement (2 s on prod) with its duration and full SQL, and every cancelled or failed statement with its text. Nothing faster than that threshold appears here. The DB user dropdown filters by the Postgres role from the log prefix (lines since 2026-09-05).",
       "datasource": {
         "type": "loki",
         "uid": "loki"
@@ -417,7 +417,7 @@
             "uid": "loki"
           },
           "editorMode": "code",
-          "expr": "sum(count_over_time({container=\"$db_container\"} |~ \"duration: [0-9.]+ ms  statement:\" | regexp \"duration: (?P<duration_ms>[0-9.]+) ms\" | duration_ms < 10000 [$__interval]))",
+          "expr": "sum(count_over_time({container=\"$db_container\", db_user=~\"$db_user\"} |~ \"duration: [0-9.]+ ms  statement:\" | regexp \"duration: (?P<duration_ms>[0-9.]+) ms\" | duration_ms < 10000 [$__interval]))",
           "queryType": "range",
           "legendFormat": "2 s to 10 s"
         },
@@ -428,7 +428,7 @@
             "uid": "loki"
           },
           "editorMode": "code",
-          "expr": "sum(count_over_time({container=\"$db_container\"} |~ \"duration: [0-9.]+ ms  statement:\" | regexp \"duration: (?P<duration_ms>[0-9.]+) ms\" | duration_ms >= 10000 | duration_ms < 60000 [$__interval]))",
+          "expr": "sum(count_over_time({container=\"$db_container\", db_user=~\"$db_user\"} |~ \"duration: [0-9.]+ ms  statement:\" | regexp \"duration: (?P<duration_ms>[0-9.]+) ms\" | duration_ms >= 10000 | duration_ms < 60000 [$__interval]))",
           "queryType": "range",
           "legendFormat": "10 s to 60 s"
         },
@@ -439,7 +439,7 @@
             "uid": "loki"
           },
           "editorMode": "code",
-          "expr": "sum(count_over_time({container=\"$db_container\"} |~ \"duration: [0-9.]+ ms  statement:\" | regexp \"duration: (?P<duration_ms>[0-9.]+) ms\" | duration_ms >= 60000 [$__interval]))",
+          "expr": "sum(count_over_time({container=\"$db_container\", db_user=~\"$db_user\"} |~ \"duration: [0-9.]+ ms  statement:\" | regexp \"duration: (?P<duration_ms>[0-9.]+) ms\" | duration_ms >= 60000 [$__interval]))",
           "queryType": "range",
           "legendFormat": "over 60 s"
         }
@@ -542,7 +542,7 @@
             "uid": "loki"
           },
           "editorMode": "code",
-          "expr": "sum(count_over_time({container=\"$db_container\"} |= \"canceling statement due to user request\" [$__interval]))",
+          "expr": "sum(count_over_time({container=\"$db_container\", db_user=~\"$db_user\"} |= \"canceling statement due to user request\" [$__interval]))",
           "queryType": "range",
           "legendFormat": "cancelled"
         }
@@ -552,7 +552,7 @@
       "id": 7,
       "type": "table",
       "title": "Slow statements, longest first",
-      "description": "Every completed statement over the log threshold in the selected range, with its duration and SQL. Click a cell to expand the SQL. Up to 1000 entries.",
+      "description": "Every completed statement over the log threshold in the selected range, with the role that ran it, its duration and SQL. Click a cell to expand the SQL. Up to 1000 entries.",
       "datasource": {
         "type": "loki",
         "uid": "loki"
@@ -596,6 +596,18 @@
               {
                 "id": "custom.width",
                 "value": 190
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "user"
+            },
+            "properties": [
+              {
+                "id": "custom.width",
+                "value": 150
               }
             ]
           },
@@ -668,8 +680,9 @@
           "options": {
             "indexByName": {
               "Time": 0,
-              "duration_ms": 1,
-              "Line": 2
+              "db_user": 1,
+              "duration_ms": 2,
+              "Line": 3
             },
             "excludeByName": {
               "id": true,
@@ -681,6 +694,7 @@
               "sql": true
             },
             "renameByName": {
+              "db_user": "user",
               "duration_ms": "duration (ms)",
               "Line": "SQL"
             }
@@ -695,7 +709,7 @@
             "uid": "loki"
           },
           "editorMode": "code",
-          "expr": "{container=\"$db_container\"} |~ \"duration: [0-9.]+ ms  statement:\" | regexp \"duration: (?P<duration_ms>[0-9.]+) ms  statement: (?P<sql>(?s:.*))\" | line_format \"{{.sql}}\"",
+          "expr": "{container=\"$db_container\", db_user=~\"$db_user\"} |~ \"duration: [0-9.]+ ms  statement:\" | regexp \"duration: (?P<duration_ms>[0-9.]+) ms  statement: (?P<sql>(?s:.*))\" | line_format \"{{.sql}}\"",
           "queryType": "range",
           "maxLines": 1000
         }
@@ -705,7 +719,7 @@
       "id": 8,
       "type": "table",
       "title": "Errored and cancelled statements",
-      "description": "ERROR lines and the STATEMENT lines Postgres writes right after them, newest first. A cancel shows as \"canceling statement due to user request\" followed by the SQL. Source: the db container log shipped to Loki by Alloy. Postgres logs every statement slower than log_min_duration_statement (2 s on prod) with its duration and full SQL, and every cancelled or failed statement with its text. Nothing faster than that threshold appears here.",
+      "description": "ERROR lines and the STATEMENT lines Postgres writes right after them, newest first, with the role. A cancel shows as \"canceling statement due to user request\" followed by the SQL. Source: the db container log shipped to Loki by Alloy. Postgres logs every statement slower than log_min_duration_statement (2 s on prod) with its duration and full SQL, and every cancelled or failed statement with its text. Nothing faster than that threshold appears here. The DB user dropdown filters by the Postgres role from the log prefix (lines since 2026-09-05).",
       "datasource": {
         "type": "loki",
         "uid": "loki"
@@ -749,6 +763,18 @@
               {
                 "id": "custom.width",
                 "value": 190
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "user"
+            },
+            "properties": [
+              {
+                "id": "custom.width",
+                "value": 150
               }
             ]
           },
@@ -810,8 +836,9 @@
           "options": {
             "indexByName": {
               "Time": 0,
-              "kind": 1,
-              "Line": 2
+              "db_user": 1,
+              "kind": 2,
+              "Line": 3
             },
             "excludeByName": {
               "id": true,
@@ -823,6 +850,7 @@
               "text": true
             },
             "renameByName": {
+              "db_user": "user",
               "Line": "message / SQL"
             }
           }
@@ -836,7 +864,7 @@
             "uid": "loki"
           },
           "editorMode": "code",
-          "expr": "{container=\"$db_container\"} |~ `\\] (ERROR|STATEMENT):  ` | regexp `\\] (?P<kind>ERROR|STATEMENT):  (?P<text>(?s:.*))` | line_format \"{{.text}}\"",
+          "expr": "{container=\"$db_container\", db_user=~\"$db_user\"} |~ \" (ERROR|STATEMENT):  \" | regexp \" (?P<kind>ERROR|STATEMENT):  (?P<text>(?s:.*))\" | line_format \"{{.text}}\"",
           "queryType": "range",
           "maxLines": 1000
         }
@@ -855,6 +883,7 @@
       {
         "name": "db_container",
         "label": "DB container",
+        "description": "The db container whose log to read.",
         "type": "query",
         "datasource": {
           "type": "loki",
@@ -862,15 +891,45 @@
         },
         "definition": "label_values(container)",
         "query": "label_values(container)",
-        "regex": "/.*-db-1$/",
-        "current": {},
         "hide": 0,
-        "includeAll": false,
-        "multi": false,
         "options": [],
         "refresh": 1,
         "sort": 1,
-        "skipUrlSync": false
+        "skipUrlSync": false,
+        "multi": false,
+        "includeAll": false,
+        "current": {},
+        "regex": "/.*-db-1$/"
+      },
+      {
+        "name": "db_user",
+        "label": "DB user",
+        "description": "Postgres role that ran the statement, from the log prefix. `postgres` is the application; the `*_ro` roles are the Grafana readers. Lines older than the prefix change have no role and appear only under All.",
+        "type": "query",
+        "datasource": {
+          "type": "loki",
+          "uid": "loki"
+        },
+        "definition": "label_values({container=\"$db_container\"}, db_user)",
+        "query": "label_values({container=\"$db_container\"}, db_user)",
+        "hide": 0,
+        "options": [],
+        "refresh": 1,
+        "sort": 1,
+        "skipUrlSync": false,
+        "multi": true,
+        "includeAll": true,
+        "allValue": ".*",
+        "current": {
+          "selected": true,
+          "text": [
+            "All"
+          ],
+          "value": [
+            "$__all"
+          ]
+        },
+        "regex": ""
       }
     ]
   },
@@ -882,6 +941,6 @@
   "timezone": "",
   "title": "Postgres Slow Statements",
   "uid": "postgres-slow-statements",
-  "version": 1,
+  "version": 2,
   "weekStart": ""
 }
