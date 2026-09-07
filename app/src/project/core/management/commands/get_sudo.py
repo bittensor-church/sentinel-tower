@@ -32,7 +32,7 @@ class Command(BaseCommand):
         self.stdout.write(f"Connecting to {network}...")
         subtensor = bt.Subtensor(network=network)
 
-        block_number = options["block"] or subtensor.block
+        block_number = options["block"] if options["block"] is not None else subtensor.block
         self.stdout.write(f"Block #{block_number}\n")
 
         result = subtensor.query(bt.storage.Sudo.Key, block=block_number)
