@@ -27,13 +27,7 @@ docker compose up -d db redis                          # unit + e2e need these
 docker compose --profile e2e up -d localnet            # e2e also needs the chain
 ```
 
-The e2e localnet **must** run runtime specVersion **424** — the image is pinned to
-`ghcr.io/opentensor/subtensor-localnet:v3.4.9-424` (the tag suffix is the runtime
-version, which matches finney). A newer runtime (e.g. the `raofoundation/...:devnet`
-image's 431) types `NetUid` as a composite newtype that bittensor 10.x cannot encode, so
-every metagraph/hyperparam call fails with `Invalid type for data`. The e2e conftest
-asserts the runtime version up front and fails loudly if it is wrong. Override the node
-URL with `E2E_LOCALNET_URL` if needed.
+The e2e localnet is pinned by digest to `ghcr.io/raofoundation/subtensor-localnet:latest`.
 
 ## What deserves an e2e test here
 
