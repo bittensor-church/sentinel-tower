@@ -1,0 +1,26 @@
+diff a/nginx/templates/default.conf.template b/nginx/templates/default.conf.template	(rejected hunks)
+@@ -16,12 +16,15 @@ server {
+     server_name_in_redirect off;
+ 
+ 
++    access_log                /dev/stdout;
++
+     return 444;
+ }
+ 
+ server {
+     listen 80;
+     server_name ${NGINX_HOST};
++    access_log                /dev/stdout;
+     return 301 https://${NGINX_HOST}$request_uri;
+ }
+ 
+@@ -38,6 +41,8 @@ server {
+     ssl_trusted_certificate   /etc/letsencrypt/live/${NGINX_HOST}/chain.pem;
+ 
+ 
++    access_log                /dev/stdout;
++
+     return 444;
+ }
+ 

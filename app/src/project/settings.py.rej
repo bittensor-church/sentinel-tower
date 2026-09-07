@@ -1,0 +1,50 @@
+diff a/app/src/project/settings.py b/app/src/project/settings.py	(rejected hunks)
+@@ -14,6 +14,7 @@ from django.utils.log import CallbackFilter
+ 
+ # from celery.schedules import crontab
+ from kombu import Queue
++from structlog_sentry import SentryProcessor
+ 
+ root = environ.Path(__file__) - 2
+ 
+@@ -337,8 +347,24 @@ STRUCTLOG_CONFIGURATION: dict[str, Any] = dict(
+ )
+ structlog.configure(**STRUCTLOG_CONFIGURATION)
+ 
++
++def _drop_structlog_duplicates(entry: dict, hint: dict) -> dict | None:
++    """Drop Sentry entries already reported by LOGGING_SENTRY_PROCESSOR.
++
++    structlog events also reach stdlib logging, but with `exc_info` already rendered to a string by
++    `format_exc_info`. The Sentry logging integration would report them a second time, without a
++    stacktrace and with the whole event dict (timestamp included) as the message, which makes Sentry
++    treat every single occurrence as a separate issue. structlog marks such records by setting the
++    `_logger` attribute on them.
++    """
++    record = hint.get("log_record")
++    if isinstance(record, logging.LogRecord) and hasattr(record, "_logger"):
++        return None
++    return entry
++
++
+ # Sentry
+-if SENTRY_DSN := env("SENTRY_DSN"):
++if SENTRY_DSN:
+     import sentry_sdk
+     from sentry_sdk.integrations.celery import CeleryIntegration
+     from sentry_sdk.integrations.django import DjangoIntegration
+@@ -348,6 +374,8 @@ if SENTRY_DSN := env("SENTRY_DSN"):
+     sentry_sdk.init(  # type: ignore
+         dsn=SENTRY_DSN,
+         environment=ENV,
++        before_send=_drop_structlog_duplicates,
++        before_breadcrumb=_drop_structlog_duplicates,
+         ignore_errors=[
+             KeyboardInterrupt,
+             SystemExit,
+@@ -365,3 +393,5 @@ if SENTRY_DSN := env("SENTRY_DSN"):
+     )
+     ignore_logger("django.security.DisallowedHost")
+     ignore_logger("django_structlog.celery.receivers")
++    # DjangoIntegration already captures unhandled request exceptions.
++    ignore_logger("django_structlog.middlewares.request")

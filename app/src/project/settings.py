@@ -204,6 +204,14 @@ LOGGING_CALLSITE_PARAMETERS_PROCESSOR = structlog.processors.CallsiteParameterAd
     ]
 )
 
+SENTRY_DSN = env("SENTRY_DSN")
+
+LOGGING_SENTRY_PROCESSOR = SentryProcessor(
+    active=bool(SENTRY_DSN),
+    level=logging.INFO,
+    event_level=logging.ERROR,
+)
+
 LOGGING_FOREIGN_PRE_CHAIN = [
     structlog.stdlib.add_log_level,
     structlog.stdlib.add_logger_name,
@@ -288,6 +296,7 @@ STRUCTLOG_CONFIGURATION: _StructlogConfiguration = {
         LOGGING_CALLSITE_PARAMETERS_PROCESSOR,
         structlog.stdlib.PositionalArgumentsFormatter(),
         structlog.processors.StackInfoRenderer(),
+        LOGGING_SENTRY_PROCESSOR,
         structlog.processors.format_exc_info,
         structlog.processors.UnicodeDecoder(),
         structlog.stdlib.ProcessorFormatter.wrap_for_formatter,

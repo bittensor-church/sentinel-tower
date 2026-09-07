@@ -1,0 +1,25 @@
+diff a/app/src/project/celery.py b/app/src/project/celery.py	(rejected hunks)
+@@ -9,7 +9,9 @@ from django.dispatch import receiver
+ from django_structlog.celery.signals import bind_extra_task_metadata
+ from django_structlog.celery.steps import DjangoStructLogInitStep
+ from more_itertools import chunked
+-from prometheus_client import Gauge, multiprocess
++from prometheus_client import Metric, multiprocess
++from prometheus_client.metrics_core import GaugeMetricFamily
++from prometheus_client.registry import Collector
+ 
+ from .settings import STRUCTLOG_CONFIGURATION
+ 
+@@ -20,12 +22,6 @@ app.config_from_object("django.conf:settings", namespace="CELERY")
+ app.steps["worker"].add(DjangoStructLogInitStep)
+ app.autodiscover_tasks(lambda: settings.INSTALLED_APPS)
+ 
+-num_tasks_in_queue = Gauge(
+-    "celery_queue_len",
+-    "How many tasks are there in a queue",
+-    labelnames=("queue",),
+-)
+-
+ 
+ @setup_logging.connect
+ def receiver_setup_logging(loglevel, logfile, format, colorize, **kwargs):  # pragma: no cover

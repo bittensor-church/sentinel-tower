@@ -1,0 +1,32 @@
+diff a/app/src/project/core/metrics.py b/app/src/project/core/metrics.py	(rejected hunks)
+@@ -2,13 +2,12 @@ import os
+ from pathlib import Path
+ 
+ import prometheus_client
+-from django.conf import settings
+ from django.http import HttpResponse
+ from django_prometheus.exports import ExportToDjangoView
+ from prometheus_client import REGISTRY
+ from prometheus_client.multiprocess import FlockMultiProcessCollector
+ 
+-from ..celery import get_num_tasks_in_queue, num_tasks_in_queue
++from ..celery import CeleryQueueLenCollector
+ 
+ if multiproc_dir := os.environ.get("PROMETHEUS_MULTIPROC_DIR"):
+     registry = prometheus_client.CollectorRegistry()
+@@ -16,13 +15,12 @@ if multiproc_dir := os.environ.get("PROMETHEUS_MULTIPROC_DIR"):
+ else:
+     registry = REGISTRY
+ 
++registry.register(CeleryQueueLenCollector())
++
+ 
+ def metrics_view(request):
+     """Exports metrics as a Django view"""
+ 
+-    for queue in settings.CELERY_TASK_QUEUES:
+-        num_tasks_in_queue.labels(queue.name).set(get_num_tasks_in_queue(queue.name))
+-
+     if multiproc_dir:
+         multiproc_path = Path(multiproc_dir)
+         folders_to_cleanup = [multiproc_path] + [f for f in multiproc_path.iterdir() if f.is_dir()]

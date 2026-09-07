@@ -57,6 +57,18 @@ def get_num_tasks_in_queue(queue_name: str) -> int:
         return conn.default_channel.client.llen(queue_name)
 
 
+class CeleryQueueLenCollector(Collector):
+    def collect(self) -> list[Metric]:
+        metric = GaugeMetricFamily(
+            "celery_queue_len",
+            "How many tasks are there in a queue",
+            labels=["queue"],
+        )
+        for queue in settings.CELERY_TASK_QUEUES:
+            metric.add_metric([queue.name], get_num_tasks_in_queue(queue.name))
+        return [metric]
+
+
 def move_tasks(source_queue: str, destination_queue: str, chunk_size: int = 100) -> None:
     with app.pool.acquire(block=True) as conn:
         client = conn.default_channel.client

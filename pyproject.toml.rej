@@ -1,0 +1,15 @@
+diff a/pyproject.toml b/pyproject.toml	(rejected hunks)
+@@ -17,11 +17,12 @@ dependencies = [
+     "psycopg[binary]~=3.3.2",
+     "redis~=7.1.1",
+     "sentry-sdk~=2.52.0",
++    "structlog-sentry~=2.2.1",
+     "ipython~=9.10.0",
+     "parso>=0.8.5",  # for python3.14 support
+     "more-itertools~=10.8.0",
+     "psutil~=7.2.2",
+-    "prometheus-client @ git+https://github.com/reef-technologies/prometheus_client.git@77cda428598193698f53129d2311010d39ae8134",
++    "prometheus-client @ git+https://github.com/reef-technologies/prometheus_client.git@17d1a283430153458c01a66a09ae6effe66f7aa8",
+     "django-prometheus~=2.4.1",
+     "django-business-metrics>=1.0.1,<2",
+ ]
