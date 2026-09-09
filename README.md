@@ -124,6 +124,88 @@ Monitor backfill progress with:
 celery -A project inspect active
 ```
 
+## Set up production environment (git deploy)
+
+<details>
+
+This sets up "deployment by pushing to git storage on remote", so that:
+
+- `git push origin ...` just pushes code to Github / other storage without any consequences;
+- `git push production master` pushes code to a remote server running the app and triggers a git hook to redeploy the application.
+
+```
+Local .git ------------> Origin .git
+                \
+                 ------> Production .git (redeploy on push)
+```
+
+- - -
+
+Use `ssh-keygen` to generate a key pair for the server, then add read-only access to repository in "deployment keys" section (`ssh -A` is easy to use, but not safe).
+
+```sh
+# remote server
+mkdir -p ~/repos
+cd ~/repos
+git init --bare --initial-branch=master {{ cookiecutter.repostory_name }}.git
+
+mkdir -p ~/domains/{{ cookiecutter.repostory_name }}
+```
+
+```sh
+# locally
+git remote add production root@<server>:~/repos/{{ cookiecutter.repostory_name }}.git
+git push production master
+```
+
+```sh
+# remote server
+cd ~/repos/{{ cookiecutter.repostory_name }}.git
+
+cat <<'EOT' > hooks/post-receive
+#!/bin/bash
+unset GIT_INDEX_FILE
+export ROOT=/root
+export REPO={{ cookiecutter.repostory_name }}
+while read oldrev newrev ref
+do
+    if [[ $ref =~ .*/master$ ]]; then
+        export GIT_DIR="$ROOT/repos/$REPO.git/"
+        export GIT_WORK_TREE="$ROOT/domains/$REPO/"
+        git checkout -f master
+        cd $GIT_WORK_TREE
+        ./deploy.sh
+    else
+        echo "Doing nothing: only the master branch may be deployed on this server."
+    fi
+done
+EOT
+
+chmod +x hooks/post-receive
+./hooks/post-receive
+cd ~/domains/{{ cookiecutter.repostory_name }}
+sudo bin/prepare-os.sh
+./setup-prod.sh
+
+# adjust the `.env` file
+
+mkdir letsencrypt
+./letsencrypt_setup.sh  # or ./selfsign_setup.sh; see "TLS certificates" below
+./deploy.sh
+```
+
+### Deploy another branch
+
+Only `master` branch is used to redeploy an application.
+If one wants to deploy other branch, force may be used to push desired branch to remote's `master`:
+
+```sh
+git push --force-with-lease production local-branch-to-deploy:master
+```
+
+</details>
+
+
 ## Log aggregation
 
 Generate new access credentials for the Loki server.
