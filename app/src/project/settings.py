@@ -354,6 +354,13 @@ BLOCK_TASK_MAX_RETRY_DELAY_MINUTES = 1440
 METAGRAPH_NETUIDS: list[int] | None = env.list("METAGRAPH_NETUIDS", default=[], cast=int) or None
 METAGRAPH_LITE = env.bool("METAGRAPH_LITE", default=False)
 
+# Coldkey tracked as "superburn" alongside each subnet's own owner-coldkey burn
+# (apps.metagraph.services.burn_service). Set empty to record superburn as 0.
+METAGRAPH_SUPERBURN_COLDKEY = env.str(
+    "METAGRAPH_SUPERBURN_COLDKEY",
+    default="5D7vUnt4TJ6M8aQbriZCMMkZ8sfYsSJJvRrVnhdWzkArVHDh",
+)
+
 # Data retention (docs/superpowers/specs/2026-07-07-data-retention-design.md).
 # Two windows: DATA_RETENTION_DAYS keeps non-validator neuron snapshots (+
 # their mechanism metrics); DATA_RETENTION_BULK_DAYS is a shorter window for
