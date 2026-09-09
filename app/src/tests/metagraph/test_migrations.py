@@ -14,7 +14,7 @@ from tests.factories.metagraph import (
 )
 
 stamp_current_owner_on_existing_dumps = importlib.import_module(
-    "apps.metagraph.migrations.0015_burn_and_subnet_emission"
+    "apps.metagraph.migrations.0016_burn_and_subnet_emission"
 ).stamp_current_owner_on_existing_dumps
 
 
