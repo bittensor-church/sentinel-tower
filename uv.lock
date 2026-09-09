@@ -404,7 +404,7 @@ wheels = [
 
 [[package]]
 name = "bittensor-sentinel"
-version = "0.2.5"
+version = "0.2.6"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
     { name = "asgiref" },
@@ -414,9 +414,9 @@ dependencies = [
     { name = "structlog" },
     { name = "typer" },
 ]
-sdist = { url = "https://files.pythonhosted.org/packages/16/ca/cf7d29bc27e042c8b32c187bae2fa29c5b886fccc21a8e19622ef458f05b/bittensor_sentinel-0.2.5.tar.gz", hash = "sha256:35fb8e4210e0c1d16873899474e05005cb0cf1f51b4fd2a41d7fc70469ba8fc9", size = 199548, upload-time = "2026-07-29T08:53:41.794Z" }
+sdist = { url = "https://files.pythonhosted.org/packages/36/e7/6fa1886ea2f86736ce472a12a69964506a8f1e008fad17c28dced9b087f2/bittensor_sentinel-0.2.6.tar.gz", hash = "sha256:40002f72f95b1968fd762cfbb4ebe8e5bf677b416c7fe672958746a0a40ac070", size = 202955, upload-time = "2026-08-03T10:12:01.513Z" }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/74/73/04c34daeb9394c8ad1a28a16ed6627c187a03ca1b36dffa1b17cccab28b2/bittensor_sentinel-0.2.5-py3-none-any.whl", hash = "sha256:31f16ce2a1a8ed7ed91219c48acbc81dc2ca179b8e74d3131554839ed2ea26ac", size = 56664, upload-time = "2026-07-29T08:53:40.39Z" },
+    { url = "https://files.pythonhosted.org/packages/55/d2/570a901e1fcb219a8b55ded1fee3cb8e3e41486ca9060842d27860fa70b8/bittensor_sentinel-0.2.6-py3-none-any.whl", hash = "sha256:2596bc1aaf7cdc8603970c8094bd61ca42f4e9bf0c481db36842994daed56367", size = 58554, upload-time = "2026-08-03T10:12:00.088Z" },
 ]
 
 [package.optional-dependencies]
@@ -2377,7 +2377,7 @@ requires-dist = [
     { name = "abstract-block-dumper", extras = ["prometheus"], specifier = "==0.1.6" },
     { name = "bittensor", specifier = ">=10.5.0,<11" },
     { name = "bittensor-pylon-client", specifier = ">=1.8.0" },
-    { name = "bittensor-sentinel", extras = ["testing"], specifier = "==0.2.5" },
+    { name = "bittensor-sentinel", extras = ["testing"], specifier = "==0.2.6" },
     { name = "celery", specifier = "~=5.6.2" },
     { name = "dagster", specifier = ">=1.9.0" },
     { name = "dagster-webserver", specifier = ">=1.9.0" },
