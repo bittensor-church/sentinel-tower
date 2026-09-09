@@ -1,7 +1,7 @@
 {
   "template": "https://github.com/reef-technologies/cookiecutter-rt-django",
-  "commit": "58557a6068d074654cfecc34a4c0a68aa2e24f67",
-  "checkout": "58557a6",
+  "commit": "5ad2fcaf6c9d5f203ec3183dfac1fdf221afd332",
+  "checkout": "5ad2fca",
   "context": {
     "cookiecutter": {
       "repostory_name": "bittensor_sentinel",
@@ -52,7 +52,7 @@
         "lstrip_blocks": true
       },
       "_template": "https://github.com/reef-technologies/cookiecutter-rt-django",
-      "_commit": "58557a6068d074654cfecc34a4c0a68aa2e24f67"
+      "_commit": "5ad2fcaf6c9d5f203ec3183dfac1fdf221afd332"
     }
   },
   "directory": null

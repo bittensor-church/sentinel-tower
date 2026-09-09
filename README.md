@@ -235,6 +235,7 @@ Then run the desired Nox session:
 
 ```sh
 uvx nox -s lint
+uvx nox -s type_check
 uvx nox -s test
 ```
 
