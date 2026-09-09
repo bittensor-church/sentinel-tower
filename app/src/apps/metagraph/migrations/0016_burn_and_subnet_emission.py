@@ -30,7 +30,7 @@ def stamp_current_owner_on_existing_dumps(apps, schema_editor):
 
 class Migration(migrations.Migration):
     dependencies = [
-        ("metagraph", "0014_retention_miner_block_index"),
+        ("metagraph", "0015_validator_apy_epoch"),
     ]
 
     operations = [
