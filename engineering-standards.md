@@ -9,6 +9,8 @@ Examples of external service boundaries include:
 - HTTP APIs
 - Object storage
 - Message brokers
+- Subtensor or Bittensor
+- Discord
 
 ## External Service Boundaries
 
@@ -29,7 +31,7 @@ Examples of external service boundaries include:
 - Do not make a contact responsible for unrelated convenience behavior just because it already talks to the service.
 - Do not add methods to a contact that are really local application concerns.
 - Do not require tests to mock upstream SDK internals when they can mock the contact instead.
-- Do not call `super()` implementations directly from high-level wrappers if the same operation is supposed to be 
+- Do not call `super()` implementations directly from high-level wrappers if the same operation is supposed to be
   mocked through a contact.
 
 ## Mock Contact Rules
@@ -37,7 +39,7 @@ Examples of external service boundaries include:
 ### Required
 
 - When implementing a library, put reusable mock contacts in production code when downstream projects are expected to
-  use them in their own tests. Thanks to this, downstream repos can use these mocks to implement their own tests 
+  use them in their own tests. Thanks to this, downstream repos can use these mocks to implement their own tests
   without the need to mock your whole library or learning how to mock its contact.
 - Mock contacts should be placed into a clearly named test-support module.
 - Make mock contacts implement the same abstract contact interface as the real contact.
@@ -47,14 +49,14 @@ Examples of external service boundaries include:
 - Drive test scenarios by configuring the mock contact, not by patching internal helpers below the public seam.
 - Cover non-happy-path behavior through the mock contact, not only happy paths.
 - When a contact method returns collections or other aggregate results, include mixed-scenario tests that combine valid
-  items with invalid, missing, stale, or otherwise problematic items in the same case so the test proves one bad item 
+  items with invalid, missing, stale, or otherwise problematic items in the same case so the test proves one bad item
   does not break the whole result.
 - Configure mocks in domain terms:
   - current listed items or records
   - current synchronized contact result
   - current externally stored state
   - upload outcome
-- Mock contacts should be either stateless or be easy to reset so that leakage across tests.
+- Mock contacts should be either stateless or easy to reset, so that state does not leak across tests.
 
 ### Forbidden
 
@@ -69,7 +71,7 @@ Examples of external service boundaries include:
 
 ### Required
 
-- Expose contact access through module-level factory functions. It can return a singleton or not, depending on the 
+- Expose contact access through module-level factory functions. It can return a singleton or not, depending on the
   circumstances.
 - Depend on the factory function at call sites.
 - Patch the factory function in tests.
@@ -99,14 +101,16 @@ def contact() -> AbstractContact:
 
 - Test behavior through public APIs.
 - Mock only true external boundaries that are expensive or inappropriate to run in-process.
-- This usually includes stubbing HTTP responses with `aioresponses`
+- In this repository, examples usually include:
+  - patching contact singleton factory functions
+  - stubbing HTTP responses with `aioresponses`
 - When a contact boundary exists, patch the contact factory and configure a concrete mock contact instance that
   implements the abstract contact.
 - Keep internal helpers real in public-API tests when practical, including manifest builders, reconciliation helpers,
   parsers, and crypto helpers.
-- Public-API tests that use mock contacts should cover both successful and unsuccessful external data in the same 
+- Public-API tests that use mock contacts should cover both successful and unsuccessful external data in the same
   suite, and should prefer mixed-result cases for collection reads when that is how production behavior is exercised.
-- Use real certificates, keys, and realistic domain objects in tests when practical. These should be generated 
+- Use real certificates, keys, and realistic domain objects in tests when practical. These should be generated
   specifically for the tests and not be copied from production values.
 - Prefer asserting final public outcomes and externally visible side effects.
 
@@ -129,10 +133,10 @@ def contact() -> AbstractContact:
 
 - Assert concrete expected values: specific field values, specific counts, specific
   IDs/content — not just that a response has the right shape.
-- When a value cannot be asserted concretely because an external service makes it 
-  non-deterministic, e.g. timestamps, generated IDs,  treat that as a signal to add
-  or extend a `Contact` boundary and a matching mock
-  `Contact`, then configure the mock to a known value and assert exactly that value.
+- When a value cannot be asserted concretely because an external service makes it
+  non-deterministic, e.g. timestamps, generated IDs, or chain-dependent data, treat that
+  as a signal to add or extend a `Contact` boundary and a matching mock `Contact`, then
+  configure the mock to a known value and assert exactly that value.
 
 ### Forbidden
 
@@ -147,7 +151,7 @@ def contact() -> AbstractContact:
 ### Required
 
 - If Docker services are required for tests (e.g. databases) they should be configured via a docker-compose.yml file in
-  the repository root and started with `docker compose up -d` (run in background) or `docker compose up` (run in 
+  the repository root and started with `docker compose up -d` (run in background) or `docker compose up` (run in
   foreground).
 - If the project already configures services with Docker compose, it is permitted to place testing-specific services
   into the development version of this configuration but never in the production version.
@@ -162,12 +166,12 @@ def contact() -> AbstractContact:
 
 ### Required
 
-- Every real external-service contact must have dedicated real-implementation tests. This is mandatory, not optional 
+- Every real external-service contact must have dedicated real-implementation tests. This is mandatory, not optional
   polish.
 - Those tests must live in dedicated files.
 - Those tests must exercise only public contact methods.
 - Those tests may be heavy integration tests.
-  - If they are indeed heavy integration tests they should be opt-in locally and expected in CI. 
+  - If they are indeed heavy integration tests they should be opt-in locally and expected in CI.
 - When practical, those tests should create their own disposable external-service environment. Follow the setup rules
   below rather than relying on accidental fixture state.
 
@@ -181,10 +185,20 @@ def contact() -> AbstractContact:
 
 ### Required
 
-- Shape real integration fixtures around explicit domain roles, not around misleading names.
-- Prefer fixtures that make roles concrete and inspectable.
-- Use real artifacts in those environments when practical, e.g. real certificates and request payloads.
+- Shape real integration fixtures around explicit domain roles, not around misleading names or incidental chain state.
+- Prefer fixtures that make roles concrete and inspectable, for example:
+  - validator A
+  - validator B
+  - registered non-validator
+  - owner or subnet bootstrap actor
+- Use real artifacts in those environments when practical, including real certificates, keys, wallets, and realistic
+  payloads.
 - Assert the intended environment topology during setup against the real service state, not against assumptions.
+  Examples include:
+  - which actors are registered
+  - which actors have validator permits
+  - which actors have stake
+  - which actors have no published external record yet
 - In collection-oriented real contact tests, prefer composite scenarios that exercise multiple states in sequence or in
   one case, including mixed healthy and problematic records.
 - When testing collection reads, make expected outputs include unaffected valid records as well as problematic records
@@ -199,6 +213,10 @@ def contact() -> AbstractContact:
 
 ### Forbidden
 
+- Do not rely on fixture names like `miner`, `validator`, or `owner` unless the setup proves those roles through
+  actual external state.
+- Do not assume a registered actor is or is not a validator without asserting the real permit or equivalent
+  service-side role bit.
 - Do not use semantically misleading fixtures to stand in for a role they do not actually have.
 - Do not overfit integration tests to happy-path topologies.
 - Do not assert only that a record exists when the actual returned payload can be asserted concretely.

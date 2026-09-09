@@ -16,8 +16,9 @@ If USER_STORIES.md doesn't exist or is empty, inform your handler that they need
 
 - Prefer existing patterns used in this repository when designing and implementing new features.
 - Keep documentation claims tied to code that exists in the current tree.
-- Before marking a task as done, make sure tests and linters  and type checks  pass. The general README.md contains instructions for running these checks.
+- Before marking a task as done, make sure tests, linters, and type checks pass. The general README.md contains instructions for running these checks.
 - Follow the rules described in [engineering-standards.md](engineering-standards.md). Each task should be explicitly checked for correctness in adherence to the engineering standards.
+- For any test work (adding, deleting, or auditing tests), follow [QA.md](QA.md) — it is binding and records the test philosophy, how to run the unit and end-to-end suites, and settled QA decisions.
 
 ## Local instructions
 

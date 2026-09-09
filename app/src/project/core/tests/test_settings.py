@@ -6,19 +6,20 @@ import pytest
 import sentry_sdk
 import structlog
 from sentry_sdk.integrations.logging import LoggingIntegration
+from sentry_sdk.types import Event
 
 from ...settings import _drop_structlog_duplicates
 
 
 @pytest.fixture
-def sentry_events(settings) -> Generator[list[dict]]:
-    events: list[dict] = []
+def sentry_events(settings) -> Generator[list[Event]]:
+    events: list[Event] = []
     client = sentry_sdk.Client(
         dsn="https://public@sentry.invalid/0",
         transport=events.append,
         default_integrations=False,
         integrations=[LoggingIntegration(level=logging.INFO, event_level=logging.ERROR)],
-        before_send=_drop_structlog_duplicates,
+        before_send=_drop_structlog_duplicates,  # type: ignore[arg-type]
         before_breadcrumb=_drop_structlog_duplicates,
     )
     processor = settings.LOGGING_SENTRY_PROCESSOR

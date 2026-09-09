@@ -22,7 +22,7 @@ server {
     server_name _;
     server_name_in_redirect off;
 
-    access_log                /dev/stdout
+    access_log                /dev/stdout;
 
     return 444;
 }
@@ -30,7 +30,7 @@ server {
 server {
     listen 80;
     server_name ${NGINX_HOST};
-    access_log                /dev/stdout
+    access_log                /dev/stdout;
 
     location /alive/ {
         return 200 'OK';
@@ -54,7 +54,7 @@ server {
     ssl_certificate_key       /etc/letsencrypt/live/${NGINX_HOST}/privkey.pem;
     ssl_trusted_certificate   /etc/letsencrypt/live/${NGINX_HOST}/chain.pem;
 
-    access_log                /dev/stdout
+    access_log                /dev/stdout;
 
     return 444;
 }

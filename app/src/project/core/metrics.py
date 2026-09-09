@@ -2,13 +2,12 @@ import glob
 import os
 
 import prometheus_client
-from django.conf import settings
 from django.http import HttpResponse
 from django_prometheus.exports import ExportToDjangoView
 from prometheus_client import REGISTRY, multiprocess
 
 from apps.metagraph.tasks import set_snapshot_health_metrics
-from project.celery import get_num_tasks_in_queue, CeleryQueueLenCollector
+from project.celery import CeleryQueueLenCollector
 
 
 class RecursiveMultiProcessCollector(multiprocess.MultiProcessCollector):

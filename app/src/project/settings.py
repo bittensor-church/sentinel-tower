@@ -9,8 +9,8 @@ import structlog
 from celery.schedules import crontab
 from django.utils.log import CallbackFilter
 from kombu import Queue
-from structlog_sentry import SentryProcessor
 from structlog.typing import Processor, WrappedLogger
+from structlog_sentry import SentryProcessor
 
 root = environ.Path(__file__) - 2
 
@@ -307,6 +307,7 @@ STRUCTLOG_CONFIGURATION: _StructlogConfiguration = {
 }
 structlog.configure(**STRUCTLOG_CONFIGURATION)
 
+
 def _drop_structlog_duplicates(entry: dict, hint: dict) -> dict | None:
     """Drop Sentry entries already reported by LOGGING_SENTRY_PROCESSOR.
 
@@ -321,6 +322,7 @@ def _drop_structlog_duplicates(entry: dict, hint: dict) -> dict | None:
         return None
     return entry
 
+
 if SENTRY_DSN:
     import sentry_sdk
     from sentry_sdk.integrations.celery import CeleryIntegration
@@ -332,7 +334,7 @@ if SENTRY_DSN:
     sentry_sdk.init(  # type: ignore[abstract]
         dsn=SENTRY_DSN,
         environment=SENTRY_ENVIRONMENT,
-        before_send=_drop_structlog_duplicates,
+        before_send=_drop_structlog_duplicates,  # type: ignore[arg-type]
         before_breadcrumb=_drop_structlog_duplicates,
         ignore_errors=[
             KeyboardInterrupt,
