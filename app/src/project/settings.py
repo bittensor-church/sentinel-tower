@@ -326,6 +326,8 @@ if SENTRY_DSN:
     )
     ignore_logger("django.security.DisallowedHost")
     ignore_logger("django_structlog.celery.receivers")
+    # DjangoIntegration already captures unhandled request exceptions.
+    ignore_logger("django_structlog.middlewares.request")
 
 
 PROMETHEUS_EXPORT_MIGRATIONS = env.bool("PROMETHEUS_EXPORT_MIGRATIONS")
