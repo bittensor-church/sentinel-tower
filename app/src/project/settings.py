@@ -9,6 +9,7 @@ import structlog
 from celery.schedules import crontab
 from django.utils.log import CallbackFilter
 from kombu import Queue
+from structlog_sentry import SentryProcessor
 from structlog.typing import Processor, WrappedLogger
 
 root = environ.Path(__file__) - 2
@@ -204,6 +205,14 @@ LOGGING_CALLSITE_PARAMETERS_PROCESSOR = structlog.processors.CallsiteParameterAd
     ]
 )
 
+SENTRY_DSN = env("SENTRY_DSN")
+
+LOGGING_SENTRY_PROCESSOR = SentryProcessor(
+    active=bool(SENTRY_DSN),
+    level=logging.INFO,
+    event_level=logging.ERROR,
+)
+
 LOGGING_FOREIGN_PRE_CHAIN = [
     structlog.stdlib.add_log_level,
     structlog.stdlib.add_logger_name,
@@ -288,6 +297,7 @@ STRUCTLOG_CONFIGURATION: _StructlogConfiguration = {
         LOGGING_CALLSITE_PARAMETERS_PROCESSOR,
         structlog.stdlib.PositionalArgumentsFormatter(),
         structlog.processors.StackInfoRenderer(),
+        LOGGING_SENTRY_PROCESSOR,
         structlog.processors.format_exc_info,
         structlog.processors.UnicodeDecoder(),
         structlog.stdlib.ProcessorFormatter.wrap_for_formatter,
@@ -297,7 +307,20 @@ STRUCTLOG_CONFIGURATION: _StructlogConfiguration = {
 }
 structlog.configure(**STRUCTLOG_CONFIGURATION)
 
-SENTRY_DSN = env("SENTRY_DSN")
+def _drop_structlog_duplicates(entry: dict, hint: dict) -> dict | None:
+    """Drop Sentry entries already reported by LOGGING_SENTRY_PROCESSOR.
+
+    structlog events also reach stdlib logging, but with `exc_info` already rendered to a string by
+    `format_exc_info`. The Sentry logging integration would report them a second time, without a
+    stacktrace and with the whole event dict (timestamp included) as the message, which makes Sentry
+    treat every single occurrence as a separate issue. structlog marks such records by setting the
+    `_logger` attribute on them.
+    """
+    record = hint.get("log_record")
+    if isinstance(record, logging.LogRecord) and hasattr(record, "_logger"):
+        return None
+    return entry
+
 if SENTRY_DSN:
     import sentry_sdk
     from sentry_sdk.integrations.celery import CeleryIntegration
@@ -309,6 +332,8 @@ if SENTRY_DSN:
     sentry_sdk.init(  # type: ignore[abstract]
         dsn=SENTRY_DSN,
         environment=SENTRY_ENVIRONMENT,
+        before_send=_drop_structlog_duplicates,
+        before_breadcrumb=_drop_structlog_duplicates,
         ignore_errors=[
             KeyboardInterrupt,
             SystemExit,
