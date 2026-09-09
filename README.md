@@ -27,6 +27,12 @@ $ ./setup-dev.sh
 $ docker compose up -d
 ```
 
+The dev database preloads `pg_stat_statements` for the DB Query Performance dashboard.
+A fresh volume gets the extension from `envs/dev/db-init/`; an existing volume needs it once, after `docker compose up -d` has recreated the `db` container:
+```bash
+$ docker compose exec db psql -U postgres -d project -c 'CREATE EXTENSION IF NOT EXISTS pg_stat_statements'
+```
+
 visit app/src
 ```bash
 cd app/src
@@ -132,6 +138,10 @@ uvx cadm exec prometheus -- "cd /home/ubuntu/apps/prometheus-grafana-monitoring/
 Put the generated credentials in the `.env` file's `LOKI_USER` and `LOKI_PASSWORD` fields.
 
 See the [log aggregation configuration](https://github.com/reef-technologies/prometheus-grafana-monitoring?tab=readme-ov-file#adding-log-aggregation-targets) for more details.
+
+With the credentials in place, Alloy also ships the Postgres log, and the
+**Postgres Slow Statements** Grafana dashboard lists slow, cancelled and failed
+statements with their SQL. See [docs/postgres-slow-statements.md](docs/postgres-slow-statements.md).
 
 ## Sentinel Core
 

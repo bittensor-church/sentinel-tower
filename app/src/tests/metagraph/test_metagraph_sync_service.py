@@ -19,7 +19,7 @@ from sentinel.v1.testing.factories import (
 
 from apps.metagraph.models import MetagraphDump, Subnet
 from apps.metagraph.services.metagraph_sync_service import DumpMetadata, MetagraphSyncService
-from tests.factories.metagraph import BlockFactory, NeuronFactory
+from tests.factories.metagraph import BlockFactory, NeuronFactory, SubnetFactory
 
 
 @pytest.mark.django_db
@@ -199,3 +199,22 @@ def test_sync_neuron_snapshot_persists_dividends_in_rao():
 
     assert int(snapshot.alpha_dividends) == 50_000_000  # 0.05 * 1e9
     assert int(snapshot.tao_dividends) == 1_000_000  # 0.001 * 1e9
+
+
+@pytest.mark.django_db
+def test_sync_metagraph_dump_captures_tempo():
+    service = MetagraphSyncService()
+    subnet = SubnetFactory(tempo=720)
+    block = BlockFactory()
+    dump_metadata = SimpleNamespace(
+        netuid=subnet.netuid,
+        epoch_position="end",
+        started_at=timezone.now(),
+        finished_at=timezone.now(),
+    )
+
+    dump = service._sync_metagraph_dump(dump_metadata, block, subnet)
+    dump.refresh_from_db()
+
+    assert dump.epoch_position == 2
+    assert dump.tempo == 720

@@ -59,6 +59,12 @@ services:
 
   db:
     image: mirror.gcr.io/postgres:14.0-alpine
+    # pg_stat_statements must be preloaded or every query against the view errors;
+    # the extension itself is created by envs/dev/db-init on a fresh volume.
+    command:
+      - postgres
+      - -c
+      - shared_preload_libraries=pg_stat_statements
     healthcheck:
       test: pg_isready -U ${POSTGRES_USER} || exit 1
     environment:
@@ -67,6 +73,7 @@ services:
       - POSTGRES_PASSWORD=${POSTGRES_PASSWORD}
     volumes:
       - ${POSTGRES_DATA_PATH:-./db/data}:/var/lib/postgresql/data
+      - ./envs/dev/db-init:/docker-entrypoint-initdb.d:ro
     ports:
       - ${POSTGRES_PORT}:5432
 
@@ -97,6 +104,11 @@ services:
       - POSTGRES_DB=${POSTGRES_DB}
       - POSTGRES_USER=${POSTGRES_USER}
       - POSTGRES_PASSWORD=${POSTGRES_PASSWORD}
+      # Loki data source (Postgres Slow Statements dashboard). Reader token from
+      # https://loki.reef.pl/token/, not the push credentials Alloy uses.
+      - LOKI_URL=${LOKI_URL}
+      - LOKI_READER_USER=${LOKI_READER_USER:-}
+      - LOKI_READER_PASSWORD=${LOKI_READER_PASSWORD:-}
       - BLOCK_END=${BLOCK_END:-5000000}
     volumes:
       - ./grafana/provisioning:/etc/grafana/provisioning:ro
@@ -233,6 +245,15 @@ services:
         condition: service_healthy
     profiles:
       - historical-backfill
+
+  backfill-validator-apy-epochs:
+    <<: *backend
+    command: python manage.py backfill_validator_apy_epochs
+    depends_on:
+      db:
+        condition: service_healthy
+    profiles:
+      - metagraph
 
 volumes:
   app-venv:
