@@ -119,11 +119,12 @@ services:
       - prometheus
       - db
 
-  # Subtensor localnet for end-to-end tests. Pinned to runtime specVersion 424 (the tag
-  # suffix), which matches finney — a newer runtime breaks the bittensor SDK's
-  # metagraph/hyperparam calls. Start with: docker compose --profile e2e up -d localnet
+  # Subtensor localnet for end-to-end tests. The chain moved to RaoFoundation, which
+  # publishes no runtime-suffixed tags, so the pin is by digest — `latest` alone would
+  # silently change the runtime under the suite. This digest is runtime specVersion 454.
+  # Start with: docker compose --profile e2e up -d localnet
   localnet:
-    image: ghcr.io/opentensor/subtensor-localnet:latest
+    image: ghcr.io/raofoundation/subtensor-localnet:latest@sha256:01e02515a4237e2a9d6de5759b1a27d0a5bb440a8d363e1bf6a4f448f5542ba2
     ports:
       - ${LOCALNET_PORT:-9944}:9944
       - ${LOCALNET_PORT_ALT:-9945}:9945

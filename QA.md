@@ -27,10 +27,7 @@ docker compose up -d db redis                          # unit + e2e need these
 docker compose --profile e2e up -d localnet            # e2e also needs the chain
 ```
 
-The e2e localnet uses `ghcr.io/opentensor/subtensor-localnet:latest`, which must remain
-compatible with the Bittensor SDK version pinned here. The fixture proves the chain topology
-the tests rely on, but its runtime-version guard is currently disabled; re-enable that guard if
-an image/runtime mismatch recurs. Override the node URL with `E2E_LOCALNET_URL` if needed.
+The e2e localnet is pinned by digest to `ghcr.io/raofoundation/subtensor-localnet:latest`.
 
 ## What deserves an e2e test here
 
