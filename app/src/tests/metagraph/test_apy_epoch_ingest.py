@@ -263,6 +263,36 @@ def test_reconcile_ignores_ineligible_rows_outside_the_scanned_range():
 
 
 @pytest.mark.django_db
+def test_backfill_reconcile_ignores_ineligible_rows_outside_the_block_range():
+    """Same scoping guarantee for the block-range path the backfill uses.
+
+    The two paths run different SQL (a backfill chunk covers far more snapshots
+    than a tick, so only the tick materialises its candidates), so each needs
+    its own proof that the range is what bounds the delete.
+    """
+    stale = _make_epoch_source(block_number=720)
+    _make_epoch_source(block_number=1440)
+    with connection.cursor() as cursor:
+        apy_epoch_ingest.ingest_block_range(cursor, block_start=1, block_end=2000)
+    assert ValidatorApyEpoch.objects.count() == 2
+
+    stale.is_validator = False
+    stale.save(update_fields=["is_validator"])
+
+    with connection.cursor() as cursor:
+        deleted, _ = apy_epoch_ingest.ingest_block_range(cursor, block_start=1000, block_end=2000)
+
+    assert deleted == 0
+    assert set(ValidatorApyEpoch.objects.values_list("epoch_block", flat=True)) == {720, 1440}
+
+    with connection.cursor() as cursor:
+        deleted, _ = apy_epoch_ingest.ingest_block_range(cursor, block_start=1, block_end=2000)
+
+    assert deleted == 1
+    assert set(ValidatorApyEpoch.objects.values_list("epoch_block", flat=True)) == {1440}
+
+
+@pytest.mark.django_db
 def test_ingest_removes_row_when_epoch_position_corrected():
     snapshot = _make_epoch_source()
     tasks.ingest_validator_apy_epochs()

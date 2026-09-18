@@ -45,14 +45,42 @@ _APY_EXPR = """
     )
 """
 
-# The range is resolved into a MATERIALIZED candidate set before the epoch
-# table is touched, which pins the cost to the range rather than to the size of
-# metagraph_validator_apy_epoch. Written as a plain join, the planner stops
-# believing the range is selective once the epoch table is large: on prod
-# (2.6M epoch rows) it scanned every epoch row and probed the 9 GB
-# unique_neuron_block index once per row, taking 275 s per tick against 65-80 s
-# when the table held 0.45M rows. The same shape with this fence measured 4.6 s.
+# Two shapes of the same delete. Which one wins depends on how much of
+# metagraph_neuron_snapshot the range covers, so each caller picks its own.
+#
+# The plain join lets the planner drive from whichever side it likes. That is
+# right for a backfill chunk, whose block range spans millions of snapshot
+# rows: materialising them costs more than joining the epoch table directly
+# (measured on prod over a 5k-block range, warm: 1.2 s plain against 4.1 s
+# materialised).
 _RECONCILE_TEMPLATE = """
+    DELETE FROM metagraph_validator_apy_epoch e
+    USING metagraph_neuron_snapshot ns
+    JOIN metagraph_neuron n ON n.id = ns.neuron_id
+    WHERE {range_predicate}
+      AND e.subnet_id = n.subnet_id
+      AND e.neuron_id = ns.neuron_id
+      AND e.epoch_block = ns.block_id
+      AND NOT (
+          ns.is_validator = true
+          AND ns.alpha_stake > 0
+          AND EXISTS (
+              SELECT 1 FROM metagraph_dump d
+              WHERE d.block_id = ns.block_id
+                AND d.netuid = n.subnet_id
+                AND d.epoch_position = 2
+          )
+      )
+"""
+
+# A tick's id window is bounded by REPROCESS_MARGIN, so its candidate set is
+# small and worth materialising: it stops the planner from abandoning the range
+# once the epoch table grows. With the plain join above, prod (2.6M epoch rows
+# after the historical backfill) scanned every epoch row and probed the 9 GB
+# unique_neuron_block index once per row, taking 275 s per tick against 65-80 s
+# when the table held 0.45M rows, and running ~20 s under the 300 s statement
+# timeout. Fenced, the same tick measured 4.6 s.
+_RECONCILE_FENCED_TEMPLATE = """
     WITH candidate_snapshots AS MATERIALIZED (
         SELECT ns.neuron_id, ns.block_id, ns.is_validator, ns.alpha_stake, n.subnet_id
         FROM metagraph_neuron_snapshot ns
@@ -143,9 +171,9 @@ _RETENTION_DELETE_TS_AND_BLOCK_SQL = """
 """
 
 
-def _reconcile_and_upsert(cursor, range_predicate: str, params: dict) -> tuple[int, int]:
+def _reconcile_and_upsert(cursor, range_predicate: str, params: dict, reconcile_template: str) -> tuple[int, int]:
     """Remove now-ineligible facts, then upsert eligible ones. Returns (deleted, upserted)."""
-    cursor.execute(_RECONCILE_TEMPLATE.format(range_predicate=range_predicate), params)
+    cursor.execute(reconcile_template.format(range_predicate=range_predicate), params)
     deleted = cursor.rowcount
     cursor.execute(_UPSERT_TEMPLATE.format(range_predicate=range_predicate), params)
     upserted = cursor.rowcount
@@ -153,11 +181,21 @@ def _reconcile_and_upsert(cursor, range_predicate: str, params: dict) -> tuple[i
 
 
 def ingest_id_range(cursor, *, min_id: int, max_id: int) -> tuple[int, int]:
-    return _reconcile_and_upsert(cursor, _ID_RANGE, {"min_id": min_id, "max_id": max_id})
+    return _reconcile_and_upsert(
+        cursor,
+        _ID_RANGE,
+        {"min_id": min_id, "max_id": max_id},
+        _RECONCILE_FENCED_TEMPLATE,
+    )
 
 
 def ingest_block_range(cursor, *, block_start: int, block_end: int) -> tuple[int, int]:
-    return _reconcile_and_upsert(cursor, _BLOCK_RANGE, {"block_start": block_start, "block_end": block_end})
+    return _reconcile_and_upsert(
+        cursor,
+        _BLOCK_RANGE,
+        {"block_start": block_start, "block_end": block_end},
+        _RECONCILE_TEMPLATE,
+    )
 
 
 def sweep_timestamps(cursor) -> int:
