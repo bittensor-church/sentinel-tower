@@ -45,21 +45,32 @@ _APY_EXPR = """
     )
 """
 
+# The range is resolved into a MATERIALIZED candidate set before the epoch
+# table is touched, which pins the cost to the range rather than to the size of
+# metagraph_validator_apy_epoch. Written as a plain join, the planner stops
+# believing the range is selective once the epoch table is large: on prod
+# (2.6M epoch rows) it scanned every epoch row and probed the 9 GB
+# unique_neuron_block index once per row, taking 275 s per tick against 65-80 s
+# when the table held 0.45M rows. The same shape with this fence measured 4.6 s.
 _RECONCILE_TEMPLATE = """
+    WITH candidate_snapshots AS MATERIALIZED (
+        SELECT ns.neuron_id, ns.block_id, ns.is_validator, ns.alpha_stake, n.subnet_id
+        FROM metagraph_neuron_snapshot ns
+        JOIN metagraph_neuron n ON n.id = ns.neuron_id
+        WHERE {range_predicate}
+    )
     DELETE FROM metagraph_validator_apy_epoch e
-    USING metagraph_neuron_snapshot ns
-    JOIN metagraph_neuron n ON n.id = ns.neuron_id
-    WHERE {range_predicate}
-      AND e.subnet_id = n.subnet_id
-      AND e.neuron_id = ns.neuron_id
-      AND e.epoch_block = ns.block_id
+    USING candidate_snapshots c
+    WHERE e.subnet_id = c.subnet_id
+      AND e.neuron_id = c.neuron_id
+      AND e.epoch_block = c.block_id
       AND NOT (
-          ns.is_validator = true
-          AND ns.alpha_stake > 0
+          c.is_validator = true
+          AND c.alpha_stake > 0
           AND EXISTS (
               SELECT 1 FROM metagraph_dump d
-              WHERE d.block_id = ns.block_id
-                AND d.netuid = n.subnet_id
+              WHERE d.block_id = c.block_id
+                AND d.netuid = c.subnet_id
                 AND d.epoch_position = 2
           )
       )
