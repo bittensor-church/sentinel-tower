@@ -8,6 +8,11 @@ cat >/etc/systemd/journald.conf.d/99-limits.conf <<'EOF'
 SystemMaxUse=2G
 MaxRetentionSec=1month
 Compress=yes
+# Container logs already reach journald (and Loki, via Alloy reading
+# docker.sock). Forwarding to rsyslog wrote a second, uncapped copy to
+# /var/log/syslog - rotated weekly with delaycompress, so up to two weeks of
+# uncompressed duplicates on the root filesystem.
+ForwardToSyslog=no
 EOF
 systemctl restart systemd-journald
 
