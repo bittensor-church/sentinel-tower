@@ -47,33 +47,38 @@
       {
         "name": "exclude",
         "label": "Exclude roles",
-        "description": "Postgres roles whose statements are left out of the Top queries table. postgres_exporter is the monitoring itself; grafana_reader is this Grafana's own dashboards. The per-role charts always show every role.",
-        "type": "query",
-        "datasource": {
-          "type": "prometheus",
-          "uid": "prometheus"
-        },
-        "query": {
-          "query": "label_values(pg_stat_statements_calls_total, user)",
-          "refId": "PrometheusVariableQueryEditor-VariableQuery"
-        },
-        "definition": "label_values(pg_stat_statements_calls_total, user)",
-        "regex": "",
-        "refresh": 1,
-        "sort": 1,
+        "description": "Postgres roles whose statements are left out of the Top queries table; 'none' excludes nothing. postgres_exporter is the monitoring itself and grafana_reader is this Grafana's own dashboards (the names are POSTGRES_EXPORTER_USER and GRAFANA_READER_USER in .env). The per-role charts always show every role.",
+        "type": "custom",
+        "query": "none,postgres_exporter,grafana_reader",
         "includeAll": false,
         "multi": true,
-        "allowCustomValue": false,
+        "allowCustomValue": true,
         "current": {
           "selected": true,
           "text": [
-            "postgres_exporter"
+            "none"
           ],
           "value": [
-            "postgres_exporter"
+            "none"
           ]
         },
-        "options": []
+        "options": [
+          {
+            "selected": true,
+            "text": "none",
+            "value": "none"
+          },
+          {
+            "selected": false,
+            "text": "postgres_exporter",
+            "value": "postgres_exporter"
+          },
+          {
+            "selected": false,
+            "text": "grafana_reader",
+            "value": "grafana_reader"
+          }
+        ]
       }
     ]
   },
