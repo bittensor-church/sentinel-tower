@@ -192,6 +192,13 @@ DJANGO_STRUCTLOG_CELERY_ENABLED = True
 
 LOG_LEVEL = env("LOG_LEVEL", default="INFO")
 
+# bittensor >= 11 logs every JSON-RPC frame — including multi-KB hex extrinsic
+# blobs — at DEBUG under `bittensor.transport.raw_websocket`. Inheriting a DEBUG
+# root wrote ~3 GiB/day on prod and filled its root filesystem. The frames are the
+# wire form of data we already persist, so WARNING is the right default; raise it
+# to DEBUG for a single session when the chain transport itself is suspect.
+BITTENSOR_LOG_LEVEL = env("BITTENSOR_LOG_LEVEL", default="WARNING")
+
 
 def exclude_pidbox_notifications(record: logging.LogRecord) -> bool:
     """Exclude Flower worker-ping notifications from Celery logs."""
@@ -288,6 +295,11 @@ LOGGING = {
         },
         "websockets": {
             "level": "WARNING",
+        },
+        # Covers `bittensor.transport.raw_websocket` and every other bittensor
+        # sub-logger. See BITTENSOR_LOG_LEVEL above.
+        "bittensor": {
+            "level": BITTENSOR_LOG_LEVEL,
         },
     },
 }
