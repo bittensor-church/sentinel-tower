@@ -74,9 +74,9 @@ Then add "slow statements over time" panels to the dashboard.
 
 Two follow-ups from folding DB Size & Retention into the PostgreSQL dashboard (September 2026).
 
-**Read-wait tile.** "Read wait, share of active time" was copied from DB Query Performance as is: a SQL tile, cumulative since the stats reset, next to 5-minute Prometheus tiles.
-A share cannot be rebuilt from `pg_stat_statements`: parallel workers add their read waits to a statement while its execution time stays the leader's wall clock, so on a quiet database the ratio exceeds 100 % (221 % on a dev box, from one parallel `MIN(created_at)` scan).
-**Action:** replace it with a Prometheus tile "Waiting on disk reads", `sum(rate(pg_stat_statements_block_read_seconds_total[5m]))`, processes waiting at any instant, absolute thresholds (yellow above 1, red above the core count). If a percentage is wanted, derive it from `pg_stat_database` (`blk_read_time` over `active_time`), which counts workers consistently; check first that the exporter publishes `active_time`.
+**Read-wait tile.** "Read wait, share of active time" is a SQL tile over `pg_stat_database` (`blk_read_time` divided by `active_time`), cumulative since the stats reset, next to 5-minute Prometheus tiles.
+It has read above 100 % (221 % on a dev box, during one parallel `MIN(created_at)` scan), so the two counters do not make a share that can be trusted; the cause was not pinned down.
+**Action:** replace it with a Prometheus tile "Waiting on disk reads", `sum(rate(pg_stat_statements_block_read_seconds_total[5m]))`, processes waiting at any instant, absolute thresholds (yellow above 1, red above the core count).
 
 **Retention panel cost.** "Retention focus (per major table)" finds the oldest row of four tables with `MIN(created_at)`; without an index on those columns each run is a parallel sequential scan, about 16 s on a 10 GB dev database.
 It was harmless on DB Size & Retention, which refreshed every 5 minutes, but the PostgreSQL dashboard refreshes every minute.
