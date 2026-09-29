@@ -59,7 +59,6 @@ Verified against `postgres:{14,16,17,18}-alpine`: 14 and 16 keep one row per sav
 2. Until then, expose the APY materialized-view refresh duration directly from `apps/metagraph/tasks.py` (elapsed time on the existing "Refreshed …" log line and a `django-business-metrics` gauge/histogram scraped via `/business-metrics`) so the refresh — historically the DB's most fragile operation — has a first-class metric independent of `pg_stat_statements`.
 
 Alternative that avoids both: rewrite the per-neuron writes as bulk upserts (`bulk_create(update_conflicts=True)`) so no savepoints are emitted. Larger change with different error semantics; not preferred.
-**Why deferred:** the point-in-time dashboard already answers the immediate "which tables/indexes are biggest" question, and adding an exporter is a separate deploy-touching change (new container, new scrape target, secrets). Bundling them would slow the dashboard ship.
 
 ## Sample `pg_stat_activity` into a history table
 
