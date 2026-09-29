@@ -62,7 +62,7 @@ Alternative that avoids both: rewrite the per-neuron writes as bulk upserts (`bu
 
 ## Sample `pg_stat_activity` into a history table
 
-The DB Query Performance dashboard is point-in-time, and `pg_stat_statements` never records a statement that was cancelled before it finished.
+The PostgreSQL dashboard's SQL panels are point-in-time, and `pg_stat_statements` never records a statement that was cancelled before it finished.
 On 2026-09-02 that blind spot hid the worst prod offenders: about 190 Grafana panel queries a day cancelled at the 60 s data-proxy timeout (see [postgres-query-performance.md](postgres-query-performance.md)).
 
 **Action:** add a `sample_db_activity` management command run as a compose profile service that samples `pg_stat_activity` every few seconds into a table keyed on `(pid, query_start)` with `usename`, `application_name`, `wait_event`, `state` and the statement text, with 7-day retention hooked into `cleanup_expired_data`.
