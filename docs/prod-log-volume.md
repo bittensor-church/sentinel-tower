@@ -15,7 +15,7 @@ Two settings keep it from happening again:
 
 - `BITTENSOR_LOG_LEVEL` (default `WARNING`) pins the whole `bittensor` logger
   tree in `LOGGING["loggers"]`, independent of `LOG_LEVEL`.
-- `ForwardToSyslog=no` in `/etc/systemd/journald.conf.d/99-limits.conf` stops
+- `ForwardToSyslog=no` in `/etc/systemd/journald.conf.d/syslog.conf` stops
   journald writing a second, uncapped copy of every container line to
   `/var/log/syslog`. journald itself is capped at `SystemMaxUse=2G`, so a future
   noisy logger can no longer fill the disk, whatever its name.
@@ -25,11 +25,13 @@ bittensor frame logger is renamed again.
 
 ## Applying the host setting
 
-`bin/prepare-os.sh` writes the journald drop-in on a fresh box. On an existing
-box, install just that part:
+`bin/prepare-os.sh` writes two journald drop-ins on a fresh box: `99-limits.conf`
+(size cap) and `syslog.conf` (no forwarding). The second must be named
+`syslog.conf`: Ubuntu turns forwarding on in
+`/usr/lib/systemd/journald.conf.d/syslog.conf`, drop-ins apply in filename order,
+and a same-named file in `/etc` masks the vendor one. On an existing box,
+install just those two files from `bin/prepare-os.sh`, then:
 
-    install -d -m 0755 /etc/systemd/journald.conf.d
-    # write the [Journal] block from bin/prepare-os.sh to 99-limits.conf, then:
     systemctl restart systemd-journald
     systemd-analyze cat-config systemd/journald.conf | grep -E "ForwardToSyslog|SystemMaxUse"
 
