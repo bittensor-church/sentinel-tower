@@ -18,7 +18,7 @@ The panels described here were built for the DB Query Performance dashboard (Sep
 The dashboard is provisioned on the on-box Grafana.
 Its SQL panels can be imported into the external Grafana; there the datasource role needs `pg_read_all_stats` to see other roles' statement text.
 Rows 5 to 7 are collapsed by default: Grafana runs no queries for a collapsed row, so their catalog scans cost nothing until someone opens them.
-The **Exclude roles** dropdown (default `postgres_exporter`) leaves the chosen roles out of every table that ranks statements or lists sessions; tiles that count the whole server ignore it.
+The **Roles** dropdown (default All, listing every login role from `pg_roles`) limits every table that ranks statements or lists sessions to the chosen roles; deselect `postgres_exporter` and `grafana_reader` to hide the monitoring's own statements. Tiles that count the whole server ignore it.
 
 ## Reading the dashboard
 
