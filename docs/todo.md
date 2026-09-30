@@ -59,11 +59,10 @@ Verified against `postgres:{14,16,17,18}-alpine`: 14 and 16 keep one row per sav
 2. Until then, expose the APY materialized-view refresh duration directly from `apps/metagraph/tasks.py` (elapsed time on the existing "Refreshed …" log line and a `django-business-metrics` gauge/histogram scraped via `/business-metrics`) so the refresh — historically the DB's most fragile operation — has a first-class metric independent of `pg_stat_statements`.
 
 Alternative that avoids both: rewrite the per-neuron writes as bulk upserts (`bulk_create(update_conflicts=True)`) so no savepoints are emitted. Larger change with different error semantics; not preferred.
-**Why deferred:** the point-in-time dashboard already answers the immediate "which tables/indexes are biggest" question, and adding an exporter is a separate deploy-touching change (new container, new scrape target, secrets). Bundling them would slow the dashboard ship.
 
 ## Sample `pg_stat_activity` into a history table
 
-The DB Query Performance dashboard is point-in-time, and `pg_stat_statements` never records a statement that was cancelled before it finished.
+The PostgreSQL dashboard's SQL panels are point-in-time, and `pg_stat_statements` never records a statement that was cancelled before it finished.
 On 2026-09-02 that blind spot hid the worst prod offenders: about 190 Grafana panel queries a day cancelled at the 60 s data-proxy timeout (see [postgres-query-performance.md](postgres-query-performance.md)).
 
 **Action:** add a `sample_db_activity` management command run as a compose profile service that samples `pg_stat_activity` every few seconds into a table keyed on `(pid, query_start)` with `usename`, `application_name`, `wait_event`, `state` and the statement text, with 7-day retention hooked into `cleanup_expired_data`.
@@ -75,9 +74,9 @@ Then add "slow statements over time" panels to the dashboard.
 
 Two follow-ups from folding DB Size & Retention into the PostgreSQL dashboard (September 2026).
 
-**Read-wait tile.** "Read wait, share of active time" was copied from DB Query Performance as is: a SQL tile, cumulative since the stats reset, next to 5-minute Prometheus tiles.
-A share cannot be rebuilt from `pg_stat_statements`: parallel workers add their read waits to a statement while its execution time stays the leader's wall clock, so on a quiet database the ratio exceeds 100 % (221 % on a dev box, from one parallel `MIN(created_at)` scan).
-**Action:** replace it with a Prometheus tile "Waiting on disk reads", `sum(rate(pg_stat_statements_block_read_seconds_total[5m]))`, processes waiting at any instant, absolute thresholds (yellow above 1, red above the core count). If a percentage is wanted, derive it from `pg_stat_database` (`blk_read_time` over `active_time`), which counts workers consistently; check first that the exporter publishes `active_time`.
+**Read-wait tile.** "Read wait, share of active time" is a SQL tile over `pg_stat_database` (`blk_read_time` divided by `active_time`), cumulative since the stats reset, next to 5-minute Prometheus tiles.
+It has read above 100 % (221 % on a dev box, during one parallel `MIN(created_at)` scan), so the two counters do not make a share that can be trusted; the cause was not pinned down.
+**Action:** replace it with a Prometheus tile "Waiting on disk reads", `sum(rate(pg_stat_statements_block_read_seconds_total[5m]))`, processes waiting at any instant, absolute thresholds (yellow above 1, red above the core count).
 
 **Retention panel cost.** "Retention focus (per major table)" finds the oldest row of four tables with `MIN(created_at)`; without an index on those columns each run is a parallel sequential scan, about 16 s on a 10 GB dev database.
 It was harmless on DB Size & Retention, which refreshed every 5 minutes, but the PostgreSQL dashboard refreshes every minute.
@@ -90,15 +89,6 @@ The two boards it was written for were folded into the PostgreSQL dashboard in S
 
 **Action:** either extend it or delete it. Extending needs three changes: send each target to its own datasource (`expr` + `instant` for Prometheus, `rawSql` + `format` for Postgres) instead of asserting `postgresql`; substitute dashboard variables from each variable's `current` value in the file, rendering `$var` and `${var}` as a regex alternation for PromQL and `${var:sqlstring}` as a quoted list for SQL, plus `$__range` as `1h`; and accept a directory so one run covers every provisioned board.
 It would still not exercise transformations (joins, calculated columns, ordering), which is where the September 2026 breakages were, and it has no place to run: wire it into the nox lint session or the deploy notes, or it will not be run.
-
-## Rewrite the APY-epoch reconcile DELETE to drive from the snapshot id range
-
-`_RECONCILE_TEMPLATE` in `apps/metagraph/services/apy_epoch_ingest.py` runs every 15 minutes at 65 to 80 s, reads 2.1 M buffers and deleted 0 rows in every run inspected on 2026-09-02.
-The planner sequential-scans the whole epoch table and probes snapshots per row, applying the id range only afterwards.
-
-**Action:** drive the delete from the `{range_predicate}` (the id range for the beat tick, the block range for the backfill command; both callers share the template) with a materialized CTE over the range joined to `metagraph_neuron`, then the anti-join, and verify with `EXPLAIN (ANALYZE, BUFFERS)` that the outer node is the range scan (primary key for the beat, the FK auto-index `metagraph_neuron_snapshot_block_id_96edc0ac` on `block_id` for the backfill; migration 0014 keeps that index on purpose).
-
-**Why deferred:** correctness-sensitive SQL in the ingest path; needs its own tests against the retention and overlap semantics.
 
 ## Derive snapshot-health coverage from `metagraph_dump`
 

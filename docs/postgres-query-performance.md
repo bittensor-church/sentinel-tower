@@ -18,7 +18,7 @@ The panels described here were built for the DB Query Performance dashboard (Sep
 The dashboard is provisioned on the on-box Grafana.
 Its SQL panels can be imported into the external Grafana; there the datasource role needs `pg_read_all_stats` to see other roles' statement text.
 Rows 5 to 7 are collapsed by default: Grafana runs no queries for a collapsed row, so their catalog scans cost nothing until someone opens them.
-The **Exclude roles** dropdown (default `postgres_exporter`) leaves the chosen roles out of every table that ranks statements or lists sessions; tiles that count the whole server ignore it.
+The **Roles** dropdown (default All, listing every login role from `pg_roles`) limits every table that ranks statements or lists sessions to the chosen roles; deselect `postgres_exporter` and `grafana_reader` to hide the monitoring's own statements. Tiles that count the whole server ignore it.
 
 ## Reading the dashboard
 
@@ -103,7 +103,7 @@ Index coverage (foreign keys and sequential scans measured on 2026-09-02; redund
 1. **`pg_stat_statements.track_utility=off`, then reset.**
    Shipped in the tuning doc's compose block; without it nothing else on the statistics row is trustworthy.
 2. **Rewrite the reconcile DELETE in `apps/metagraph/services/apy_epoch_ingest.py` to drive from the snapshot id range** instead of the whole epoch table.
-   Verify with `EXPLAIN (ANALYZE, BUFFERS)` that the outer node is the primary-key range scan and buffers drop from 2.1 M.
+   Done for the beat tick with `_RECONCILE_FENCED_TEMPLATE`; the backfill keeps the plain join on purpose, measured faster for wide block ranges.
 3. **Derive snapshot-health coverage from `metagraph_dump`** (`netuid` plus block range) instead of `DISTINCT block_id` over about 245 k snapshot rows per subnet in `apps/metagraph/tasks.py`.
    Confirm equivalence on prod for several subnets before switching.
 4. **Fix the external Grafana rank panels and bring them into the repo.**
