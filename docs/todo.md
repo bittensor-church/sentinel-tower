@@ -35,7 +35,7 @@ The `extrinsics` table stores a single `netuid` per row, so when these batch cal
 1. Expand batch extrinsics into one row per `(extrinsic, netuid)` at ingest time, or
 2. Add a side table (e.g. `extrinsic_netuids`) and join it from the dashboard queries.
 
-Reference: [set-weights.md](../set-weights.md), dashboard [grafana/provisioning/dashboards/bittensor-metrics.json](../grafana/provisioning/dashboards/bittensor-metrics.json).
+Reference: [set-weights.md](../set-weights.md), dashboard [grafana/provisioning/dashboards/legacy/bittensor-metrics.json](../grafana/provisioning/dashboards/legacy/bittensor-metrics.json).
 
 ## Per-client read-only postgres role provisioning
 

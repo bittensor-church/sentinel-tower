@@ -956,7 +956,7 @@
   "timepicker": {},
   "timezone": "",
   "title": "Postgres Slow Statements",
-  "uid": "postgres-slow-statements",
+  "uid": "postgres-slow-statements-old",
   "version": 2,
   "weekStart": ""
 }

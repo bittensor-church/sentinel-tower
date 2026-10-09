@@ -472,7 +472,7 @@
   "timepicker": { "refresh_intervals": ["10m", "15m", "30m", "1h", "2h", "8h", "1d"] },
   "timezone": "",
   "title": "Metagraph Subnet",
-  "uid": "sentinel-metagraph-001",
+  "uid": "sentinel-metagraph-001-old",
   "version": 1,
   "weekStart": ""
 }

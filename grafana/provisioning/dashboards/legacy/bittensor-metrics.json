@@ -1247,7 +1247,7 @@
   "timepicker": {},
   "timezone": "",
   "title": "Bittensor Metrics",
-  "uid": "bittensor-metrics",
+  "uid": "bittensor-metrics-old",
   "version": 1,
   "weekStart": ""
 }

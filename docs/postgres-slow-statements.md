@@ -2,7 +2,7 @@
 
 Slow, cancelled and failed Postgres statements with their SQL, for any
 selected time range. Provisioned from
-[`grafana/provisioning/dashboards/postgres-slow-statements.json`](../grafana/provisioning/dashboards/postgres-slow-statements.json),
+[`grafana/provisioning/dashboards/legacy/postgres-slow-statements.json`](../grafana/provisioning/dashboards/legacy/postgres-slow-statements.json),
 reachable at `/grafana/d/postgres-slow-statements/`.
 
 It fills the two gaps the other performance dashboards leave:
