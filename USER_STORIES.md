@@ -63,7 +63,7 @@ Wants trustworthy point-in-time snapshots of subnet state without touching the c
   intermediate points, epoch end) rather than every block, so storage stays bounded while I still get
   enough resolution to see how a subnet evolves within an epoch.
 - **As a validator operator**, I want my validator's APY computed from actual per-epoch dividend/stake
-  data and exposed on a Grafana dashboard (`subnet-apy.json`), so I can verify my returns without
+  data and exposed on a Grafana dashboard (`legacy/subnet-apy.json`), so I can verify my returns without
   building the computation myself.
 - **As a subnet owner or miner**, I want per-subnet Grafana dashboards (`metagraph-miner.json`,
   `metagraph-validator.json`, `metagraph-multi-miner.json`) so I can track my own neurons' stake,

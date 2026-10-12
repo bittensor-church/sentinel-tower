@@ -415,6 +415,7 @@ _DASHBOARD = (
     / "grafana"
     / "provisioning"
     / "dashboards"
+    / "legacy"
     / "subnet-apy.json"
 )
 
