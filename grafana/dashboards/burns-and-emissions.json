@@ -1,0 +1,361 @@
+{
+  "apiVersion": "dashboard.grafana.app/v1beta1",
+  "kind": "Dashboard",
+  "metadata": {
+    "name": "sentinel_burns_and_emissions"
+  },
+  "spec": {
+    "annotations": {
+      "list": [
+        {
+          "builtIn": 1,
+          "datasource": {
+            "type": "grafana",
+            "uid": "-- Grafana --"
+          },
+          "enable": true,
+          "hide": true,
+          "iconColor": "rgba(0, 211, 255, 1)",
+          "name": "Annotations & Alerts",
+          "type": "dashboard"
+        }
+      ]
+    },
+    "editable": true,
+    "fiscalYearStartMonth": 0,
+    "graphTooltip": 0,
+    "links": [],
+    "panels": [
+      {
+        "datasource": {
+          "type": "grafana-postgresql-datasource",
+          "uid": "postgresql"
+        },
+        "description": "Burn [0-100%] scales from transparent through gray to white.\nSuperBurned subnets are red",
+        "fieldConfig": {
+          "defaults": {
+            "custom": {
+              "hideFrom": {
+                "legend": false,
+                "tooltip": false,
+                "viz": false
+              },
+              "scaleDistribution": {
+                "type": "linear"
+              }
+            }
+          },
+          "overrides": []
+        },
+        "gridPos": {
+          "h": 18,
+          "w": 24,
+          "x": 0,
+          "y": 0
+        },
+        "id": 1,
+        "options": {
+          "calculate": false,
+          "cellGap": 0,
+          "color": {
+            "exponent": 0.5,
+            "fill": "red",
+            "max": 2,
+            "min": 0,
+            "mode": "scheme",
+            "reverse": false,
+            "scale": "linear",
+            "scheme": "RdGy",
+            "steps": 64
+          },
+          "exemplars": {
+            "color": "rgba(255,0,255,0.7)"
+          },
+          "filterValues": {
+            "le": -1
+          },
+          "legend": {
+            "show": false
+          },
+          "rowsFrame": {
+            "layout": "auto"
+          },
+          "tooltip": {
+            "mode": "single",
+            "showColorScale": false,
+            "yHistogram": false
+          },
+          "yAxis": {
+            "axisPlacement": "hidden",
+            "reverse": false
+          }
+        },
+        "pluginVersion": "11.2.0",
+        "targets": [
+          {
+            "datasource": {
+              "type": "grafana-postgresql-datasource",
+              "uid": "postgresql"
+            },
+            "editorMode": "code",
+            "format": "table",
+            "rawQuery": true,
+            "rawSql": "WITH burn_values AS (\n    SELECT\n        sb.meta_epoch_id,\n        sb.subnet_id AS netuid,\n        CASE\n            WHEN sb.superburn >= 0.1 THEN 1.75\n            ELSE sb.burn\n        END AS value\n    FROM metagraph_subnet_burn AS sb\n)\nSELECT\n    blk.timestamp AS \"time\",\n    MAX(CASE WHEN b.netuid = 1 THEN b.value ELSE NULL END) AS \"1\",\n    MAX(CASE WHEN b.netuid = 2 THEN b.value ELSE NULL END) AS \"2\",\n    MAX(CASE WHEN b.netuid = 3 THEN b.value ELSE NULL END) AS \"3\",\n    MAX(CASE WHEN b.netuid = 4 THEN b.value ELSE NULL END) AS \"4\",\n    MAX(CASE WHEN b.netuid = 5 THEN b.value ELSE NULL END) AS \"5\",\n    MAX(CASE WHEN b.netuid = 6 THEN b.value ELSE NULL END) AS \"6\",\n    MAX(CASE WHEN b.netuid = 7 THEN b.value ELSE NULL END) AS \"7\",\n    MAX(CASE WHEN b.netuid = 8 THEN b.value ELSE NULL END) AS \"8\",\n    MAX(CASE WHEN b.netuid = 9 THEN b.value ELSE NULL END) AS \"9\",\n    MAX(CASE WHEN b.netuid = 10 THEN b.value ELSE NULL END) AS \"10\",\n    MAX(CASE WHEN b.netuid = 11 THEN b.value ELSE NULL END) AS \"11\",\n    MAX(CASE WHEN b.netuid = 12 THEN b.value ELSE NULL END) AS \"12\",\n    MAX(CASE WHEN b.netuid = 13 THEN b.value ELSE NULL END) AS \"13\",\n    MAX(CASE WHEN b.netuid = 14 THEN b.value ELSE NULL END) AS \"14\",\n    MAX(CASE WHEN b.netuid = 15 THEN b.value ELSE NULL END) AS \"15\",\n    MAX(CASE WHEN b.netuid = 16 THEN b.value ELSE NULL END) AS \"16\",\n    MAX(CASE WHEN b.netuid = 17 THEN b.value ELSE NULL END) AS \"17\",\n    MAX(CASE WHEN b.netuid = 18 THEN b.value ELSE NULL END) AS \"18\",\n    MAX(CASE WHEN b.netuid = 19 THEN b.value ELSE NULL END) AS \"19\",\n    MAX(CASE WHEN b.netuid = 20 THEN b.value ELSE NULL END) AS \"20\",\n    MAX(CASE WHEN b.netuid = 21 THEN b.value ELSE NULL END) AS \"21\",\n    MAX(CASE WHEN b.netuid = 22 THEN b.value ELSE NULL END) AS \"22\",\n    MAX(CASE WHEN b.netuid = 23 THEN b.value ELSE NULL END) AS \"23\",\n    MAX(CASE WHEN b.netuid = 24 THEN b.value ELSE NULL END) AS \"24\",\n    MAX(CASE WHEN b.netuid = 25 THEN b.value ELSE NULL END) AS \"25\",\n    MAX(CASE WHEN b.netuid = 26 THEN b.value ELSE NULL END) AS \"26\",\n    MAX(CASE WHEN b.netuid = 27 THEN b.value ELSE NULL END) AS \"27\",\n    MAX(CASE WHEN b.netuid = 28 THEN b.value ELSE NULL END) AS \"28\",\n    MAX(CASE WHEN b.netuid = 29 THEN b.value ELSE NULL END) AS \"29\",\n    MAX(CASE WHEN b.netuid = 30 THEN b.value ELSE NULL END) AS \"30\",\n    MAX(CASE WHEN b.netuid = 31 THEN b.value ELSE NULL END) AS \"31\",\n    MAX(CASE WHEN b.netuid = 32 THEN b.value ELSE NULL END) AS \"32\",\n    MAX(CASE WHEN b.netuid = 33 THEN b.value ELSE NULL END) AS \"33\",\n    MAX(CASE WHEN b.netuid = 34 THEN b.value ELSE NULL END) AS \"34\",\n    MAX(CASE WHEN b.netuid = 35 THEN b.value ELSE NULL END) AS \"35\",\n    MAX(CASE WHEN b.netuid = 36 THEN b.value ELSE NULL END) AS \"36\",\n    MAX(CASE WHEN b.netuid = 37 THEN b.value ELSE NULL END) AS \"37\",\n    MAX(CASE WHEN b.netuid = 38 THEN b.value ELSE NULL END) AS \"38\",\n    MAX(CASE WHEN b.netuid = 39 THEN b.value ELSE NULL END) AS \"39\",\n    MAX(CASE WHEN b.netuid = 40 THEN b.value ELSE NULL END) AS \"40\",\n    MAX(CASE WHEN b.netuid = 41 THEN b.value ELSE NULL END) AS \"41\",\n    MAX(CASE WHEN b.netuid = 42 THEN b.value ELSE NULL END) AS \"42\",\n    MAX(CASE WHEN b.netuid = 43 THEN b.value ELSE NULL END) AS \"43\",\n    MAX(CASE WHEN b.netuid = 44 THEN b.value ELSE NULL END) AS \"44\",\n    MAX(CASE WHEN b.netuid = 45 THEN b.value ELSE NULL END) AS \"45\",\n    MAX(CASE WHEN b.netuid = 46 THEN b.value ELSE NULL END) AS \"46\",\n    MAX(CASE WHEN b.netuid = 47 THEN b.value ELSE NULL END) AS \"47\",\n    MAX(CASE WHEN b.netuid = 48 THEN b.value ELSE NULL END) AS \"48\",\n    MAX(CASE WHEN b.netuid = 49 THEN b.value ELSE NULL END) AS \"49\",\n    MAX(CASE WHEN b.netuid = 50 THEN b.value ELSE NULL END) AS \"50\",\n    MAX(CASE WHEN b.netuid = 51 THEN b.value ELSE NULL END) AS \"51\",\n    MAX(CASE WHEN b.netuid = 52 THEN b.value ELSE NULL END) AS \"52\",\n    MAX(CASE WHEN b.netuid = 53 THEN b.value ELSE NULL END) AS \"53\",\n    MAX(CASE WHEN b.netuid = 54 THEN b.value ELSE NULL END) AS \"54\",\n    MAX(CASE WHEN b.netuid = 55 THEN b.value ELSE NULL END) AS \"55\",\n    MAX(CASE WHEN b.netuid = 56 THEN b.value ELSE NULL END) AS \"56\",\n    MAX(CASE WHEN b.netuid = 57 THEN b.value ELSE NULL END) AS \"57\",\n    MAX(CASE WHEN b.netuid = 58 THEN b.value ELSE NULL END) AS \"58\",\n    MAX(CASE WHEN b.netuid = 59 THEN b.value ELSE NULL END) AS \"59\",\n    MAX(CASE WHEN b.netuid = 60 THEN b.value ELSE NULL END) AS \"60\",\n    MAX(CASE WHEN b.netuid = 61 THEN b.value ELSE NULL END) AS \"61\",\n    MAX(CASE WHEN b.netuid = 62 THEN b.value ELSE NULL END) AS \"62\",\n    MAX(CASE WHEN b.netuid = 63 THEN b.value ELSE NULL END) AS \"63\",\n    MAX(CASE WHEN b.netuid = 64 THEN b.value ELSE NULL END) AS \"64\",\n    MAX(CASE WHEN b.netuid = 65 THEN b.value ELSE NULL END) AS \"65\",\n    MAX(CASE WHEN b.netuid = 66 THEN b.value ELSE NULL END) AS \"66\",\n    MAX(CASE WHEN b.netuid = 67 THEN b.value ELSE NULL END) AS \"67\",\n    MAX(CASE WHEN b.netuid = 68 THEN b.value ELSE NULL END) AS \"68\",\n    MAX(CASE WHEN b.netuid = 69 THEN b.value ELSE NULL END) AS \"69\",\n    MAX(CASE WHEN b.netuid = 70 THEN b.value ELSE NULL END) AS \"70\",\n    MAX(CASE WHEN b.netuid = 71 THEN b.value ELSE NULL END) AS \"71\",\n    MAX(CASE WHEN b.netuid = 72 THEN b.value ELSE NULL END) AS \"72\",\n    MAX(CASE WHEN b.netuid = 73 THEN b.value ELSE NULL END) AS \"73\",\n    MAX(CASE WHEN b.netuid = 74 THEN b.value ELSE NULL END) AS \"74\",\n    MAX(CASE WHEN b.netuid = 75 THEN b.value ELSE NULL END) AS \"75\",\n    MAX(CASE WHEN b.netuid = 76 THEN b.value ELSE NULL END) AS \"76\",\n    MAX(CASE WHEN b.netuid = 77 THEN b.value ELSE NULL END) AS \"77\",\n    MAX(CASE WHEN b.netuid = 78 THEN b.value ELSE NULL END) AS \"78\",\n    MAX(CASE WHEN b.netuid = 79 THEN b.value ELSE NULL END) AS \"79\",\n    MAX(CASE WHEN b.netuid = 80 THEN b.value ELSE NULL END) AS \"80\",\n    MAX(CASE WHEN b.netuid = 81 THEN b.value ELSE NULL END) AS \"81\",\n    MAX(CASE WHEN b.netuid = 82 THEN b.value ELSE NULL END) AS \"82\",\n    MAX(CASE WHEN b.netuid = 83 THEN b.value ELSE NULL END) AS \"83\",\n    MAX(CASE WHEN b.netuid = 84 THEN b.value ELSE NULL END) AS \"84\",\n    MAX(CASE WHEN b.netuid = 85 THEN b.value ELSE NULL END) AS \"85\",\n    MAX(CASE WHEN b.netuid = 86 THEN b.value ELSE NULL END) AS \"86\",\n    MAX(CASE WHEN b.netuid = 87 THEN b.value ELSE NULL END) AS \"87\",\n    MAX(CASE WHEN b.netuid = 88 THEN b.value ELSE NULL END) AS \"88\",\n    MAX(CASE WHEN b.netuid = 89 THEN b.value ELSE NULL END) AS \"89\",\n    MAX(CASE WHEN b.netuid = 90 THEN b.value ELSE NULL END) AS \"90\",\n    MAX(CASE WHEN b.netuid = 91 THEN b.value ELSE NULL END) AS \"91\",\n    MAX(CASE WHEN b.netuid = 92 THEN b.value ELSE NULL END) AS \"92\",\n    MAX(CASE WHEN b.netuid = 93 THEN b.value ELSE NULL END) AS \"93\",\n    MAX(CASE WHEN b.netuid = 94 THEN b.value ELSE NULL END) AS \"94\",\n    MAX(CASE WHEN b.netuid = 95 THEN b.value ELSE NULL END) AS \"95\",\n    MAX(CASE WHEN b.netuid = 96 THEN b.value ELSE NULL END) AS \"96\",\n    MAX(CASE WHEN b.netuid = 97 THEN b.value ELSE NULL END) AS \"97\",\n    MAX(CASE WHEN b.netuid = 98 THEN b.value ELSE NULL END) AS \"98\",\n    MAX(CASE WHEN b.netuid = 99 THEN b.value ELSE NULL END) AS \"99\",\n    MAX(CASE WHEN b.netuid = 100 THEN b.value ELSE NULL END) AS \"100\",\n    MAX(CASE WHEN b.netuid = 101 THEN b.value ELSE NULL END) AS \"101\",\n    MAX(CASE WHEN b.netuid = 102 THEN b.value ELSE NULL END) AS \"102\",\n    MAX(CASE WHEN b.netuid = 103 THEN b.value ELSE NULL END) AS \"103\",\n    MAX(CASE WHEN b.netuid = 104 THEN b.value ELSE NULL END) AS \"104\",\n    MAX(CASE WHEN b.netuid = 105 THEN b.value ELSE NULL END) AS \"105\",\n    MAX(CASE WHEN b.netuid = 106 THEN b.value ELSE NULL END) AS \"106\",\n    MAX(CASE WHEN b.netuid = 107 THEN b.value ELSE NULL END) AS \"107\",\n    MAX(CASE WHEN b.netuid = 108 THEN b.value ELSE NULL END) AS \"108\",\n    MAX(CASE WHEN b.netuid = 109 THEN b.value ELSE NULL END) AS \"109\",\n    MAX(CASE WHEN b.netuid = 110 THEN b.value ELSE NULL END) AS \"110\",\n    MAX(CASE WHEN b.netuid = 111 THEN b.value ELSE NULL END) AS \"111\",\n    MAX(CASE WHEN b.netuid = 112 THEN b.value ELSE NULL END) AS \"112\",\n    MAX(CASE WHEN b.netuid = 113 THEN b.value ELSE NULL END) AS \"113\",\n    MAX(CASE WHEN b.netuid = 114 THEN b.value ELSE NULL END) AS \"114\",\n    MAX(CASE WHEN b.netuid = 115 THEN b.value ELSE NULL END) AS \"115\",\n    MAX(CASE WHEN b.netuid = 116 THEN b.value ELSE NULL END) AS \"116\",\n    MAX(CASE WHEN b.netuid = 117 THEN b.value ELSE NULL END) AS \"117\",\n    MAX(CASE WHEN b.netuid = 118 THEN b.value ELSE NULL END) AS \"118\",\n    MAX(CASE WHEN b.netuid = 119 THEN b.value ELSE NULL END) AS \"119\",\n    MAX(CASE WHEN b.netuid = 120 THEN b.value ELSE NULL END) AS \"120\",\n    MAX(CASE WHEN b.netuid = 121 THEN b.value ELSE NULL END) AS \"121\",\n    MAX(CASE WHEN b.netuid = 122 THEN b.value ELSE NULL END) AS \"122\",\n    MAX(CASE WHEN b.netuid = 123 THEN b.value ELSE NULL END) AS \"123\",\n    MAX(CASE WHEN b.netuid = 124 THEN b.value ELSE NULL END) AS \"124\",\n    MAX(CASE WHEN b.netuid = 125 THEN b.value ELSE NULL END) AS \"125\",\n    MAX(CASE WHEN b.netuid = 126 THEN b.value ELSE NULL END) AS \"126\",\n    MAX(CASE WHEN b.netuid = 127 THEN b.value ELSE NULL END) AS \"127\",\n    MAX(CASE WHEN b.netuid = 128 THEN b.value ELSE NULL END) AS \"128\"\nFROM metagraph_meta_epoch AS me\nJOIN metagraph_block AS blk\n    ON blk.number = me.block_id\nLEFT JOIN burn_values AS b\n    ON b.meta_epoch_id = me.block_id\nWHERE blk.timestamp >= $__timeFrom()\n  AND blk.timestamp <  $__timeTo()\nGROUP BY\n    blk.timestamp\nORDER BY\n    blk.timestamp",
+            "refId": "A",
+            "sql": {
+              "columns": [
+                {
+                  "parameters": [],
+                  "type": "function"
+                }
+              ],
+              "groupBy": [
+                {
+                  "property": {
+                    "type": "string"
+                  },
+                  "type": "groupBy"
+                }
+              ],
+              "limit": 50
+            }
+          }
+        ],
+        "title": "Subnet burns and SuperBurns",
+        "type": "heatmap"
+      },
+      {
+        "datasource": {
+          "type": "grafana-postgresql-datasource",
+          "uid": "postgresql"
+        },
+        "description": "SubnetEmissionEnabled storage value per subnet. Blue=True, Red=False",
+        "fieldConfig": {
+          "defaults": {
+            "custom": {
+              "hideFrom": {
+                "legend": false,
+                "tooltip": false,
+                "viz": false
+              },
+              "scaleDistribution": {
+                "type": "linear"
+              }
+            }
+          },
+          "overrides": []
+        },
+        "gridPos": {
+          "h": 18,
+          "w": 24,
+          "x": 0,
+          "y": 18
+        },
+        "id": 2,
+        "options": {
+          "calculate": false,
+          "cellGap": 0,
+          "color": {
+            "exponent": 0.5,
+            "fill": "red",
+            "max": 1,
+            "min": 0,
+            "mode": "scheme",
+            "reverse": true,
+            "scale": "linear",
+            "scheme": "RdBu",
+            "steps": 64
+          },
+          "exemplars": {
+            "color": "rgba(255,0,255,0.7)"
+          },
+          "filterValues": {
+            "le": -1
+          },
+          "legend": {
+            "show": false
+          },
+          "rowsFrame": {
+            "layout": "auto"
+          },
+          "tooltip": {
+            "mode": "single",
+            "showColorScale": false,
+            "yHistogram": false
+          },
+          "yAxis": {
+            "axisPlacement": "hidden",
+            "reverse": false
+          }
+        },
+        "pluginVersion": "11.2.0",
+        "targets": [
+          {
+            "datasource": {
+              "type": "grafana-postgresql-datasource",
+              "uid": "postgresql"
+            },
+            "editorMode": "code",
+            "format": "table",
+            "rawQuery": true,
+            "rawSql": "SELECT\n    blk.timestamp AS \"time\",\n    MAX(CASE WHEN se.subnet_id = 1 THEN se.emission_enabled::int ELSE NULL END) AS \"1\",\n    MAX(CASE WHEN se.subnet_id = 2 THEN se.emission_enabled::int ELSE NULL END) AS \"2\",\n    MAX(CASE WHEN se.subnet_id = 3 THEN se.emission_enabled::int ELSE NULL END) AS \"3\",\n    MAX(CASE WHEN se.subnet_id = 4 THEN se.emission_enabled::int ELSE NULL END) AS \"4\",\n    MAX(CASE WHEN se.subnet_id = 5 THEN se.emission_enabled::int ELSE NULL END) AS \"5\",\n    MAX(CASE WHEN se.subnet_id = 6 THEN se.emission_enabled::int ELSE NULL END) AS \"6\",\n    MAX(CASE WHEN se.subnet_id = 7 THEN se.emission_enabled::int ELSE NULL END) AS \"7\",\n    MAX(CASE WHEN se.subnet_id = 8 THEN se.emission_enabled::int ELSE NULL END) AS \"8\",\n    MAX(CASE WHEN se.subnet_id = 9 THEN se.emission_enabled::int ELSE NULL END) AS \"9\",\n    MAX(CASE WHEN se.subnet_id = 10 THEN se.emission_enabled::int ELSE NULL END) AS \"10\",\n    MAX(CASE WHEN se.subnet_id = 11 THEN se.emission_enabled::int ELSE NULL END) AS \"11\",\n    MAX(CASE WHEN se.subnet_id = 12 THEN se.emission_enabled::int ELSE NULL END) AS \"12\",\n    MAX(CASE WHEN se.subnet_id = 13 THEN se.emission_enabled::int ELSE NULL END) AS \"13\",\n    MAX(CASE WHEN se.subnet_id = 14 THEN se.emission_enabled::int ELSE NULL END) AS \"14\",\n    MAX(CASE WHEN se.subnet_id = 15 THEN se.emission_enabled::int ELSE NULL END) AS \"15\",\n    MAX(CASE WHEN se.subnet_id = 16 THEN se.emission_enabled::int ELSE NULL END) AS \"16\",\n    MAX(CASE WHEN se.subnet_id = 17 THEN se.emission_enabled::int ELSE NULL END) AS \"17\",\n    MAX(CASE WHEN se.subnet_id = 18 THEN se.emission_enabled::int ELSE NULL END) AS \"18\",\n    MAX(CASE WHEN se.subnet_id = 19 THEN se.emission_enabled::int ELSE NULL END) AS \"19\",\n    MAX(CASE WHEN se.subnet_id = 20 THEN se.emission_enabled::int ELSE NULL END) AS \"20\",\n    MAX(CASE WHEN se.subnet_id = 21 THEN se.emission_enabled::int ELSE NULL END) AS \"21\",\n    MAX(CASE WHEN se.subnet_id = 22 THEN se.emission_enabled::int ELSE NULL END) AS \"22\",\n    MAX(CASE WHEN se.subnet_id = 23 THEN se.emission_enabled::int ELSE NULL END) AS \"23\",\n    MAX(CASE WHEN se.subnet_id = 24 THEN se.emission_enabled::int ELSE NULL END) AS \"24\",\n    MAX(CASE WHEN se.subnet_id = 25 THEN se.emission_enabled::int ELSE NULL END) AS \"25\",\n    MAX(CASE WHEN se.subnet_id = 26 THEN se.emission_enabled::int ELSE NULL END) AS \"26\",\n    MAX(CASE WHEN se.subnet_id = 27 THEN se.emission_enabled::int ELSE NULL END) AS \"27\",\n    MAX(CASE WHEN se.subnet_id = 28 THEN se.emission_enabled::int ELSE NULL END) AS \"28\",\n    MAX(CASE WHEN se.subnet_id = 29 THEN se.emission_enabled::int ELSE NULL END) AS \"29\",\n    MAX(CASE WHEN se.subnet_id = 30 THEN se.emission_enabled::int ELSE NULL END) AS \"30\",\n    MAX(CASE WHEN se.subnet_id = 31 THEN se.emission_enabled::int ELSE NULL END) AS \"31\",\n    MAX(CASE WHEN se.subnet_id = 32 THEN se.emission_enabled::int ELSE NULL END) AS \"32\",\n    MAX(CASE WHEN se.subnet_id = 33 THEN se.emission_enabled::int ELSE NULL END) AS \"33\",\n    MAX(CASE WHEN se.subnet_id = 34 THEN se.emission_enabled::int ELSE NULL END) AS \"34\",\n    MAX(CASE WHEN se.subnet_id = 35 THEN se.emission_enabled::int ELSE NULL END) AS \"35\",\n    MAX(CASE WHEN se.subnet_id = 36 THEN se.emission_enabled::int ELSE NULL END) AS \"36\",\n    MAX(CASE WHEN se.subnet_id = 37 THEN se.emission_enabled::int ELSE NULL END) AS \"37\",\n    MAX(CASE WHEN se.subnet_id = 38 THEN se.emission_enabled::int ELSE NULL END) AS \"38\",\n    MAX(CASE WHEN se.subnet_id = 39 THEN se.emission_enabled::int ELSE NULL END) AS \"39\",\n    MAX(CASE WHEN se.subnet_id = 40 THEN se.emission_enabled::int ELSE NULL END) AS \"40\",\n    MAX(CASE WHEN se.subnet_id = 41 THEN se.emission_enabled::int ELSE NULL END) AS \"41\",\n    MAX(CASE WHEN se.subnet_id = 42 THEN se.emission_enabled::int ELSE NULL END) AS \"42\",\n    MAX(CASE WHEN se.subnet_id = 43 THEN se.emission_enabled::int ELSE NULL END) AS \"43\",\n    MAX(CASE WHEN se.subnet_id = 44 THEN se.emission_enabled::int ELSE NULL END) AS \"44\",\n    MAX(CASE WHEN se.subnet_id = 45 THEN se.emission_enabled::int ELSE NULL END) AS \"45\",\n    MAX(CASE WHEN se.subnet_id = 46 THEN se.emission_enabled::int ELSE NULL END) AS \"46\",\n    MAX(CASE WHEN se.subnet_id = 47 THEN se.emission_enabled::int ELSE NULL END) AS \"47\",\n    MAX(CASE WHEN se.subnet_id = 48 THEN se.emission_enabled::int ELSE NULL END) AS \"48\",\n    MAX(CASE WHEN se.subnet_id = 49 THEN se.emission_enabled::int ELSE NULL END) AS \"49\",\n    MAX(CASE WHEN se.subnet_id = 50 THEN se.emission_enabled::int ELSE NULL END) AS \"50\",\n    MAX(CASE WHEN se.subnet_id = 51 THEN se.emission_enabled::int ELSE NULL END) AS \"51\",\n    MAX(CASE WHEN se.subnet_id = 52 THEN se.emission_enabled::int ELSE NULL END) AS \"52\",\n    MAX(CASE WHEN se.subnet_id = 53 THEN se.emission_enabled::int ELSE NULL END) AS \"53\",\n    MAX(CASE WHEN se.subnet_id = 54 THEN se.emission_enabled::int ELSE NULL END) AS \"54\",\n    MAX(CASE WHEN se.subnet_id = 55 THEN se.emission_enabled::int ELSE NULL END) AS \"55\",\n    MAX(CASE WHEN se.subnet_id = 56 THEN se.emission_enabled::int ELSE NULL END) AS \"56\",\n    MAX(CASE WHEN se.subnet_id = 57 THEN se.emission_enabled::int ELSE NULL END) AS \"57\",\n    MAX(CASE WHEN se.subnet_id = 58 THEN se.emission_enabled::int ELSE NULL END) AS \"58\",\n    MAX(CASE WHEN se.subnet_id = 59 THEN se.emission_enabled::int ELSE NULL END) AS \"59\",\n    MAX(CASE WHEN se.subnet_id = 60 THEN se.emission_enabled::int ELSE NULL END) AS \"60\",\n    MAX(CASE WHEN se.subnet_id = 61 THEN se.emission_enabled::int ELSE NULL END) AS \"61\",\n    MAX(CASE WHEN se.subnet_id = 62 THEN se.emission_enabled::int ELSE NULL END) AS \"62\",\n    MAX(CASE WHEN se.subnet_id = 63 THEN se.emission_enabled::int ELSE NULL END) AS \"63\",\n    MAX(CASE WHEN se.subnet_id = 64 THEN se.emission_enabled::int ELSE NULL END) AS \"64\",\n    MAX(CASE WHEN se.subnet_id = 65 THEN se.emission_enabled::int ELSE NULL END) AS \"65\",\n    MAX(CASE WHEN se.subnet_id = 66 THEN se.emission_enabled::int ELSE NULL END) AS \"66\",\n    MAX(CASE WHEN se.subnet_id = 67 THEN se.emission_enabled::int ELSE NULL END) AS \"67\",\n    MAX(CASE WHEN se.subnet_id = 68 THEN se.emission_enabled::int ELSE NULL END) AS \"68\",\n    MAX(CASE WHEN se.subnet_id = 69 THEN se.emission_enabled::int ELSE NULL END) AS \"69\",\n    MAX(CASE WHEN se.subnet_id = 70 THEN se.emission_enabled::int ELSE NULL END) AS \"70\",\n    MAX(CASE WHEN se.subnet_id = 71 THEN se.emission_enabled::int ELSE NULL END) AS \"71\",\n    MAX(CASE WHEN se.subnet_id = 72 THEN se.emission_enabled::int ELSE NULL END) AS \"72\",\n    MAX(CASE WHEN se.subnet_id = 73 THEN se.emission_enabled::int ELSE NULL END) AS \"73\",\n    MAX(CASE WHEN se.subnet_id = 74 THEN se.emission_enabled::int ELSE NULL END) AS \"74\",\n    MAX(CASE WHEN se.subnet_id = 75 THEN se.emission_enabled::int ELSE NULL END) AS \"75\",\n    MAX(CASE WHEN se.subnet_id = 76 THEN se.emission_enabled::int ELSE NULL END) AS \"76\",\n    MAX(CASE WHEN se.subnet_id = 77 THEN se.emission_enabled::int ELSE NULL END) AS \"77\",\n    MAX(CASE WHEN se.subnet_id = 78 THEN se.emission_enabled::int ELSE NULL END) AS \"78\",\n    MAX(CASE WHEN se.subnet_id = 79 THEN se.emission_enabled::int ELSE NULL END) AS \"79\",\n    MAX(CASE WHEN se.subnet_id = 80 THEN se.emission_enabled::int ELSE NULL END) AS \"80\",\n    MAX(CASE WHEN se.subnet_id = 81 THEN se.emission_enabled::int ELSE NULL END) AS \"81\",\n    MAX(CASE WHEN se.subnet_id = 82 THEN se.emission_enabled::int ELSE NULL END) AS \"82\",\n    MAX(CASE WHEN se.subnet_id = 83 THEN se.emission_enabled::int ELSE NULL END) AS \"83\",\n    MAX(CASE WHEN se.subnet_id = 84 THEN se.emission_enabled::int ELSE NULL END) AS \"84\",\n    MAX(CASE WHEN se.subnet_id = 85 THEN se.emission_enabled::int ELSE NULL END) AS \"85\",\n    MAX(CASE WHEN se.subnet_id = 86 THEN se.emission_enabled::int ELSE NULL END) AS \"86\",\n    MAX(CASE WHEN se.subnet_id = 87 THEN se.emission_enabled::int ELSE NULL END) AS \"87\",\n    MAX(CASE WHEN se.subnet_id = 88 THEN se.emission_enabled::int ELSE NULL END) AS \"88\",\n    MAX(CASE WHEN se.subnet_id = 89 THEN se.emission_enabled::int ELSE NULL END) AS \"89\",\n    MAX(CASE WHEN se.subnet_id = 90 THEN se.emission_enabled::int ELSE NULL END) AS \"90\",\n    MAX(CASE WHEN se.subnet_id = 91 THEN se.emission_enabled::int ELSE NULL END) AS \"91\",\n    MAX(CASE WHEN se.subnet_id = 92 THEN se.emission_enabled::int ELSE NULL END) AS \"92\",\n    MAX(CASE WHEN se.subnet_id = 93 THEN se.emission_enabled::int ELSE NULL END) AS \"93\",\n    MAX(CASE WHEN se.subnet_id = 94 THEN se.emission_enabled::int ELSE NULL END) AS \"94\",\n    MAX(CASE WHEN se.subnet_id = 95 THEN se.emission_enabled::int ELSE NULL END) AS \"95\",\n    MAX(CASE WHEN se.subnet_id = 96 THEN se.emission_enabled::int ELSE NULL END) AS \"96\",\n    MAX(CASE WHEN se.subnet_id = 97 THEN se.emission_enabled::int ELSE NULL END) AS \"97\",\n    MAX(CASE WHEN se.subnet_id = 98 THEN se.emission_enabled::int ELSE NULL END) AS \"98\",\n    MAX(CASE WHEN se.subnet_id = 99 THEN se.emission_enabled::int ELSE NULL END) AS \"99\",\n    MAX(CASE WHEN se.subnet_id = 100 THEN se.emission_enabled::int ELSE NULL END) AS \"100\",\n    MAX(CASE WHEN se.subnet_id = 101 THEN se.emission_enabled::int ELSE NULL END) AS \"101\",\n    MAX(CASE WHEN se.subnet_id = 102 THEN se.emission_enabled::int ELSE NULL END) AS \"102\",\n    MAX(CASE WHEN se.subnet_id = 103 THEN se.emission_enabled::int ELSE NULL END) AS \"103\",\n    MAX(CASE WHEN se.subnet_id = 104 THEN se.emission_enabled::int ELSE NULL END) AS \"104\",\n    MAX(CASE WHEN se.subnet_id = 105 THEN se.emission_enabled::int ELSE NULL END) AS \"105\",\n    MAX(CASE WHEN se.subnet_id = 106 THEN se.emission_enabled::int ELSE NULL END) AS \"106\",\n    MAX(CASE WHEN se.subnet_id = 107 THEN se.emission_enabled::int ELSE NULL END) AS \"107\",\n    MAX(CASE WHEN se.subnet_id = 108 THEN se.emission_enabled::int ELSE NULL END) AS \"108\",\n    MAX(CASE WHEN se.subnet_id = 109 THEN se.emission_enabled::int ELSE NULL END) AS \"109\",\n    MAX(CASE WHEN se.subnet_id = 110 THEN se.emission_enabled::int ELSE NULL END) AS \"110\",\n    MAX(CASE WHEN se.subnet_id = 111 THEN se.emission_enabled::int ELSE NULL END) AS \"111\",\n    MAX(CASE WHEN se.subnet_id = 112 THEN se.emission_enabled::int ELSE NULL END) AS \"112\",\n    MAX(CASE WHEN se.subnet_id = 113 THEN se.emission_enabled::int ELSE NULL END) AS \"113\",\n    MAX(CASE WHEN se.subnet_id = 114 THEN se.emission_enabled::int ELSE NULL END) AS \"114\",\n    MAX(CASE WHEN se.subnet_id = 115 THEN se.emission_enabled::int ELSE NULL END) AS \"115\",\n    MAX(CASE WHEN se.subnet_id = 116 THEN se.emission_enabled::int ELSE NULL END) AS \"116\",\n    MAX(CASE WHEN se.subnet_id = 117 THEN se.emission_enabled::int ELSE NULL END) AS \"117\",\n    MAX(CASE WHEN se.subnet_id = 118 THEN se.emission_enabled::int ELSE NULL END) AS \"118\",\n    MAX(CASE WHEN se.subnet_id = 119 THEN se.emission_enabled::int ELSE NULL END) AS \"119\",\n    MAX(CASE WHEN se.subnet_id = 120 THEN se.emission_enabled::int ELSE NULL END) AS \"120\",\n    MAX(CASE WHEN se.subnet_id = 121 THEN se.emission_enabled::int ELSE NULL END) AS \"121\",\n    MAX(CASE WHEN se.subnet_id = 122 THEN se.emission_enabled::int ELSE NULL END) AS \"122\",\n    MAX(CASE WHEN se.subnet_id = 123 THEN se.emission_enabled::int ELSE NULL END) AS \"123\",\n    MAX(CASE WHEN se.subnet_id = 124 THEN se.emission_enabled::int ELSE NULL END) AS \"124\",\n    MAX(CASE WHEN se.subnet_id = 125 THEN se.emission_enabled::int ELSE NULL END) AS \"125\",\n    MAX(CASE WHEN se.subnet_id = 126 THEN se.emission_enabled::int ELSE NULL END) AS \"126\",\n    MAX(CASE WHEN se.subnet_id = 127 THEN se.emission_enabled::int ELSE NULL END) AS \"127\",\n    MAX(CASE WHEN se.subnet_id = 128 THEN se.emission_enabled::int ELSE NULL END) AS \"128\"\nFROM metagraph_meta_epoch AS me\nJOIN metagraph_block AS blk\n    ON blk.number = me.block_id\nLEFT JOIN metagraph_subnet_emission AS se\n    ON se.meta_epoch_id = me.block_id\nWHERE blk.timestamp >= $__timeFrom()\n  AND blk.timestamp <  $__timeTo()\nGROUP BY\n    blk.timestamp\nORDER BY\n    blk.timestamp;",
+            "refId": "A",
+            "sql": {
+              "columns": [
+                {
+                  "parameters": [],
+                  "type": "function"
+                }
+              ],
+              "groupBy": [
+                {
+                  "property": {
+                    "type": "string"
+                  },
+                  "type": "groupBy"
+                }
+              ],
+              "limit": 50
+            }
+          }
+        ],
+        "title": "Subnet Emissions",
+        "type": "heatmap"
+      },
+      {
+        "datasource": {
+          "type": "grafana-postgresql-datasource",
+          "uid": "postgresql"
+        },
+        "fieldConfig": {
+          "defaults": {
+            "color": {
+              "mode": "palette-classic"
+            },
+            "custom": {
+              "axisBorderShow": false,
+              "axisCenteredZero": false,
+              "axisColorMode": "text",
+              "axisLabel": "",
+              "axisPlacement": "auto",
+              "axisSoftMin": 0,
+              "barAlignment": 0,
+              "barWidthFactor": 0.6,
+              "drawStyle": "line",
+              "fillOpacity": 0,
+              "gradientMode": "none",
+              "hideFrom": {
+                "legend": false,
+                "tooltip": false,
+                "viz": false
+              },
+              "insertNulls": false,
+              "lineInterpolation": "linear",
+              "lineWidth": 1,
+              "pointSize": 5,
+              "scaleDistribution": {
+                "type": "linear"
+              },
+              "showPoints": "auto",
+              "spanNulls": false,
+              "stacking": {
+                "group": "A",
+                "mode": "none"
+              },
+              "thresholdsStyle": {
+                "mode": "off"
+              }
+            },
+            "mappings": [],
+            "thresholds": {
+              "mode": "absolute",
+              "steps": [
+                {
+                  "color": "green"
+                },
+                {
+                  "color": "red",
+                  "value": 80
+                }
+              ]
+            }
+          },
+          "overrides": []
+        },
+        "gridPos": {
+          "h": 19,
+          "w": 24,
+          "x": 0,
+          "y": 36
+        },
+        "id": 3,
+        "options": {
+          "legend": {
+            "calcs": [],
+            "displayMode": "list",
+            "placement": "bottom",
+            "showLegend": false
+          },
+          "tooltip": {
+            "mode": "single",
+            "sort": "none"
+          }
+        },
+        "pluginVersion": "11.2.0",
+        "targets": [
+          {
+            "datasource": {
+              "type": "grafana-postgresql-datasource",
+              "uid": "postgresql"
+            },
+            "editorMode": "code",
+            "format": "table",
+            "rawQuery": true,
+            "rawSql": "SELECT\n    blk.timestamp AS \"time\",\n    COUNT(*) FILTER (WHERE se.emission_enabled) AS enabled_count\nFROM metagraph_meta_epoch AS me\nJOIN metagraph_block AS blk\n    ON blk.number = me.block_id\nLEFT JOIN metagraph_subnet_emission AS se\n    ON se.meta_epoch_id = me.block_id\nWHERE blk.timestamp >= $__timeFrom()\n  AND blk.timestamp <  $__timeTo()\nGROUP BY blk.timestamp\nHAVING COUNT(*) FILTER (WHERE se.emission_enabled) > 0\nORDER BY blk.timestamp;",
+            "refId": "A",
+            "sql": {
+              "columns": [
+                {
+                  "parameters": [],
+                  "type": "function"
+                }
+              ],
+              "groupBy": [
+                {
+                  "property": {
+                    "type": "string"
+                  },
+                  "type": "groupBy"
+                }
+              ],
+              "limit": 50
+            }
+          }
+        ],
+        "title": "Subnets with emissions enabled",
+        "type": "timeseries"
+      }
+    ],
+    "preload": false,
+    "schemaVersion": 39,
+    "tags": [
+      "bittensor",
+      "metagraph",
+      "subnet",
+      "burn",
+      "emissions",
+      "global"
+    ],
+    "templating": {
+      "list": []
+    },
+    "time": {
+      "from": "now-7d",
+      "to": "now"
+    },
+    "timepicker": {},
+    "timezone": "utc",
+    "title": "Burns and Emissions",
+    "weekStart": ""
+  }
+}

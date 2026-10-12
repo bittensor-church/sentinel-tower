@@ -1,0 +1,1156 @@
+{
+  "apiVersion": "dashboard.grafana.app/v1beta1",
+  "kind": "Dashboard",
+  "metadata": {
+    "name": "subnet-apy"
+  },
+  "spec": {
+    "annotations": {
+      "list": [
+        {
+          "builtIn": 1,
+          "datasource": {
+            "type": "grafana",
+            "uid": "-- Grafana --"
+          },
+          "enable": true,
+          "hide": true,
+          "iconColor": "rgba(0, 211, 255, 1)",
+          "name": "Annotations & Alerts",
+          "type": "dashboard"
+        }
+      ]
+    },
+    "editable": true,
+    "fiscalYearStartMonth": 0,
+    "graphTooltip": 1,
+    "links": [],
+    "panels": [
+      {
+        "datasource": {
+          "type": "grafana-postgresql-datasource",
+          "uid": "postgresql"
+        },
+        "description": "Lowest block number present in `metagraph_block`. Indicates how far back the backfill or live sync has captured data.",
+        "fieldConfig": {
+          "defaults": {
+            "color": {
+              "mode": "thresholds"
+            },
+            "decimals": 0,
+            "mappings": [],
+            "thresholds": {
+              "mode": "absolute",
+              "steps": [
+                {
+                  "color": "blue",
+                  "value": null
+                }
+              ]
+            },
+            "unit": "none"
+          },
+          "overrides": []
+        },
+        "gridPos": {
+          "h": 4,
+          "w": 6,
+          "x": 0,
+          "y": 0
+        },
+        "id": 1,
+        "options": {
+          "colorMode": "value",
+          "graphMode": "none",
+          "justifyMode": "auto",
+          "orientation": "auto",
+          "percentChangeColorMode": "standard",
+          "reduceOptions": {
+            "calcs": [
+              "lastNotNull"
+            ],
+            "fields": "",
+            "values": false
+          },
+          "showPercentChange": false,
+          "textMode": "value",
+          "wideLayout": true
+        },
+        "pluginVersion": "11.2.0",
+        "targets": [
+          {
+            "datasource": {
+              "type": "grafana-postgresql-datasource",
+              "uid": "postgresql"
+            },
+            "editorMode": "code",
+            "format": "table",
+            "rawQuery": true,
+            "rawSql": "SELECT MIN(number)::bigint AS first_block FROM metagraph_block",
+            "refId": "A"
+          }
+        ],
+        "title": "First synced block",
+        "type": "stat"
+      },
+      {
+        "datasource": {
+          "type": "grafana-postgresql-datasource",
+          "uid": "postgresql"
+        },
+        "description": "Highest block number present in `metagraph_block`. For live sync this is near chain head; for backfill it is the most recent block processed.",
+        "fieldConfig": {
+          "defaults": {
+            "color": {
+              "mode": "thresholds"
+            },
+            "decimals": 0,
+            "mappings": [],
+            "thresholds": {
+              "mode": "absolute",
+              "steps": [
+                {
+                  "color": "blue",
+                  "value": null
+                }
+              ]
+            },
+            "unit": "none"
+          },
+          "overrides": []
+        },
+        "gridPos": {
+          "h": 4,
+          "w": 6,
+          "x": 6,
+          "y": 0
+        },
+        "id": 2,
+        "options": {
+          "colorMode": "value",
+          "graphMode": "none",
+          "justifyMode": "auto",
+          "orientation": "auto",
+          "percentChangeColorMode": "standard",
+          "reduceOptions": {
+            "calcs": [
+              "lastNotNull"
+            ],
+            "fields": "",
+            "values": false
+          },
+          "showPercentChange": false,
+          "textMode": "value",
+          "wideLayout": true
+        },
+        "pluginVersion": "11.2.0",
+        "targets": [
+          {
+            "datasource": {
+              "type": "grafana-postgresql-datasource",
+              "uid": "postgresql"
+            },
+            "editorMode": "code",
+            "format": "table",
+            "rawQuery": true,
+            "rawSql": "SELECT MAX(number)::bigint AS latest_block FROM metagraph_block",
+            "refId": "A"
+          }
+        ],
+        "title": "Latest synced block",
+        "type": "stat"
+      },
+      {
+        "datasource": {
+          "type": "grafana-postgresql-datasource",
+          "uid": "postgresql"
+        },
+        "description": "Chain-time timestamp of the earliest synced block (returned as a Postgres timestamp; Grafana renders with `dateTimeAsLocal`).",
+        "fieldConfig": {
+          "defaults": {
+            "color": {
+              "mode": "thresholds"
+            },
+            "decimals": 0,
+            "mappings": [],
+            "thresholds": {
+              "mode": "absolute",
+              "steps": [
+                {
+                  "color": "blue",
+                  "value": null
+                }
+              ]
+            },
+            "unit": "dateTimeAsLocal"
+          },
+          "overrides": []
+        },
+        "gridPos": {
+          "h": 4,
+          "w": 6,
+          "x": 12,
+          "y": 0
+        },
+        "id": 3,
+        "options": {
+          "colorMode": "value",
+          "graphMode": "none",
+          "justifyMode": "auto",
+          "orientation": "auto",
+          "percentChangeColorMode": "standard",
+          "reduceOptions": {
+            "calcs": [
+              "lastNotNull"
+            ],
+            "fields": "",
+            "values": false
+          },
+          "showPercentChange": false,
+          "textMode": "value",
+          "wideLayout": true
+        },
+        "pluginVersion": "11.2.0",
+        "targets": [
+          {
+            "datasource": {
+              "type": "grafana-postgresql-datasource",
+              "uid": "postgresql"
+            },
+            "editorMode": "code",
+            "format": "table",
+            "rawQuery": true,
+            "rawSql": "SELECT (EXTRACT(EPOCH FROM MIN(timestamp)) * 1000)::bigint AS earliest_ms FROM metagraph_block",
+            "refId": "A"
+          }
+        ],
+        "title": "Earliest timestamp",
+        "type": "stat"
+      },
+      {
+        "datasource": {
+          "type": "grafana-postgresql-datasource",
+          "uid": "postgresql"
+        },
+        "description": "Chain-time timestamp of the latest synced block. The APY panel anchors its 1d / 1w / 1m windows to the global MAX(epoch_ts) in `metagraph_validator_apy_epoch`.",
+        "fieldConfig": {
+          "defaults": {
+            "color": {
+              "mode": "thresholds"
+            },
+            "decimals": 0,
+            "mappings": [],
+            "thresholds": {
+              "mode": "absolute",
+              "steps": [
+                {
+                  "color": "blue",
+                  "value": null
+                }
+              ]
+            },
+            "unit": "dateTimeAsLocal"
+          },
+          "overrides": []
+        },
+        "gridPos": {
+          "h": 4,
+          "w": 6,
+          "x": 18,
+          "y": 0
+        },
+        "id": 4,
+        "options": {
+          "colorMode": "value",
+          "graphMode": "none",
+          "justifyMode": "auto",
+          "orientation": "auto",
+          "percentChangeColorMode": "standard",
+          "reduceOptions": {
+            "calcs": [
+              "lastNotNull"
+            ],
+            "fields": "",
+            "values": false
+          },
+          "showPercentChange": false,
+          "textMode": "value",
+          "wideLayout": true
+        },
+        "pluginVersion": "11.2.0",
+        "targets": [
+          {
+            "datasource": {
+              "type": "grafana-postgresql-datasource",
+              "uid": "postgresql"
+            },
+            "editorMode": "code",
+            "format": "table",
+            "rawQuery": true,
+            "rawSql": "SELECT (EXTRACT(EPOCH FROM MAX(timestamp)) * 1000)::bigint AS latest_ms FROM metagraph_block",
+            "refId": "A"
+          }
+        ],
+        "title": "Latest timestamp",
+        "type": "stat"
+      },
+      {
+        "datasource": {
+          "type": "grafana-postgresql-datasource",
+          "uid": "postgresql"
+        },
+        "description": "Wall-clock span between earliest and latest synced block, in days. Computed from `metagraph_block.timestamp`.",
+        "fieldConfig": {
+          "defaults": {
+            "color": {
+              "mode": "thresholds"
+            },
+            "mappings": [],
+            "thresholds": {
+              "mode": "absolute",
+              "steps": [
+                {
+                  "color": "green",
+                  "value": null
+                }
+              ]
+            },
+            "unit": "none"
+          },
+          "overrides": []
+        },
+        "gridPos": {
+          "h": 4,
+          "w": 6,
+          "x": 0,
+          "y": 4
+        },
+        "id": 5,
+        "options": {
+          "colorMode": "value",
+          "graphMode": "none",
+          "justifyMode": "auto",
+          "orientation": "auto",
+          "percentChangeColorMode": "standard",
+          "reduceOptions": {
+            "calcs": [
+              "lastNotNull"
+            ],
+            "fields": "",
+            "values": false
+          },
+          "showPercentChange": false,
+          "textMode": "value",
+          "wideLayout": true
+        },
+        "pluginVersion": "11.2.0",
+        "targets": [
+          {
+            "datasource": {
+              "type": "grafana-postgresql-datasource",
+              "uid": "postgresql"
+            },
+            "editorMode": "code",
+            "format": "table",
+            "rawQuery": true,
+            "rawSql": "SELECT ROUND(EXTRACT(EPOCH FROM (MAX(timestamp) - MIN(timestamp))) / 86400.0, 1)::float AS span_days FROM metagraph_block",
+            "refId": "A"
+          }
+        ],
+        "title": "Span (days)",
+        "type": "stat"
+      },
+      {
+        "datasource": {
+          "type": "grafana-postgresql-datasource",
+          "uid": "postgresql"
+        },
+        "description": "Rows in `metagraph_block` — one per unique block number that any netuid has dumped. NOT the same as work units; see 'Total dumps'. Different netuids hit epoch-start at different block numbers (per `(block + netuid + 2) mod 361 == 0`), so many of the same chain blocks collapse into one row here.",
+        "fieldConfig": {
+          "defaults": {
+            "color": {
+              "mode": "thresholds"
+            },
+            "decimals": 0,
+            "mappings": [],
+            "thresholds": {
+              "mode": "absolute",
+              "steps": [
+                {
+                  "color": "green",
+                  "value": null
+                }
+              ]
+            },
+            "unit": "locale"
+          },
+          "overrides": []
+        },
+        "gridPos": {
+          "h": 4,
+          "w": 6,
+          "x": 6,
+          "y": 4
+        },
+        "id": 6,
+        "options": {
+          "colorMode": "value",
+          "graphMode": "none",
+          "justifyMode": "auto",
+          "orientation": "auto",
+          "percentChangeColorMode": "standard",
+          "reduceOptions": {
+            "calcs": [
+              "lastNotNull"
+            ],
+            "fields": "",
+            "values": false
+          },
+          "showPercentChange": false,
+          "textMode": "value",
+          "wideLayout": true
+        },
+        "pluginVersion": "11.2.0",
+        "targets": [
+          {
+            "datasource": {
+              "type": "grafana-postgresql-datasource",
+              "uid": "postgresql"
+            },
+            "editorMode": "code",
+            "format": "table",
+            "rawQuery": true,
+            "rawSql": "SELECT COUNT(*)::bigint AS unique_blocks FROM metagraph_block",
+            "refId": "A"
+          }
+        ],
+        "title": "Unique blocks",
+        "type": "stat"
+      },
+      {
+        "datasource": {
+          "type": "grafana-postgresql-datasource",
+          "uid": "postgresql"
+        },
+        "description": "Rows in `metagraph_dump` — one per `(netuid, block)` pair. This is the backfill's work-unit counter; matches the `count=N missing dumps` line in the backfill log. Equals (unique blocks) × (average netuids dumping at that block) ≈ unique_blocks × 8 with 128 netuids on tempo 360.",
+        "fieldConfig": {
+          "defaults": {
+            "color": {
+              "mode": "thresholds"
+            },
+            "decimals": 0,
+            "mappings": [],
+            "thresholds": {
+              "mode": "absolute",
+              "steps": [
+                {
+                  "color": "green",
+                  "value": null
+                }
+              ]
+            },
+            "unit": "locale"
+          },
+          "overrides": []
+        },
+        "gridPos": {
+          "h": 4,
+          "w": 6,
+          "x": 12,
+          "y": 4
+        },
+        "id": 7,
+        "options": {
+          "colorMode": "value",
+          "graphMode": "none",
+          "justifyMode": "auto",
+          "orientation": "auto",
+          "percentChangeColorMode": "standard",
+          "reduceOptions": {
+            "calcs": [
+              "lastNotNull"
+            ],
+            "fields": "",
+            "values": false
+          },
+          "showPercentChange": false,
+          "textMode": "value",
+          "wideLayout": true
+        },
+        "pluginVersion": "11.2.0",
+        "targets": [
+          {
+            "datasource": {
+              "type": "grafana-postgresql-datasource",
+              "uid": "postgresql"
+            },
+            "editorMode": "code",
+            "format": "table",
+            "rawQuery": true,
+            "rawSql": "SELECT COUNT(*)::bigint AS total_dumps FROM metagraph_dump",
+            "refId": "A"
+          }
+        ],
+        "title": "Total dumps",
+        "type": "stat"
+      },
+      {
+        "datasource": {
+          "type": "grafana-postgresql-datasource",
+          "uid": "postgresql"
+        },
+        "description": "Rows in `metagraph_neuron_snapshot` — one per `(neuron, block)`. Roughly: total_dumps × neurons_per_subnet (commonly 64 or 256). The denominator most downstream queries hit.",
+        "fieldConfig": {
+          "defaults": {
+            "color": {
+              "mode": "thresholds"
+            },
+            "decimals": 0,
+            "mappings": [],
+            "thresholds": {
+              "mode": "absolute",
+              "steps": [
+                {
+                  "color": "green",
+                  "value": null
+                }
+              ]
+            },
+            "unit": "locale"
+          },
+          "overrides": []
+        },
+        "gridPos": {
+          "h": 4,
+          "w": 6,
+          "x": 18,
+          "y": 4
+        },
+        "id": 8,
+        "options": {
+          "colorMode": "value",
+          "graphMode": "none",
+          "justifyMode": "auto",
+          "orientation": "auto",
+          "percentChangeColorMode": "standard",
+          "reduceOptions": {
+            "calcs": [
+              "lastNotNull"
+            ],
+            "fields": "",
+            "values": false
+          },
+          "showPercentChange": false,
+          "textMode": "value",
+          "wideLayout": true
+        },
+        "pluginVersion": "11.2.0",
+        "targets": [
+          {
+            "datasource": {
+              "type": "grafana-postgresql-datasource",
+              "uid": "postgresql"
+            },
+            "editorMode": "code",
+            "format": "table",
+            "rawQuery": true,
+            "rawSql": "SELECT n_live_tup::bigint AS neuron_snapshots\nFROM pg_stat_user_tables\nWHERE relname = 'metagraph_neuron_snapshot';\n",
+            "refId": "A",
+            "sql": {
+              "columns": [
+                {
+                  "parameters": [],
+                  "type": "function"
+                }
+              ],
+              "groupBy": [
+                {
+                  "property": {
+                    "type": "string"
+                  },
+                  "type": "groupBy"
+                }
+              ],
+              "limit": 50
+            }
+          }
+        ],
+        "title": "Neuron snapshots",
+        "type": "stat"
+      },
+      {
+        "datasource": {
+          "type": "grafana-postgresql-datasource",
+          "uid": "postgresql"
+        },
+        "description": "Per-validator APY for the selected subnet, read from `metagraph_validator_apy_epoch` (one row per validator per completed epoch). Each row's `apy_pct` annualizes that single epoch's realized return by compounding: `((1 + alpha_dividends / alpha_stake) ^ epochs_per_year - 1) × 100`. `Latest Epoch APY` is the most recent epoch's value; `apy_1d` / `apy_1w` / `apy_1m` are averages of per-epoch APY over the trailing window, anchored on the table's global `MAX(epoch_ts)` (not this subnet's own latest epoch, and not Grafana's time picker) — a subnet with no epoch in the trailing month shows no rows. Caveats: single-epoch APY is volatile epoch-to-epoch; `alpha_stake` is the current per-uid stake rather than the chain's exact epoch-start base; multi-mechanism subnets only use mech_id = 0.",
+        "fieldConfig": {
+          "defaults": {
+            "color": {
+              "mode": "thresholds"
+            },
+            "custom": {
+              "align": "auto",
+              "cellOptions": {
+                "type": "auto"
+              },
+              "inspect": false
+            },
+            "mappings": [],
+            "thresholds": {
+              "mode": "absolute",
+              "steps": [
+                {
+                  "color": "green",
+                  "value": null
+                }
+              ]
+            }
+          },
+          "overrides": [
+            {
+              "matcher": {
+                "id": "byName",
+                "options": "alpha_stake_tao"
+              },
+              "properties": [
+                {
+                  "id": "unit",
+                  "value": "none"
+                },
+                {
+                  "id": "decimals",
+                  "value": 2
+                },
+                {
+                  "id": "displayName",
+                  "value": "Alpha Stake"
+                },
+                {
+                  "id": "custom.cellOptions",
+                  "value": {
+                    "mode": "gradient",
+                    "type": "gauge"
+                  }
+                }
+              ]
+            },
+            {
+              "matcher": {
+                "id": "byName",
+                "options": "stake_tao"
+              },
+              "properties": [
+                {
+                  "id": "unit",
+                  "value": "none"
+                },
+                {
+                  "id": "decimals",
+                  "value": 2
+                },
+                {
+                  "id": "displayName",
+                  "value": "Total Stake"
+                }
+              ]
+            },
+            {
+              "matcher": {
+                "id": "byName",
+                "options": "apy_epoch"
+              },
+              "properties": [
+                {
+                  "id": "unit",
+                  "value": "percent"
+                },
+                {
+                  "id": "decimals",
+                  "value": 2
+                },
+                {
+                  "id": "displayName",
+                  "value": "Latest Epoch APY"
+                }
+              ]
+            },
+            {
+              "matcher": {
+                "id": "byName",
+                "options": "apy_1d"
+              },
+              "properties": [
+                {
+                  "id": "unit",
+                  "value": "percent"
+                },
+                {
+                  "id": "decimals",
+                  "value": 2
+                },
+                {
+                  "id": "displayName",
+                  "value": "1d APY"
+                }
+              ]
+            },
+            {
+              "matcher": {
+                "id": "byName",
+                "options": "apy_1w"
+              },
+              "properties": [
+                {
+                  "id": "unit",
+                  "value": "percent"
+                },
+                {
+                  "id": "decimals",
+                  "value": 2
+                },
+                {
+                  "id": "displayName",
+                  "value": "1W APY"
+                }
+              ]
+            },
+            {
+              "matcher": {
+                "id": "byName",
+                "options": "apy_1m"
+              },
+              "properties": [
+                {
+                  "id": "unit",
+                  "value": "percent"
+                },
+                {
+                  "id": "decimals",
+                  "value": 2
+                },
+                {
+                  "id": "displayName",
+                  "value": "1M APY"
+                }
+              ]
+            },
+            {
+              "matcher": {
+                "id": "byName",
+                "options": "validator_name"
+              },
+              "properties": [
+                {
+                  "id": "displayName",
+                  "value": "Validator Name"
+                }
+              ]
+            }
+          ]
+        },
+        "gridPos": {
+          "h": 14,
+          "w": 24,
+          "x": 0,
+          "y": 8
+        },
+        "id": 9,
+        "options": {
+          "cellHeight": "sm",
+          "footer": {
+            "countRows": false,
+            "fields": "",
+            "reducer": [
+              "sum"
+            ],
+            "show": false
+          },
+          "showHeader": true,
+          "sortBy": [
+            {
+              "desc": true,
+              "displayName": "Alpha Stake"
+            }
+          ]
+        },
+        "pluginVersion": "11.2.0",
+        "targets": [
+          {
+            "datasource": {
+              "type": "grafana-postgresql-datasource",
+              "uid": "postgresql"
+            },
+            "editorMode": "code",
+            "format": "table",
+            "rawQuery": true,
+            "rawSql": "WITH anchor AS (\n    SELECT MAX(epoch_ts) AS end_t FROM metagraph_validator_apy_epoch\n),\nagg AS (\n    SELECT e.neuron_id, e.hotkey_id,\n           AVG(e.apy_pct) FILTER (WHERE e.epoch_ts >= a.end_t - INTERVAL '1 day')  AS apy_1d,\n           AVG(e.apy_pct) FILTER (WHERE e.epoch_ts >= a.end_t - INTERVAL '1 week') AS apy_1w,\n           AVG(e.apy_pct) AS apy_1m\n    FROM metagraph_validator_apy_epoch e, anchor a\n    WHERE e.subnet_id = ${subnet} AND e.epoch_ts >= a.end_t - INTERVAL '1 month'\n    GROUP BY e.neuron_id, e.hotkey_id\n),\nlatest AS (\n    SELECT DISTINCT ON (e.neuron_id)\n           e.neuron_id, e.hotkey_id, e.apy_pct AS apy_latest,\n           e.alpha_stake / 1e9 AS alpha_stake_tao,\n           e.total_stake / 1e9 AS stake_tao\n    FROM metagraph_validator_apy_epoch e, anchor a\n    WHERE e.subnet_id = ${subnet}\n      AND e.epoch_ts >= a.end_t - INTERVAL '1 month'\n    ORDER BY e.neuron_id, e.epoch_block DESC\n)\nSELECT COALESCE(NULLIF(h.label, ''), LEFT(h.hotkey, 8) || '...') AS validator_name,\n       l.alpha_stake_tao,\n       l.stake_tao,\n       l.apy_latest AS apy_epoch,\n       COALESCE(g.apy_1d, 0) AS apy_1d,\n       COALESCE(g.apy_1w, 0) AS apy_1w,\n       COALESCE(g.apy_1m, 0) AS apy_1m\nFROM latest l\nJOIN metagraph_hotkey h ON h.id = l.hotkey_id\nLEFT JOIN agg g ON g.neuron_id = l.neuron_id\nORDER BY l.alpha_stake_tao DESC",
+            "refId": "A"
+          }
+        ],
+        "title": "Subnet Validators APY",
+        "type": "table"
+      },
+      {
+        "datasource": {
+          "type": "grafana-postgresql-datasource",
+          "uid": "postgresql"
+        },
+        "fieldConfig": {
+          "defaults": {
+            "color": {
+              "mode": "palette-classic"
+            },
+            "custom": {
+              "axisBorderShow": false,
+              "axisCenteredZero": false,
+              "axisColorMode": "text",
+              "axisLabel": "",
+              "axisPlacement": "auto",
+              "barAlignment": 0,
+              "barWidthFactor": 0.6,
+              "drawStyle": "line",
+              "fillOpacity": 0,
+              "gradientMode": "none",
+              "hideFrom": {
+                "legend": false,
+                "tooltip": false,
+                "viz": false
+              },
+              "insertNulls": false,
+              "lineInterpolation": "linear",
+              "lineWidth": 1,
+              "pointSize": 5,
+              "scaleDistribution": {
+                "type": "linear"
+              },
+              "showPoints": "never",
+              "spanNulls": false,
+              "stacking": {
+                "group": "A",
+                "mode": "none"
+              },
+              "thresholdsStyle": {
+                "mode": "off"
+              }
+            },
+            "mappings": [],
+            "thresholds": {
+              "mode": "absolute",
+              "steps": [
+                {
+                  "color": "green",
+                  "value": null
+                },
+                {
+                  "color": "red",
+                  "value": 80
+                }
+              ]
+            },
+            "unit": "percent"
+          },
+          "overrides": [
+            {
+              "matcher": {
+                "id": "byName",
+                "options": "Subnet avg"
+              },
+              "properties": [
+                {
+                  "id": "custom.lineWidth",
+                  "value": 3
+                },
+                {
+                  "id": "color",
+                  "value": {
+                    "fixedColor": "yellow",
+                    "mode": "fixed"
+                  }
+                }
+              ]
+            }
+          ]
+        },
+        "gridPos": {
+          "h": 10,
+          "w": 24,
+          "x": 0,
+          "y": 22
+        },
+        "id": 10,
+        "options": {
+          "legend": {
+            "calcs": [],
+            "displayMode": "list",
+            "placement": "bottom",
+            "showLegend": true
+          },
+          "tooltip": {
+            "mode": "multi",
+            "sort": "none"
+          }
+        },
+        "pluginVersion": "11.2.0",
+        "targets": [
+          {
+            "datasource": {
+              "type": "grafana-postgresql-datasource",
+              "uid": "postgresql"
+            },
+            "editorMode": "code",
+            "format": "time_series",
+            "rawQuery": true,
+            "rawSql": "SELECT e.epoch_ts AS time, COALESCE(NULLIF(h.label, ''), LEFT(h.hotkey, 8) || '...') AS metric, e.apy_pct AS value FROM metagraph_validator_apy_epoch e JOIN metagraph_hotkey h ON h.id = e.hotkey_id WHERE e.subnet_id = ${subnet} AND e.epoch_ts IS NOT NULL ORDER BY time",
+            "refId": "A"
+          },
+          {
+            "datasource": {
+              "type": "grafana-postgresql-datasource",
+              "uid": "postgresql"
+            },
+            "editorMode": "code",
+            "format": "time_series",
+            "rawQuery": true,
+            "rawSql": "SELECT epoch_ts AS time, 'Subnet avg' AS metric, LEAST((exp(LEAST((2629800.0 / (MIN(tempo) + 1)) * ln(1 + SUM(alpha_dividends)::numeric / NULLIF(SUM(alpha_stake), 0)), 14::numeric)) - 1) * 100, 1000000::numeric) AS value FROM metagraph_validator_apy_epoch WHERE subnet_id = ${subnet} AND epoch_ts IS NOT NULL GROUP BY epoch_ts ORDER BY time",
+            "refId": "B"
+          }
+        ],
+        "title": "Validator APY per epoch",
+        "type": "timeseries"
+      },
+      {
+        "datasource": {
+          "type": "grafana-postgresql-datasource",
+          "uid": "postgresql"
+        },
+        "fieldConfig": {
+          "defaults": {
+            "color": {
+              "mode": "palette-classic"
+            },
+            "custom": {
+              "axisBorderShow": false,
+              "axisCenteredZero": false,
+              "axisColorMode": "text",
+              "axisLabel": "",
+              "axisPlacement": "auto",
+              "barAlignment": 0,
+              "barWidthFactor": 0.6,
+              "drawStyle": "line",
+              "fillOpacity": 0,
+              "gradientMode": "none",
+              "hideFrom": {
+                "legend": false,
+                "tooltip": false,
+                "viz": false
+              },
+              "insertNulls": false,
+              "lineInterpolation": "linear",
+              "lineWidth": 1,
+              "pointSize": 5,
+              "scaleDistribution": {
+                "type": "linear"
+              },
+              "showPoints": "never",
+              "spanNulls": false,
+              "stacking": {
+                "group": "A",
+                "mode": "none"
+              },
+              "thresholdsStyle": {
+                "mode": "off"
+              }
+            },
+            "mappings": [],
+            "thresholds": {
+              "mode": "absolute",
+              "steps": [
+                {
+                  "color": "green"
+                },
+                {
+                  "color": "red",
+                  "value": 80
+                }
+              ]
+            },
+            "unit": "short"
+          },
+          "overrides": []
+        },
+        "gridPos": {
+          "h": 10,
+          "w": 24,
+          "x": 0,
+          "y": 32
+        },
+        "id": 11,
+        "options": {
+          "legend": {
+            "calcs": [],
+            "displayMode": "list",
+            "placement": "bottom",
+            "showLegend": true
+          },
+          "tooltip": {
+            "mode": "multi",
+            "sort": "none"
+          }
+        },
+        "pluginVersion": "11.2.0",
+        "targets": [
+          {
+            "datasource": {
+              "type": "grafana-postgresql-datasource",
+              "uid": "postgresql"
+            },
+            "editorMode": "code",
+            "format": "time_series",
+            "rawQuery": true,
+            "rawSql": "SELECT e.epoch_ts AS time, COALESCE(NULLIF(h.label, ''), LEFT(h.hotkey, 8) || '...') AS metric, e.alpha_stake / 1e9 AS value FROM metagraph_validator_apy_epoch e JOIN metagraph_hotkey h ON h.id = e.hotkey_id WHERE e.subnet_id = ${subnet} AND e.epoch_ts IS NOT NULL ORDER BY time",
+            "refId": "A"
+          }
+        ],
+        "title": "Alpha staked per validator (end-of-epoch)",
+        "type": "timeseries"
+      },
+      {
+        "datasource": {
+          "type": "grafana-postgresql-datasource",
+          "uid": "postgresql"
+        },
+        "fieldConfig": {
+          "defaults": {
+            "color": {
+              "mode": "palette-classic"
+            },
+            "custom": {
+              "axisBorderShow": false,
+              "axisCenteredZero": false,
+              "axisColorMode": "text",
+              "axisLabel": "",
+              "axisPlacement": "auto",
+              "barAlignment": 0,
+              "barWidthFactor": 0.6,
+              "drawStyle": "line",
+              "fillOpacity": 0,
+              "gradientMode": "none",
+              "hideFrom": {
+                "legend": false,
+                "tooltip": false,
+                "viz": false
+              },
+              "insertNulls": false,
+              "lineInterpolation": "linear",
+              "lineWidth": 1,
+              "pointSize": 5,
+              "scaleDistribution": {
+                "type": "linear"
+              },
+              "showPoints": "never",
+              "spanNulls": false,
+              "stacking": {
+                "group": "A",
+                "mode": "none"
+              },
+              "thresholdsStyle": {
+                "mode": "off"
+              }
+            },
+            "mappings": [],
+            "thresholds": {
+              "mode": "absolute",
+              "steps": [
+                {
+                  "color": "green"
+                },
+                {
+                  "color": "red",
+                  "value": 80
+                }
+              ]
+            },
+            "unit": "short"
+          },
+          "overrides": []
+        },
+        "gridPos": {
+          "h": 10,
+          "w": 24,
+          "x": 0,
+          "y": 42
+        },
+        "id": 12,
+        "options": {
+          "legend": {
+            "calcs": [],
+            "displayMode": "list",
+            "placement": "bottom",
+            "showLegend": true
+          },
+          "tooltip": {
+            "mode": "multi",
+            "sort": "none"
+          }
+        },
+        "pluginVersion": "11.2.0",
+        "targets": [
+          {
+            "datasource": {
+              "type": "grafana-postgresql-datasource",
+              "uid": "postgresql"
+            },
+            "editorMode": "code",
+            "format": "time_series",
+            "rawQuery": true,
+            "rawSql": "SELECT e.epoch_ts AS time, COALESCE(NULLIF(h.label, ''), LEFT(h.hotkey, 8) || '...') AS metric, e.alpha_dividends / 1e9 AS value FROM metagraph_validator_apy_epoch e JOIN metagraph_hotkey h ON h.id = e.hotkey_id WHERE e.subnet_id = ${subnet} AND e.epoch_ts IS NOT NULL ORDER BY time",
+            "refId": "A"
+          }
+        ],
+        "title": "Alpha earned per epoch per validator",
+        "type": "timeseries"
+      }
+    ],
+    "preload": false,
+    "refresh": "",
+    "schemaVersion": 39,
+    "tags": [
+      "bittensor",
+      "subnet",
+      "apy",
+      "validators"
+    ],
+    "templating": {
+      "list": [
+        {
+          "current": {
+            "text": "1 - Apex",
+            "value": "1"
+          },
+          "datasource": {
+            "type": "grafana-postgresql-datasource",
+            "uid": "postgresql"
+          },
+          "definition": "SELECT netuid AS __value, netuid::text || ' - ' || COALESCE(NULLIF(name, ''), 'Subnet ' || netuid::text) AS __text FROM metagraph_subnet ORDER BY netuid",
+          "includeAll": false,
+          "label": "Subnet",
+          "name": "subnet",
+          "options": [],
+          "query": "SELECT netuid AS __value, netuid::text || ' - ' || COALESCE(NULLIF(name, ''), 'Subnet ' || netuid::text) AS __text FROM metagraph_subnet ORDER BY netuid",
+          "refresh": 1,
+          "regex": "",
+          "type": "query"
+        }
+      ]
+    },
+    "time": {
+      "from": "now-30d",
+      "to": "now"
+    },
+    "timepicker": {},
+    "timezone": "",
+    "title": "Subnet APY",
+    "weekStart": ""
+  }
+}

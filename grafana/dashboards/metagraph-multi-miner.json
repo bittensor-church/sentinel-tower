@@ -1,0 +1,1762 @@
+{
+  "apiVersion": "dashboard.grafana.app/v1beta1",
+  "kind": "Dashboard",
+  "metadata": {
+    "name": "sentinel-metagraph-multi-miner"
+  },
+  "spec": {
+    "annotations": {
+      "list": [
+        {
+          "builtIn": 1,
+          "datasource": {
+            "type": "grafana",
+            "uid": "-- Grafana --"
+          },
+          "enable": true,
+          "hide": true,
+          "iconColor": "rgba(0, 211, 255, 1)",
+          "name": "Annotations & Alerts",
+          "type": "dashboard"
+        }
+      ]
+    },
+    "editable": true,
+    "fiscalYearStartMonth": 0,
+    "graphTooltip": 0,
+    "links": [],
+    "panels": [
+      {
+        "description": "",
+        "fieldConfig": {
+          "defaults": {},
+          "overrides": []
+        },
+        "gridPos": {
+          "h": 2,
+          "w": 13,
+          "x": 0,
+          "y": 0
+        },
+        "id": 11,
+        "options": {
+          "code": {
+            "language": "plaintext",
+            "showLineNumbers": false,
+            "showMiniMap": false
+          },
+          "content": "|| taostats: [metagraph](https://x.taostats.io/subnet/${subnet}#metagraph)\n| [hyperparams](https://x.taostats.io/subnet/${subnet}#hyperparams)\n| [registration](https://x.taostats.io/subnet/${subnet}#registration)\n| [distribution](https://x.taostats.io/subnet/${subnet}#distribution)\n|| bactensor: [subnet](/grafana/d/sentinel-metagraph-001/metagraph-subnet?var-subnet=${subnet})\n| [validator](/grafana/d/sentinel-metagraph-validator/metagraph-validator?var-subnet=${subnet})\n||\\\n|| you can press `V` when hovering on a chart to toggle zoom ||",
+          "mode": "markdown"
+        },
+        "pluginVersion": "11.2.0",
+        "title": "",
+        "transparent": true,
+        "type": "text"
+      },
+      {
+        "datasource": {
+          "type": "grafana-postgresql-datasource",
+          "uid": "postgresql"
+        },
+        "fieldConfig": {
+          "defaults": {
+            "color": {
+              "mode": "palette-classic"
+            },
+            "custom": {
+              "axisBorderShow": false,
+              "axisCenteredZero": false,
+              "axisColorMode": "text",
+              "axisLabel": "",
+              "axisPlacement": "auto",
+              "barAlignment": 0,
+              "barWidthFactor": 0.6,
+              "drawStyle": "line",
+              "fillOpacity": 0,
+              "gradientMode": "none",
+              "hideFrom": {
+                "legend": false,
+                "tooltip": false,
+                "viz": false
+              },
+              "insertNulls": 1800000,
+              "lineInterpolation": "linear",
+              "lineWidth": 1,
+              "pointSize": 5,
+              "scaleDistribution": {
+                "type": "linear"
+              },
+              "showPoints": "always",
+              "spanNulls": 1800000,
+              "stacking": {
+                "group": "A",
+                "mode": "none"
+              },
+              "thresholdsStyle": {
+                "mode": "off"
+              }
+            },
+            "mappings": [],
+            "thresholds": {
+              "mode": "absolute",
+              "steps": [
+                {
+                  "color": "green",
+                  "value": null
+                },
+                {
+                  "color": "red",
+                  "value": 80
+                }
+              ]
+            }
+          },
+          "overrides": [
+            {
+              "matcher": {
+                "id": "byName",
+                "options": "incentives"
+              },
+              "properties": [
+                {
+                  "id": "color",
+                  "value": {
+                    "fixedColor": "#14dec3",
+                    "mode": "fixed"
+                  }
+                },
+                {
+                  "id": "custom.lineWidth",
+                  "value": 3
+                }
+              ]
+            },
+            {
+              "matcher": {
+                "id": "byName",
+                "options": "deregistration zone"
+              },
+              "properties": [
+                {
+                  "id": "custom.fillOpacity",
+                  "value": 20
+                },
+                {
+                  "id": "color",
+                  "value": {
+                    "fixedColor": "#ff9600",
+                    "mode": "fixed"
+                  }
+                },
+                {
+                  "id": "displayName",
+                  "value": "deregistration zone[4]"
+                },
+                {
+                  "id": "custom.showPoints",
+                  "value": "never"
+                }
+              ]
+            },
+            {
+              "matcher": {
+                "id": "byName",
+                "options": "top immune"
+              },
+              "properties": [
+                {
+                  "id": "color",
+                  "value": {
+                    "fixedColor": "red",
+                    "mode": "fixed"
+                  }
+                },
+                {
+                  "id": "custom.showPoints",
+                  "value": "never"
+                }
+              ]
+            },
+            {
+              "matcher": {
+                "id": "byFrameRefID",
+                "options": "max emissions"
+              },
+              "properties": [
+                {
+                  "id": "color",
+                  "value": {
+                    "fixedColor": "#00ff00",
+                    "mode": "fixed"
+                  }
+                },
+                {
+                  "id": "custom.showPoints",
+                  "value": "never"
+                }
+              ]
+            },
+            {
+              "matcher": {
+                "id": "byName",
+                "options": "deregistration zone 8"
+              },
+              "properties": [
+                {
+                  "id": "displayName",
+                  "value": "danger zone[8]"
+                },
+                {
+                  "id": "custom.fillBelowTo",
+                  "value": "deregistration zone"
+                },
+                {
+                  "id": "color",
+                  "value": {
+                    "fixedColor": "yellow",
+                    "mode": "fixed"
+                  }
+                },
+                {
+                  "id": "custom.fillOpacity",
+                  "value": 19
+                },
+                {
+                  "id": "custom.showPoints",
+                  "value": "never"
+                }
+              ]
+            }
+          ]
+        },
+        "gridPos": {
+          "h": 19,
+          "w": 12,
+          "x": 0,
+          "y": 2
+        },
+        "id": 8,
+        "options": {
+          "legend": {
+            "calcs": [],
+            "displayMode": "list",
+            "placement": "bottom",
+            "showLegend": true
+          },
+          "tooltip": {
+            "mode": "multi",
+            "sort": "none"
+          }
+        },
+        "pluginVersion": "11.2.0",
+        "targets": [
+          {
+            "datasource": {
+              "type": "grafana-postgresql-datasource",
+              "uid": "postgresql"
+            },
+            "editorMode": "code",
+            "format": "table",
+            "hide": false,
+            "rawQuery": true,
+            "rawSql": "WITH bounds AS (\n  SELECT (SELECT number FROM metagraph_block WHERE timestamp >= '${__from:date}' ORDER BY timestamp LIMIT 1) AS lo,\n         (SELECT number FROM metagraph_block WHERE timestamp <= '${__to:date}' ORDER BY timestamp DESC LIMIT 1) AS hi\n)\nSELECT mm.incentive AS \" \", b.timestamp AS time, h.hotkey\nFROM bounds\n  CROSS JOIN metagraph_neuron n\n  JOIN metagraph_hotkey h ON h.id = n.hotkey_id\n  JOIN metagraph_neuron_snapshot ns ON ns.neuron_id = n.id AND ns.block_id BETWEEN bounds.lo AND bounds.hi\n  JOIN metagraph_block b ON b.number = ns.block_id AND b.number BETWEEN bounds.lo AND bounds.hi\n  JOIN metagraph_mechanism_metrics mm ON mm.snapshot_id = ns.id AND mm.mech_id = 0\nWHERE h.hotkey IN (${miner:singlequote}) AND n.subnet_id = ${subnet}\n  AND b.timestamp IS NOT NULL",
+            "refId": "emissions",
+            "sql": {
+              "columns": [
+                {
+                  "parameters": [],
+                  "type": "function"
+                }
+              ],
+              "groupBy": [
+                {
+                  "property": {
+                    "type": "string"
+                  },
+                  "type": "groupBy"
+                }
+              ],
+              "limit": 50
+            }
+          },
+          {
+            "datasource": {
+              "type": "grafana-postgresql-datasource",
+              "uid": "postgresql"
+            },
+            "editorMode": "code",
+            "format": "table",
+            "hide": false,
+            "rawQuery": true,
+            "rawSql": "WITH bounds AS (\n  SELECT (SELECT number FROM metagraph_block WHERE timestamp >= '${__from:date}' ORDER BY timestamp LIMIT 1) AS lo,\n         (SELECT number FROM metagraph_block WHERE timestamp <= '${__to:date}' ORDER BY timestamp DESC LIMIT 1) AS hi\n)\nSELECT MAX(mm.incentive) AS \"max incentives\", b.timestamp AS time\nFROM bounds\n  CROSS JOIN metagraph_neuron n\n  JOIN metagraph_neuron_snapshot ns ON ns.neuron_id = n.id AND ns.block_id BETWEEN bounds.lo AND bounds.hi\n  JOIN metagraph_block b ON b.number = ns.block_id AND b.number BETWEEN bounds.lo AND bounds.hi\n  JOIN metagraph_mechanism_metrics mm ON mm.snapshot_id = ns.id AND mm.mech_id = 0\nWHERE n.subnet_id = ${subnet}\n  AND (ns.is_immune OR ns.has_any_weights)\n  AND b.timestamp IS NOT NULL\nGROUP BY b.timestamp\nORDER BY b.timestamp",
+            "refId": "max emissions",
+            "sql": {
+              "columns": [
+                {
+                  "parameters": [],
+                  "type": "function"
+                }
+              ],
+              "groupBy": [
+                {
+                  "property": {
+                    "type": "string"
+                  },
+                  "type": "groupBy"
+                }
+              ],
+              "limit": 50
+            }
+          },
+          {
+            "datasource": {
+              "type": "grafana-postgresql-datasource",
+              "uid": "postgresql"
+            },
+            "editorMode": "code",
+            "format": "table",
+            "hide": false,
+            "rawQuery": true,
+            "rawSql": "WITH bounds AS (\n  SELECT (SELECT number FROM metagraph_block WHERE timestamp >= '${__from:date}' ORDER BY timestamp LIMIT 1) AS lo,\n         (SELECT number FROM metagraph_block WHERE timestamp <= '${__to:date}' ORDER BY timestamp DESC LIMIT 1) AS hi\n)\nSELECT MAX(mm.incentive) AS \"top immune\", b.timestamp AS time\nFROM bounds\n  CROSS JOIN metagraph_neuron n\n  JOIN metagraph_neuron_snapshot ns ON ns.neuron_id = n.id AND ns.block_id BETWEEN bounds.lo AND bounds.hi\n  JOIN metagraph_block b ON b.number = ns.block_id AND b.number BETWEEN bounds.lo AND bounds.hi\n  JOIN metagraph_mechanism_metrics mm ON mm.snapshot_id = ns.id AND mm.mech_id = 0\nWHERE n.subnet_id = ${subnet}\n  AND ns.is_immune\n  AND b.timestamp IS NOT NULL\nGROUP BY b.timestamp\nORDER BY b.timestamp",
+            "refId": "top immune",
+            "sql": {
+              "columns": [
+                {
+                  "parameters": [],
+                  "type": "function"
+                }
+              ],
+              "groupBy": [
+                {
+                  "property": {
+                    "type": "string"
+                  },
+                  "type": "groupBy"
+                }
+              ],
+              "limit": 50
+            }
+          },
+          {
+            "datasource": {
+              "type": "grafana-postgresql-datasource",
+              "uid": "postgresql"
+            },
+            "editorMode": "code",
+            "format": "table",
+            "hide": true,
+            "rawQuery": true,
+            "rawSql": "WITH bounds AS (\n  SELECT (SELECT number FROM metagraph_block WHERE timestamp >= '${__from:date}' ORDER BY timestamp LIMIT 1) AS lo,\n         (SELECT number FROM metagraph_block WHERE timestamp <= '${__to:date}' ORDER BY timestamp DESC LIMIT 1) AS hi\n)\nSELECT DISTINCT ON (b.timestamp) mm.incentive AS \"newest immune\", b.timestamp AS time\nFROM bounds\n  CROSS JOIN metagraph_neuron n\n  JOIN metagraph_neuron_snapshot ns ON ns.neuron_id = n.id AND ns.block_id BETWEEN bounds.lo AND bounds.hi\n  JOIN metagraph_block b ON b.number = ns.block_id AND b.number BETWEEN bounds.lo AND bounds.hi\n  JOIN metagraph_mechanism_metrics mm ON mm.snapshot_id = ns.id AND mm.mech_id = 0\nWHERE n.subnet_id = ${subnet}\n  AND b.timestamp IS NOT NULL\nORDER BY b.timestamp, n.first_seen_block DESC NULLS LAST",
+            "refId": "newest immune",
+            "sql": {
+              "columns": [
+                {
+                  "parameters": [],
+                  "type": "function"
+                }
+              ],
+              "groupBy": [
+                {
+                  "property": {
+                    "type": "string"
+                  },
+                  "type": "groupBy"
+                }
+              ],
+              "limit": 50
+            }
+          },
+          {
+            "datasource": {
+              "type": "grafana-postgresql-datasource",
+              "uid": "postgresql"
+            },
+            "editorMode": "code",
+            "format": "table",
+            "hide": false,
+            "rawQuery": true,
+            "rawSql": "WITH bounds AS (\n  SELECT (SELECT number FROM metagraph_block WHERE timestamp >= '${__from:date}' ORDER BY timestamp LIMIT 1) AS lo,\n         (SELECT number FROM metagraph_block WHERE timestamp <= '${__to:date}' ORDER BY timestamp DESC LIMIT 1) AS hi\n)\nSELECT inn.val AS \"deregistration zone\", inn.time\nFROM (\n  SELECT b.timestamp AS time,\n    mm.incentive AS val,\n    ROW_NUMBER() OVER (PARTITION BY b.timestamp ORDER BY mm.incentive ASC) AS rn\n  FROM bounds\n    CROSS JOIN metagraph_neuron n\n    JOIN metagraph_neuron_snapshot ns ON ns.neuron_id = n.id AND ns.block_id BETWEEN bounds.lo AND bounds.hi\n    JOIN metagraph_block b ON b.number = ns.block_id AND b.number BETWEEN bounds.lo AND bounds.hi\n  JOIN metagraph_mechanism_metrics mm ON mm.snapshot_id = ns.id AND mm.mech_id = 0\n    WHERE n.subnet_id = ${subnet}\n    AND NOT ns.is_immune\n    AND b.timestamp IS NOT NULL\n  GROUP BY b.timestamp, mm.incentive\n) inn\nWHERE inn.rn = 4",
+            "refId": "dereg zone",
+            "sql": {
+              "columns": [
+                {
+                  "parameters": [],
+                  "type": "function"
+                }
+              ],
+              "groupBy": [
+                {
+                  "property": {
+                    "type": "string"
+                  },
+                  "type": "groupBy"
+                }
+              ],
+              "limit": 50
+            }
+          },
+          {
+            "datasource": {
+              "type": "grafana-postgresql-datasource",
+              "uid": "postgresql"
+            },
+            "editorMode": "code",
+            "format": "table",
+            "hide": false,
+            "rawQuery": true,
+            "rawSql": "WITH bounds AS (\n  SELECT (SELECT number FROM metagraph_block WHERE timestamp >= '${__from:date}' ORDER BY timestamp LIMIT 1) AS lo,\n         (SELECT number FROM metagraph_block WHERE timestamp <= '${__to:date}' ORDER BY timestamp DESC LIMIT 1) AS hi\n)\nSELECT inn.val AS \"deregistration zone 8\", inn.time\nFROM (\n  SELECT b.timestamp AS time,\n    mm.incentive AS val,\n    ROW_NUMBER() OVER (PARTITION BY b.timestamp ORDER BY mm.incentive ASC) AS rn\n  FROM bounds\n    CROSS JOIN metagraph_neuron n\n    JOIN metagraph_neuron_snapshot ns ON ns.neuron_id = n.id AND ns.block_id BETWEEN bounds.lo AND bounds.hi\n    JOIN metagraph_block b ON b.number = ns.block_id AND b.number BETWEEN bounds.lo AND bounds.hi\n  JOIN metagraph_mechanism_metrics mm ON mm.snapshot_id = ns.id AND mm.mech_id = 0\n    WHERE n.subnet_id = ${subnet}\n    AND NOT ns.is_immune\n    AND b.timestamp IS NOT NULL\n  GROUP BY b.timestamp, mm.incentive\n) inn\nWHERE inn.rn = 8",
+            "refId": "dereg zone 8",
+            "sql": {
+              "columns": [
+                {
+                  "parameters": [],
+                  "type": "function"
+                }
+              ],
+              "groupBy": [
+                {
+                  "property": {
+                    "type": "string"
+                  },
+                  "type": "groupBy"
+                }
+              ],
+              "limit": 50
+            }
+          }
+        ],
+        "title": "Incentives of ${miner} in sn${subnet}",
+        "transformations": [
+          {
+            "id": "prepareTimeSeries",
+            "options": {
+              "format": "multi"
+            }
+          }
+        ],
+        "type": "timeseries"
+      },
+      {
+        "datasource": {
+          "type": "grafana-postgresql-datasource",
+          "uid": "postgresql"
+        },
+        "description": "",
+        "fieldConfig": {
+          "defaults": {
+            "color": {
+              "fixedColor": "red",
+              "mode": "palette-classic"
+            },
+            "custom": {
+              "axisBorderShow": false,
+              "axisCenteredZero": false,
+              "axisColorMode": "text",
+              "axisLabel": "",
+              "axisPlacement": "auto",
+              "barAlignment": 0,
+              "barWidthFactor": 0.6,
+              "drawStyle": "line",
+              "fillOpacity": 0,
+              "gradientMode": "none",
+              "hideFrom": {
+                "legend": false,
+                "tooltip": false,
+                "viz": false
+              },
+              "insertNulls": 3600000,
+              "lineInterpolation": "linear",
+              "lineWidth": 1,
+              "pointSize": 5,
+              "scaleDistribution": {
+                "type": "linear"
+              },
+              "showPoints": "auto",
+              "spanNulls": false,
+              "stacking": {
+                "group": "A",
+                "mode": "none"
+              },
+              "thresholdsStyle": {
+                "mode": "area"
+              }
+            },
+            "mappings": [],
+            "max": 256,
+            "min": 0,
+            "thresholds": {
+              "mode": "absolute",
+              "steps": [
+                {
+                  "color": "red",
+                  "value": null
+                },
+                {
+                  "color": "text",
+                  "value": 64
+                },
+                {
+                  "color": "#ccccdc",
+                  "value": 128
+                },
+                {
+                  "color": "#3df525",
+                  "value": 196
+                },
+                {
+                  "color": "#6ED0E0",
+                  "value": 256
+                }
+              ]
+            }
+          },
+          "overrides": [
+            {
+              "matcher": {
+                "id": "byName",
+                "options": "main"
+              },
+              "properties": [
+                {
+                  "id": "color",
+                  "value": {
+                    "fixedColor": "#14dec3",
+                    "mode": "fixed"
+                  }
+                },
+                {
+                  "id": "custom.lineWidth",
+                  "value": 3
+                }
+              ]
+            },
+            {
+              "matcher": {
+                "id": "byName",
+                "options": "dereg"
+              },
+              "properties": [
+                {
+                  "id": "custom.fillOpacity",
+                  "value": 20
+                },
+                {
+                  "id": "color",
+                  "value": {
+                    "fixedColor": "red",
+                    "mode": "fixed"
+                  }
+                },
+                {
+                  "id": "displayName",
+                  "value": "deregistration zone[4]"
+                },
+                {
+                  "id": "custom.showPoints",
+                  "value": "never"
+                }
+              ]
+            },
+            {
+              "matcher": {
+                "id": "byName",
+                "options": "top immune"
+              },
+              "properties": [
+                {
+                  "id": "color",
+                  "value": {
+                    "fixedColor": "dark-purple",
+                    "mode": "fixed"
+                  }
+                }
+              ]
+            },
+            {
+              "matcher": {
+                "id": "byName",
+                "options": "danger"
+              },
+              "properties": [
+                {
+                  "id": "displayName",
+                  "value": "danger zone[8]"
+                },
+                {
+                  "id": "custom.fillBelowTo",
+                  "value": "dereg"
+                },
+                {
+                  "id": "color",
+                  "value": {
+                    "fixedColor": "yellow",
+                    "mode": "fixed"
+                  }
+                },
+                {
+                  "id": "custom.fillOpacity",
+                  "value": 19
+                },
+                {
+                  "id": "custom.showPoints",
+                  "value": "never"
+                },
+                {
+                  "id": "noValue",
+                  "value": "8"
+                }
+              ]
+            },
+            {
+              "matcher": {
+                "id": "byName",
+                "options": "lowest"
+              },
+              "properties": [
+                {
+                  "id": "custom.axisColorMode",
+                  "value": "text"
+                },
+                {
+                  "id": "color",
+                  "value": {
+                    "fixedColor": "#ff9600",
+                    "mode": "fixed"
+                  }
+                },
+                {
+                  "id": "custom.fillOpacity",
+                  "value": 20
+                },
+                {
+                  "id": "custom.showPoints",
+                  "value": "never"
+                },
+                {
+                  "id": "displayName",
+                  "value": "lowest non-immune"
+                }
+              ]
+            }
+          ]
+        },
+        "gridPos": {
+          "h": 19,
+          "w": 12,
+          "x": 12,
+          "y": 2
+        },
+        "id": 12,
+        "options": {
+          "legend": {
+            "calcs": [],
+            "displayMode": "list",
+            "placement": "bottom",
+            "showLegend": true
+          },
+          "tooltip": {
+            "mode": "multi",
+            "sort": "none"
+          }
+        },
+        "pluginVersion": "11.2.0",
+        "targets": [
+          {
+            "datasource": {
+              "type": "grafana-postgresql-datasource",
+              "uid": "postgresql"
+            },
+            "editorMode": "code",
+            "format": "table",
+            "hide": false,
+            "rawQuery": true,
+            "rawSql": "WITH bounds AS (\n  SELECT (SELECT number FROM metagraph_block WHERE timestamp >= '${__from:date}' ORDER BY timestamp LIMIT 1) AS lo,\n         (SELECT number FROM metagraph_block WHERE timestamp <= '${__to:date}' ORDER BY timestamp DESC LIMIT 1) AS hi\n)\nSELECT inn.rn AS \" \", inn.time, inn.hotkey\nFROM (\n  SELECT b.timestamp AS time, h.hotkey,\n    ROW_NUMBER() OVER (PARTITION BY b.timestamp ORDER BY mm.incentive ASC) AS rn\n  FROM bounds\n    CROSS JOIN metagraph_neuron n\n    JOIN metagraph_hotkey h ON h.id = n.hotkey_id\n    JOIN metagraph_neuron_snapshot ns ON ns.neuron_id = n.id AND ns.block_id BETWEEN bounds.lo AND bounds.hi\n    JOIN metagraph_block b ON b.number = ns.block_id AND b.number BETWEEN bounds.lo AND bounds.hi\n    JOIN metagraph_mechanism_metrics mm ON mm.snapshot_id = ns.id AND mm.mech_id = 0\n  WHERE n.subnet_id = ${subnet}\n    AND b.timestamp IS NOT NULL\n  GROUP BY h.hotkey, b.timestamp, mm.incentive\n) inn\nWHERE inn.hotkey IN (${miner:singlequote})",
+            "refId": "main",
+            "sql": {
+              "columns": [
+                {
+                  "parameters": [],
+                  "type": "function"
+                }
+              ],
+              "groupBy": [
+                {
+                  "property": {
+                    "type": "string"
+                  },
+                  "type": "groupBy"
+                }
+              ],
+              "limit": 50
+            }
+          },
+          {
+            "datasource": {
+              "type": "grafana-postgresql-datasource",
+              "uid": "postgresql"
+            },
+            "editorMode": "code",
+            "format": "table",
+            "hide": false,
+            "rawQuery": true,
+            "rawSql": "WITH bounds AS (\n  SELECT (SELECT number FROM metagraph_block WHERE timestamp >= '${__from:date}' ORDER BY timestamp LIMIT 1) AS lo,\n         (SELECT number FROM metagraph_block WHERE timestamp <= '${__to:date}' ORDER BY timestamp DESC LIMIT 1) AS hi\n)\nSELECT mid.rn AS \"lowest\", mid.time\nFROM (\n  SELECT inn.rn, inn.time,\n    ROW_NUMBER() OVER (PARTITION BY inn.time ORDER BY inn.rn ASC) AS mid_rank\n  FROM (\n    SELECT ns.is_immune, b.timestamp AS time, h.hotkey,\n      ROW_NUMBER() OVER (PARTITION BY b.timestamp ORDER BY ns.emissions ASC) AS rn\n    FROM bounds\n      CROSS JOIN metagraph_neuron n\n      JOIN metagraph_hotkey h ON h.id = n.hotkey_id\n      JOIN metagraph_neuron_snapshot ns ON ns.neuron_id = n.id AND ns.block_id BETWEEN bounds.lo AND bounds.hi\n      JOIN metagraph_block b ON b.number = ns.block_id AND b.number BETWEEN bounds.lo AND bounds.hi\n    WHERE n.subnet_id = ${subnet}\n      AND b.timestamp IS NOT NULL\n    GROUP BY h.hotkey, b.timestamp, ns.emissions, ns.is_immune\n  ) inn\n  WHERE NOT inn.is_immune\n  GROUP BY inn.time, inn.rn\n) mid\nWHERE mid.mid_rank = 1",
+            "refId": "lowest",
+            "sql": {
+              "columns": [
+                {
+                  "parameters": [],
+                  "type": "function"
+                }
+              ],
+              "groupBy": [
+                {
+                  "property": {
+                    "type": "string"
+                  },
+                  "type": "groupBy"
+                }
+              ],
+              "limit": 50
+            }
+          },
+          {
+            "datasource": {
+              "type": "grafana-postgresql-datasource",
+              "uid": "postgresql"
+            },
+            "editorMode": "code",
+            "format": "table",
+            "hide": false,
+            "rawQuery": true,
+            "rawSql": "WITH bounds AS (\n  SELECT (SELECT number FROM metagraph_block WHERE timestamp >= '${__from:date}' ORDER BY timestamp LIMIT 1) AS lo,\n         (SELECT number FROM metagraph_block WHERE timestamp <= '${__to:date}' ORDER BY timestamp DESC LIMIT 1) AS hi\n)\nSELECT mid.rn AS \"dereg\", mid.time\nFROM (\n  SELECT inn.rn, inn.time,\n    ROW_NUMBER() OVER (PARTITION BY inn.time ORDER BY inn.rn ASC) AS mid_rank\n  FROM (\n    SELECT ns.is_immune, b.timestamp AS time, h.hotkey,\n      ROW_NUMBER() OVER (PARTITION BY b.timestamp ORDER BY ns.emissions ASC) AS rn\n    FROM bounds\n      CROSS JOIN metagraph_neuron n\n      JOIN metagraph_hotkey h ON h.id = n.hotkey_id\n      JOIN metagraph_neuron_snapshot ns ON ns.neuron_id = n.id AND ns.block_id BETWEEN bounds.lo AND bounds.hi\n      JOIN metagraph_block b ON b.number = ns.block_id AND b.number BETWEEN bounds.lo AND bounds.hi\n    WHERE n.subnet_id = ${subnet}\n      AND b.timestamp IS NOT NULL\n    GROUP BY h.hotkey, b.timestamp, ns.emissions, ns.is_immune\n  ) inn\n  WHERE NOT inn.is_immune\n  GROUP BY inn.time, inn.rn\n) mid\nWHERE mid.mid_rank = 4",
+            "refId": "dereg",
+            "sql": {
+              "columns": [
+                {
+                  "parameters": [],
+                  "type": "function"
+                }
+              ],
+              "groupBy": [
+                {
+                  "property": {
+                    "type": "string"
+                  },
+                  "type": "groupBy"
+                }
+              ],
+              "limit": 50
+            }
+          },
+          {
+            "datasource": {
+              "type": "grafana-postgresql-datasource",
+              "uid": "postgresql"
+            },
+            "editorMode": "code",
+            "format": "table",
+            "hide": false,
+            "rawQuery": true,
+            "rawSql": "WITH bounds AS (\n  SELECT (SELECT number FROM metagraph_block WHERE timestamp >= '${__from:date}' ORDER BY timestamp LIMIT 1) AS lo,\n         (SELECT number FROM metagraph_block WHERE timestamp <= '${__to:date}' ORDER BY timestamp DESC LIMIT 1) AS hi\n)\nSELECT mid.rn AS \"danger\", mid.time\nFROM (\n  SELECT inn.rn, inn.time,\n    ROW_NUMBER() OVER (PARTITION BY inn.time ORDER BY inn.rn ASC) AS mid_rank\n  FROM (\n    SELECT ns.is_immune, b.timestamp AS time, h.hotkey,\n      ROW_NUMBER() OVER (PARTITION BY b.timestamp ORDER BY ns.emissions ASC) AS rn\n    FROM bounds\n      CROSS JOIN metagraph_neuron n\n      JOIN metagraph_hotkey h ON h.id = n.hotkey_id\n      JOIN metagraph_neuron_snapshot ns ON ns.neuron_id = n.id AND ns.block_id BETWEEN bounds.lo AND bounds.hi\n      JOIN metagraph_block b ON b.number = ns.block_id AND b.number BETWEEN bounds.lo AND bounds.hi\n    WHERE n.subnet_id = ${subnet}\n      AND b.timestamp IS NOT NULL\n    GROUP BY h.hotkey, b.timestamp, ns.emissions, ns.is_immune\n  ) inn\n  WHERE NOT inn.is_immune\n  GROUP BY inn.time, inn.rn\n) mid\nWHERE mid.mid_rank = 8",
+            "refId": "danger",
+            "sql": {
+              "columns": [
+                {
+                  "parameters": [],
+                  "type": "function"
+                }
+              ],
+              "groupBy": [
+                {
+                  "property": {
+                    "type": "string"
+                  },
+                  "type": "groupBy"
+                }
+              ],
+              "limit": 50
+            }
+          },
+          {
+            "datasource": {
+              "type": "grafana-postgresql-datasource",
+              "uid": "postgresql"
+            },
+            "editorMode": "code",
+            "format": "table",
+            "hide": false,
+            "rawQuery": true,
+            "rawSql": "WITH bounds AS (\n  SELECT (SELECT number FROM metagraph_block WHERE timestamp >= '${__from:date}' ORDER BY timestamp LIMIT 1) AS lo,\n         (SELECT number FROM metagraph_block WHERE timestamp <= '${__to:date}' ORDER BY timestamp DESC LIMIT 1) AS hi\n)\nSELECT mid.rn AS \"top immune\", mid.time\nFROM (\n  SELECT inn.rn, inn.time,\n    ROW_NUMBER() OVER (PARTITION BY inn.time ORDER BY inn.rn DESC) AS mid_rank\n  FROM (\n    SELECT ns.is_immune, b.timestamp AS time, h.hotkey,\n      ROW_NUMBER() OVER (PARTITION BY b.timestamp ORDER BY mm.incentive ASC) AS rn\n    FROM bounds\n      CROSS JOIN metagraph_neuron n\n      JOIN metagraph_hotkey h ON h.id = n.hotkey_id\n      JOIN metagraph_neuron_snapshot ns ON ns.neuron_id = n.id AND ns.block_id BETWEEN bounds.lo AND bounds.hi\n      JOIN metagraph_block b ON b.number = ns.block_id AND b.number BETWEEN bounds.lo AND bounds.hi\n      JOIN metagraph_mechanism_metrics mm ON mm.snapshot_id = ns.id AND mm.mech_id = 0\n    WHERE n.subnet_id = ${subnet}\n      AND b.timestamp IS NOT NULL\n    GROUP BY h.hotkey, b.timestamp, mm.incentive, ns.is_immune\n  ) inn\n  WHERE inn.is_immune\n  GROUP BY inn.time, inn.rn\n) mid\nWHERE mid.mid_rank = 1",
+            "refId": "top immune",
+            "sql": {
+              "columns": [
+                {
+                  "parameters": [],
+                  "type": "function"
+                }
+              ],
+              "groupBy": [
+                {
+                  "property": {
+                    "type": "string"
+                  },
+                  "type": "groupBy"
+                }
+              ],
+              "limit": 50
+            }
+          }
+        ],
+        "title": "UID order (performance among all miners) of selected miners in sn${subnet}",
+        "transformations": [
+          {
+            "id": "prepareTimeSeries",
+            "options": {
+              "format": "multi"
+            }
+          }
+        ],
+        "type": "timeseries"
+      },
+      {
+        "datasource": {
+          "type": "grafana-postgresql-datasource",
+          "uid": "postgresql"
+        },
+        "fieldConfig": {
+          "defaults": {
+            "color": {
+              "mode": "palette-classic"
+            },
+            "custom": {
+              "axisBorderShow": false,
+              "axisCenteredZero": false,
+              "axisColorMode": "text",
+              "axisLabel": "",
+              "axisPlacement": "auto",
+              "barAlignment": 0,
+              "barWidthFactor": 0.6,
+              "drawStyle": "line",
+              "fillOpacity": 0,
+              "gradientMode": "none",
+              "hideFrom": {
+                "legend": false,
+                "tooltip": false,
+                "viz": false
+              },
+              "insertNulls": 1800000,
+              "lineInterpolation": "linear",
+              "lineWidth": 1,
+              "pointSize": 5,
+              "scaleDistribution": {
+                "type": "linear"
+              },
+              "showPoints": "auto",
+              "spanNulls": false,
+              "stacking": {
+                "group": "A",
+                "mode": "none"
+              },
+              "thresholdsStyle": {
+                "mode": "off"
+              }
+            },
+            "mappings": [],
+            "thresholds": {
+              "mode": "absolute",
+              "steps": [
+                {
+                  "color": "green",
+                  "value": null
+                },
+                {
+                  "color": "red",
+                  "value": 80
+                }
+              ]
+            }
+          },
+          "overrides": [
+            {
+              "matcher": {
+                "id": "byName",
+                "options": "total_stake"
+              },
+              "properties": [
+                {
+                  "id": "color",
+                  "value": {
+                    "fixedColor": "purple",
+                    "mode": "fixed"
+                  }
+                }
+              ]
+            }
+          ]
+        },
+        "gridPos": {
+          "h": 12,
+          "w": 12,
+          "x": 0,
+          "y": 21
+        },
+        "id": 6,
+        "options": {
+          "legend": {
+            "calcs": [],
+            "displayMode": "list",
+            "placement": "bottom",
+            "showLegend": true
+          },
+          "tooltip": {
+            "mode": "multi",
+            "sort": "none"
+          }
+        },
+        "pluginVersion": "11.2.0",
+        "targets": [
+          {
+            "datasource": {
+              "type": "grafana-postgresql-datasource",
+              "uid": "postgresql"
+            },
+            "editorMode": "code",
+            "format": "table",
+            "rawQuery": true,
+            "rawSql": "SELECT ns.total_stake / 1e9 AS \" \", b.timestamp AS time, h.hotkey\nFROM metagraph_neuron n\n  JOIN metagraph_hotkey h ON h.id = n.hotkey_id\n  JOIN metagraph_neuron_snapshot ns ON ns.neuron_id = n.id\n  JOIN metagraph_block b ON b.number = ns.block_id\nWHERE h.hotkey IN (${miner:singlequote}) AND n.subnet_id = ${subnet}\n  AND b.timestamp BETWEEN '${__from:date}' AND '${__to:date}'\nORDER BY b.timestamp",
+            "refId": "A",
+            "sql": {
+              "columns": [
+                {
+                  "parameters": [],
+                  "type": "function"
+                }
+              ],
+              "groupBy": [
+                {
+                  "property": {
+                    "type": "string"
+                  },
+                  "type": "groupBy"
+                }
+              ],
+              "limit": 50
+            }
+          }
+        ],
+        "title": "Total Stake of ${miner}",
+        "transformations": [
+          {
+            "id": "prepareTimeSeries",
+            "options": {
+              "format": "multi"
+            }
+          }
+        ],
+        "type": "timeseries"
+      },
+      {
+        "datasource": {
+          "type": "grafana-postgresql-datasource",
+          "uid": "postgresql"
+        },
+        "fieldConfig": {
+          "defaults": {
+            "color": {
+              "mode": "palette-classic"
+            },
+            "custom": {
+              "axisBorderShow": false,
+              "axisCenteredZero": false,
+              "axisColorMode": "text",
+              "axisLabel": "",
+              "axisPlacement": "auto",
+              "barAlignment": 0,
+              "barWidthFactor": 0.6,
+              "drawStyle": "line",
+              "fillOpacity": 0,
+              "gradientMode": "none",
+              "hideFrom": {
+                "legend": false,
+                "tooltip": false,
+                "viz": false
+              },
+              "insertNulls": 1800000,
+              "lineInterpolation": "linear",
+              "lineWidth": 1,
+              "pointSize": 5,
+              "scaleDistribution": {
+                "type": "linear"
+              },
+              "showPoints": "auto",
+              "spanNulls": false,
+              "stacking": {
+                "group": "A",
+                "mode": "none"
+              },
+              "thresholdsStyle": {
+                "mode": "off"
+              }
+            },
+            "mappings": [],
+            "thresholds": {
+              "mode": "absolute",
+              "steps": [
+                {
+                  "color": "green",
+                  "value": null
+                },
+                {
+                  "color": "red",
+                  "value": 80
+                }
+              ]
+            }
+          },
+          "overrides": [
+            {
+              "matcher": {
+                "id": "byName",
+                "options": "consensus"
+              },
+              "properties": [
+                {
+                  "id": "color",
+                  "value": {
+                    "fixedColor": "yellow",
+                    "mode": "fixed"
+                  }
+                }
+              ]
+            },
+            {
+              "matcher": {
+                "id": "byName",
+                "options": "incentives"
+              },
+              "properties": [
+                {
+                  "id": "color",
+                  "value": {
+                    "fixedColor": "dark-purple",
+                    "mode": "fixed"
+                  }
+                }
+              ]
+            },
+            {
+              "matcher": {
+                "id": "byName",
+                "options": "rank"
+              },
+              "properties": [
+                {
+                  "id": "color",
+                  "value": {
+                    "fixedColor": "red",
+                    "mode": "fixed"
+                  }
+                }
+              ]
+            }
+          ]
+        },
+        "gridPos": {
+          "h": 12,
+          "w": 12,
+          "x": 12,
+          "y": 21
+        },
+        "id": 5,
+        "options": {
+          "legend": {
+            "calcs": [],
+            "displayMode": "list",
+            "placement": "bottom",
+            "showLegend": true
+          },
+          "tooltip": {
+            "mode": "multi",
+            "sort": "none"
+          }
+        },
+        "pluginVersion": "11.2.0",
+        "targets": [
+          {
+            "datasource": {
+              "type": "grafana-postgresql-datasource",
+              "uid": "postgresql"
+            },
+            "editorMode": "code",
+            "format": "table",
+            "rawQuery": true,
+            "rawSql": "SELECT mm.consensus AS \" \", h.hotkey, b.timestamp AS time\nFROM metagraph_neuron n\n  JOIN metagraph_hotkey h ON h.id = n.hotkey_id\n  JOIN metagraph_neuron_snapshot ns ON ns.neuron_id = n.id\n  JOIN metagraph_block b ON b.number = ns.block_id\n  LEFT JOIN metagraph_mechanism_metrics mm ON mm.snapshot_id = ns.id AND mm.mech_id = 0\nWHERE h.hotkey IN (${miner:singlequote}) AND n.subnet_id = ${subnet}\n  AND b.timestamp BETWEEN '${__from:date}' AND '${__to:date}'",
+            "refId": "A",
+            "sql": {
+              "columns": [
+                {
+                  "parameters": [],
+                  "type": "function"
+                }
+              ],
+              "groupBy": [
+                {
+                  "property": {
+                    "type": "string"
+                  },
+                  "type": "groupBy"
+                }
+              ],
+              "limit": 50
+            }
+          }
+        ],
+        "title": "Consensus of selected miners in sn${subnet}",
+        "transformations": [
+          {
+            "id": "prepareTimeSeries",
+            "options": {
+              "format": "multi"
+            }
+          }
+        ],
+        "type": "timeseries"
+      },
+      {
+        "datasource": {
+          "type": "grafana-postgresql-datasource",
+          "uid": "postgresql"
+        },
+        "fieldConfig": {
+          "defaults": {
+            "color": {
+              "mode": "palette-classic"
+            },
+            "custom": {
+              "axisBorderShow": false,
+              "axisCenteredZero": false,
+              "axisColorMode": "text",
+              "axisLabel": "",
+              "axisPlacement": "auto",
+              "barAlignment": 0,
+              "barWidthFactor": 0.6,
+              "drawStyle": "line",
+              "fillOpacity": 0,
+              "gradientMode": "none",
+              "hideFrom": {
+                "legend": false,
+                "tooltip": false,
+                "viz": false
+              },
+              "insertNulls": 1800000,
+              "lineInterpolation": "linear",
+              "lineWidth": 1,
+              "pointSize": 5,
+              "scaleDistribution": {
+                "type": "linear"
+              },
+              "showPoints": "auto",
+              "spanNulls": false,
+              "stacking": {
+                "group": "A",
+                "mode": "none"
+              },
+              "thresholdsStyle": {
+                "mode": "off"
+              }
+            },
+            "mappings": [],
+            "thresholds": {
+              "mode": "absolute",
+              "steps": [
+                {
+                  "color": "green"
+                },
+                {
+                  "color": "red",
+                  "value": 80
+                }
+              ]
+            }
+          },
+          "overrides": [
+            {
+              "matcher": {
+                "id": "byName",
+                "options": "consensus"
+              },
+              "properties": [
+                {
+                  "id": "color",
+                  "value": {
+                    "fixedColor": "yellow",
+                    "mode": "fixed"
+                  }
+                }
+              ]
+            },
+            {
+              "matcher": {
+                "id": "byName",
+                "options": "incentives"
+              },
+              "properties": [
+                {
+                  "id": "color",
+                  "value": {
+                    "fixedColor": "dark-purple",
+                    "mode": "fixed"
+                  }
+                }
+              ]
+            },
+            {
+              "matcher": {
+                "id": "byName",
+                "options": "rank"
+              },
+              "properties": [
+                {
+                  "id": "color",
+                  "value": {
+                    "fixedColor": "red",
+                    "mode": "fixed"
+                  }
+                }
+              ]
+            }
+          ]
+        },
+        "gridPos": {
+          "h": 12,
+          "w": 12,
+          "x": 0,
+          "y": 33
+        },
+        "id": 17,
+        "options": {
+          "legend": {
+            "calcs": [],
+            "displayMode": "list",
+            "placement": "bottom",
+            "showLegend": true
+          },
+          "tooltip": {
+            "mode": "multi",
+            "sort": "none"
+          }
+        },
+        "pluginVersion": "11.2.0",
+        "targets": [
+          {
+            "datasource": {
+              "type": "grafana-postgresql-datasource",
+              "uid": "postgresql"
+            },
+            "editorMode": "code",
+            "format": "table",
+            "rawQuery": true,
+            "rawSql": "SELECT ns.rank AS \" \", b.timestamp AS time, h.hotkey\nFROM metagraph_neuron n\n  JOIN metagraph_hotkey h ON h.id = n.hotkey_id\n  JOIN metagraph_neuron_snapshot ns ON ns.neuron_id = n.id\n  JOIN metagraph_block b ON b.number = ns.block_id\nWHERE h.hotkey IN (${miner:singlequote}) AND n.subnet_id = ${subnet}\n  AND b.timestamp BETWEEN '${__from:date}' AND '${__to:date}'\nORDER BY b.timestamp",
+            "refId": "A",
+            "sql": {
+              "columns": [
+                {
+                  "parameters": [],
+                  "type": "function"
+                }
+              ],
+              "groupBy": [
+                {
+                  "property": {
+                    "type": "string"
+                  },
+                  "type": "groupBy"
+                }
+              ],
+              "limit": 50
+            }
+          }
+        ],
+        "title": "Rank of selected miners in sn${subnet}",
+        "transformations": [
+          {
+            "id": "prepareTimeSeries",
+            "options": {
+              "format": "multi"
+            }
+          }
+        ],
+        "type": "timeseries"
+      },
+      {
+        "datasource": {
+          "type": "grafana-postgresql-datasource",
+          "uid": "postgresql"
+        },
+        "fieldConfig": {
+          "defaults": {
+            "color": {
+              "mode": "palette-classic"
+            },
+            "custom": {
+              "axisBorderShow": false,
+              "axisCenteredZero": false,
+              "axisColorMode": "text",
+              "axisLabel": "",
+              "axisPlacement": "auto",
+              "barAlignment": 0,
+              "barWidthFactor": 0.6,
+              "drawStyle": "line",
+              "fillOpacity": 0,
+              "gradientMode": "none",
+              "hideFrom": {
+                "legend": false,
+                "tooltip": false,
+                "viz": false
+              },
+              "insertNulls": 1800000,
+              "lineInterpolation": "linear",
+              "lineWidth": 1,
+              "pointSize": 5,
+              "scaleDistribution": {
+                "type": "linear"
+              },
+              "showPoints": "auto",
+              "spanNulls": false,
+              "stacking": {
+                "group": "A",
+                "mode": "none"
+              },
+              "thresholdsStyle": {
+                "mode": "area"
+              }
+            },
+            "mappings": [],
+            "max": 1,
+            "min": 0,
+            "thresholds": {
+              "mode": "absolute",
+              "steps": [
+                {
+                  "color": "red"
+                },
+                {
+                  "color": "yellow",
+                  "value": 0.8
+                },
+                {
+                  "color": "green",
+                  "value": 0.9
+                },
+                {
+                  "color": "transparent",
+                  "value": 1
+                }
+              ]
+            },
+            "unit": "percentunit"
+          },
+          "overrides": [
+            {
+              "matcher": {
+                "id": "byName",
+                "options": "rank"
+              },
+              "properties": [
+                {
+                  "id": "color",
+                  "value": {
+                    "fixedColor": "dark-red",
+                    "mode": "fixed"
+                  }
+                }
+              ]
+            },
+            {
+              "matcher": {
+                "id": "byName",
+                "options": "trust"
+              },
+              "properties": [
+                {
+                  "id": "color",
+                  "value": {
+                    "fixedColor": "blue",
+                    "mode": "fixed"
+                  }
+                }
+              ]
+            }
+          ]
+        },
+        "gridPos": {
+          "h": 12,
+          "w": 12,
+          "x": 12,
+          "y": 33
+        },
+        "id": 4,
+        "options": {
+          "legend": {
+            "calcs": [],
+            "displayMode": "list",
+            "placement": "bottom",
+            "showLegend": true
+          },
+          "tooltip": {
+            "mode": "multi",
+            "sort": "none"
+          }
+        },
+        "pluginVersion": "11.2.0",
+        "targets": [
+          {
+            "datasource": {
+              "type": "grafana-postgresql-datasource",
+              "uid": "postgresql"
+            },
+            "editorMode": "code",
+            "format": "table",
+            "rawQuery": true,
+            "rawSql": "SELECT ns.trust AS \" \", b.timestamp AS time, h.hotkey\nFROM metagraph_neuron n\n  JOIN metagraph_hotkey h ON h.id = n.hotkey_id\n  JOIN metagraph_neuron_snapshot ns ON ns.neuron_id = n.id\n  JOIN metagraph_block b ON b.number = ns.block_id\nWHERE h.hotkey IN (${miner:singlequote}) AND n.subnet_id = ${subnet}\n  AND b.timestamp BETWEEN '${__from:date}' AND '${__to:date}'\nORDER BY b.timestamp",
+            "refId": "A",
+            "sql": {
+              "columns": [
+                {
+                  "parameters": [],
+                  "type": "function"
+                }
+              ],
+              "groupBy": [
+                {
+                  "property": {
+                    "type": "string"
+                  },
+                  "type": "groupBy"
+                }
+              ],
+              "limit": 50
+            }
+          }
+        ],
+        "title": "Trust of ${miner} in sn${subnet}",
+        "transformations": [
+          {
+            "id": "prepareTimeSeries",
+            "options": {
+              "format": "multi"
+            }
+          }
+        ],
+        "type": "timeseries"
+      },
+      {
+        "datasource": {
+          "type": "grafana-postgresql-datasource",
+          "uid": "postgresql"
+        },
+        "fieldConfig": {
+          "defaults": {
+            "color": {
+              "mode": "palette-classic"
+            },
+            "custom": {
+              "axisBorderShow": false,
+              "axisCenteredZero": false,
+              "axisColorMode": "text",
+              "axisLabel": "",
+              "axisPlacement": "auto",
+              "barAlignment": 0,
+              "barWidthFactor": 0.6,
+              "drawStyle": "line",
+              "fillOpacity": 0,
+              "gradientMode": "none",
+              "hideFrom": {
+                "legend": false,
+                "tooltip": false,
+                "viz": false
+              },
+              "insertNulls": 1800000,
+              "lineInterpolation": "linear",
+              "lineWidth": 1,
+              "pointSize": 5,
+              "scaleDistribution": {
+                "type": "linear"
+              },
+              "showPoints": "auto",
+              "spanNulls": false,
+              "stacking": {
+                "group": "A",
+                "mode": "none"
+              },
+              "thresholdsStyle": {
+                "mode": "off"
+              }
+            },
+            "mappings": [],
+            "thresholds": {
+              "mode": "absolute",
+              "steps": [
+                {
+                  "color": "green"
+                },
+                {
+                  "color": "red",
+                  "value": 80
+                }
+              ]
+            }
+          },
+          "overrides": []
+        },
+        "gridPos": {
+          "h": 12,
+          "w": 12,
+          "x": 0,
+          "y": 45
+        },
+        "id": 2,
+        "options": {
+          "legend": {
+            "calcs": [],
+            "displayMode": "list",
+            "placement": "bottom",
+            "showLegend": true
+          },
+          "tooltip": {
+            "mode": "multi",
+            "sort": "none"
+          }
+        },
+        "pluginVersion": "11.2.0",
+        "targets": [
+          {
+            "datasource": {
+              "type": "grafana-postgresql-datasource",
+              "uid": "postgresql"
+            },
+            "editorMode": "code",
+            "format": "table",
+            "rawQuery": true,
+            "rawSql": "SELECT ns.emissions / 1e9 AS \" \", b.timestamp AS time, h.hotkey\nFROM metagraph_neuron n\n  JOIN metagraph_hotkey h ON h.id = n.hotkey_id\n  JOIN metagraph_neuron_snapshot ns ON ns.neuron_id = n.id\n  JOIN metagraph_block b ON b.number = ns.block_id\nWHERE h.hotkey IN (${miner:singlequote}) AND n.subnet_id = ${subnet}\n  AND b.timestamp BETWEEN '${__from:date}' AND '${__to:date}'\nORDER BY b.timestamp",
+            "refId": "A",
+            "sql": {
+              "columns": [
+                {
+                  "parameters": [],
+                  "type": "function"
+                }
+              ],
+              "groupBy": [
+                {
+                  "property": {
+                    "type": "string"
+                  },
+                  "type": "groupBy"
+                }
+              ],
+              "limit": 50
+            }
+          }
+        ],
+        "title": "Emissions of ${miner} in sn${subnet}",
+        "transformations": [
+          {
+            "id": "prepareTimeSeries",
+            "options": {
+              "format": "multi"
+            }
+          }
+        ],
+        "type": "timeseries"
+      },
+      {
+        "datasource": {
+          "type": "grafana-postgresql-datasource",
+          "uid": "postgresql"
+        },
+        "description": "",
+        "fieldConfig": {
+          "defaults": {
+            "color": {
+              "mode": "palette-classic"
+            },
+            "custom": {
+              "axisBorderShow": false,
+              "axisCenteredZero": false,
+              "axisColorMode": "text",
+              "axisLabel": "",
+              "axisPlacement": "auto",
+              "barAlignment": 0,
+              "barWidthFactor": 0.6,
+              "drawStyle": "line",
+              "fillOpacity": 0,
+              "gradientMode": "none",
+              "hideFrom": {
+                "legend": false,
+                "tooltip": false,
+                "viz": false
+              },
+              "insertNulls": 3600000,
+              "lineInterpolation": "linear",
+              "lineWidth": 1,
+              "pointSize": 5,
+              "scaleDistribution": {
+                "type": "linear"
+              },
+              "showPoints": "auto",
+              "spanNulls": false,
+              "stacking": {
+                "group": "A",
+                "mode": "none"
+              },
+              "thresholdsStyle": {
+                "mode": "off"
+              }
+            },
+            "fieldMinMax": false,
+            "mappings": [],
+            "thresholds": {
+              "mode": "percentage",
+              "steps": [
+                {
+                  "color": "green"
+                },
+                {
+                  "color": "yellow",
+                  "value": 50
+                },
+                {
+                  "color": "dark-orange",
+                  "value": 90
+                },
+                {
+                  "color": "dark-red",
+                  "value": 100
+                }
+              ]
+            }
+          },
+          "overrides": []
+        },
+        "gridPos": {
+          "h": 12,
+          "w": 12,
+          "x": 12,
+          "y": 45
+        },
+        "id": 9,
+        "options": {
+          "legend": {
+            "calcs": [],
+            "displayMode": "list",
+            "placement": "bottom",
+            "showLegend": true
+          },
+          "tooltip": {
+            "mode": "single",
+            "sort": "none"
+          }
+        },
+        "pluginVersion": "11.2.0",
+        "targets": [
+          {
+            "datasource": {
+              "type": "grafana-postgresql-datasource",
+              "uid": "postgresql"
+            },
+            "editorMode": "code",
+            "format": "table",
+            "hide": false,
+            "rawQuery": true,
+            "rawSql": "SELECT COUNT(*) AS immune, b.timestamp AS time\nFROM metagraph_neuron n\n  JOIN metagraph_neuron_snapshot ns ON ns.neuron_id = n.id\n  JOIN metagraph_block b ON b.number = ns.block_id\nWHERE n.subnet_id = ${subnet} AND ns.is_immune\n  AND b.timestamp BETWEEN '${__from:date}' AND '${__to:date}'\nGROUP BY b.timestamp",
+            "refId": "C",
+            "sql": {
+              "columns": [
+                {
+                  "parameters": [],
+                  "type": "function"
+                }
+              ],
+              "groupBy": [
+                {
+                  "property": {
+                    "type": "string"
+                  },
+                  "type": "groupBy"
+                }
+              ],
+              "limit": 50
+            }
+          }
+        ],
+        "title": "Immune uids in ${subnet}",
+        "type": "timeseries"
+      }
+    ],
+    "preload": false,
+    "refresh": "",
+    "schemaVersion": 39,
+    "tags": [],
+    "templating": {
+      "list": [
+        {
+          "allValue": "'-1'",
+          "current": {
+            "text": "12 - Compute Horde",
+            "value": "12"
+          },
+          "datasource": {
+            "type": "grafana-postgresql-datasource",
+            "uid": "postgresql"
+          },
+          "definition": "-- id=var.subnet\nSELECT CONCAT(netuid, ' - ', name) AS netuid\nFROM metagraph_subnet\nWHERE netuid != 0\nORDER BY netuid",
+          "description": "subnet",
+          "includeAll": true,
+          "label": "subnet",
+          "name": "subnet",
+          "options": [],
+          "query": "-- id=var.subnet\nSELECT CONCAT(netuid, ' - ', name) AS netuid\nFROM metagraph_subnet\nWHERE netuid != 0\nORDER BY netuid",
+          "refresh": 1,
+          "regex": "/^(?<text>(?<value>\\w+).*)/",
+          "type": "query"
+        },
+        {
+          "current": {
+            "text": [
+              "5DLtdEu53xLP1HDkBAsW6mP4tFANvzFQib9AfvFanUKZ6986"
+            ],
+            "value": [
+              "5DLtdEu53xLP1HDkBAsW6mP4tFANvzFQib9AfvFanUKZ6986"
+            ]
+          },
+          "datasource": {
+            "type": "grafana-postgresql-datasource",
+            "uid": "postgresql"
+          },
+          "definition": "WITH from_block AS (SELECT MAX(number) - 99 AS id FROM metagraph_block)\nSELECT DISTINCT h.hotkey\nFROM metagraph_neuron n\n  JOIN metagraph_hotkey h ON h.id = n.hotkey_id\n  JOIN metagraph_neuron_snapshot ns ON ns.neuron_id = n.id\n  CROSS JOIN from_block fb\nWHERE n.subnet_id = ${subnet}\n  AND (ns.is_immune OR ns.has_any_weights)\n  AND ns.block_id >= fb.id\nORDER BY h.hotkey",
+          "description": "miner",
+          "includeAll": false,
+          "label": "miner",
+          "multi": true,
+          "name": "miner",
+          "options": [],
+          "query": "WITH from_block AS (SELECT MAX(number) - 99 AS id FROM metagraph_block)\nSELECT DISTINCT h.hotkey\nFROM metagraph_neuron n\n  JOIN metagraph_hotkey h ON h.id = n.hotkey_id\n  JOIN metagraph_neuron_snapshot ns ON ns.neuron_id = n.id\n  CROSS JOIN from_block fb\nWHERE n.subnet_id = ${subnet}\n  AND (ns.is_immune OR ns.has_any_weights)\n  AND ns.block_id >= fb.id\nORDER BY h.hotkey",
+          "refresh": 1,
+          "regex": "",
+          "type": "query"
+        }
+      ]
+    },
+    "time": {
+      "from": "now-2d",
+      "to": "now"
+    },
+    "timepicker": {
+      "refresh_intervals": []
+    },
+    "timezone": "",
+    "title": "Metagraph Multi-miner",
+    "weekStart": ""
+  }
+}
