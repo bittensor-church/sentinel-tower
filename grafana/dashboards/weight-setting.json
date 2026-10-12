@@ -1,0 +1,1577 @@
+{
+  "apiVersion": "dashboard.grafana.app/v1beta1",
+  "kind": "Dashboard",
+  "metadata": {
+    "name": "weight-setting"
+  },
+  "spec": {
+    "annotations": {
+      "list": [
+        {
+          "builtIn": 1,
+          "datasource": {
+            "type": "grafana",
+            "uid": "-- Grafana --"
+          },
+          "enable": true,
+          "hide": true,
+          "iconColor": "rgba(0, 211, 255, 1)",
+          "name": "Annotations & Alerts",
+          "type": "dashboard"
+        }
+      ]
+    },
+    "editable": true,
+    "fiscalYearStartMonth": 0,
+    "graphTooltip": 0,
+    "links": [],
+    "panels": [
+      {
+        "datasource": {
+          "type": "grafana-postgresql-datasource",
+          "uid": "postgresql"
+        },
+        "fieldConfig": {
+          "defaults": {
+            "custom": {
+              "hideFrom": {
+                "legend": false,
+                "tooltip": false,
+                "viz": false
+              },
+              "scaleDistribution": {
+                "type": "linear"
+              }
+            }
+          },
+          "overrides": []
+        },
+        "gridPos": {
+          "h": 12,
+          "w": 24,
+          "x": 0,
+          "y": 0
+        },
+        "id": 13,
+        "options": {
+          "calculate": false,
+          "cellGap": 0,
+          "cellValues": {
+            "decimals": 0
+          },
+          "color": {
+            "exponent": 0.5,
+            "fill": "dark-orange",
+            "mode": "scheme",
+            "reverse": false,
+            "scale": "exponential",
+            "scheme": "Spectral",
+            "steps": 64
+          },
+          "exemplars": {
+            "color": "rgba(255,0,255,0.7)"
+          },
+          "filterValues": {
+            "le": 1e-09
+          },
+          "legend": {
+            "show": true
+          },
+          "rowsFrame": {
+            "layout": "auto"
+          },
+          "tooltip": {
+            "mode": "single",
+            "showColorScale": false,
+            "yHistogram": false
+          },
+          "yAxis": {
+            "axisPlacement": "left",
+            "decimals": 0,
+            "reverse": false
+          }
+        },
+        "pluginVersion": "11.2.0",
+        "targets": [
+          {
+            "datasource": {
+              "type": "grafana-postgresql-datasource",
+              "uid": "postgresql"
+            },
+            "format": "time_series",
+            "rawQuery": true,
+            "rawSql": "WITH counts AS (SELECT date_trunc('hour', to_timestamp(block_timestamp / 1000.0)) AS time, netuid, COUNT(*) AS value FROM extrinsics WHERE call_module = 'SubtensorModule' AND call_function IN ('set_weights','set_mechanism_weights','batch_set_weights','commit_weights','commit_mechanism_weights','batch_commit_weights','reveal_weights','reveal_mechanism_weights','batch_reveal_weights','commit_timelocked_weights','commit_timelocked_mechanism_weights','commit_crv3_mechanism_weights') AND ('%' IN (${netuid:singlequote}) OR netuid::text IN (${netuid:singlequote})) AND ('%' IN (${status:singlequote}) OR success::text IN (${status:singlequote})) AND ('%' IN (${address:singlequote}) OR address IN (${address:singlequote})) AND block_number BETWEEN (SELECT MAX(block_number) FROM extrinsics) - (extract(epoch FROM now() - '${__from:date}'::timestamptz) / 12)::bigint AND (SELECT MAX(block_number) FROM extrinsics) - (extract(epoch FROM now() - '${__to:date}'::timestamptz) / 12)::bigint GROUP BY 1, 2), buckets AS (SELECT generate_series(date_trunc('hour', '${__from:date}'::timestamptz), date_trunc('hour', '${__to:date}'::timestamptz), INTERVAL '1 hour') AS time), subnets AS (SELECT DISTINCT netuid FROM counts) SELECT b.time, lpad(s.netuid::text, 3, '0') AS metric, COALESCE(c.value, 0) AS value FROM buckets b CROSS JOIN subnets s LEFT JOIN counts c ON c.time = b.time AND c.netuid = s.netuid ORDER BY b.time, s.netuid",
+            "refId": "A"
+          }
+        ],
+        "title": "Weight-Setting Calls Over Time",
+        "type": "heatmap"
+      },
+      {
+        "datasource": {
+          "type": "grafana-postgresql-datasource",
+          "uid": "postgresql"
+        },
+        "fieldConfig": {
+          "defaults": {
+            "color": {
+              "mode": "thresholds"
+            },
+            "custom": {
+              "align": "auto",
+              "cellOptions": {
+                "type": "auto"
+              },
+              "inspect": false
+            },
+            "mappings": [],
+            "thresholds": {
+              "mode": "absolute",
+              "steps": [
+                {
+                  "color": "green",
+                  "value": null
+                }
+              ]
+            }
+          },
+          "overrides": [
+            {
+              "matcher": {
+                "id": "byName",
+                "options": "failures"
+              },
+              "properties": [
+                {
+                  "id": "color",
+                  "value": {
+                    "fixedColor": "red",
+                    "mode": "fixed"
+                  }
+                }
+              ]
+            },
+            {
+              "matcher": {
+                "id": "byName",
+                "options": "success"
+              },
+              "properties": [
+                {
+                  "id": "color",
+                  "value": {
+                    "fixedColor": "green",
+                    "mode": "fixed"
+                  }
+                }
+              ]
+            }
+          ]
+        },
+        "gridPos": {
+          "h": 10,
+          "w": 12,
+          "x": 0,
+          "y": 12
+        },
+        "id": 11,
+        "options": {
+          "cellHeight": "sm",
+          "footer": {
+            "countRows": false,
+            "fields": "",
+            "reducer": [
+              "sum"
+            ],
+            "show": true
+          },
+          "showHeader": true,
+          "sortBy": [
+            {
+              "desc": true,
+              "displayName": "success"
+            }
+          ]
+        },
+        "pluginVersion": "11.2.0",
+        "targets": [
+          {
+            "datasource": {
+              "type": "grafana-postgresql-datasource",
+              "uid": "postgresql"
+            },
+            "format": "table",
+            "rawQuery": true,
+            "rawSql": "SELECT netuid, COUNT(*) FILTER (WHERE success) as \"success\", COUNT(*) FILTER (WHERE NOT success) as \"failures\" FROM extrinsics WHERE call_module = 'SubtensorModule' AND call_function IN ('set_weights','set_mechanism_weights','batch_set_weights','commit_weights','commit_mechanism_weights','batch_commit_weights','reveal_weights','reveal_mechanism_weights','batch_reveal_weights','commit_timelocked_weights','commit_timelocked_mechanism_weights','commit_crv3_mechanism_weights') AND ('%' IN (${netuid:singlequote}) OR netuid::text IN (${netuid:singlequote})) AND ('%' IN (${status:singlequote}) OR success::text IN (${status:singlequote})) AND ('%' IN (${address:singlequote}) OR address IN (${address:singlequote})) AND block_number BETWEEN (SELECT MAX(block_number) FROM extrinsics) - (extract(epoch FROM now() - '${__from:date}'::timestamptz) / 12)::bigint AND (SELECT MAX(block_number) FROM extrinsics) - (extract(epoch FROM now() - '${__to:date}'::timestamptz) / 12)::bigint GROUP BY netuid ORDER BY netuid",
+            "refId": "A"
+          }
+        ],
+        "title": "Weight-Setting Calls by Subnet",
+        "type": "table"
+      },
+      {
+        "datasource": {
+          "type": "grafana-postgresql-datasource",
+          "uid": "postgresql"
+        },
+        "fieldConfig": {
+          "defaults": {
+            "color": {
+              "mode": "palette-classic"
+            },
+            "custom": {
+              "hideFrom": {
+                "legend": false,
+                "tooltip": false,
+                "viz": false
+              }
+            },
+            "mappings": []
+          },
+          "overrides": []
+        },
+        "gridPos": {
+          "h": 10,
+          "w": 12,
+          "x": 12,
+          "y": 12
+        },
+        "id": 12,
+        "options": {
+          "displayLabels": [
+            "name",
+            "value"
+          ],
+          "legend": {
+            "displayMode": "list",
+            "placement": "right",
+            "showLegend": true
+          },
+          "pieType": "pie",
+          "reduceOptions": {
+            "calcs": [
+              "lastNotNull"
+            ],
+            "fields": "/^value$/",
+            "values": true
+          },
+          "tooltip": {
+            "mode": "single",
+            "sort": "none"
+          }
+        },
+        "pluginVersion": "11.2.0",
+        "targets": [
+          {
+            "datasource": {
+              "type": "grafana-postgresql-datasource",
+              "uid": "postgresql"
+            },
+            "format": "table",
+            "rawQuery": true,
+            "rawSql": "SELECT 'Subnet ' || netuid::text as metric, COUNT(*) as value FROM extrinsics WHERE call_module = 'SubtensorModule' AND call_function IN ('set_weights','set_mechanism_weights','batch_set_weights','commit_weights','commit_mechanism_weights','batch_commit_weights','reveal_weights','reveal_mechanism_weights','batch_reveal_weights','commit_timelocked_weights','commit_timelocked_mechanism_weights','commit_crv3_mechanism_weights') AND ('%' IN (${netuid:singlequote}) OR netuid::text IN (${netuid:singlequote})) AND ('%' IN (${status:singlequote}) OR success::text IN (${status:singlequote})) AND ('%' IN (${address:singlequote}) OR address IN (${address:singlequote})) AND block_number BETWEEN (SELECT MAX(block_number) FROM extrinsics) - (extract(epoch FROM now() - '${__from:date}'::timestamptz) / 12)::bigint AND (SELECT MAX(block_number) FROM extrinsics) - (extract(epoch FROM now() - '${__to:date}'::timestamptz) / 12)::bigint GROUP BY netuid ORDER BY value DESC LIMIT 10",
+            "refId": "A"
+          }
+        ],
+        "title": "Top 10 Subnets by Weight-Setting Calls",
+        "type": "piechart"
+      },
+      {
+        "datasource": {
+          "type": "grafana-postgresql-datasource",
+          "uid": "postgresql"
+        },
+        "description": "Per-subnet share of weight-setting extrinsics from the `subtensor` pallet, grouped into three mechanism families. Cell value = percentage of that subnet's total calls that used this family (0–100%); the gauge bar fills proportionally. `total` shows the absolute count for context. Empty cells = family not used by that subnet in the selected time window. Hover any column header for semantic notes.\n\n**Direct (green)** — disallowed when commit-reveal is enabled\n- `set_weights`, `set_mechanism_weights`, `batch_set_weights`\n\n**Commit-reveal v1 (blue)** — `commit_*` then `reveal_*` later\n- `commit_weights`, `commit_mechanism_weights`, `batch_commit_weights`\n- `reveal_weights`, `reveal_mechanism_weights`, `batch_reveal_weights`\n\n**Timelocked / drand (orange)** — chain auto-reveals on the drand round; no explicit reveal extrinsic\n- `commit_timelocked_weights`, `commit_timelocked_mechanism_weights`\n- `commit_crv3_mechanism_weights` (legacy CR-v3 entry, pins `commit_reveal_version = 4`)",
+        "fieldConfig": {
+          "defaults": {
+            "color": {
+              "mode": "thresholds"
+            },
+            "custom": {
+              "align": "auto",
+              "cellOptions": {
+                "type": "auto"
+              },
+              "filterable": true,
+              "inspect": false
+            },
+            "mappings": [],
+            "thresholds": {
+              "mode": "absolute",
+              "steps": [
+                {
+                  "color": "transparent",
+                  "value": null
+                }
+              ]
+            }
+          },
+          "overrides": [
+            {
+              "matcher": {
+                "id": "byName",
+                "options": "subnet"
+              },
+              "properties": [
+                {
+                  "id": "custom.width",
+                  "value": 220
+                },
+                {
+                  "id": "mappings",
+                  "value": []
+                }
+              ]
+            },
+            {
+              "matcher": {
+                "id": "byName",
+                "options": "total"
+              },
+              "properties": [
+                {
+                  "id": "custom.cellOptions",
+                  "value": {
+                    "mode": "gradient",
+                    "type": "gauge"
+                  }
+                },
+                {
+                  "id": "thresholds",
+                  "value": {
+                    "mode": "absolute",
+                    "steps": [
+                      {
+                        "color": "#888888",
+                        "value": null
+                      }
+                    ]
+                  }
+                },
+                {
+                  "id": "custom.width",
+                  "value": 90
+                }
+              ]
+            },
+            {
+              "matcher": {
+                "id": "byName",
+                "options": "direct"
+              },
+              "properties": [
+                {
+                  "id": "custom.cellOptions",
+                  "value": {
+                    "mode": "gradient",
+                    "type": "gauge"
+                  }
+                },
+                {
+                  "id": "thresholds",
+                  "value": {
+                    "mode": "absolute",
+                    "steps": [
+                      {
+                        "color": "#73BF69",
+                        "value": null
+                      }
+                    ]
+                  }
+                },
+                {
+                  "id": "min",
+                  "value": 0
+                },
+                {
+                  "id": "max",
+                  "value": 100
+                },
+                {
+                  "id": "unit",
+                  "value": "percent"
+                }
+              ]
+            },
+            {
+              "matcher": {
+                "id": "byName",
+                "options": "commit_reveal_v1"
+              },
+              "properties": [
+                {
+                  "id": "custom.cellOptions",
+                  "value": {
+                    "mode": "gradient",
+                    "type": "gauge"
+                  }
+                },
+                {
+                  "id": "thresholds",
+                  "value": {
+                    "mode": "absolute",
+                    "steps": [
+                      {
+                        "color": "#5794F2",
+                        "value": null
+                      }
+                    ]
+                  }
+                },
+                {
+                  "id": "min",
+                  "value": 0
+                },
+                {
+                  "id": "max",
+                  "value": 100
+                },
+                {
+                  "id": "unit",
+                  "value": "percent"
+                }
+              ]
+            },
+            {
+              "matcher": {
+                "id": "byName",
+                "options": "timelock"
+              },
+              "properties": [
+                {
+                  "id": "custom.cellOptions",
+                  "value": {
+                    "mode": "gradient",
+                    "type": "gauge"
+                  }
+                },
+                {
+                  "id": "thresholds",
+                  "value": {
+                    "mode": "absolute",
+                    "steps": [
+                      {
+                        "color": "#FF9830",
+                        "value": null
+                      }
+                    ]
+                  }
+                },
+                {
+                  "id": "min",
+                  "value": 0
+                },
+                {
+                  "id": "max",
+                  "value": 100
+                },
+                {
+                  "id": "unit",
+                  "value": "percent"
+                }
+              ]
+            }
+          ]
+        },
+        "gridPos": {
+          "h": 22,
+          "w": 24,
+          "x": 0,
+          "y": 22
+        },
+        "id": 17,
+        "options": {
+          "cellHeight": "sm",
+          "footer": {
+            "countRows": false,
+            "fields": [
+              "total"
+            ],
+            "reducer": [
+              "sum"
+            ],
+            "show": true
+          },
+          "showHeader": true,
+          "sortBy": [
+            {
+              "desc": false,
+              "displayName": "subnet"
+            }
+          ]
+        },
+        "pluginVersion": "11.2.0",
+        "targets": [
+          {
+            "datasource": {
+              "type": "grafana-postgresql-datasource",
+              "uid": "postgresql"
+            },
+            "format": "table",
+            "rawQuery": true,
+            "rawSql": "SELECT CASE WHEN COALESCE(s.name, '') = '' THEN lpad(e.netuid::text, 3, '0') ELSE lpad(e.netuid::text, 3, '0') || ' · ' || s.name END AS subnet, COUNT(*) AS total, ROUND(100.0 * NULLIF(COUNT(*) FILTER (WHERE call_function IN ('set_weights','set_mechanism_weights','batch_set_weights')), 0) / NULLIF(COUNT(*), 0), 1) AS direct, ROUND(100.0 * NULLIF(COUNT(*) FILTER (WHERE call_function IN ('commit_weights','commit_mechanism_weights','batch_commit_weights','reveal_weights','reveal_mechanism_weights','batch_reveal_weights')), 0) / NULLIF(COUNT(*), 0), 1) AS commit_reveal_v1, ROUND(100.0 * NULLIF(COUNT(*) FILTER (WHERE call_function IN ('commit_timelocked_weights','commit_timelocked_mechanism_weights','commit_crv3_mechanism_weights')), 0) / NULLIF(COUNT(*), 0), 1) AS timelock FROM extrinsics e LEFT JOIN metagraph_subnet s ON s.netuid = e.netuid WHERE e.call_module = 'SubtensorModule' AND e.call_function IN ('set_weights','set_mechanism_weights','batch_set_weights','commit_weights','commit_mechanism_weights','batch_commit_weights','reveal_weights','reveal_mechanism_weights','batch_reveal_weights','commit_timelocked_weights','commit_timelocked_mechanism_weights','commit_crv3_mechanism_weights') AND ('%' IN (${netuid:singlequote}) OR e.netuid::text IN (${netuid:singlequote})) AND ('%' IN (${status:singlequote}) OR e.success::text IN (${status:singlequote})) AND ('%' IN (${address:singlequote}) OR e.address IN (${address:singlequote})) AND e.block_number BETWEEN (SELECT MAX(block_number) FROM extrinsics) - (extract(epoch FROM now() - '${__from:date}'::timestamptz) / 12)::bigint AND (SELECT MAX(block_number) FROM extrinsics) - (extract(epoch FROM now() - '${__to:date}'::timestamptz) / 12)::bigint GROUP BY e.netuid, s.name HAVING COUNT(*) > 0 ORDER BY e.netuid",
+            "refId": "A"
+          }
+        ],
+        "title": "Weight-Setting Methods by Subnet",
+        "type": "table"
+      },
+      {
+        "datasource": {
+          "type": "grafana-postgresql-datasource",
+          "uid": "postgresql"
+        },
+        "description": "Stacked count of weight-setting extrinsics over time, grouped by mechanism family. Useful for spotting migration trends (e.g. uptake of timelocked/drand commits) and aggregate volume changes.",
+        "fieldConfig": {
+          "defaults": {
+            "color": {
+              "mode": "palette-classic"
+            },
+            "custom": {
+              "axisCenteredZero": false,
+              "axisColorMode": "text",
+              "axisLabel": "",
+              "axisPlacement": "auto",
+              "barAlignment": 0,
+              "drawStyle": "line",
+              "fillOpacity": 40,
+              "gradientMode": "none",
+              "hideFrom": {
+                "legend": false,
+                "tooltip": false,
+                "viz": false
+              },
+              "lineInterpolation": "linear",
+              "lineWidth": 1,
+              "pointSize": 4,
+              "scaleDistribution": {
+                "type": "linear"
+              },
+              "showPoints": "auto",
+              "spanNulls": false,
+              "stacking": {
+                "group": "A",
+                "mode": "normal"
+              },
+              "thresholdsStyle": {
+                "mode": "off"
+              }
+            },
+            "mappings": [],
+            "thresholds": {
+              "mode": "absolute",
+              "steps": [
+                {
+                  "color": "green"
+                }
+              ]
+            }
+          },
+          "overrides": [
+            {
+              "matcher": {
+                "id": "byName",
+                "options": "direct"
+              },
+              "properties": [
+                {
+                  "id": "color",
+                  "value": {
+                    "fixedColor": "#73BF69",
+                    "mode": "fixed"
+                  }
+                }
+              ]
+            },
+            {
+              "matcher": {
+                "id": "byName",
+                "options": "commit_reveal_v1"
+              },
+              "properties": [
+                {
+                  "id": "color",
+                  "value": {
+                    "fixedColor": "#5794F2",
+                    "mode": "fixed"
+                  }
+                }
+              ]
+            },
+            {
+              "matcher": {
+                "id": "byName",
+                "options": "timelock"
+              },
+              "properties": [
+                {
+                  "id": "color",
+                  "value": {
+                    "fixedColor": "#FF9830",
+                    "mode": "fixed"
+                  }
+                }
+              ]
+            }
+          ]
+        },
+        "gridPos": {
+          "h": 8,
+          "w": 24,
+          "x": 0,
+          "y": 44
+        },
+        "id": 18,
+        "options": {
+          "legend": {
+            "calcs": [
+              "sum"
+            ],
+            "displayMode": "list",
+            "placement": "bottom",
+            "showLegend": true
+          },
+          "tooltip": {
+            "mode": "multi",
+            "sort": "desc"
+          }
+        },
+        "targets": [
+          {
+            "datasource": {
+              "type": "grafana-postgresql-datasource",
+              "uid": "postgresql"
+            },
+            "format": "time_series",
+            "rawQuery": true,
+            "rawSql": "SELECT date_trunc('hour', to_timestamp(block_timestamp / 1000.0)) AS time, COUNT(*) FILTER (WHERE call_function IN ('set_weights','set_mechanism_weights','batch_set_weights')) AS direct, COUNT(*) FILTER (WHERE call_function IN ('commit_weights','commit_mechanism_weights','batch_commit_weights','reveal_weights','reveal_mechanism_weights','batch_reveal_weights')) AS commit_reveal_v1, COUNT(*) FILTER (WHERE call_function IN ('commit_timelocked_weights','commit_timelocked_mechanism_weights','commit_crv3_mechanism_weights')) AS timelock FROM extrinsics WHERE call_module = 'SubtensorModule' AND call_function IN ('set_weights','set_mechanism_weights','batch_set_weights','commit_weights','commit_mechanism_weights','batch_commit_weights','reveal_weights','reveal_mechanism_weights','batch_reveal_weights','commit_timelocked_weights','commit_timelocked_mechanism_weights','commit_crv3_mechanism_weights') AND ('%' IN (${netuid:singlequote}) OR netuid::text IN (${netuid:singlequote})) AND ('%' IN (${status:singlequote}) OR success::text IN (${status:singlequote})) AND ('%' IN (${address:singlequote}) OR address IN (${address:singlequote})) AND block_number BETWEEN (SELECT MAX(block_number) FROM extrinsics) - (extract(epoch FROM now() - '${__from:date}'::timestamptz) / 12)::bigint AND (SELECT MAX(block_number) FROM extrinsics) - (extract(epoch FROM now() - '${__to:date}'::timestamptz) / 12)::bigint GROUP BY 1 ORDER BY 1",
+            "refId": "A"
+          }
+        ],
+        "title": "Method Family Over Time",
+        "type": "timeseries"
+      },
+      {
+        "datasource": {
+          "type": "grafana-postgresql-datasource",
+          "uid": "postgresql"
+        },
+        "description": "Percentage of weight-setting extrinsics that failed in each time bucket. Spike = chain incident or validator misconfiguration burst.",
+        "fieldConfig": {
+          "defaults": {
+            "color": {
+              "fixedColor": "#F2495C",
+              "mode": "fixed"
+            },
+            "custom": {
+              "axisCenteredZero": false,
+              "axisColorMode": "text",
+              "axisLabel": "",
+              "axisPlacement": "auto",
+              "barAlignment": 0,
+              "drawStyle": "line",
+              "fillOpacity": 10,
+              "gradientMode": "none",
+              "hideFrom": {
+                "legend": false,
+                "tooltip": false,
+                "viz": false
+              },
+              "lineInterpolation": "smooth",
+              "lineWidth": 2,
+              "pointSize": 4,
+              "scaleDistribution": {
+                "type": "linear"
+              },
+              "showPoints": "auto",
+              "spanNulls": false,
+              "stacking": {
+                "group": "A",
+                "mode": "none"
+              },
+              "thresholdsStyle": {
+                "mode": "area"
+              }
+            },
+            "mappings": [],
+            "max": 100,
+            "min": 0,
+            "thresholds": {
+              "mode": "absolute",
+              "steps": [
+                {
+                  "color": "green"
+                },
+                {
+                  "color": "yellow",
+                  "value": 5
+                },
+                {
+                  "color": "red",
+                  "value": 20
+                }
+              ]
+            },
+            "unit": "percent"
+          },
+          "overrides": []
+        },
+        "gridPos": {
+          "h": 6,
+          "w": 24,
+          "x": 0,
+          "y": 52
+        },
+        "id": 19,
+        "options": {
+          "legend": {
+            "calcs": [
+              "mean",
+              "max"
+            ],
+            "displayMode": "list",
+            "placement": "bottom",
+            "showLegend": true
+          },
+          "tooltip": {
+            "mode": "single",
+            "sort": "none"
+          }
+        },
+        "targets": [
+          {
+            "datasource": {
+              "type": "grafana-postgresql-datasource",
+              "uid": "postgresql"
+            },
+            "format": "time_series",
+            "rawQuery": true,
+            "rawSql": "SELECT date_trunc('hour', to_timestamp(block_timestamp / 1000.0)) AS time, ROUND(100.0 * COUNT(*) FILTER (WHERE NOT success) / NULLIF(COUNT(*), 0), 2) AS failure_rate FROM extrinsics WHERE call_module = 'SubtensorModule' AND call_function IN ('set_weights','set_mechanism_weights','batch_set_weights','commit_weights','commit_mechanism_weights','batch_commit_weights','reveal_weights','reveal_mechanism_weights','batch_reveal_weights','commit_timelocked_weights','commit_timelocked_mechanism_weights','commit_crv3_mechanism_weights') AND ('%' IN (${netuid:singlequote}) OR netuid::text IN (${netuid:singlequote})) AND ('%' IN (${status:singlequote}) OR success::text IN (${status:singlequote})) AND ('%' IN (${address:singlequote}) OR address IN (${address:singlequote})) AND block_number BETWEEN (SELECT MAX(block_number) FROM extrinsics) - (extract(epoch FROM now() - '${__from:date}'::timestamptz) / 12)::bigint AND (SELECT MAX(block_number) FROM extrinsics) - (extract(epoch FROM now() - '${__to:date}'::timestamptz) / 12)::bigint GROUP BY 1 ORDER BY 1",
+            "refId": "A"
+          }
+        ],
+        "title": "Failure Rate Over Time",
+        "type": "timeseries"
+      },
+      {
+        "datasource": {
+          "type": "grafana-postgresql-datasource",
+          "uid": "postgresql"
+        },
+        "description": "Most-frequent failure modes in the selected window. Friendly names come from the `subtensor_error_codes` lookup table (seeded from `set-weights.md` and the bittensor-subtensor pallet error enum); rows still showing raw hex (e.g. `0x4d000000`) are variants that haven't been seeded yet — extend the lookup table in a follow-up migration as more variants are decoded.\n\nColumns:\n- **error** — friendly name when known, raw hex code otherwise\n- **category** — broad grouping (commit_reveal / validation / addressing / …)\n- **count** — number of failures in the window\n- **share_pct** — share of all weight-setting failures\n- **remediation** — operator action to take (— = no guidance seeded yet)\n- **code** — raw hex for traceability and seeding new entries",
+        "fieldConfig": {
+          "defaults": {
+            "color": {
+              "mode": "thresholds"
+            },
+            "custom": {
+              "align": "auto",
+              "cellOptions": {
+                "type": "auto"
+              },
+              "filterable": true,
+              "inspect": false
+            },
+            "mappings": [],
+            "thresholds": {
+              "mode": "absolute",
+              "steps": [
+                {
+                  "color": "red"
+                }
+              ]
+            }
+          },
+          "overrides": [
+            {
+              "matcher": {
+                "id": "byName",
+                "options": "error"
+              },
+              "properties": [
+                {
+                  "id": "custom.width",
+                  "value": 240
+                }
+              ]
+            },
+            {
+              "matcher": {
+                "id": "byName",
+                "options": "category"
+              },
+              "properties": [
+                {
+                  "id": "custom.width",
+                  "value": 130
+                }
+              ]
+            },
+            {
+              "matcher": {
+                "id": "byName",
+                "options": "count"
+              },
+              "properties": [
+                {
+                  "id": "custom.cellOptions",
+                  "value": {
+                    "mode": "gradient",
+                    "type": "gauge"
+                  }
+                },
+                {
+                  "id": "custom.width",
+                  "value": 110
+                }
+              ]
+            },
+            {
+              "matcher": {
+                "id": "byName",
+                "options": "share_pct"
+              },
+              "properties": [
+                {
+                  "id": "unit",
+                  "value": "percent"
+                },
+                {
+                  "id": "custom.width",
+                  "value": 90
+                }
+              ]
+            },
+            {
+              "matcher": {
+                "id": "byName",
+                "options": "remediation"
+              },
+              "properties": [
+                {
+                  "id": "custom.cellOptions",
+                  "value": {
+                    "type": "auto",
+                    "wrapText": true
+                  }
+                }
+              ]
+            },
+            {
+              "matcher": {
+                "id": "byName",
+                "options": "code"
+              },
+              "properties": [
+                {
+                  "id": "custom.width",
+                  "value": 110
+                },
+                {
+                  "id": "description",
+                  "value": "Raw hex from `dispatch_error.Module.error`. Use to seed new rows in `subtensor_error_codes`."
+                }
+              ]
+            }
+          ]
+        },
+        "gridPos": {
+          "h": 12,
+          "w": 24,
+          "x": 0,
+          "y": 58
+        },
+        "id": 20,
+        "options": {
+          "cellHeight": "sm",
+          "footer": {
+            "countRows": false,
+            "fields": "",
+            "reducer": [
+              "sum"
+            ],
+            "show": false
+          },
+          "showHeader": true,
+          "sortBy": [
+            {
+              "desc": true,
+              "displayName": "count"
+            }
+          ]
+        },
+        "targets": [
+          {
+            "datasource": {
+              "type": "grafana-postgresql-datasource",
+              "uid": "postgresql"
+            },
+            "format": "table",
+            "rawQuery": true,
+            "rawSql": "SELECT COALESCE(c.name, e.error_data->'dispatch_error'->'Module'->>'error') AS error, COALESCE(c.category, '') AS category, COUNT(*) AS count, ROUND(100.0 * COUNT(*) / SUM(COUNT(*)) OVER (), 1) AS share_pct, COALESCE(NULLIF(c.remediation, ''), '—') AS remediation, e.error_data->'dispatch_error'->'Module'->>'error' AS code FROM extrinsics e LEFT JOIN subtensor_error_codes c ON c.pallet_index = (e.error_data->'dispatch_error'->'Module'->>'index')::int AND c.error_code = e.error_data->'dispatch_error'->'Module'->>'error' WHERE e.call_module = 'SubtensorModule' AND e.call_function IN ('set_weights','set_mechanism_weights','batch_set_weights','commit_weights','commit_mechanism_weights','batch_commit_weights','reveal_weights','reveal_mechanism_weights','batch_reveal_weights','commit_timelocked_weights','commit_timelocked_mechanism_weights','commit_crv3_mechanism_weights') AND ('%' IN (${netuid:singlequote}) OR e.netuid::text IN (${netuid:singlequote})) AND ('%' IN (${status:singlequote}) OR e.success::text IN (${status:singlequote})) AND ('%' IN (${address:singlequote}) OR e.address IN (${address:singlequote})) AND e.block_number BETWEEN (SELECT MAX(block_number) FROM extrinsics) - (extract(epoch FROM now() - '${__from:date}'::timestamptz) / 12)::bigint AND (SELECT MAX(block_number) FROM extrinsics) - (extract(epoch FROM now() - '${__to:date}'::timestamptz) / 12)::bigint AND e.success = false AND e.error_data->'dispatch_error'->'Module' IS NOT NULL GROUP BY 1, 2, 5, 6 ORDER BY count DESC LIMIT 20",
+            "refId": "A"
+          }
+        ],
+        "title": "Top Error Types",
+        "type": "table"
+      },
+      {
+        "datasource": {
+          "type": "grafana-postgresql-datasource",
+          "uid": "postgresql"
+        },
+        "description": "Top hotkeys by weight-setting volume. `top_method` is the most-frequent dispatchable for the hotkey.",
+        "fieldConfig": {
+          "defaults": {
+            "color": {
+              "mode": "thresholds"
+            },
+            "custom": {
+              "align": "auto",
+              "cellOptions": {
+                "type": "auto"
+              },
+              "filterable": true,
+              "inspect": false
+            },
+            "mappings": [],
+            "thresholds": {
+              "mode": "absolute",
+              "steps": [
+                {
+                  "color": "green"
+                }
+              ]
+            }
+          },
+          "overrides": [
+            {
+              "matcher": {
+                "id": "byName",
+                "options": "address"
+              },
+              "properties": [
+                {
+                  "id": "custom.width",
+                  "value": 200
+                },
+                {
+                  "id": "custom.inspect",
+                  "value": true
+                }
+              ]
+            },
+            {
+              "matcher": {
+                "id": "byName",
+                "options": "total"
+              },
+              "properties": [
+                {
+                  "id": "custom.cellOptions",
+                  "value": {
+                    "mode": "gradient",
+                    "type": "gauge"
+                  }
+                },
+                {
+                  "id": "custom.width",
+                  "value": 90
+                }
+              ]
+            },
+            {
+              "matcher": {
+                "id": "byName",
+                "options": "ok"
+              },
+              "properties": [
+                {
+                  "id": "color",
+                  "value": {
+                    "fixedColor": "green",
+                    "mode": "fixed"
+                  }
+                },
+                {
+                  "id": "custom.width",
+                  "value": 70
+                }
+              ]
+            },
+            {
+              "matcher": {
+                "id": "byName",
+                "options": "fail"
+              },
+              "properties": [
+                {
+                  "id": "color",
+                  "value": {
+                    "fixedColor": "red",
+                    "mode": "fixed"
+                  }
+                },
+                {
+                  "id": "custom.width",
+                  "value": 70
+                }
+              ]
+            },
+            {
+              "matcher": {
+                "id": "byName",
+                "options": "subnets"
+              },
+              "properties": [
+                {
+                  "id": "custom.width",
+                  "value": 80
+                }
+              ]
+            }
+          ]
+        },
+        "gridPos": {
+          "h": 10,
+          "w": 24,
+          "x": 0,
+          "y": 70
+        },
+        "id": 21,
+        "options": {
+          "cellHeight": "sm",
+          "footer": {
+            "countRows": false,
+            "fields": "",
+            "reducer": [
+              "sum"
+            ],
+            "show": false
+          },
+          "showHeader": true,
+          "sortBy": [
+            {
+              "desc": true,
+              "displayName": "total"
+            }
+          ]
+        },
+        "targets": [
+          {
+            "datasource": {
+              "type": "grafana-postgresql-datasource",
+              "uid": "postgresql"
+            },
+            "format": "table",
+            "rawQuery": true,
+            "rawSql": "SELECT address, COUNT(*) AS total, COUNT(*) FILTER (WHERE success) AS ok, COUNT(*) FILTER (WHERE NOT success) AS fail, COUNT(DISTINCT netuid) AS subnets, MODE() WITHIN GROUP (ORDER BY call_function) AS top_method FROM extrinsics WHERE call_module = 'SubtensorModule' AND call_function IN ('set_weights','set_mechanism_weights','batch_set_weights','commit_weights','commit_mechanism_weights','batch_commit_weights','reveal_weights','reveal_mechanism_weights','batch_reveal_weights','commit_timelocked_weights','commit_timelocked_mechanism_weights','commit_crv3_mechanism_weights') AND ('%' IN (${netuid:singlequote}) OR netuid::text IN (${netuid:singlequote})) AND ('%' IN (${status:singlequote}) OR success::text IN (${status:singlequote})) AND ('%' IN (${address:singlequote}) OR address IN (${address:singlequote})) AND block_number BETWEEN (SELECT MAX(block_number) FROM extrinsics) - (extract(epoch FROM now() - '${__from:date}'::timestamptz) / 12)::bigint AND (SELECT MAX(block_number) FROM extrinsics) - (extract(epoch FROM now() - '${__to:date}'::timestamptz) / 12)::bigint AND address != '' GROUP BY address ORDER BY total DESC LIMIT 25",
+            "refId": "A"
+          }
+        ],
+        "title": "Top Validators by Volume",
+        "type": "table"
+      },
+      {
+        "datasource": {
+          "type": "grafana-postgresql-datasource",
+          "uid": "postgresql"
+        },
+        "description": "Most-recent weight-setting call per subnet, sorted oldest first. Subnets at the top haven't had weight activity recently — possible validator outage, frozen subnet, or filter mismatch. Age is measured from `now()`, not from the dashboard time range's end.",
+        "fieldConfig": {
+          "defaults": {
+            "color": {
+              "mode": "thresholds"
+            },
+            "custom": {
+              "align": "auto",
+              "cellOptions": {
+                "type": "auto"
+              },
+              "filterable": true,
+              "inspect": false
+            },
+            "mappings": [],
+            "thresholds": {
+              "mode": "absolute",
+              "steps": [
+                {
+                  "color": "green"
+                }
+              ]
+            }
+          },
+          "overrides": [
+            {
+              "matcher": {
+                "id": "byName",
+                "options": "subnet"
+              },
+              "properties": [
+                {
+                  "id": "custom.width",
+                  "value": 220
+                }
+              ]
+            },
+            {
+              "matcher": {
+                "id": "byName",
+                "options": "last_call"
+              },
+              "properties": [
+                {
+                  "id": "custom.width",
+                  "value": 200
+                }
+              ]
+            },
+            {
+              "matcher": {
+                "id": "byName",
+                "options": "age"
+              },
+              "properties": [
+                {
+                  "id": "unit",
+                  "value": "s"
+                },
+                {
+                  "id": "custom.cellOptions",
+                  "value": {
+                    "mode": "basic",
+                    "type": "color-background"
+                  }
+                },
+                {
+                  "id": "thresholds",
+                  "value": {
+                    "mode": "absolute",
+                    "steps": [
+                      {
+                        "color": "green"
+                      },
+                      {
+                        "color": "yellow",
+                        "value": 3600
+                      },
+                      {
+                        "color": "red",
+                        "value": 21600
+                      }
+                    ]
+                  }
+                },
+                {
+                  "id": "custom.width",
+                  "value": 110
+                },
+                {
+                  "id": "description",
+                  "value": "Time since last weight-setting call. Yellow > 1h, red > 6h."
+                }
+              ]
+            },
+            {
+              "matcher": {
+                "id": "byName",
+                "options": "method"
+              },
+              "properties": [
+                {
+                  "id": "custom.width",
+                  "value": 280
+                }
+              ]
+            },
+            {
+              "matcher": {
+                "id": "byName",
+                "options": "hotkey"
+              },
+              "properties": [
+                {
+                  "id": "custom.inspect",
+                  "value": true
+                }
+              ]
+            }
+          ]
+        },
+        "gridPos": {
+          "h": 10,
+          "w": 24,
+          "x": 0,
+          "y": 80
+        },
+        "id": 22,
+        "options": {
+          "cellHeight": "sm",
+          "footer": {
+            "countRows": false,
+            "fields": "",
+            "reducer": [
+              "sum"
+            ],
+            "show": false
+          },
+          "showHeader": true,
+          "sortBy": [
+            {
+              "desc": true,
+              "displayName": "age"
+            }
+          ]
+        },
+        "targets": [
+          {
+            "datasource": {
+              "type": "grafana-postgresql-datasource",
+              "uid": "postgresql"
+            },
+            "format": "table",
+            "rawQuery": true,
+            "rawSql": "SELECT CASE WHEN COALESCE(s.name, '') = '' THEN lpad(latest.netuid::text, 3, '0') ELSE lpad(latest.netuid::text, 3, '0') || ' · ' || s.name END AS subnet, to_timestamp(latest.block_timestamp / 1000.0) AS last_call, EXTRACT(EPOCH FROM (now() - to_timestamp(latest.block_timestamp / 1000.0))) AS age, latest.call_function AS method, latest.address AS hotkey FROM ( SELECT DISTINCT ON (netuid) netuid, block_timestamp, call_function, address FROM extrinsics WHERE call_module = 'SubtensorModule' AND call_function IN ('set_weights','set_mechanism_weights','batch_set_weights','commit_weights','commit_mechanism_weights','batch_commit_weights','reveal_weights','reveal_mechanism_weights','batch_reveal_weights','commit_timelocked_weights','commit_timelocked_mechanism_weights','commit_crv3_mechanism_weights') AND ('%' IN (${netuid:singlequote}) OR netuid::text IN (${netuid:singlequote})) AND ('%' IN (${status:singlequote}) OR success::text IN (${status:singlequote})) AND ('%' IN (${address:singlequote}) OR address IN (${address:singlequote})) AND block_number BETWEEN (SELECT MAX(block_number) FROM extrinsics) - (extract(epoch FROM now() - '${__from:date}'::timestamptz) / 12)::bigint AND (SELECT MAX(block_number) FROM extrinsics) - (extract(epoch FROM now() - '${__to:date}'::timestamptz) / 12)::bigint ORDER BY netuid, block_timestamp DESC) latest LEFT JOIN metagraph_subnet s ON s.netuid = latest.netuid ORDER BY latest.block_timestamp ASC",
+            "refId": "A"
+          }
+        ],
+        "title": "Stalled Subnets (Most-Recent Weight Call)",
+        "type": "table"
+      },
+      {
+        "datasource": {
+          "type": "grafana-postgresql-datasource",
+          "uid": "postgresql"
+        },
+        "description": "Per-validator share of weight-setting extrinsics, grouped into three mechanism families (Direct / Commit-Reveal v1 / Timelock). Same shape as `Weight-Setting Methods by Subnet` but rows are hotkeys (top 50 by volume). Cell value = % of that validator's total calls that used this family (0–100%); the gauge bar fills proportionally.",
+        "fieldConfig": {
+          "defaults": {
+            "color": {
+              "mode": "thresholds"
+            },
+            "custom": {
+              "align": "auto",
+              "cellOptions": {
+                "type": "auto"
+              },
+              "filterable": true,
+              "inspect": false
+            },
+            "mappings": [],
+            "thresholds": {
+              "mode": "absolute",
+              "steps": [
+                {
+                  "color": "transparent"
+                }
+              ]
+            }
+          },
+          "overrides": [
+            {
+              "matcher": {
+                "id": "byName",
+                "options": "hotkey"
+              },
+              "properties": [
+                {
+                  "id": "custom.width",
+                  "value": 280
+                },
+                {
+                  "id": "custom.inspect",
+                  "value": true
+                }
+              ]
+            },
+            {
+              "matcher": {
+                "id": "byName",
+                "options": "total"
+              },
+              "properties": [
+                {
+                  "id": "custom.cellOptions",
+                  "value": {
+                    "mode": "gradient",
+                    "type": "gauge"
+                  }
+                },
+                {
+                  "id": "thresholds",
+                  "value": {
+                    "mode": "absolute",
+                    "steps": [
+                      {
+                        "color": "#888888"
+                      }
+                    ]
+                  }
+                },
+                {
+                  "id": "custom.width",
+                  "value": 90
+                }
+              ]
+            },
+            {
+              "matcher": {
+                "id": "byName",
+                "options": "direct"
+              },
+              "properties": [
+                {
+                  "id": "custom.cellOptions",
+                  "value": {
+                    "mode": "gradient",
+                    "type": "gauge"
+                  }
+                },
+                {
+                  "id": "thresholds",
+                  "value": {
+                    "mode": "absolute",
+                    "steps": [
+                      {
+                        "color": "#73BF69"
+                      }
+                    ]
+                  }
+                },
+                {
+                  "id": "min",
+                  "value": 0
+                },
+                {
+                  "id": "max",
+                  "value": 100
+                },
+                {
+                  "id": "unit",
+                  "value": "percent"
+                },
+                {
+                  "id": "description",
+                  "value": "Direct submission family: set_weights, set_mechanism_weights, batch_set_weights."
+                }
+              ]
+            },
+            {
+              "matcher": {
+                "id": "byName",
+                "options": "commit_reveal_v1"
+              },
+              "properties": [
+                {
+                  "id": "custom.cellOptions",
+                  "value": {
+                    "mode": "gradient",
+                    "type": "gauge"
+                  }
+                },
+                {
+                  "id": "thresholds",
+                  "value": {
+                    "mode": "absolute",
+                    "steps": [
+                      {
+                        "color": "#5794F2"
+                      }
+                    ]
+                  }
+                },
+                {
+                  "id": "min",
+                  "value": 0
+                },
+                {
+                  "id": "max",
+                  "value": 100
+                },
+                {
+                  "id": "unit",
+                  "value": "percent"
+                },
+                {
+                  "id": "description",
+                  "value": "Commit-reveal v1 family: commit_weights, commit_mechanism_weights, batch_commit_weights, reveal_weights, reveal_mechanism_weights, batch_reveal_weights."
+                }
+              ]
+            },
+            {
+              "matcher": {
+                "id": "byName",
+                "options": "timelock"
+              },
+              "properties": [
+                {
+                  "id": "custom.cellOptions",
+                  "value": {
+                    "mode": "gradient",
+                    "type": "gauge"
+                  }
+                },
+                {
+                  "id": "thresholds",
+                  "value": {
+                    "mode": "absolute",
+                    "steps": [
+                      {
+                        "color": "#FF9830"
+                      }
+                    ]
+                  }
+                },
+                {
+                  "id": "min",
+                  "value": 0
+                },
+                {
+                  "id": "max",
+                  "value": 100
+                },
+                {
+                  "id": "unit",
+                  "value": "percent"
+                },
+                {
+                  "id": "description",
+                  "value": "Drand timelock family: commit_timelocked_weights, commit_timelocked_mechanism_weights, commit_crv3_mechanism_weights."
+                }
+              ]
+            }
+          ]
+        },
+        "gridPos": {
+          "h": 22,
+          "w": 24,
+          "x": 0,
+          "y": 90
+        },
+        "id": 23,
+        "options": {
+          "cellHeight": "sm",
+          "footer": {
+            "countRows": false,
+            "fields": [
+              "total"
+            ],
+            "reducer": [
+              "sum"
+            ],
+            "show": true
+          },
+          "showHeader": true,
+          "sortBy": [
+            {
+              "desc": true,
+              "displayName": "total"
+            }
+          ]
+        },
+        "targets": [
+          {
+            "datasource": {
+              "type": "grafana-postgresql-datasource",
+              "uid": "postgresql"
+            },
+            "format": "table",
+            "rawQuery": true,
+            "rawSql": "WITH top_validators AS (SELECT address, COUNT(*) AS total FROM extrinsics WHERE call_module = 'SubtensorModule' AND call_function IN ('set_weights','set_mechanism_weights','batch_set_weights','commit_weights','commit_mechanism_weights','batch_commit_weights','reveal_weights','reveal_mechanism_weights','batch_reveal_weights','commit_timelocked_weights','commit_timelocked_mechanism_weights','commit_crv3_mechanism_weights') AND ('%' IN (${netuid:singlequote}) OR netuid::text IN (${netuid:singlequote})) AND ('%' IN (${status:singlequote}) OR success::text IN (${status:singlequote})) AND ('%' IN (${address:singlequote}) OR address IN (${address:singlequote})) AND block_number BETWEEN (SELECT MAX(block_number) FROM extrinsics) - (extract(epoch FROM now() - '${__from:date}'::timestamptz) / 12)::bigint AND (SELECT MAX(block_number) FROM extrinsics) - (extract(epoch FROM now() - '${__to:date}'::timestamptz) / 12)::bigint AND address != '' GROUP BY address ORDER BY total DESC LIMIT 50) SELECT e.address AS hotkey, COUNT(*) AS total, ROUND(100.0 * NULLIF(COUNT(*) FILTER (WHERE call_function IN ('set_weights','set_mechanism_weights','batch_set_weights')), 0) / NULLIF(COUNT(*), 0), 1) AS direct, ROUND(100.0 * NULLIF(COUNT(*) FILTER (WHERE call_function IN ('commit_weights','commit_mechanism_weights','batch_commit_weights','reveal_weights','reveal_mechanism_weights','batch_reveal_weights')), 0) / NULLIF(COUNT(*), 0), 1) AS commit_reveal_v1, ROUND(100.0 * NULLIF(COUNT(*) FILTER (WHERE call_function IN ('commit_timelocked_weights','commit_timelocked_mechanism_weights','commit_crv3_mechanism_weights')), 0) / NULLIF(COUNT(*), 0), 1) AS timelock FROM extrinsics e INNER JOIN top_validators tv ON tv.address = e.address WHERE e.call_module = 'SubtensorModule' AND e.call_function IN ('set_weights','set_mechanism_weights','batch_set_weights','commit_weights','commit_mechanism_weights','batch_commit_weights','reveal_weights','reveal_mechanism_weights','batch_reveal_weights','commit_timelocked_weights','commit_timelocked_mechanism_weights','commit_crv3_mechanism_weights') AND ('%' IN (${netuid:singlequote}) OR e.netuid::text IN (${netuid:singlequote})) AND ('%' IN (${status:singlequote}) OR e.success::text IN (${status:singlequote})) AND ('%' IN (${address:singlequote}) OR e.address IN (${address:singlequote})) AND e.block_number BETWEEN (SELECT MAX(block_number) FROM extrinsics) - (extract(epoch FROM now() - '${__from:date}'::timestamptz) / 12)::bigint AND (SELECT MAX(block_number) FROM extrinsics) - (extract(epoch FROM now() - '${__to:date}'::timestamptz) / 12)::bigint GROUP BY e.address HAVING COUNT(*) > 0 ORDER BY total DESC",
+            "refId": "A"
+          }
+        ],
+        "title": "Weight-Setting Methods by Validator",
+        "type": "table"
+      }
+    ],
+    "preload": false,
+    "refresh": "",
+    "schemaVersion": 39,
+    "tags": [
+      "bittensor",
+      "blockchain",
+      "extrinsics",
+      "weights"
+    ],
+    "templating": {
+      "list": [
+        {
+          "allValue": "'%'",
+          "current": {
+            "text": "All",
+            "value": "$__all"
+          },
+          "datasource": {
+            "type": "grafana-postgresql-datasource",
+            "uid": "postgresql"
+          },
+          "definition": "SELECT n AS __value, n || COALESCE(' - ' || s.name, '') AS __text FROM generate_series(1, 128) n LEFT JOIN metagraph_subnet s ON s.netuid = n ORDER BY n",
+          "includeAll": true,
+          "label": "Subnet",
+          "multi": true,
+          "name": "netuid",
+          "options": [],
+          "query": "SELECT n AS __value, n || COALESCE(' - ' || s.name, '') AS __text FROM generate_series(1, 128) n LEFT JOIN metagraph_subnet s ON s.netuid = n ORDER BY n",
+          "refresh": 1,
+          "regex": "",
+          "type": "query"
+        },
+        {
+          "allValue": "'%'",
+          "current": {
+            "text": "$__all",
+            "value": "$__all"
+          },
+          "includeAll": true,
+          "label": "Status",
+          "multi": true,
+          "name": "status",
+          "options": [
+            {
+              "selected": false,
+              "text": "true",
+              "value": "Success"
+            },
+            {
+              "selected": false,
+              "text": "false",
+              "value": "Failed"
+            }
+          ],
+          "query": "true : Success, false : Failed",
+          "type": "custom"
+        },
+        {
+          "allValue": "'%'",
+          "current": {
+            "text": "All",
+            "value": "$__all"
+          },
+          "datasource": {
+            "type": "grafana-postgresql-datasource",
+            "uid": "postgresql"
+          },
+          "definition": "SELECT address FROM extrinsics WHERE address != '' AND block_number > COALESCE((SELECT MAX(block_number) FROM extrinsics), 0) - 50000 GROUP BY address ORDER BY COUNT(*) DESC LIMIT 100",
+          "includeAll": true,
+          "label": "Address (top 100)",
+          "multi": true,
+          "name": "address",
+          "options": [],
+          "query": "SELECT address FROM extrinsics WHERE address != '' AND block_number > COALESCE((SELECT MAX(block_number) FROM extrinsics), 0) - 50000 GROUP BY address ORDER BY COUNT(*) DESC LIMIT 100",
+          "refresh": 1,
+          "regex": "",
+          "type": "query"
+        }
+      ]
+    },
+    "time": {
+      "from": "now-1h",
+      "to": "now"
+    },
+    "timepicker": {},
+    "timezone": "",
+    "title": "Weight Setting",
+    "weekStart": ""
+  }
+}

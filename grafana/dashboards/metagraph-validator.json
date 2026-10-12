@@ -1,0 +1,2054 @@
+{
+  "apiVersion": "dashboard.grafana.app/v1beta1",
+  "kind": "Dashboard",
+  "metadata": {
+    "name": "sentinel-metagraph-validator"
+  },
+  "spec": {
+    "annotations": {
+      "list": [
+        {
+          "builtIn": 1,
+          "datasource": {
+            "type": "grafana",
+            "uid": "-- Grafana --"
+          },
+          "enable": true,
+          "hide": true,
+          "iconColor": "rgba(0, 211, 255, 1)",
+          "name": "Annotations & Alerts",
+          "type": "dashboard"
+        }
+      ]
+    },
+    "editable": true,
+    "fiscalYearStartMonth": 0,
+    "graphTooltip": 0,
+    "links": [],
+    "panels": [
+      {
+        "description": "",
+        "fieldConfig": {
+          "defaults": {},
+          "overrides": []
+        },
+        "gridPos": {
+          "h": 2,
+          "w": 24,
+          "x": 0,
+          "y": 0
+        },
+        "id": 4,
+        "options": {
+          "code": {
+            "language": "plaintext",
+            "showLineNumbers": false,
+            "showMiniMap": false
+          },
+          "content": "taostats: [metagraph](https://x.taostats.io/subnet/${subnet}#metagraph)\r\n| [hyperparams](https://x.taostats.io/subnet/${subnet}#hyperparams)\r\n| [registration](https://x.taostats.io/subnet/${subnet}#registration)\r\n| [distribution](https://x.taostats.io/subnet/${subnet}#distribution)\r\n|| [taomarketcap](https://taomarketcap.com/subnet/${subnet})\r\n|| bactensor: [subnet](/grafana/d/sentinel-metagraph-001/metagraph-subnet?var-subnet=${subnet})\r\n| [miner](/grafana/d/miner/metagraph-miner?var-subnet=${subnet})\r\n| [opinions about this subnet](https://opinion-bot.bittensor.church/opinions/?netuid=${subnet})\r\n||\\\r\n|| [a nice link to share🔗](/grafana/d/sentinel-metagraph-validator/metagraph-validator?var-subnet=${subnet}&var-validator=${validator}) | you can press `V` when hovering on a chart to toggle zoom ||\r\n",
+          "mode": "markdown"
+        },
+        "pluginVersion": "11.2.0",
+        "title": "",
+        "transparent": true,
+        "type": "text"
+      },
+      {
+        "datasource": {
+          "type": "grafana-postgresql-datasource",
+          "uid": "postgresql"
+        },
+        "description": "difference between current block and last block update",
+        "fieldConfig": {
+          "defaults": {
+            "color": {
+              "mode": "palette-classic"
+            },
+            "custom": {
+              "axisBorderShow": false,
+              "axisCenteredZero": false,
+              "axisColorMode": "text",
+              "axisLabel": "",
+              "axisPlacement": "auto",
+              "barAlignment": 0,
+              "barWidthFactor": 0.6,
+              "drawStyle": "line",
+              "fillOpacity": 0,
+              "gradientMode": "none",
+              "hideFrom": {
+                "legend": false,
+                "tooltip": false,
+                "viz": false
+              },
+              "insertNulls": 1800000,
+              "lineInterpolation": "linear",
+              "lineWidth": 1,
+              "pointSize": 5,
+              "scaleDistribution": {
+                "type": "linear"
+              },
+              "showPoints": "always",
+              "spanNulls": 1800000,
+              "stacking": {
+                "group": "A",
+                "mode": "none"
+              },
+              "thresholdsStyle": {
+                "mode": "area"
+              }
+            },
+            "mappings": [],
+            "min": 0,
+            "thresholds": {
+              "mode": "absolute",
+              "steps": [
+                {
+                  "color": "red",
+                  "value": null
+                },
+                {
+                  "color": "#EAB839",
+                  "value": 0.9
+                },
+                {
+                  "color": "green",
+                  "value": 0.95
+                },
+                {
+                  "color": "transparent",
+                  "value": 1
+                }
+              ]
+            },
+            "unit": "none"
+          },
+          "overrides": []
+        },
+        "gridPos": {
+          "h": 6,
+          "w": 24,
+          "x": 0,
+          "y": 2
+        },
+        "id": 3,
+        "options": {
+          "legend": {
+            "calcs": [],
+            "displayMode": "list",
+            "placement": "bottom",
+            "showLegend": false
+          },
+          "tooltip": {
+            "mode": "multi",
+            "sort": "none"
+          }
+        },
+        "pluginVersion": "11.2.0",
+        "targets": [
+          {
+            "datasource": {
+              "type": "grafana-postgresql-datasource",
+              "uid": "postgresql"
+            },
+            "editorMode": "code",
+            "format": "table",
+            "hide": false,
+            "rawQuery": true,
+            "rawSql": "SELECT COALESCE(NULLIF(h.label, ''), NULLIF(ck.label, ''), LEFT(h.hotkey, 8) || '...') AS validator, b.number - mm.last_update AS \" \", b.timestamp AS time\nFROM metagraph_neuron n\n  JOIN metagraph_hotkey h ON h.id = n.hotkey_id\n  JOIN metagraph_coldkey ck ON ck.id = h.coldkey_id\n  JOIN metagraph_neuron_snapshot ns ON ns.neuron_id = n.id\n  JOIN metagraph_block b ON b.number = ns.block_id AND ns.block_id >= (SELECT number FROM metagraph_block WHERE timestamp >= '${__from:date}' ORDER BY timestamp LIMIT 1) AND ns.block_id <= (SELECT number FROM metagraph_block WHERE timestamp <= '${__to:date}' ORDER BY timestamp DESC LIMIT 1)\n  JOIN metagraph_mechanism_metrics mm ON mm.snapshot_id = ns.id AND mm.mech_id = ${mech_id}\nWHERE n.subnet_id = ${subnet} AND ns.is_validator = true AND h.hotkey = '${validator}'\n  AND b.timestamp BETWEEN '${__from:date}' AND '${__to:date}'\nORDER BY ns.total_stake DESC",
+            "refId": "validator",
+            "sql": {
+              "columns": [
+                {
+                  "parameters": [],
+                  "type": "function"
+                }
+              ],
+              "groupBy": [
+                {
+                  "property": {
+                    "type": "string"
+                  },
+                  "type": "groupBy"
+                }
+              ],
+              "limit": 50
+            }
+          }
+        ],
+        "title": "Blocks since last weight set/reveal on sn${subnet} for ${validator}",
+        "type": "timeseries"
+      },
+      {
+        "datasource": {
+          "type": "grafana-postgresql-datasource",
+          "uid": "postgresql"
+        },
+        "fieldConfig": {
+          "defaults": {
+            "color": {
+              "mode": "palette-classic"
+            },
+            "custom": {
+              "axisBorderShow": false,
+              "axisCenteredZero": false,
+              "axisColorMode": "text",
+              "axisLabel": "",
+              "axisPlacement": "auto",
+              "barAlignment": 0,
+              "barWidthFactor": 0.6,
+              "drawStyle": "line",
+              "fillOpacity": 0,
+              "gradientMode": "none",
+              "hideFrom": {
+                "legend": false,
+                "tooltip": false,
+                "viz": false
+              },
+              "insertNulls": 3600000,
+              "lineInterpolation": "linear",
+              "lineWidth": 1,
+              "pointSize": 5,
+              "scaleDistribution": {
+                "type": "linear"
+              },
+              "showPoints": "auto",
+              "spanNulls": false,
+              "stacking": {
+                "group": "A",
+                "mode": "none"
+              },
+              "thresholdsStyle": {
+                "mode": "area"
+              }
+            },
+            "mappings": [],
+            "max": 1,
+            "min": 0,
+            "thresholds": {
+              "mode": "absolute",
+              "steps": [
+                {
+                  "color": "red",
+                  "value": null
+                },
+                {
+                  "color": "#EAB839",
+                  "value": 0.9
+                },
+                {
+                  "color": "green",
+                  "value": 0.95
+                },
+                {
+                  "color": "transparent",
+                  "value": 1
+                }
+              ]
+            },
+            "unit": "percentunit"
+          },
+          "overrides": [
+            {
+              "matcher": {
+                "id": "byName",
+                "options": "vtrust"
+              },
+              "properties": [
+                {
+                  "id": "color",
+                  "value": {
+                    "fixedColor": "blue",
+                    "mode": "fixed"
+                  }
+                }
+              ]
+            },
+            {
+              "matcher": {
+                "id": "byName",
+                "options": "avg_trust"
+              },
+              "properties": [
+                {
+                  "id": "displayName",
+                  "value": "average sn${subnet} vtrust"
+                },
+                {
+                  "id": "color",
+                  "value": {
+                    "fixedColor": "yellow",
+                    "mode": "fixed"
+                  }
+                }
+              ]
+            }
+          ]
+        },
+        "gridPos": {
+          "h": 6,
+          "w": 24,
+          "x": 0,
+          "y": 8
+        },
+        "id": 14,
+        "options": {
+          "legend": {
+            "calcs": [],
+            "displayMode": "list",
+            "placement": "bottom",
+            "showLegend": true
+          },
+          "tooltip": {
+            "mode": "multi",
+            "sort": "none"
+          }
+        },
+        "pluginVersion": "11.2.0",
+        "targets": [
+          {
+            "datasource": {
+              "type": "grafana-postgresql-datasource",
+              "uid": "postgresql"
+            },
+            "editorMode": "code",
+            "format": "table",
+            "hide": false,
+            "rawQuery": true,
+            "rawSql": "SELECT mm.validator_trust AS \"validator vtrust\", b.timestamp AS time,\n  COALESCE(NULLIF(h.label, ''), NULLIF(ck.label, ''), LEFT(h.hotkey, 8) || '...') AS vali_name\nFROM metagraph_neuron n\n  JOIN metagraph_hotkey h ON h.id = n.hotkey_id\n  JOIN metagraph_coldkey ck ON ck.id = h.coldkey_id\n  JOIN metagraph_neuron_snapshot ns ON ns.neuron_id = n.id\n  JOIN metagraph_block b ON b.number = ns.block_id AND ns.block_id >= (SELECT number FROM metagraph_block WHERE timestamp >= '${__from:date}' ORDER BY timestamp LIMIT 1) AND ns.block_id <= (SELECT number FROM metagraph_block WHERE timestamp <= '${__to:date}' ORDER BY timestamp DESC LIMIT 1)\n  JOIN metagraph_mechanism_metrics mm ON mm.snapshot_id = ns.id AND mm.mech_id = ${mech_id}\nWHERE n.subnet_id = ${subnet} AND ns.is_validator = true AND h.hotkey = '${validator}'\n  AND b.timestamp BETWEEN '${__from:date}' AND '${__to:date}'\nORDER BY b.timestamp",
+            "refId": "validator",
+            "sql": {
+              "columns": [
+                {
+                  "parameters": [],
+                  "type": "function"
+                }
+              ],
+              "groupBy": [
+                {
+                  "property": {
+                    "type": "string"
+                  },
+                  "type": "groupBy"
+                }
+              ],
+              "limit": 50
+            }
+          },
+          {
+            "datasource": {
+              "type": "grafana-postgresql-datasource",
+              "uid": "postgresql"
+            },
+            "editorMode": "code",
+            "format": "table",
+            "hide": false,
+            "rawQuery": true,
+            "rawSql": "SELECT AVG(mm.validator_trust) AS avg_trust, b.timestamp AS time\nFROM metagraph_neuron n\n  JOIN metagraph_neuron_snapshot ns ON ns.neuron_id = n.id\n  JOIN metagraph_block b ON b.number = ns.block_id AND ns.block_id >= (SELECT number FROM metagraph_block WHERE timestamp >= '${__from:date}' ORDER BY timestamp LIMIT 1) AND ns.block_id <= (SELECT number FROM metagraph_block WHERE timestamp <= '${__to:date}' ORDER BY timestamp DESC LIMIT 1)\n  JOIN metagraph_mechanism_metrics mm ON mm.snapshot_id = ns.id AND mm.mech_id = ${mech_id}\nWHERE n.subnet_id = ${subnet} AND ns.is_validator = true\n  AND b.timestamp BETWEEN '${__from:date}' AND '${__to:date}'\nGROUP BY b.timestamp",
+            "refId": "average",
+            "sql": {
+              "columns": [
+                {
+                  "parameters": [],
+                  "type": "function"
+                }
+              ],
+              "groupBy": [
+                {
+                  "property": {
+                    "type": "string"
+                  },
+                  "type": "groupBy"
+                }
+              ],
+              "limit": 50
+            }
+          }
+        ],
+        "title": "Vtrust for ${validator} on sn${subnet}",
+        "type": "timeseries"
+      },
+      {
+        "datasource": {
+          "type": "grafana-postgresql-datasource",
+          "uid": "postgresql"
+        },
+        "fieldConfig": {
+          "defaults": {
+            "color": {
+              "mode": "palette-classic"
+            },
+            "custom": {
+              "axisBorderShow": false,
+              "axisCenteredZero": false,
+              "axisColorMode": "text",
+              "axisLabel": "",
+              "axisPlacement": "auto",
+              "barAlignment": 0,
+              "barWidthFactor": 0.6,
+              "drawStyle": "line",
+              "fillOpacity": 0,
+              "gradientMode": "none",
+              "hideFrom": {
+                "legend": false,
+                "tooltip": false,
+                "viz": false
+              },
+              "insertNulls": 3600000,
+              "lineInterpolation": "linear",
+              "lineWidth": 1,
+              "pointSize": 5,
+              "scaleDistribution": {
+                "type": "linear"
+              },
+              "showPoints": "auto",
+              "spanNulls": false,
+              "stacking": {
+                "group": "A",
+                "mode": "none"
+              },
+              "thresholdsStyle": {
+                "mode": "off"
+              }
+            },
+            "mappings": [],
+            "min": 0,
+            "thresholds": {
+              "mode": "absolute",
+              "steps": [
+                {
+                  "color": "red",
+                  "value": null
+                },
+                {
+                  "color": "#EAB839",
+                  "value": 0.9
+                },
+                {
+                  "color": "green",
+                  "value": 0.95
+                },
+                {
+                  "color": "transparent",
+                  "value": 1
+                }
+              ]
+            },
+            "unit": "percentunit"
+          },
+          "overrides": [
+            {
+              "matcher": {
+                "id": "byName",
+                "options": "vtrust"
+              },
+              "properties": [
+                {
+                  "id": "color",
+                  "value": {
+                    "fixedColor": "blue",
+                    "mode": "fixed"
+                  }
+                }
+              ]
+            },
+            {
+              "matcher": {
+                "id": "byName",
+                "options": "avg_trust"
+              },
+              "properties": [
+                {
+                  "id": "displayName",
+                  "value": "average sn${subnet} vtrust"
+                },
+                {
+                  "id": "color",
+                  "value": {
+                    "fixedColor": "yellow",
+                    "mode": "fixed"
+                  }
+                }
+              ]
+            }
+          ]
+        },
+        "gridPos": {
+          "h": 6,
+          "w": 24,
+          "x": 0,
+          "y": 14
+        },
+        "id": 5,
+        "options": {
+          "legend": {
+            "calcs": [],
+            "displayMode": "list",
+            "placement": "bottom",
+            "showLegend": true
+          },
+          "tooltip": {
+            "mode": "multi",
+            "sort": "none"
+          }
+        },
+        "pluginVersion": "11.2.0",
+        "targets": [
+          {
+            "datasource": {
+              "type": "grafana-postgresql-datasource",
+              "uid": "postgresql"
+            },
+            "editorMode": "code",
+            "format": "table",
+            "hide": false,
+            "rawQuery": true,
+            "rawSql": "SELECT mm.dividend AS \"dividends of\", b.timestamp AS time, COALESCE(NULLIF(h.label, ''), NULLIF(ck.label, ''), LEFT(h.hotkey, 8) || '...') AS vali_name\nFROM metagraph_neuron n\n  JOIN metagraph_hotkey h ON h.id = n.hotkey_id\n  JOIN metagraph_coldkey ck ON ck.id = h.coldkey_id\n  JOIN metagraph_neuron_snapshot ns ON ns.neuron_id = n.id\n  JOIN metagraph_block b ON b.number = ns.block_id AND ns.block_id >= (SELECT number FROM metagraph_block WHERE timestamp >= '${__from:date}' ORDER BY timestamp LIMIT 1) AND ns.block_id <= (SELECT number FROM metagraph_block WHERE timestamp <= '${__to:date}' ORDER BY timestamp DESC LIMIT 1)\n  JOIN metagraph_mechanism_metrics mm ON mm.snapshot_id = ns.id AND mm.mech_id = ${mech_id}\nWHERE n.subnet_id = ${subnet} AND ns.is_validator = true AND h.hotkey = '${validator}'\n  AND b.timestamp BETWEEN '${__from:date}' AND '${__to:date}'",
+            "refId": "dividends",
+            "sql": {
+              "columns": [
+                {
+                  "parameters": [],
+                  "type": "function"
+                }
+              ],
+              "groupBy": [
+                {
+                  "property": {
+                    "type": "string"
+                  },
+                  "type": "groupBy"
+                }
+              ],
+              "limit": 50
+            }
+          },
+          {
+            "datasource": {
+              "type": "grafana-postgresql-datasource",
+              "uid": "postgresql"
+            },
+            "editorMode": "code",
+            "format": "table",
+            "hide": false,
+            "rawQuery": true,
+            "rawSql": "SELECT mm.incentive AS \"incentives of\", b.timestamp AS time, COALESCE(NULLIF(h.label, ''), NULLIF(ck.label, ''), LEFT(h.hotkey, 8) || '...') AS vali_name\nFROM metagraph_neuron n\n  JOIN metagraph_hotkey h ON h.id = n.hotkey_id\n  JOIN metagraph_coldkey ck ON ck.id = h.coldkey_id\n  JOIN metagraph_neuron_snapshot ns ON ns.neuron_id = n.id\n  JOIN metagraph_block b ON b.number = ns.block_id AND ns.block_id >= (SELECT number FROM metagraph_block WHERE timestamp >= '${__from:date}' ORDER BY timestamp LIMIT 1) AND ns.block_id <= (SELECT number FROM metagraph_block WHERE timestamp <= '${__to:date}' ORDER BY timestamp DESC LIMIT 1)\n  JOIN metagraph_mechanism_metrics mm ON mm.snapshot_id = ns.id AND mm.mech_id = ${mech_id}\nWHERE n.subnet_id = ${subnet} AND ns.is_validator = true AND h.hotkey = '${validator}'\n  AND b.timestamp BETWEEN '${__from:date}' AND '${__to:date}'",
+            "refId": "incentives",
+            "sql": {
+              "columns": [
+                {
+                  "parameters": [],
+                  "type": "function"
+                }
+              ],
+              "groupBy": [
+                {
+                  "property": {
+                    "type": "string"
+                  },
+                  "type": "groupBy"
+                }
+              ],
+              "limit": 50
+            }
+          }
+        ],
+        "title": "Emissions for ${validator} on sn${subnet} mechid ${mech_id}",
+        "transformations": [
+          {
+            "id": "prepareTimeSeries",
+            "options": {
+              "format": "multi"
+            }
+          }
+        ],
+        "type": "timeseries"
+      },
+      {
+        "datasource": {
+          "type": "grafana-postgresql-datasource",
+          "uid": "postgresql"
+        },
+        "fieldConfig": {
+          "defaults": {
+            "color": {
+              "mode": "palette-classic"
+            },
+            "custom": {
+              "axisBorderShow": false,
+              "axisCenteredZero": false,
+              "axisColorMode": "text",
+              "axisLabel": "",
+              "axisPlacement": "auto",
+              "barAlignment": 0,
+              "barWidthFactor": 0.6,
+              "drawStyle": "line",
+              "fillOpacity": 0,
+              "gradientMode": "none",
+              "hideFrom": {
+                "legend": false,
+                "tooltip": false,
+                "viz": false
+              },
+              "insertNulls": 7200000,
+              "lineInterpolation": "linear",
+              "lineWidth": 1,
+              "pointSize": 5,
+              "scaleDistribution": {
+                "type": "linear"
+              },
+              "showPoints": "auto",
+              "spanNulls": false,
+              "stacking": {
+                "group": "A",
+                "mode": "none"
+              },
+              "thresholdsStyle": {
+                "mode": "off"
+              }
+            },
+            "mappings": [],
+            "min": 0,
+            "thresholds": {
+              "mode": "absolute",
+              "steps": [
+                {
+                  "color": "red",
+                  "value": null
+                },
+                {
+                  "color": "#EAB839",
+                  "value": 0.9
+                },
+                {
+                  "color": "green",
+                  "value": 0.95
+                },
+                {
+                  "color": "transparent",
+                  "value": 1
+                }
+              ]
+            }
+          },
+          "overrides": [
+            {
+              "matcher": {
+                "id": "byName",
+                "options": "vtrust"
+              },
+              "properties": [
+                {
+                  "id": "color",
+                  "value": {
+                    "fixedColor": "blue",
+                    "mode": "fixed"
+                  }
+                }
+              ]
+            },
+            {
+              "matcher": {
+                "id": "byName",
+                "options": "avg_trust"
+              },
+              "properties": [
+                {
+                  "id": "displayName",
+                  "value": "average sn${subnet} vtrust"
+                },
+                {
+                  "id": "color",
+                  "value": {
+                    "fixedColor": "yellow",
+                    "mode": "fixed"
+                  }
+                }
+              ]
+            }
+          ]
+        },
+        "gridPos": {
+          "h": 6,
+          "w": 24,
+          "x": 0,
+          "y": 20
+        },
+        "id": 12,
+        "options": {
+          "legend": {
+            "calcs": [],
+            "displayMode": "list",
+            "placement": "bottom",
+            "showLegend": true
+          },
+          "tooltip": {
+            "mode": "multi",
+            "sort": "none"
+          }
+        },
+        "pluginVersion": "11.2.0",
+        "targets": [
+          {
+            "datasource": {
+              "type": "grafana-postgresql-datasource",
+              "uid": "postgresql"
+            },
+            "editorMode": "code",
+            "format": "table",
+            "hide": false,
+            "rawQuery": true,
+            "rawSql": "SELECT COALESCE(NULLIF(h.label, ''), NULLIF(ck.label, ''), LEFT(h.hotkey, 8) || '...') AS validator,\n  CASE WHEN ns.total_stake = 0 THEN NULL\n       ELSE (1e9 * mm.dividend) / (ns.total_stake / 1e9) END AS \" \",\n  b.timestamp AS time\nFROM metagraph_neuron n\n  JOIN metagraph_hotkey h ON h.id = n.hotkey_id\n  JOIN metagraph_coldkey ck ON ck.id = h.coldkey_id\n  JOIN metagraph_neuron_snapshot ns ON ns.neuron_id = n.id\n  JOIN metagraph_block b ON b.number = ns.block_id AND ns.block_id >= (SELECT number FROM metagraph_block WHERE timestamp >= '${__from:date}' ORDER BY timestamp LIMIT 1) AND ns.block_id <= (SELECT number FROM metagraph_block WHERE timestamp <= '${__to:date}' ORDER BY timestamp DESC LIMIT 1)\n  JOIN metagraph_mechanism_metrics mm ON mm.snapshot_id = ns.id AND mm.mech_id = ${mech_id}\nWHERE n.subnet_id = ${subnet} AND ns.is_validator = true AND h.hotkey = '${validator}'\n  AND b.timestamp BETWEEN '${__from:date}' AND '${__to:date}'\nORDER BY ns.total_stake DESC",
+            "refId": "ratio",
+            "sql": {
+              "columns": [
+                {
+                  "parameters": [],
+                  "type": "function"
+                }
+              ],
+              "groupBy": [
+                {
+                  "property": {
+                    "type": "string"
+                  },
+                  "type": "groupBy"
+                }
+              ],
+              "limit": 50
+            }
+          }
+        ],
+        "title": "Dividends-to-stake ratio for ${validator} on sn${subnet} mechid ${mech_id}",
+        "transformations": [
+          {
+            "id": "prepareTimeSeries",
+            "options": {
+              "format": "multi"
+            }
+          }
+        ],
+        "type": "timeseries"
+      },
+      {
+        "datasource": {
+          "type": "grafana-postgresql-datasource",
+          "uid": "postgresql"
+        },
+        "fieldConfig": {
+          "defaults": {
+            "color": {
+              "mode": "palette-classic"
+            },
+            "custom": {
+              "axisBorderShow": false,
+              "axisCenteredZero": false,
+              "axisColorMode": "text",
+              "axisLabel": "",
+              "axisPlacement": "auto",
+              "barAlignment": 0,
+              "barWidthFactor": 0.6,
+              "drawStyle": "line",
+              "fillOpacity": 0,
+              "gradientMode": "none",
+              "hideFrom": {
+                "legend": false,
+                "tooltip": false,
+                "viz": false
+              },
+              "insertNulls": 3600000,
+              "lineInterpolation": "linear",
+              "lineWidth": 1,
+              "pointSize": 5,
+              "scaleDistribution": {
+                "type": "linear"
+              },
+              "showPoints": "auto",
+              "spanNulls": false,
+              "stacking": {
+                "group": "A",
+                "mode": "none"
+              },
+              "thresholdsStyle": {
+                "mode": "off"
+              }
+            },
+            "mappings": [],
+            "min": 0,
+            "thresholds": {
+              "mode": "absolute",
+              "steps": [
+                {
+                  "color": "red",
+                  "value": null
+                },
+                {
+                  "color": "#EAB839",
+                  "value": 0.9
+                },
+                {
+                  "color": "green",
+                  "value": 0.95
+                },
+                {
+                  "color": "transparent",
+                  "value": 1
+                }
+              ]
+            }
+          },
+          "overrides": [
+            {
+              "matcher": {
+                "id": "byName",
+                "options": "vtrust"
+              },
+              "properties": [
+                {
+                  "id": "color",
+                  "value": {
+                    "fixedColor": "blue",
+                    "mode": "fixed"
+                  }
+                }
+              ]
+            },
+            {
+              "matcher": {
+                "id": "byName",
+                "options": "avg_trust"
+              },
+              "properties": [
+                {
+                  "id": "displayName",
+                  "value": "average sn${subnet} vtrust"
+                },
+                {
+                  "id": "color",
+                  "value": {
+                    "fixedColor": "yellow",
+                    "mode": "fixed"
+                  }
+                }
+              ]
+            }
+          ]
+        },
+        "gridPos": {
+          "h": 6,
+          "w": 24,
+          "x": 0,
+          "y": 26
+        },
+        "id": 13,
+        "options": {
+          "legend": {
+            "calcs": [],
+            "displayMode": "list",
+            "placement": "bottom",
+            "showLegend": false
+          },
+          "tooltip": {
+            "mode": "multi",
+            "sort": "none"
+          }
+        },
+        "pluginVersion": "11.2.0",
+        "targets": [
+          {
+            "datasource": {
+              "type": "grafana-postgresql-datasource",
+              "uid": "postgresql"
+            },
+            "editorMode": "code",
+            "format": "table",
+            "hide": false,
+            "rawQuery": true,
+            "rawSql": "SELECT COALESCE(NULLIF(h.label, ''), NULLIF(ck.label, ''), LEFT(h.hotkey, 8) || '...') AS validator, ns.total_stake / 1e9 AS total_stake, b.timestamp AS time\nFROM metagraph_neuron n\n  JOIN metagraph_hotkey h ON h.id = n.hotkey_id\n  JOIN metagraph_coldkey ck ON ck.id = h.coldkey_id\n  JOIN metagraph_neuron_snapshot ns ON ns.neuron_id = n.id\n  JOIN metagraph_block b ON b.number = ns.block_id AND ns.block_id >= (SELECT number FROM metagraph_block WHERE timestamp >= '${__from:date}' ORDER BY timestamp LIMIT 1) AND ns.block_id <= (SELECT number FROM metagraph_block WHERE timestamp <= '${__to:date}' ORDER BY timestamp DESC LIMIT 1)\nWHERE n.subnet_id = ${subnet} AND ns.is_validator = true AND h.hotkey = '${validator}'\n  AND b.timestamp BETWEEN '${__from:date}' AND '${__to:date}'\nORDER BY ns.total_stake DESC",
+            "refId": "ratio",
+            "sql": {
+              "columns": [
+                {
+                  "parameters": [],
+                  "type": "function"
+                }
+              ],
+              "groupBy": [
+                {
+                  "property": {
+                    "type": "string"
+                  },
+                  "type": "groupBy"
+                }
+              ],
+              "limit": 50
+            }
+          }
+        ],
+        "title": "Stake of ${validator} on sn${subnet}",
+        "transformations": [
+          {
+            "id": "prepareTimeSeries",
+            "options": {
+              "format": "multi"
+            }
+          }
+        ],
+        "type": "timeseries"
+      },
+      {
+        "datasource": {
+          "type": "grafana-postgresql-datasource",
+          "uid": "postgresql"
+        },
+        "description": "amount of tao available on a EVM key associated to the validator's hotkey\n\n**note: unsupported on Sentinel** — EVM key balances are not tracked (no EvmKeyBalance model).",
+        "fieldConfig": {
+          "defaults": {
+            "color": {
+              "mode": "palette-classic"
+            },
+            "custom": {
+              "axisBorderShow": false,
+              "axisCenteredZero": false,
+              "axisColorMode": "text",
+              "axisLabel": "",
+              "axisPlacement": "auto",
+              "barAlignment": 0,
+              "barWidthFactor": 0.6,
+              "drawStyle": "line",
+              "fillOpacity": 0,
+              "gradientMode": "none",
+              "hideFrom": {
+                "legend": false,
+                "tooltip": false,
+                "viz": false
+              },
+              "insertNulls": false,
+              "lineInterpolation": "linear",
+              "lineWidth": 1,
+              "pointSize": 5,
+              "scaleDistribution": {
+                "type": "linear"
+              },
+              "showPoints": "auto",
+              "spanNulls": false,
+              "stacking": {
+                "group": "A",
+                "mode": "none"
+              },
+              "thresholdsStyle": {
+                "mode": "area"
+              }
+            },
+            "decimals": 10,
+            "mappings": [],
+            "thresholds": {
+              "mode": "absolute",
+              "steps": [
+                {
+                  "color": "red"
+                },
+                {
+                  "color": "yellow",
+                  "value": 0.005
+                },
+                {
+                  "color": "green",
+                  "value": 0.05
+                }
+              ]
+            },
+            "unit": "τ"
+          },
+          "overrides": []
+        },
+        "gridPos": {
+          "h": 6,
+          "w": 24,
+          "x": 0,
+          "y": 32
+        },
+        "id": 16,
+        "options": {
+          "legend": {
+            "calcs": [],
+            "displayMode": "list",
+            "placement": "bottom",
+            "showLegend": false
+          },
+          "tooltip": {
+            "mode": "multi",
+            "sort": "none"
+          }
+        },
+        "pluginVersion": "11.2.0",
+        "targets": [
+          {
+            "editorMode": "code",
+            "format": "table",
+            "hide": false,
+            "rawQuery": true,
+            "rawSql": "-- NOT SUPPORTED ON SENTINEL: EVM key balance is not tracked.\n-- See docs/grafana-metagraph-dashboard-migration-widgets.md (EvmKeyBalance).\nSELECT NULL::float AS \"TAO\", NULL::timestamptz AS time WHERE false",
+            "refId": "Validator gas"
+          }
+        ],
+        "title": "Balance of collateral contract owner ${validator} of sn${subnet}",
+        "type": "timeseries"
+      },
+      {
+        "datasource": {
+          "type": "grafana-postgresql-datasource",
+          "uid": "postgresql"
+        },
+        "description": "",
+        "fieldConfig": {
+          "defaults": {
+            "color": {
+              "mode": "palette-classic"
+            },
+            "custom": {
+              "axisBorderShow": false,
+              "axisCenteredZero": false,
+              "axisColorMode": "text",
+              "axisLabel": "",
+              "axisPlacement": "auto",
+              "axisSoftMin": 0,
+              "barAlignment": 0,
+              "barWidthFactor": 0.6,
+              "drawStyle": "line",
+              "fillOpacity": 0,
+              "gradientMode": "none",
+              "hideFrom": {
+                "legend": false,
+                "tooltip": false,
+                "viz": false
+              },
+              "insertNulls": 1800000,
+              "lineInterpolation": "linear",
+              "lineWidth": 1,
+              "pointSize": 5,
+              "scaleDistribution": {
+                "type": "linear"
+              },
+              "showPoints": "always",
+              "spanNulls": false,
+              "stacking": {
+                "group": "A",
+                "mode": "none"
+              },
+              "thresholdsStyle": {
+                "mode": "off"
+              }
+            },
+            "mappings": [],
+            "thresholds": {
+              "mode": "absolute",
+              "steps": [
+                {
+                  "color": "green"
+                },
+                {
+                  "color": "red",
+                  "value": 80
+                }
+              ]
+            },
+            "unit": "τ"
+          },
+          "overrides": []
+        },
+        "gridPos": {
+          "h": 8,
+          "w": 24,
+          "x": 0,
+          "y": 38
+        },
+        "id": 1,
+        "options": {
+          "legend": {
+            "calcs": [],
+            "displayMode": "list",
+            "placement": "bottom",
+            "showLegend": true
+          },
+          "tooltip": {
+            "mode": "single",
+            "sort": "none"
+          }
+        },
+        "pluginVersion": "11.2.0",
+        "targets": [
+          {
+            "datasource": {
+              "type": "grafana-postgresql-datasource",
+              "uid": "postgresql"
+            },
+            "editorMode": "code",
+            "format": "table",
+            "rawQuery": true,
+            "rawSql": "SELECT c.amount AS \" \", b.timestamp AS time, mh.hotkey AS miner\nFROM metagraph_neuron vn\n  JOIN metagraph_hotkey vh ON vh.id = vn.hotkey_id\n  JOIN metagraph_collateral c ON c.target_neuron_id = vn.id AND c.amount > 0\n  JOIN metagraph_neuron mn ON mn.id = c.source_neuron_id\n  JOIN metagraph_hotkey mh ON mh.id = mn.hotkey_id\n  JOIN metagraph_block b ON b.number = c.block_id AND c.block_id >= (SELECT number FROM metagraph_block WHERE timestamp >= '${__from:date}' ORDER BY timestamp LIMIT 1) AND c.block_id <= (SELECT number FROM metagraph_block WHERE timestamp <= '${__to:date}' ORDER BY timestamp DESC LIMIT 1)\nWHERE vn.subnet_id = ${subnet} AND vh.hotkey = '${validator}'\n  AND b.timestamp BETWEEN '${__from:date}' AND '${__to:date}'",
+            "refId": "A",
+            "sql": {
+              "columns": [
+                {
+                  "parameters": [],
+                  "type": "function"
+                }
+              ],
+              "groupBy": [
+                {
+                  "property": {
+                    "type": "string"
+                  },
+                  "type": "groupBy"
+                }
+              ],
+              "limit": 50
+            }
+          }
+        ],
+        "title": "Collateral deposits from miners to ${validator} on sn${subnet}",
+        "transformations": [
+          {
+            "id": "prepareTimeSeries",
+            "options": {
+              "format": "multi"
+            }
+          }
+        ],
+        "type": "timeseries"
+      },
+      {
+        "datasource": {
+          "type": "grafana-postgresql-datasource",
+          "uid": "postgresql"
+        },
+        "description": "",
+        "fieldConfig": {
+          "defaults": {
+            "color": {
+              "mode": "palette-classic"
+            },
+            "custom": {
+              "axisBorderShow": false,
+              "axisCenteredZero": false,
+              "axisColorMode": "text",
+              "axisLabel": "",
+              "axisPlacement": "auto",
+              "barAlignment": 0,
+              "barWidthFactor": 0.6,
+              "drawStyle": "line",
+              "fillOpacity": 0,
+              "gradientMode": "none",
+              "hideFrom": {
+                "legend": false,
+                "tooltip": false,
+                "viz": false
+              },
+              "insertNulls": 1800000,
+              "lineInterpolation": "linear",
+              "lineWidth": 1,
+              "pointSize": 5,
+              "scaleDistribution": {
+                "type": "linear"
+              },
+              "showPoints": "always",
+              "spanNulls": false,
+              "stacking": {
+                "group": "A",
+                "mode": "none"
+              },
+              "thresholdsStyle": {
+                "mode": "off"
+              }
+            },
+            "mappings": [],
+            "thresholds": {
+              "mode": "absolute",
+              "steps": [
+                {
+                  "color": "green"
+                },
+                {
+                  "color": "red",
+                  "value": 80
+                }
+              ]
+            },
+            "unit": "percentunit"
+          },
+          "overrides": []
+        },
+        "gridPos": {
+          "h": 9,
+          "w": 24,
+          "x": 0,
+          "y": 46
+        },
+        "id": 17,
+        "options": {
+          "legend": {
+            "calcs": [],
+            "displayMode": "list",
+            "placement": "bottom",
+            "showLegend": true
+          },
+          "tooltip": {
+            "mode": "single",
+            "sort": "none"
+          }
+        },
+        "pluginVersion": "11.2.0",
+        "targets": [
+          {
+            "datasource": {
+              "type": "grafana-postgresql-datasource",
+              "uid": "postgresql"
+            },
+            "editorMode": "code",
+            "format": "table",
+            "rawQuery": true,
+            "rawSql": "SELECT (w.weight / NULLIF(src_mm.weights_sum, 0)) AS \" \", b.timestamp AS time, mh.hotkey AS miner\nFROM metagraph_neuron vn\n  JOIN metagraph_hotkey vh ON vh.id = vn.hotkey_id\n  JOIN metagraph_weight w ON w.source_neuron_id = vn.id\n  JOIN metagraph_neuron_snapshot src_ns ON src_ns.neuron_id = w.source_neuron_id AND src_ns.block_id = w.block_id\n  JOIN metagraph_mechanism_metrics src_mm ON src_mm.snapshot_id = src_ns.id AND src_mm.mech_id = w.mech_id\n  JOIN metagraph_neuron mn ON mn.id = w.target_neuron_id\n  JOIN metagraph_hotkey mh ON mh.id = mn.hotkey_id\n  JOIN metagraph_block b ON b.number = w.block_id AND w.block_id >= (SELECT number FROM metagraph_block WHERE timestamp >= '${__from:date}' ORDER BY timestamp LIMIT 1) AND w.block_id <= (SELECT number FROM metagraph_block WHERE timestamp <= '${__to:date}' ORDER BY timestamp DESC LIMIT 1)\nWHERE vn.subnet_id = ${subnet} AND vh.hotkey = '${validator}'\n  AND mn.subnet_id = ${subnet} AND w.mech_id = ${mech_id}\n  AND w.weight > 0 AND src_mm.weights_sum != 0\n  AND b.timestamp BETWEEN '${__from:date}' AND '${__to:date}'",
+            "refId": "A",
+            "sql": {
+              "columns": [
+                {
+                  "parameters": [],
+                  "type": "function"
+                }
+              ],
+              "groupBy": [
+                {
+                  "property": {
+                    "type": "string"
+                  },
+                  "type": "groupBy"
+                }
+              ],
+              "limit": 50
+            }
+          }
+        ],
+        "title": "Weights given to miners by ${validator} on sn${subnet} mechid ${mech_id}",
+        "transformations": [
+          {
+            "id": "prepareTimeSeries",
+            "options": {
+              "format": "multi"
+            }
+          }
+        ],
+        "type": "timeseries"
+      },
+      {
+        "datasource": {
+          "type": "grafana-postgresql-datasource",
+          "uid": "postgresql"
+        },
+        "fieldConfig": {
+          "defaults": {
+            "custom": {
+              "hideFrom": {
+                "legend": false,
+                "tooltip": false,
+                "viz": false
+              },
+              "scaleDistribution": {
+                "type": "linear"
+              }
+            }
+          },
+          "overrides": []
+        },
+        "gridPos": {
+          "h": 16,
+          "w": 24,
+          "x": 0,
+          "y": 55
+        },
+        "id": 9,
+        "options": {
+          "calculate": false,
+          "cellGap": 0,
+          "color": {
+            "exponent": 0.5,
+            "fill": "dark-orange",
+            "min": 1e-06,
+            "mode": "scheme",
+            "reverse": false,
+            "scale": "exponential",
+            "scheme": "Spectral",
+            "steps": 64
+          },
+          "exemplars": {
+            "color": "rgba(255,0,255,0.7)"
+          },
+          "filterValues": {
+            "le": 1e-06
+          },
+          "legend": {
+            "show": true
+          },
+          "rowsFrame": {
+            "layout": "auto"
+          },
+          "tooltip": {
+            "mode": "single",
+            "showColorScale": false,
+            "yHistogram": true
+          },
+          "yAxis": {
+            "axisPlacement": "hidden",
+            "reverse": false
+          }
+        },
+        "pluginVersion": "11.2.0",
+        "targets": [
+          {
+            "datasource": {
+              "type": "grafana-postgresql-datasource",
+              "uid": "postgresql"
+            },
+            "editorMode": "code",
+            "format": "table",
+            "rawQuery": true,
+            "rawSql": "SELECT created_at,\n       MAX(CASE WHEN uid = 0 THEN weight ELSE NULL END) AS uid_0,\n       MAX(CASE WHEN uid = 1 THEN weight ELSE NULL END) AS uid_1,\n       MAX(CASE WHEN uid = 2 THEN weight ELSE NULL END) AS uid_2,\n       MAX(CASE WHEN uid = 3 THEN weight ELSE NULL END) AS uid_3,\n       MAX(CASE WHEN uid = 4 THEN weight ELSE NULL END) AS uid_4,\n       MAX(CASE WHEN uid = 5 THEN weight ELSE NULL END) AS uid_5,\n       MAX(CASE WHEN uid = 6 THEN weight ELSE NULL END) AS uid_6,\n       MAX(CASE WHEN uid = 7 THEN weight ELSE NULL END) AS uid_7,\n       MAX(CASE WHEN uid = 8 THEN weight ELSE NULL END) AS uid_8,\n       MAX(CASE WHEN uid = 9 THEN weight ELSE NULL END) AS uid_9,\n       MAX(CASE WHEN uid = 10 THEN weight ELSE NULL END) AS uid_10,\n       MAX(CASE WHEN uid = 11 THEN weight ELSE NULL END) AS uid_11,\n       MAX(CASE WHEN uid = 12 THEN weight ELSE NULL END) AS uid_12,\n       MAX(CASE WHEN uid = 13 THEN weight ELSE NULL END) AS uid_13,\n       MAX(CASE WHEN uid = 14 THEN weight ELSE NULL END) AS uid_14,\n       MAX(CASE WHEN uid = 15 THEN weight ELSE NULL END) AS uid_15,\n       MAX(CASE WHEN uid = 16 THEN weight ELSE NULL END) AS uid_16,\n       MAX(CASE WHEN uid = 17 THEN weight ELSE NULL END) AS uid_17,\n       MAX(CASE WHEN uid = 18 THEN weight ELSE NULL END) AS uid_18,\n       MAX(CASE WHEN uid = 19 THEN weight ELSE NULL END) AS uid_19,\n       MAX(CASE WHEN uid = 20 THEN weight ELSE NULL END) AS uid_20,\n       MAX(CASE WHEN uid = 21 THEN weight ELSE NULL END) AS uid_21,\n       MAX(CASE WHEN uid = 22 THEN weight ELSE NULL END) AS uid_22,\n       MAX(CASE WHEN uid = 23 THEN weight ELSE NULL END) AS uid_23,\n       MAX(CASE WHEN uid = 24 THEN weight ELSE NULL END) AS uid_24,\n       MAX(CASE WHEN uid = 25 THEN weight ELSE NULL END) AS uid_25,\n       MAX(CASE WHEN uid = 26 THEN weight ELSE NULL END) AS uid_26,\n       MAX(CASE WHEN uid = 27 THEN weight ELSE NULL END) AS uid_27,\n       MAX(CASE WHEN uid = 28 THEN weight ELSE NULL END) AS uid_28,\n       MAX(CASE WHEN uid = 29 THEN weight ELSE NULL END) AS uid_29,\n       MAX(CASE WHEN uid = 30 THEN weight ELSE NULL END) AS uid_30,\n       MAX(CASE WHEN uid = 31 THEN weight ELSE NULL END) AS uid_31,\n       MAX(CASE WHEN uid = 32 THEN weight ELSE NULL END) AS uid_32,\n       MAX(CASE WHEN uid = 33 THEN weight ELSE NULL END) AS uid_33,\n       MAX(CASE WHEN uid = 34 THEN weight ELSE NULL END) AS uid_34,\n       MAX(CASE WHEN uid = 35 THEN weight ELSE NULL END) AS uid_35,\n       MAX(CASE WHEN uid = 36 THEN weight ELSE NULL END) AS uid_36,\n       MAX(CASE WHEN uid = 37 THEN weight ELSE NULL END) AS uid_37,\n       MAX(CASE WHEN uid = 38 THEN weight ELSE NULL END) AS uid_38,\n       MAX(CASE WHEN uid = 39 THEN weight ELSE NULL END) AS uid_39,\n       MAX(CASE WHEN uid = 40 THEN weight ELSE NULL END) AS uid_40,\n       MAX(CASE WHEN uid = 41 THEN weight ELSE NULL END) AS uid_41,\n       MAX(CASE WHEN uid = 42 THEN weight ELSE NULL END) AS uid_42,\n       MAX(CASE WHEN uid = 43 THEN weight ELSE NULL END) AS uid_43,\n       MAX(CASE WHEN uid = 44 THEN weight ELSE NULL END) AS uid_44,\n       MAX(CASE WHEN uid = 45 THEN weight ELSE NULL END) AS uid_45,\n       MAX(CASE WHEN uid = 46 THEN weight ELSE NULL END) AS uid_46,\n       MAX(CASE WHEN uid = 47 THEN weight ELSE NULL END) AS uid_47,\n       MAX(CASE WHEN uid = 48 THEN weight ELSE NULL END) AS uid_48,\n       MAX(CASE WHEN uid = 49 THEN weight ELSE NULL END) AS uid_49,\n       MAX(CASE WHEN uid = 50 THEN weight ELSE NULL END) AS uid_50,\n       MAX(CASE WHEN uid = 51 THEN weight ELSE NULL END) AS uid_51,\n       MAX(CASE WHEN uid = 52 THEN weight ELSE NULL END) AS uid_52,\n       MAX(CASE WHEN uid = 53 THEN weight ELSE NULL END) AS uid_53,\n       MAX(CASE WHEN uid = 54 THEN weight ELSE NULL END) AS uid_54,\n       MAX(CASE WHEN uid = 55 THEN weight ELSE NULL END) AS uid_55,\n       MAX(CASE WHEN uid = 56 THEN weight ELSE NULL END) AS uid_56,\n       MAX(CASE WHEN uid = 57 THEN weight ELSE NULL END) AS uid_57,\n       MAX(CASE WHEN uid = 58 THEN weight ELSE NULL END) AS uid_58,\n       MAX(CASE WHEN uid = 59 THEN weight ELSE NULL END) AS uid_59,\n       MAX(CASE WHEN uid = 60 THEN weight ELSE NULL END) AS uid_60,\n       MAX(CASE WHEN uid = 61 THEN weight ELSE NULL END) AS uid_61,\n       MAX(CASE WHEN uid = 62 THEN weight ELSE NULL END) AS uid_62,\n       MAX(CASE WHEN uid = 63 THEN weight ELSE NULL END) AS uid_63,\n       MAX(CASE WHEN uid = 64 THEN weight ELSE NULL END) AS uid_64,\n       MAX(CASE WHEN uid = 65 THEN weight ELSE NULL END) AS uid_65,\n       MAX(CASE WHEN uid = 66 THEN weight ELSE NULL END) AS uid_66,\n       MAX(CASE WHEN uid = 67 THEN weight ELSE NULL END) AS uid_67,\n       MAX(CASE WHEN uid = 68 THEN weight ELSE NULL END) AS uid_68,\n       MAX(CASE WHEN uid = 69 THEN weight ELSE NULL END) AS uid_69,\n       MAX(CASE WHEN uid = 70 THEN weight ELSE NULL END) AS uid_70,\n       MAX(CASE WHEN uid = 71 THEN weight ELSE NULL END) AS uid_71,\n       MAX(CASE WHEN uid = 72 THEN weight ELSE NULL END) AS uid_72,\n       MAX(CASE WHEN uid = 73 THEN weight ELSE NULL END) AS uid_73,\n       MAX(CASE WHEN uid = 74 THEN weight ELSE NULL END) AS uid_74,\n       MAX(CASE WHEN uid = 75 THEN weight ELSE NULL END) AS uid_75,\n       MAX(CASE WHEN uid = 76 THEN weight ELSE NULL END) AS uid_76,\n       MAX(CASE WHEN uid = 77 THEN weight ELSE NULL END) AS uid_77,\n       MAX(CASE WHEN uid = 78 THEN weight ELSE NULL END) AS uid_78,\n       MAX(CASE WHEN uid = 79 THEN weight ELSE NULL END) AS uid_79,\n       MAX(CASE WHEN uid = 80 THEN weight ELSE NULL END) AS uid_80,\n       MAX(CASE WHEN uid = 81 THEN weight ELSE NULL END) AS uid_81,\n       MAX(CASE WHEN uid = 82 THEN weight ELSE NULL END) AS uid_82,\n       MAX(CASE WHEN uid = 83 THEN weight ELSE NULL END) AS uid_83,\n       MAX(CASE WHEN uid = 84 THEN weight ELSE NULL END) AS uid_84,\n       MAX(CASE WHEN uid = 85 THEN weight ELSE NULL END) AS uid_85,\n       MAX(CASE WHEN uid = 86 THEN weight ELSE NULL END) AS uid_86,\n       MAX(CASE WHEN uid = 87 THEN weight ELSE NULL END) AS uid_87,\n       MAX(CASE WHEN uid = 88 THEN weight ELSE NULL END) AS uid_88,\n       MAX(CASE WHEN uid = 89 THEN weight ELSE NULL END) AS uid_89,\n       MAX(CASE WHEN uid = 90 THEN weight ELSE NULL END) AS uid_90,\n       MAX(CASE WHEN uid = 91 THEN weight ELSE NULL END) AS uid_91,\n       MAX(CASE WHEN uid = 92 THEN weight ELSE NULL END) AS uid_92,\n       MAX(CASE WHEN uid = 93 THEN weight ELSE NULL END) AS uid_93,\n       MAX(CASE WHEN uid = 94 THEN weight ELSE NULL END) AS uid_94,\n       MAX(CASE WHEN uid = 95 THEN weight ELSE NULL END) AS uid_95,\n       MAX(CASE WHEN uid = 96 THEN weight ELSE NULL END) AS uid_96,\n       MAX(CASE WHEN uid = 97 THEN weight ELSE NULL END) AS uid_97,\n       MAX(CASE WHEN uid = 98 THEN weight ELSE NULL END) AS uid_98,\n       MAX(CASE WHEN uid = 99 THEN weight ELSE NULL END) AS uid_99,\n       MAX(CASE WHEN uid = 100 THEN weight ELSE NULL END) AS uid_100,\n       MAX(CASE WHEN uid = 101 THEN weight ELSE NULL END) AS uid_101,\n       MAX(CASE WHEN uid = 102 THEN weight ELSE NULL END) AS uid_102,\n       MAX(CASE WHEN uid = 103 THEN weight ELSE NULL END) AS uid_103,\n       MAX(CASE WHEN uid = 104 THEN weight ELSE NULL END) AS uid_104,\n       MAX(CASE WHEN uid = 105 THEN weight ELSE NULL END) AS uid_105,\n       MAX(CASE WHEN uid = 106 THEN weight ELSE NULL END) AS uid_106,\n       MAX(CASE WHEN uid = 107 THEN weight ELSE NULL END) AS uid_107,\n       MAX(CASE WHEN uid = 108 THEN weight ELSE NULL END) AS uid_108,\n       MAX(CASE WHEN uid = 109 THEN weight ELSE NULL END) AS uid_109,\n       MAX(CASE WHEN uid = 110 THEN weight ELSE NULL END) AS uid_110,\n       MAX(CASE WHEN uid = 111 THEN weight ELSE NULL END) AS uid_111,\n       MAX(CASE WHEN uid = 112 THEN weight ELSE NULL END) AS uid_112,\n       MAX(CASE WHEN uid = 113 THEN weight ELSE NULL END) AS uid_113,\n       MAX(CASE WHEN uid = 114 THEN weight ELSE NULL END) AS uid_114,\n       MAX(CASE WHEN uid = 115 THEN weight ELSE NULL END) AS uid_115,\n       MAX(CASE WHEN uid = 116 THEN weight ELSE NULL END) AS uid_116,\n       MAX(CASE WHEN uid = 117 THEN weight ELSE NULL END) AS uid_117,\n       MAX(CASE WHEN uid = 118 THEN weight ELSE NULL END) AS uid_118,\n       MAX(CASE WHEN uid = 119 THEN weight ELSE NULL END) AS uid_119,\n       MAX(CASE WHEN uid = 120 THEN weight ELSE NULL END) AS uid_120,\n       MAX(CASE WHEN uid = 121 THEN weight ELSE NULL END) AS uid_121,\n       MAX(CASE WHEN uid = 122 THEN weight ELSE NULL END) AS uid_122,\n       MAX(CASE WHEN uid = 123 THEN weight ELSE NULL END) AS uid_123,\n       MAX(CASE WHEN uid = 124 THEN weight ELSE NULL END) AS uid_124,\n       MAX(CASE WHEN uid = 125 THEN weight ELSE NULL END) AS uid_125,\n       MAX(CASE WHEN uid = 126 THEN weight ELSE NULL END) AS uid_126,\n       MAX(CASE WHEN uid = 127 THEN weight ELSE NULL END) AS uid_127,\n       MAX(CASE WHEN uid = 128 THEN weight ELSE NULL END) AS uid_128,\n       MAX(CASE WHEN uid = 129 THEN weight ELSE NULL END) AS uid_129,\n       MAX(CASE WHEN uid = 130 THEN weight ELSE NULL END) AS uid_130,\n       MAX(CASE WHEN uid = 131 THEN weight ELSE NULL END) AS uid_131,\n       MAX(CASE WHEN uid = 132 THEN weight ELSE NULL END) AS uid_132,\n       MAX(CASE WHEN uid = 133 THEN weight ELSE NULL END) AS uid_133,\n       MAX(CASE WHEN uid = 134 THEN weight ELSE NULL END) AS uid_134,\n       MAX(CASE WHEN uid = 135 THEN weight ELSE NULL END) AS uid_135,\n       MAX(CASE WHEN uid = 136 THEN weight ELSE NULL END) AS uid_136,\n       MAX(CASE WHEN uid = 137 THEN weight ELSE NULL END) AS uid_137,\n       MAX(CASE WHEN uid = 138 THEN weight ELSE NULL END) AS uid_138,\n       MAX(CASE WHEN uid = 139 THEN weight ELSE NULL END) AS uid_139,\n       MAX(CASE WHEN uid = 140 THEN weight ELSE NULL END) AS uid_140,\n       MAX(CASE WHEN uid = 141 THEN weight ELSE NULL END) AS uid_141,\n       MAX(CASE WHEN uid = 142 THEN weight ELSE NULL END) AS uid_142,\n       MAX(CASE WHEN uid = 143 THEN weight ELSE NULL END) AS uid_143,\n       MAX(CASE WHEN uid = 144 THEN weight ELSE NULL END) AS uid_144,\n       MAX(CASE WHEN uid = 145 THEN weight ELSE NULL END) AS uid_145,\n       MAX(CASE WHEN uid = 146 THEN weight ELSE NULL END) AS uid_146,\n       MAX(CASE WHEN uid = 147 THEN weight ELSE NULL END) AS uid_147,\n       MAX(CASE WHEN uid = 148 THEN weight ELSE NULL END) AS uid_148,\n       MAX(CASE WHEN uid = 149 THEN weight ELSE NULL END) AS uid_149,\n       MAX(CASE WHEN uid = 150 THEN weight ELSE NULL END) AS uid_150,\n       MAX(CASE WHEN uid = 151 THEN weight ELSE NULL END) AS uid_151,\n       MAX(CASE WHEN uid = 152 THEN weight ELSE NULL END) AS uid_152,\n       MAX(CASE WHEN uid = 153 THEN weight ELSE NULL END) AS uid_153,\n       MAX(CASE WHEN uid = 154 THEN weight ELSE NULL END) AS uid_154,\n       MAX(CASE WHEN uid = 155 THEN weight ELSE NULL END) AS uid_155,\n       MAX(CASE WHEN uid = 156 THEN weight ELSE NULL END) AS uid_156,\n       MAX(CASE WHEN uid = 157 THEN weight ELSE NULL END) AS uid_157,\n       MAX(CASE WHEN uid = 158 THEN weight ELSE NULL END) AS uid_158,\n       MAX(CASE WHEN uid = 159 THEN weight ELSE NULL END) AS uid_159,\n       MAX(CASE WHEN uid = 160 THEN weight ELSE NULL END) AS uid_160,\n       MAX(CASE WHEN uid = 161 THEN weight ELSE NULL END) AS uid_161,\n       MAX(CASE WHEN uid = 162 THEN weight ELSE NULL END) AS uid_162,\n       MAX(CASE WHEN uid = 163 THEN weight ELSE NULL END) AS uid_163,\n       MAX(CASE WHEN uid = 164 THEN weight ELSE NULL END) AS uid_164,\n       MAX(CASE WHEN uid = 165 THEN weight ELSE NULL END) AS uid_165,\n       MAX(CASE WHEN uid = 166 THEN weight ELSE NULL END) AS uid_166,\n       MAX(CASE WHEN uid = 167 THEN weight ELSE NULL END) AS uid_167,\n       MAX(CASE WHEN uid = 168 THEN weight ELSE NULL END) AS uid_168,\n       MAX(CASE WHEN uid = 169 THEN weight ELSE NULL END) AS uid_169,\n       MAX(CASE WHEN uid = 170 THEN weight ELSE NULL END) AS uid_170,\n       MAX(CASE WHEN uid = 171 THEN weight ELSE NULL END) AS uid_171,\n       MAX(CASE WHEN uid = 172 THEN weight ELSE NULL END) AS uid_172,\n       MAX(CASE WHEN uid = 173 THEN weight ELSE NULL END) AS uid_173,\n       MAX(CASE WHEN uid = 174 THEN weight ELSE NULL END) AS uid_174,\n       MAX(CASE WHEN uid = 175 THEN weight ELSE NULL END) AS uid_175,\n       MAX(CASE WHEN uid = 176 THEN weight ELSE NULL END) AS uid_176,\n       MAX(CASE WHEN uid = 177 THEN weight ELSE NULL END) AS uid_177,\n       MAX(CASE WHEN uid = 178 THEN weight ELSE NULL END) AS uid_178,\n       MAX(CASE WHEN uid = 179 THEN weight ELSE NULL END) AS uid_179,\n       MAX(CASE WHEN uid = 180 THEN weight ELSE NULL END) AS uid_180,\n       MAX(CASE WHEN uid = 181 THEN weight ELSE NULL END) AS uid_181,\n       MAX(CASE WHEN uid = 182 THEN weight ELSE NULL END) AS uid_182,\n       MAX(CASE WHEN uid = 183 THEN weight ELSE NULL END) AS uid_183,\n       MAX(CASE WHEN uid = 184 THEN weight ELSE NULL END) AS uid_184,\n       MAX(CASE WHEN uid = 185 THEN weight ELSE NULL END) AS uid_185,\n       MAX(CASE WHEN uid = 186 THEN weight ELSE NULL END) AS uid_186,\n       MAX(CASE WHEN uid = 187 THEN weight ELSE NULL END) AS uid_187,\n       MAX(CASE WHEN uid = 188 THEN weight ELSE NULL END) AS uid_188,\n       MAX(CASE WHEN uid = 189 THEN weight ELSE NULL END) AS uid_189,\n       MAX(CASE WHEN uid = 190 THEN weight ELSE NULL END) AS uid_190,\n       MAX(CASE WHEN uid = 191 THEN weight ELSE NULL END) AS uid_191,\n       MAX(CASE WHEN uid = 192 THEN weight ELSE NULL END) AS uid_192,\n       MAX(CASE WHEN uid = 193 THEN weight ELSE NULL END) AS uid_193,\n       MAX(CASE WHEN uid = 194 THEN weight ELSE NULL END) AS uid_194,\n       MAX(CASE WHEN uid = 195 THEN weight ELSE NULL END) AS uid_195,\n       MAX(CASE WHEN uid = 196 THEN weight ELSE NULL END) AS uid_196,\n       MAX(CASE WHEN uid = 197 THEN weight ELSE NULL END) AS uid_197,\n       MAX(CASE WHEN uid = 198 THEN weight ELSE NULL END) AS uid_198,\n       MAX(CASE WHEN uid = 199 THEN weight ELSE NULL END) AS uid_199,\n       MAX(CASE WHEN uid = 200 THEN weight ELSE NULL END) AS uid_200,\n       MAX(CASE WHEN uid = 201 THEN weight ELSE NULL END) AS uid_201,\n       MAX(CASE WHEN uid = 202 THEN weight ELSE NULL END) AS uid_202,\n       MAX(CASE WHEN uid = 203 THEN weight ELSE NULL END) AS uid_203,\n       MAX(CASE WHEN uid = 204 THEN weight ELSE NULL END) AS uid_204,\n       MAX(CASE WHEN uid = 205 THEN weight ELSE NULL END) AS uid_205,\n       MAX(CASE WHEN uid = 206 THEN weight ELSE NULL END) AS uid_206,\n       MAX(CASE WHEN uid = 207 THEN weight ELSE NULL END) AS uid_207,\n       MAX(CASE WHEN uid = 208 THEN weight ELSE NULL END) AS uid_208,\n       MAX(CASE WHEN uid = 209 THEN weight ELSE NULL END) AS uid_209,\n       MAX(CASE WHEN uid = 210 THEN weight ELSE NULL END) AS uid_210,\n       MAX(CASE WHEN uid = 211 THEN weight ELSE NULL END) AS uid_211,\n       MAX(CASE WHEN uid = 212 THEN weight ELSE NULL END) AS uid_212,\n       MAX(CASE WHEN uid = 213 THEN weight ELSE NULL END) AS uid_213,\n       MAX(CASE WHEN uid = 214 THEN weight ELSE NULL END) AS uid_214,\n       MAX(CASE WHEN uid = 215 THEN weight ELSE NULL END) AS uid_215,\n       MAX(CASE WHEN uid = 216 THEN weight ELSE NULL END) AS uid_216,\n       MAX(CASE WHEN uid = 217 THEN weight ELSE NULL END) AS uid_217,\n       MAX(CASE WHEN uid = 218 THEN weight ELSE NULL END) AS uid_218,\n       MAX(CASE WHEN uid = 219 THEN weight ELSE NULL END) AS uid_219,\n       MAX(CASE WHEN uid = 220 THEN weight ELSE NULL END) AS uid_220,\n       MAX(CASE WHEN uid = 221 THEN weight ELSE NULL END) AS uid_221,\n       MAX(CASE WHEN uid = 222 THEN weight ELSE NULL END) AS uid_222,\n       MAX(CASE WHEN uid = 223 THEN weight ELSE NULL END) AS uid_223,\n       MAX(CASE WHEN uid = 224 THEN weight ELSE NULL END) AS uid_224,\n       MAX(CASE WHEN uid = 225 THEN weight ELSE NULL END) AS uid_225,\n       MAX(CASE WHEN uid = 226 THEN weight ELSE NULL END) AS uid_226,\n       MAX(CASE WHEN uid = 227 THEN weight ELSE NULL END) AS uid_227,\n       MAX(CASE WHEN uid = 228 THEN weight ELSE NULL END) AS uid_228,\n       MAX(CASE WHEN uid = 229 THEN weight ELSE NULL END) AS uid_229,\n       MAX(CASE WHEN uid = 230 THEN weight ELSE NULL END) AS uid_230,\n       MAX(CASE WHEN uid = 231 THEN weight ELSE NULL END) AS uid_231,\n       MAX(CASE WHEN uid = 232 THEN weight ELSE NULL END) AS uid_232,\n       MAX(CASE WHEN uid = 233 THEN weight ELSE NULL END) AS uid_233,\n       MAX(CASE WHEN uid = 234 THEN weight ELSE NULL END) AS uid_234,\n       MAX(CASE WHEN uid = 235 THEN weight ELSE NULL END) AS uid_235,\n       MAX(CASE WHEN uid = 236 THEN weight ELSE NULL END) AS uid_236,\n       MAX(CASE WHEN uid = 237 THEN weight ELSE NULL END) AS uid_237,\n       MAX(CASE WHEN uid = 238 THEN weight ELSE NULL END) AS uid_238,\n       MAX(CASE WHEN uid = 239 THEN weight ELSE NULL END) AS uid_239,\n       MAX(CASE WHEN uid = 240 THEN weight ELSE NULL END) AS uid_240,\n       MAX(CASE WHEN uid = 241 THEN weight ELSE NULL END) AS uid_241,\n       MAX(CASE WHEN uid = 242 THEN weight ELSE NULL END) AS uid_242,\n       MAX(CASE WHEN uid = 243 THEN weight ELSE NULL END) AS uid_243,\n       MAX(CASE WHEN uid = 244 THEN weight ELSE NULL END) AS uid_244,\n       MAX(CASE WHEN uid = 245 THEN weight ELSE NULL END) AS uid_245,\n       MAX(CASE WHEN uid = 246 THEN weight ELSE NULL END) AS uid_246,\n       MAX(CASE WHEN uid = 247 THEN weight ELSE NULL END) AS uid_247,\n       MAX(CASE WHEN uid = 248 THEN weight ELSE NULL END) AS uid_248,\n       MAX(CASE WHEN uid = 249 THEN weight ELSE NULL END) AS uid_249,\n       MAX(CASE WHEN uid = 250 THEN weight ELSE NULL END) AS uid_250,\n       MAX(CASE WHEN uid = 251 THEN weight ELSE NULL END) AS uid_251,\n       MAX(CASE WHEN uid = 252 THEN weight ELSE NULL END) AS uid_252,\n       MAX(CASE WHEN uid = 253 THEN weight ELSE NULL END) AS uid_253,\n       MAX(CASE WHEN uid = 254 THEN weight ELSE NULL END) AS uid_254,\n       MAX(CASE WHEN uid = 255 THEN weight ELSE NULL END) AS uid_255\nFROM (\n  SELECT b.timestamp AS created_at, mn.uid,\n    (w.weight / NULLIF(src_mm.weights_sum, 0)) AS weight\n  FROM metagraph_neuron vn\n    JOIN metagraph_hotkey vh ON vh.id = vn.hotkey_id\n  JOIN metagraph_weight w ON w.source_neuron_id = vn.id\n    JOIN metagraph_neuron_snapshot src_ns ON src_ns.neuron_id = w.source_neuron_id AND src_ns.block_id = w.block_id\n    JOIN metagraph_mechanism_metrics src_mm ON src_mm.snapshot_id = src_ns.id AND src_mm.mech_id = w.mech_id\n    JOIN metagraph_neuron mn ON mn.id = w.target_neuron_id\n    JOIN metagraph_block b ON b.number = w.block_id AND w.block_id >= (SELECT number FROM metagraph_block WHERE timestamp >= '${__from:date}' ORDER BY timestamp LIMIT 1) AND w.block_id <= (SELECT number FROM metagraph_block WHERE timestamp <= '${__to:date}' ORDER BY timestamp DESC LIMIT 1)\n  WHERE vn.subnet_id = ${subnet} AND vh.hotkey = '${validator}'\n    AND mn.subnet_id = ${subnet} AND w.mech_id = ${mech_id}\n    AND w.weight > 0 AND src_mm.weights_sum != 0\n    AND b.timestamp BETWEEN '${__from:date}' AND '${__to:date}'\n  GROUP BY mn.uid, b.timestamp, w.weight, src_mm.weights_sum\n) t\nGROUP BY created_at",
+            "refId": "main",
+            "sql": {
+              "columns": [
+                {
+                  "parameters": [],
+                  "type": "function"
+                }
+              ],
+              "groupBy": [
+                {
+                  "property": {
+                    "type": "string"
+                  },
+                  "type": "groupBy"
+                }
+              ],
+              "limit": 50
+            }
+          }
+        ],
+        "title": "Miner weight heatmap of ${validator} validator in sn${subnet} mechid ${mech_id}",
+        "type": "heatmap"
+      },
+      {
+        "datasource": {
+          "type": "grafana-postgresql-datasource",
+          "uid": "postgresql"
+        },
+        "description": "",
+        "fieldConfig": {
+          "defaults": {
+            "custom": {
+              "hideFrom": {
+                "legend": false,
+                "tooltip": false,
+                "viz": false
+              },
+              "scaleDistribution": {
+                "type": "linear"
+              }
+            }
+          },
+          "overrides": []
+        },
+        "gridPos": {
+          "h": 16,
+          "w": 24,
+          "x": 0,
+          "y": 71
+        },
+        "id": 10,
+        "options": {
+          "calculate": false,
+          "cellGap": 0,
+          "cellValues": {
+            "decimals": 3,
+            "unit": ""
+          },
+          "color": {
+            "exponent": 0.5,
+            "fill": "dark-orange",
+            "mode": "scheme",
+            "reverse": false,
+            "scale": "exponential",
+            "scheme": "Spectral",
+            "steps": 64
+          },
+          "exemplars": {
+            "color": "rgba(255,0,255,0.7)"
+          },
+          "filterValues": {
+            "le": -1
+          },
+          "legend": {
+            "show": true
+          },
+          "rowsFrame": {
+            "layout": "auto"
+          },
+          "tooltip": {
+            "mode": "single",
+            "showColorScale": true,
+            "yHistogram": true
+          },
+          "yAxis": {
+            "axisPlacement": "hidden",
+            "reverse": false
+          }
+        },
+        "pluginVersion": "11.2.0",
+        "targets": [
+          {
+            "datasource": {
+              "type": "grafana-postgresql-datasource",
+              "uid": "postgresql"
+            },
+            "editorMode": "code",
+            "format": "table",
+            "rawQuery": true,
+            "rawSql": "SELECT created_at,\n       MAX(CASE WHEN uid = 0 THEN weight ELSE NULL END) AS uid_0,\n       MAX(CASE WHEN uid = 1 THEN weight ELSE NULL END) AS uid_1,\n       MAX(CASE WHEN uid = 2 THEN weight ELSE NULL END) AS uid_2,\n       MAX(CASE WHEN uid = 3 THEN weight ELSE NULL END) AS uid_3,\n       MAX(CASE WHEN uid = 4 THEN weight ELSE NULL END) AS uid_4,\n       MAX(CASE WHEN uid = 5 THEN weight ELSE NULL END) AS uid_5,\n       MAX(CASE WHEN uid = 6 THEN weight ELSE NULL END) AS uid_6,\n       MAX(CASE WHEN uid = 7 THEN weight ELSE NULL END) AS uid_7,\n       MAX(CASE WHEN uid = 8 THEN weight ELSE NULL END) AS uid_8,\n       MAX(CASE WHEN uid = 9 THEN weight ELSE NULL END) AS uid_9,\n       MAX(CASE WHEN uid = 10 THEN weight ELSE NULL END) AS uid_10,\n       MAX(CASE WHEN uid = 11 THEN weight ELSE NULL END) AS uid_11,\n       MAX(CASE WHEN uid = 12 THEN weight ELSE NULL END) AS uid_12,\n       MAX(CASE WHEN uid = 13 THEN weight ELSE NULL END) AS uid_13,\n       MAX(CASE WHEN uid = 14 THEN weight ELSE NULL END) AS uid_14,\n       MAX(CASE WHEN uid = 15 THEN weight ELSE NULL END) AS uid_15,\n       MAX(CASE WHEN uid = 16 THEN weight ELSE NULL END) AS uid_16,\n       MAX(CASE WHEN uid = 17 THEN weight ELSE NULL END) AS uid_17,\n       MAX(CASE WHEN uid = 18 THEN weight ELSE NULL END) AS uid_18,\n       MAX(CASE WHEN uid = 19 THEN weight ELSE NULL END) AS uid_19,\n       MAX(CASE WHEN uid = 20 THEN weight ELSE NULL END) AS uid_20,\n       MAX(CASE WHEN uid = 21 THEN weight ELSE NULL END) AS uid_21,\n       MAX(CASE WHEN uid = 22 THEN weight ELSE NULL END) AS uid_22,\n       MAX(CASE WHEN uid = 23 THEN weight ELSE NULL END) AS uid_23,\n       MAX(CASE WHEN uid = 24 THEN weight ELSE NULL END) AS uid_24,\n       MAX(CASE WHEN uid = 25 THEN weight ELSE NULL END) AS uid_25,\n       MAX(CASE WHEN uid = 26 THEN weight ELSE NULL END) AS uid_26,\n       MAX(CASE WHEN uid = 27 THEN weight ELSE NULL END) AS uid_27,\n       MAX(CASE WHEN uid = 28 THEN weight ELSE NULL END) AS uid_28,\n       MAX(CASE WHEN uid = 29 THEN weight ELSE NULL END) AS uid_29,\n       MAX(CASE WHEN uid = 30 THEN weight ELSE NULL END) AS uid_30,\n       MAX(CASE WHEN uid = 31 THEN weight ELSE NULL END) AS uid_31,\n       MAX(CASE WHEN uid = 32 THEN weight ELSE NULL END) AS uid_32,\n       MAX(CASE WHEN uid = 33 THEN weight ELSE NULL END) AS uid_33,\n       MAX(CASE WHEN uid = 34 THEN weight ELSE NULL END) AS uid_34,\n       MAX(CASE WHEN uid = 35 THEN weight ELSE NULL END) AS uid_35,\n       MAX(CASE WHEN uid = 36 THEN weight ELSE NULL END) AS uid_36,\n       MAX(CASE WHEN uid = 37 THEN weight ELSE NULL END) AS uid_37,\n       MAX(CASE WHEN uid = 38 THEN weight ELSE NULL END) AS uid_38,\n       MAX(CASE WHEN uid = 39 THEN weight ELSE NULL END) AS uid_39,\n       MAX(CASE WHEN uid = 40 THEN weight ELSE NULL END) AS uid_40,\n       MAX(CASE WHEN uid = 41 THEN weight ELSE NULL END) AS uid_41,\n       MAX(CASE WHEN uid = 42 THEN weight ELSE NULL END) AS uid_42,\n       MAX(CASE WHEN uid = 43 THEN weight ELSE NULL END) AS uid_43,\n       MAX(CASE WHEN uid = 44 THEN weight ELSE NULL END) AS uid_44,\n       MAX(CASE WHEN uid = 45 THEN weight ELSE NULL END) AS uid_45,\n       MAX(CASE WHEN uid = 46 THEN weight ELSE NULL END) AS uid_46,\n       MAX(CASE WHEN uid = 47 THEN weight ELSE NULL END) AS uid_47,\n       MAX(CASE WHEN uid = 48 THEN weight ELSE NULL END) AS uid_48,\n       MAX(CASE WHEN uid = 49 THEN weight ELSE NULL END) AS uid_49,\n       MAX(CASE WHEN uid = 50 THEN weight ELSE NULL END) AS uid_50,\n       MAX(CASE WHEN uid = 51 THEN weight ELSE NULL END) AS uid_51,\n       MAX(CASE WHEN uid = 52 THEN weight ELSE NULL END) AS uid_52,\n       MAX(CASE WHEN uid = 53 THEN weight ELSE NULL END) AS uid_53,\n       MAX(CASE WHEN uid = 54 THEN weight ELSE NULL END) AS uid_54,\n       MAX(CASE WHEN uid = 55 THEN weight ELSE NULL END) AS uid_55,\n       MAX(CASE WHEN uid = 56 THEN weight ELSE NULL END) AS uid_56,\n       MAX(CASE WHEN uid = 57 THEN weight ELSE NULL END) AS uid_57,\n       MAX(CASE WHEN uid = 58 THEN weight ELSE NULL END) AS uid_58,\n       MAX(CASE WHEN uid = 59 THEN weight ELSE NULL END) AS uid_59,\n       MAX(CASE WHEN uid = 60 THEN weight ELSE NULL END) AS uid_60,\n       MAX(CASE WHEN uid = 61 THEN weight ELSE NULL END) AS uid_61,\n       MAX(CASE WHEN uid = 62 THEN weight ELSE NULL END) AS uid_62,\n       MAX(CASE WHEN uid = 63 THEN weight ELSE NULL END) AS uid_63,\n       MAX(CASE WHEN uid = 64 THEN weight ELSE NULL END) AS uid_64,\n       MAX(CASE WHEN uid = 65 THEN weight ELSE NULL END) AS uid_65,\n       MAX(CASE WHEN uid = 66 THEN weight ELSE NULL END) AS uid_66,\n       MAX(CASE WHEN uid = 67 THEN weight ELSE NULL END) AS uid_67,\n       MAX(CASE WHEN uid = 68 THEN weight ELSE NULL END) AS uid_68,\n       MAX(CASE WHEN uid = 69 THEN weight ELSE NULL END) AS uid_69,\n       MAX(CASE WHEN uid = 70 THEN weight ELSE NULL END) AS uid_70,\n       MAX(CASE WHEN uid = 71 THEN weight ELSE NULL END) AS uid_71,\n       MAX(CASE WHEN uid = 72 THEN weight ELSE NULL END) AS uid_72,\n       MAX(CASE WHEN uid = 73 THEN weight ELSE NULL END) AS uid_73,\n       MAX(CASE WHEN uid = 74 THEN weight ELSE NULL END) AS uid_74,\n       MAX(CASE WHEN uid = 75 THEN weight ELSE NULL END) AS uid_75,\n       MAX(CASE WHEN uid = 76 THEN weight ELSE NULL END) AS uid_76,\n       MAX(CASE WHEN uid = 77 THEN weight ELSE NULL END) AS uid_77,\n       MAX(CASE WHEN uid = 78 THEN weight ELSE NULL END) AS uid_78,\n       MAX(CASE WHEN uid = 79 THEN weight ELSE NULL END) AS uid_79,\n       MAX(CASE WHEN uid = 80 THEN weight ELSE NULL END) AS uid_80,\n       MAX(CASE WHEN uid = 81 THEN weight ELSE NULL END) AS uid_81,\n       MAX(CASE WHEN uid = 82 THEN weight ELSE NULL END) AS uid_82,\n       MAX(CASE WHEN uid = 83 THEN weight ELSE NULL END) AS uid_83,\n       MAX(CASE WHEN uid = 84 THEN weight ELSE NULL END) AS uid_84,\n       MAX(CASE WHEN uid = 85 THEN weight ELSE NULL END) AS uid_85,\n       MAX(CASE WHEN uid = 86 THEN weight ELSE NULL END) AS uid_86,\n       MAX(CASE WHEN uid = 87 THEN weight ELSE NULL END) AS uid_87,\n       MAX(CASE WHEN uid = 88 THEN weight ELSE NULL END) AS uid_88,\n       MAX(CASE WHEN uid = 89 THEN weight ELSE NULL END) AS uid_89,\n       MAX(CASE WHEN uid = 90 THEN weight ELSE NULL END) AS uid_90,\n       MAX(CASE WHEN uid = 91 THEN weight ELSE NULL END) AS uid_91,\n       MAX(CASE WHEN uid = 92 THEN weight ELSE NULL END) AS uid_92,\n       MAX(CASE WHEN uid = 93 THEN weight ELSE NULL END) AS uid_93,\n       MAX(CASE WHEN uid = 94 THEN weight ELSE NULL END) AS uid_94,\n       MAX(CASE WHEN uid = 95 THEN weight ELSE NULL END) AS uid_95,\n       MAX(CASE WHEN uid = 96 THEN weight ELSE NULL END) AS uid_96,\n       MAX(CASE WHEN uid = 97 THEN weight ELSE NULL END) AS uid_97,\n       MAX(CASE WHEN uid = 98 THEN weight ELSE NULL END) AS uid_98,\n       MAX(CASE WHEN uid = 99 THEN weight ELSE NULL END) AS uid_99,\n       MAX(CASE WHEN uid = 100 THEN weight ELSE NULL END) AS uid_100,\n       MAX(CASE WHEN uid = 101 THEN weight ELSE NULL END) AS uid_101,\n       MAX(CASE WHEN uid = 102 THEN weight ELSE NULL END) AS uid_102,\n       MAX(CASE WHEN uid = 103 THEN weight ELSE NULL END) AS uid_103,\n       MAX(CASE WHEN uid = 104 THEN weight ELSE NULL END) AS uid_104,\n       MAX(CASE WHEN uid = 105 THEN weight ELSE NULL END) AS uid_105,\n       MAX(CASE WHEN uid = 106 THEN weight ELSE NULL END) AS uid_106,\n       MAX(CASE WHEN uid = 107 THEN weight ELSE NULL END) AS uid_107,\n       MAX(CASE WHEN uid = 108 THEN weight ELSE NULL END) AS uid_108,\n       MAX(CASE WHEN uid = 109 THEN weight ELSE NULL END) AS uid_109,\n       MAX(CASE WHEN uid = 110 THEN weight ELSE NULL END) AS uid_110,\n       MAX(CASE WHEN uid = 111 THEN weight ELSE NULL END) AS uid_111,\n       MAX(CASE WHEN uid = 112 THEN weight ELSE NULL END) AS uid_112,\n       MAX(CASE WHEN uid = 113 THEN weight ELSE NULL END) AS uid_113,\n       MAX(CASE WHEN uid = 114 THEN weight ELSE NULL END) AS uid_114,\n       MAX(CASE WHEN uid = 115 THEN weight ELSE NULL END) AS uid_115,\n       MAX(CASE WHEN uid = 116 THEN weight ELSE NULL END) AS uid_116,\n       MAX(CASE WHEN uid = 117 THEN weight ELSE NULL END) AS uid_117,\n       MAX(CASE WHEN uid = 118 THEN weight ELSE NULL END) AS uid_118,\n       MAX(CASE WHEN uid = 119 THEN weight ELSE NULL END) AS uid_119,\n       MAX(CASE WHEN uid = 120 THEN weight ELSE NULL END) AS uid_120,\n       MAX(CASE WHEN uid = 121 THEN weight ELSE NULL END) AS uid_121,\n       MAX(CASE WHEN uid = 122 THEN weight ELSE NULL END) AS uid_122,\n       MAX(CASE WHEN uid = 123 THEN weight ELSE NULL END) AS uid_123,\n       MAX(CASE WHEN uid = 124 THEN weight ELSE NULL END) AS uid_124,\n       MAX(CASE WHEN uid = 125 THEN weight ELSE NULL END) AS uid_125,\n       MAX(CASE WHEN uid = 126 THEN weight ELSE NULL END) AS uid_126,\n       MAX(CASE WHEN uid = 127 THEN weight ELSE NULL END) AS uid_127,\n       MAX(CASE WHEN uid = 128 THEN weight ELSE NULL END) AS uid_128,\n       MAX(CASE WHEN uid = 129 THEN weight ELSE NULL END) AS uid_129,\n       MAX(CASE WHEN uid = 130 THEN weight ELSE NULL END) AS uid_130,\n       MAX(CASE WHEN uid = 131 THEN weight ELSE NULL END) AS uid_131,\n       MAX(CASE WHEN uid = 132 THEN weight ELSE NULL END) AS uid_132,\n       MAX(CASE WHEN uid = 133 THEN weight ELSE NULL END) AS uid_133,\n       MAX(CASE WHEN uid = 134 THEN weight ELSE NULL END) AS uid_134,\n       MAX(CASE WHEN uid = 135 THEN weight ELSE NULL END) AS uid_135,\n       MAX(CASE WHEN uid = 136 THEN weight ELSE NULL END) AS uid_136,\n       MAX(CASE WHEN uid = 137 THEN weight ELSE NULL END) AS uid_137,\n       MAX(CASE WHEN uid = 138 THEN weight ELSE NULL END) AS uid_138,\n       MAX(CASE WHEN uid = 139 THEN weight ELSE NULL END) AS uid_139,\n       MAX(CASE WHEN uid = 140 THEN weight ELSE NULL END) AS uid_140,\n       MAX(CASE WHEN uid = 141 THEN weight ELSE NULL END) AS uid_141,\n       MAX(CASE WHEN uid = 142 THEN weight ELSE NULL END) AS uid_142,\n       MAX(CASE WHEN uid = 143 THEN weight ELSE NULL END) AS uid_143,\n       MAX(CASE WHEN uid = 144 THEN weight ELSE NULL END) AS uid_144,\n       MAX(CASE WHEN uid = 145 THEN weight ELSE NULL END) AS uid_145,\n       MAX(CASE WHEN uid = 146 THEN weight ELSE NULL END) AS uid_146,\n       MAX(CASE WHEN uid = 147 THEN weight ELSE NULL END) AS uid_147,\n       MAX(CASE WHEN uid = 148 THEN weight ELSE NULL END) AS uid_148,\n       MAX(CASE WHEN uid = 149 THEN weight ELSE NULL END) AS uid_149,\n       MAX(CASE WHEN uid = 150 THEN weight ELSE NULL END) AS uid_150,\n       MAX(CASE WHEN uid = 151 THEN weight ELSE NULL END) AS uid_151,\n       MAX(CASE WHEN uid = 152 THEN weight ELSE NULL END) AS uid_152,\n       MAX(CASE WHEN uid = 153 THEN weight ELSE NULL END) AS uid_153,\n       MAX(CASE WHEN uid = 154 THEN weight ELSE NULL END) AS uid_154,\n       MAX(CASE WHEN uid = 155 THEN weight ELSE NULL END) AS uid_155,\n       MAX(CASE WHEN uid = 156 THEN weight ELSE NULL END) AS uid_156,\n       MAX(CASE WHEN uid = 157 THEN weight ELSE NULL END) AS uid_157,\n       MAX(CASE WHEN uid = 158 THEN weight ELSE NULL END) AS uid_158,\n       MAX(CASE WHEN uid = 159 THEN weight ELSE NULL END) AS uid_159,\n       MAX(CASE WHEN uid = 160 THEN weight ELSE NULL END) AS uid_160,\n       MAX(CASE WHEN uid = 161 THEN weight ELSE NULL END) AS uid_161,\n       MAX(CASE WHEN uid = 162 THEN weight ELSE NULL END) AS uid_162,\n       MAX(CASE WHEN uid = 163 THEN weight ELSE NULL END) AS uid_163,\n       MAX(CASE WHEN uid = 164 THEN weight ELSE NULL END) AS uid_164,\n       MAX(CASE WHEN uid = 165 THEN weight ELSE NULL END) AS uid_165,\n       MAX(CASE WHEN uid = 166 THEN weight ELSE NULL END) AS uid_166,\n       MAX(CASE WHEN uid = 167 THEN weight ELSE NULL END) AS uid_167,\n       MAX(CASE WHEN uid = 168 THEN weight ELSE NULL END) AS uid_168,\n       MAX(CASE WHEN uid = 169 THEN weight ELSE NULL END) AS uid_169,\n       MAX(CASE WHEN uid = 170 THEN weight ELSE NULL END) AS uid_170,\n       MAX(CASE WHEN uid = 171 THEN weight ELSE NULL END) AS uid_171,\n       MAX(CASE WHEN uid = 172 THEN weight ELSE NULL END) AS uid_172,\n       MAX(CASE WHEN uid = 173 THEN weight ELSE NULL END) AS uid_173,\n       MAX(CASE WHEN uid = 174 THEN weight ELSE NULL END) AS uid_174,\n       MAX(CASE WHEN uid = 175 THEN weight ELSE NULL END) AS uid_175,\n       MAX(CASE WHEN uid = 176 THEN weight ELSE NULL END) AS uid_176,\n       MAX(CASE WHEN uid = 177 THEN weight ELSE NULL END) AS uid_177,\n       MAX(CASE WHEN uid = 178 THEN weight ELSE NULL END) AS uid_178,\n       MAX(CASE WHEN uid = 179 THEN weight ELSE NULL END) AS uid_179,\n       MAX(CASE WHEN uid = 180 THEN weight ELSE NULL END) AS uid_180,\n       MAX(CASE WHEN uid = 181 THEN weight ELSE NULL END) AS uid_181,\n       MAX(CASE WHEN uid = 182 THEN weight ELSE NULL END) AS uid_182,\n       MAX(CASE WHEN uid = 183 THEN weight ELSE NULL END) AS uid_183,\n       MAX(CASE WHEN uid = 184 THEN weight ELSE NULL END) AS uid_184,\n       MAX(CASE WHEN uid = 185 THEN weight ELSE NULL END) AS uid_185,\n       MAX(CASE WHEN uid = 186 THEN weight ELSE NULL END) AS uid_186,\n       MAX(CASE WHEN uid = 187 THEN weight ELSE NULL END) AS uid_187,\n       MAX(CASE WHEN uid = 188 THEN weight ELSE NULL END) AS uid_188,\n       MAX(CASE WHEN uid = 189 THEN weight ELSE NULL END) AS uid_189,\n       MAX(CASE WHEN uid = 190 THEN weight ELSE NULL END) AS uid_190,\n       MAX(CASE WHEN uid = 191 THEN weight ELSE NULL END) AS uid_191,\n       MAX(CASE WHEN uid = 192 THEN weight ELSE NULL END) AS uid_192,\n       MAX(CASE WHEN uid = 193 THEN weight ELSE NULL END) AS uid_193,\n       MAX(CASE WHEN uid = 194 THEN weight ELSE NULL END) AS uid_194,\n       MAX(CASE WHEN uid = 195 THEN weight ELSE NULL END) AS uid_195,\n       MAX(CASE WHEN uid = 196 THEN weight ELSE NULL END) AS uid_196,\n       MAX(CASE WHEN uid = 197 THEN weight ELSE NULL END) AS uid_197,\n       MAX(CASE WHEN uid = 198 THEN weight ELSE NULL END) AS uid_198,\n       MAX(CASE WHEN uid = 199 THEN weight ELSE NULL END) AS uid_199,\n       MAX(CASE WHEN uid = 200 THEN weight ELSE NULL END) AS uid_200,\n       MAX(CASE WHEN uid = 201 THEN weight ELSE NULL END) AS uid_201,\n       MAX(CASE WHEN uid = 202 THEN weight ELSE NULL END) AS uid_202,\n       MAX(CASE WHEN uid = 203 THEN weight ELSE NULL END) AS uid_203,\n       MAX(CASE WHEN uid = 204 THEN weight ELSE NULL END) AS uid_204,\n       MAX(CASE WHEN uid = 205 THEN weight ELSE NULL END) AS uid_205,\n       MAX(CASE WHEN uid = 206 THEN weight ELSE NULL END) AS uid_206,\n       MAX(CASE WHEN uid = 207 THEN weight ELSE NULL END) AS uid_207,\n       MAX(CASE WHEN uid = 208 THEN weight ELSE NULL END) AS uid_208,\n       MAX(CASE WHEN uid = 209 THEN weight ELSE NULL END) AS uid_209,\n       MAX(CASE WHEN uid = 210 THEN weight ELSE NULL END) AS uid_210,\n       MAX(CASE WHEN uid = 211 THEN weight ELSE NULL END) AS uid_211,\n       MAX(CASE WHEN uid = 212 THEN weight ELSE NULL END) AS uid_212,\n       MAX(CASE WHEN uid = 213 THEN weight ELSE NULL END) AS uid_213,\n       MAX(CASE WHEN uid = 214 THEN weight ELSE NULL END) AS uid_214,\n       MAX(CASE WHEN uid = 215 THEN weight ELSE NULL END) AS uid_215,\n       MAX(CASE WHEN uid = 216 THEN weight ELSE NULL END) AS uid_216,\n       MAX(CASE WHEN uid = 217 THEN weight ELSE NULL END) AS uid_217,\n       MAX(CASE WHEN uid = 218 THEN weight ELSE NULL END) AS uid_218,\n       MAX(CASE WHEN uid = 219 THEN weight ELSE NULL END) AS uid_219,\n       MAX(CASE WHEN uid = 220 THEN weight ELSE NULL END) AS uid_220,\n       MAX(CASE WHEN uid = 221 THEN weight ELSE NULL END) AS uid_221,\n       MAX(CASE WHEN uid = 222 THEN weight ELSE NULL END) AS uid_222,\n       MAX(CASE WHEN uid = 223 THEN weight ELSE NULL END) AS uid_223,\n       MAX(CASE WHEN uid = 224 THEN weight ELSE NULL END) AS uid_224,\n       MAX(CASE WHEN uid = 225 THEN weight ELSE NULL END) AS uid_225,\n       MAX(CASE WHEN uid = 226 THEN weight ELSE NULL END) AS uid_226,\n       MAX(CASE WHEN uid = 227 THEN weight ELSE NULL END) AS uid_227,\n       MAX(CASE WHEN uid = 228 THEN weight ELSE NULL END) AS uid_228,\n       MAX(CASE WHEN uid = 229 THEN weight ELSE NULL END) AS uid_229,\n       MAX(CASE WHEN uid = 230 THEN weight ELSE NULL END) AS uid_230,\n       MAX(CASE WHEN uid = 231 THEN weight ELSE NULL END) AS uid_231,\n       MAX(CASE WHEN uid = 232 THEN weight ELSE NULL END) AS uid_232,\n       MAX(CASE WHEN uid = 233 THEN weight ELSE NULL END) AS uid_233,\n       MAX(CASE WHEN uid = 234 THEN weight ELSE NULL END) AS uid_234,\n       MAX(CASE WHEN uid = 235 THEN weight ELSE NULL END) AS uid_235,\n       MAX(CASE WHEN uid = 236 THEN weight ELSE NULL END) AS uid_236,\n       MAX(CASE WHEN uid = 237 THEN weight ELSE NULL END) AS uid_237,\n       MAX(CASE WHEN uid = 238 THEN weight ELSE NULL END) AS uid_238,\n       MAX(CASE WHEN uid = 239 THEN weight ELSE NULL END) AS uid_239,\n       MAX(CASE WHEN uid = 240 THEN weight ELSE NULL END) AS uid_240,\n       MAX(CASE WHEN uid = 241 THEN weight ELSE NULL END) AS uid_241,\n       MAX(CASE WHEN uid = 242 THEN weight ELSE NULL END) AS uid_242,\n       MAX(CASE WHEN uid = 243 THEN weight ELSE NULL END) AS uid_243,\n       MAX(CASE WHEN uid = 244 THEN weight ELSE NULL END) AS uid_244,\n       MAX(CASE WHEN uid = 245 THEN weight ELSE NULL END) AS uid_245,\n       MAX(CASE WHEN uid = 246 THEN weight ELSE NULL END) AS uid_246,\n       MAX(CASE WHEN uid = 247 THEN weight ELSE NULL END) AS uid_247,\n       MAX(CASE WHEN uid = 248 THEN weight ELSE NULL END) AS uid_248,\n       MAX(CASE WHEN uid = 249 THEN weight ELSE NULL END) AS uid_249,\n       MAX(CASE WHEN uid = 250 THEN weight ELSE NULL END) AS uid_250,\n       MAX(CASE WHEN uid = 251 THEN weight ELSE NULL END) AS uid_251,\n       MAX(CASE WHEN uid = 252 THEN weight ELSE NULL END) AS uid_252,\n       MAX(CASE WHEN uid = 253 THEN weight ELSE NULL END) AS uid_253,\n       MAX(CASE WHEN uid = 254 THEN weight ELSE NULL END) AS uid_254,\n       MAX(CASE WHEN uid = 255 THEN weight ELSE NULL END) AS uid_255\nFROM (\n  SELECT b.timestamp AS created_at, mn.uid,\n    (COALESCE(tgt_mm.consensus, 0) - COALESCE(w.weight / NULLIF(src_mm.weights_sum, 0), 0)) AS weight\n  FROM metagraph_neuron vn\n    JOIN metagraph_hotkey vh ON vh.id = vn.hotkey_id\n  JOIN metagraph_weight w ON w.source_neuron_id = vn.id\n    JOIN metagraph_neuron_snapshot src_ns ON src_ns.neuron_id = w.source_neuron_id AND src_ns.block_id = w.block_id\n    JOIN metagraph_mechanism_metrics src_mm ON src_mm.snapshot_id = src_ns.id AND src_mm.mech_id = w.mech_id\n    JOIN metagraph_neuron mn ON mn.id = w.target_neuron_id\n    JOIN metagraph_block b ON b.number = w.block_id AND w.block_id >= (SELECT number FROM metagraph_block WHERE timestamp >= '${__from:date}' ORDER BY timestamp LIMIT 1) AND w.block_id <= (SELECT number FROM metagraph_block WHERE timestamp <= '${__to:date}' ORDER BY timestamp DESC LIMIT 1)\n    JOIN metagraph_neuron_snapshot tgt_ns ON tgt_ns.neuron_id = mn.id AND tgt_ns.block_id = w.block_id\n    LEFT JOIN metagraph_mechanism_metrics tgt_mm ON tgt_mm.snapshot_id = tgt_ns.id AND tgt_mm.mech_id = 0\n  WHERE vn.subnet_id = ${subnet} AND vh.hotkey = '${validator}'\n    AND mn.subnet_id = ${subnet} AND w.mech_id = 0\n    AND w.weight > 0 AND src_mm.weights_sum != 0\n    AND b.timestamp BETWEEN '${__from:date}' AND '${__to:date}'\n  GROUP BY mn.uid, b.timestamp, w.weight, src_mm.weights_sum, tgt_mm.consensus\n) t\nGROUP BY created_at",
+            "refId": "main",
+            "sql": {
+              "columns": [
+                {
+                  "parameters": [],
+                  "type": "function"
+                }
+              ],
+              "groupBy": [
+                {
+                  "property": {
+                    "type": "string"
+                  },
+                  "type": "groupBy"
+                }
+              ],
+              "limit": 50
+            }
+          }
+        ],
+        "title": "Clipping heatmap of ${validator} validator in sn${subnet}",
+        "type": "heatmap"
+      },
+      {
+        "datasource": {
+          "type": "grafana-postgresql-datasource",
+          "uid": "postgresql"
+        },
+        "description": "",
+        "fieldConfig": {
+          "defaults": {
+            "color": {
+              "mode": "palette-classic"
+            },
+            "custom": {
+              "axisBorderShow": false,
+              "axisCenteredZero": false,
+              "axisColorMode": "text",
+              "axisLabel": "",
+              "axisPlacement": "auto",
+              "barAlignment": 0,
+              "barWidthFactor": 0.6,
+              "drawStyle": "line",
+              "fillOpacity": 0,
+              "gradientMode": "none",
+              "hideFrom": {
+                "legend": false,
+                "tooltip": false,
+                "viz": false
+              },
+              "insertNulls": 7200000,
+              "lineInterpolation": "linear",
+              "lineWidth": 1,
+              "pointSize": 5,
+              "scaleDistribution": {
+                "type": "linear"
+              },
+              "showPoints": "always",
+              "spanNulls": false,
+              "stacking": {
+                "group": "A",
+                "mode": "none"
+              },
+              "thresholdsStyle": {
+                "mode": "off"
+              }
+            },
+            "fieldMinMax": false,
+            "mappings": [],
+            "thresholds": {
+              "mode": "absolute",
+              "steps": [
+                {
+                  "color": "green"
+                },
+                {
+                  "color": "red",
+                  "value": 80
+                }
+              ]
+            },
+            "unit": "none"
+          },
+          "overrides": []
+        },
+        "gridPos": {
+          "h": 16,
+          "w": 24,
+          "x": 0,
+          "y": 87
+        },
+        "id": 6,
+        "options": {
+          "legend": {
+            "calcs": [],
+            "displayMode": "list",
+            "placement": "bottom",
+            "showLegend": true
+          },
+          "tooltip": {
+            "mode": "single",
+            "sort": "none"
+          }
+        },
+        "pluginVersion": "11.2.0",
+        "targets": [
+          {
+            "datasource": {
+              "type": "grafana-postgresql-datasource",
+              "uid": "postgresql"
+            },
+            "editorMode": "code",
+            "format": "table",
+            "rawQuery": true,
+            "rawSql": "SELECT bo.bond AS \" \", b.timestamp AS time, mh.hotkey AS miner\nFROM metagraph_neuron vn\n  JOIN metagraph_hotkey vh ON vh.id = vn.hotkey_id\n  JOIN metagraph_bond bo ON bo.source_neuron_id = vn.id AND bo.mech_id = ${mech_id}\n  JOIN metagraph_neuron mn ON mn.id = bo.target_neuron_id\n  JOIN metagraph_hotkey mh ON mh.id = mn.hotkey_id\n  JOIN metagraph_block b ON b.number = bo.block_id AND bo.block_id >= (SELECT number FROM metagraph_block WHERE timestamp >= '${__from:date}' ORDER BY timestamp LIMIT 1) AND bo.block_id <= (SELECT number FROM metagraph_block WHERE timestamp <= '${__to:date}' ORDER BY timestamp DESC LIMIT 1)\nWHERE vn.subnet_id = ${subnet} AND vh.hotkey = '${validator}'\n  AND mn.subnet_id = ${subnet}\n  AND b.timestamp BETWEEN '${__from:date}' AND '${__to:date}'",
+            "refId": "A",
+            "sql": {
+              "columns": [
+                {
+                  "parameters": [],
+                  "type": "function"
+                }
+              ],
+              "groupBy": [
+                {
+                  "property": {
+                    "type": "string"
+                  },
+                  "type": "groupBy"
+                }
+              ],
+              "limit": 50
+            }
+          }
+        ],
+        "title": "Bonds of miners owned by ${validator} on sn${subnet} mechid ${mech_id}",
+        "transformations": [
+          {
+            "id": "prepareTimeSeries",
+            "options": {
+              "format": "multi"
+            }
+          }
+        ],
+        "type": "timeseries"
+      },
+      {
+        "datasource": {
+          "type": "grafana-postgresql-datasource",
+          "uid": "postgresql"
+        },
+        "description": "",
+        "fieldConfig": {
+          "defaults": {
+            "color": {
+              "mode": "palette-classic"
+            },
+            "custom": {
+              "axisBorderShow": false,
+              "axisCenteredZero": false,
+              "axisColorMode": "text",
+              "axisLabel": "",
+              "axisPlacement": "auto",
+              "barAlignment": 0,
+              "barWidthFactor": 0.6,
+              "drawStyle": "line",
+              "fillOpacity": 0,
+              "gradientMode": "none",
+              "hideFrom": {
+                "legend": false,
+                "tooltip": false,
+                "viz": false
+              },
+              "insertNulls": 3600000,
+              "lineInterpolation": "linear",
+              "lineWidth": 1,
+              "pointSize": 3,
+              "scaleDistribution": {
+                "type": "linear"
+              },
+              "showPoints": "always",
+              "spanNulls": 7200000,
+              "stacking": {
+                "group": "A",
+                "mode": "none"
+              },
+              "thresholdsStyle": {
+                "mode": "off"
+              }
+            },
+            "mappings": [],
+            "thresholds": {
+              "mode": "absolute",
+              "steps": [
+                {
+                  "color": "green"
+                }
+              ]
+            }
+          },
+          "overrides": [
+            {
+              "matcher": {
+                "id": "byName",
+                "options": "  5CLpYny5hRM2NFNBAge6cnVC1TmWE8LYWgefuEhjTquLxA9S"
+              },
+              "properties": [
+                {
+                  "id": "custom.lineStyle",
+                  "value": {
+                    "dash": [
+                      10,
+                      10
+                    ],
+                    "fill": "dash"
+                  }
+                },
+                {
+                  "id": "displayName",
+                  "value": "Cabal-5CLpYny"
+                }
+              ]
+            },
+            {
+              "matcher": {
+                "id": "byName",
+                "options": "  5DoWAqN3uRH3es9HJsZB19F1nZcKf4yQKotGimokaNPHtSCv"
+              },
+              "properties": [
+                {
+                  "id": "custom.lineStyle",
+                  "value": {
+                    "dash": [
+                      10,
+                      10
+                    ],
+                    "fill": "dash"
+                  }
+                },
+                {
+                  "id": "displayName",
+                  "value": "Cabal-5DoWAqN"
+                }
+              ]
+            },
+            {
+              "matcher": {
+                "id": "byName",
+                "options": "  5ETzyfe9HUs7onqK4Qxgbur1VMFqnbUDRiAHvripgtFWMHU3"
+              },
+              "properties": [
+                {
+                  "id": "custom.lineStyle",
+                  "value": {
+                    "dash": [
+                      0,
+                      7
+                    ],
+                    "fill": "dot"
+                  }
+                },
+                {
+                  "id": "displayName",
+                  "value": "F-5ETzyfe"
+                },
+                {
+                  "id": "custom.lineWidth",
+                  "value": 2
+                }
+              ]
+            },
+            {
+              "matcher": {
+                "id": "byName",
+                "options": "  5DUcwkd4gQvvLiwVfvySzRdLZSS1zeZ1Uw7bz1mV6oJcF8JF"
+              },
+              "properties": [
+                {
+                  "id": "custom.lineStyle",
+                  "value": {
+                    "dash": [
+                      0,
+                      7
+                    ],
+                    "fill": "dot"
+                  }
+                },
+                {
+                  "id": "displayName",
+                  "value": "F-5DUcwkd"
+                },
+                {
+                  "id": "custom.lineWidth",
+                  "value": 2
+                }
+              ]
+            }
+          ]
+        },
+        "gridPos": {
+          "h": 15,
+          "w": 24,
+          "x": 0,
+          "y": 103
+        },
+        "id": 8,
+        "options": {
+          "legend": {
+            "calcs": [],
+            "displayMode": "list",
+            "placement": "bottom",
+            "showLegend": true
+          },
+          "tooltip": {
+            "mode": "single",
+            "sort": "none"
+          }
+        },
+        "pluginVersion": "11.2.0",
+        "targets": [
+          {
+            "datasource": {
+              "type": "grafana-postgresql-datasource",
+              "uid": "postgresql"
+            },
+            "editorMode": "code",
+            "format": "table",
+            "rawQuery": true,
+            "rawSql": "WITH incentives AS (\n  SELECT b.timestamp AS time, ck.coldkey AS label, SUM(mm.incentive) AS value\n  FROM metagraph_neuron n\n    JOIN metagraph_hotkey h ON h.id = n.hotkey_id\n    JOIN metagraph_coldkey ck ON ck.id = h.coldkey_id\n    JOIN metagraph_neuron_snapshot ns ON ns.neuron_id = n.id\n    JOIN metagraph_block b ON b.number = ns.block_id AND ns.block_id >= (SELECT number FROM metagraph_block WHERE timestamp >= '${__from:date}' ORDER BY timestamp LIMIT 1) AND ns.block_id <= (SELECT number FROM metagraph_block WHERE timestamp <= '${__to:date}' ORDER BY timestamp DESC LIMIT 1)\n    JOIN metagraph_mechanism_metrics mm ON mm.snapshot_id = ns.id AND mm.mech_id = ${mech_id}\n  WHERE n.subnet_id = ${subnet} AND (ns.is_immune OR ns.has_any_weights)\n    AND b.timestamp BETWEEN '${__from:date}' AND '${__to:date}'\n  GROUP BY ck.coldkey, b.timestamp\n),\nweights AS (\n  SELECT b.timestamp AS time, ck.coldkey AS label, SUM(w.weight) AS value\n  FROM metagraph_weight w\n    JOIN metagraph_neuron mn ON mn.id = w.target_neuron_id\n    JOIN metagraph_neuron vn ON vn.id = w.source_neuron_id\n    JOIN metagraph_hotkey mh ON mh.id = mn.hotkey_id\n    JOIN metagraph_coldkey ck ON ck.id = mh.coldkey_id\n    JOIN metagraph_hotkey vh ON vh.id = vn.hotkey_id\n    JOIN metagraph_block b ON b.number = w.block_id AND w.block_id >= (SELECT number FROM metagraph_block WHERE timestamp >= '${__from:date}' ORDER BY timestamp LIMIT 1) AND w.block_id <= (SELECT number FROM metagraph_block WHERE timestamp <= '${__to:date}' ORDER BY timestamp DESC LIMIT 1)\n  WHERE vn.subnet_id = ${subnet} AND vh.hotkey = '${validator}' AND w.mech_id = ${mech_id}\n    AND b.timestamp BETWEEN '${__from:date}' AND '${__to:date}'\n  GROUP BY ck.coldkey, b.timestamp\n)\nSELECT incentives.time, incentives.label,\n  (COALESCE(weights.value, 0) - incentives.value) AS \" \"\nFROM incentives\n  LEFT JOIN weights ON incentives.label = weights.label AND incentives.time = weights.time\nWHERE ABS(COALESCE(weights.value, 0) - incentives.value) > 0.01",
+            "refId": "A",
+            "sql": {
+              "columns": [
+                {
+                  "parameters": [],
+                  "type": "function"
+                }
+              ],
+              "groupBy": [
+                {
+                  "property": {
+                    "type": "string"
+                  },
+                  "type": "groupBy"
+                }
+              ],
+              "limit": 50
+            }
+          }
+        ],
+        "title": "Coldkey total validator ${validator} weights minus total incentives in subnet ${subnet} mechid ${mech_id}",
+        "transformations": [
+          {
+            "id": "prepareTimeSeries",
+            "options": {
+              "format": "multi"
+            }
+          }
+        ],
+        "type": "timeseries"
+      },
+      {
+        "datasource": {
+          "type": "grafana-postgresql-datasource",
+          "uid": "postgresql"
+        },
+        "fieldConfig": {
+          "defaults": {
+            "custom": {
+              "hideFrom": {
+                "legend": false,
+                "tooltip": false,
+                "viz": false
+              },
+              "scaleDistribution": {
+                "type": "linear"
+              }
+            }
+          },
+          "overrides": []
+        },
+        "gridPos": {
+          "h": 16,
+          "w": 24,
+          "x": 0,
+          "y": 118
+        },
+        "id": 7,
+        "options": {
+          "calculate": false,
+          "cellGap": 0,
+          "color": {
+            "exponent": 0.5,
+            "fill": "dark-orange",
+            "min": 1e-06,
+            "mode": "scheme",
+            "reverse": false,
+            "scale": "exponential",
+            "scheme": "Spectral",
+            "steps": 64
+          },
+          "exemplars": {
+            "color": "rgba(255,0,255,0.7)"
+          },
+          "filterValues": {
+            "le": 1e-06
+          },
+          "legend": {
+            "show": true
+          },
+          "rowsFrame": {
+            "layout": "auto"
+          },
+          "tooltip": {
+            "mode": "single",
+            "showColorScale": false,
+            "yHistogram": true
+          },
+          "yAxis": {
+            "axisPlacement": "hidden",
+            "reverse": false
+          }
+        },
+        "pluginVersion": "11.2.0",
+        "targets": [
+          {
+            "datasource": {
+              "type": "grafana-postgresql-datasource",
+              "uid": "postgresql"
+            },
+            "editorMode": "code",
+            "format": "table",
+            "rawQuery": true,
+            "rawSql": "SELECT created_at,\n       MAX(CASE WHEN uid = 0 THEN weight ELSE NULL END) AS uid_0,\n       MAX(CASE WHEN uid = 1 THEN weight ELSE NULL END) AS uid_1,\n       MAX(CASE WHEN uid = 2 THEN weight ELSE NULL END) AS uid_2,\n       MAX(CASE WHEN uid = 3 THEN weight ELSE NULL END) AS uid_3,\n       MAX(CASE WHEN uid = 4 THEN weight ELSE NULL END) AS uid_4,\n       MAX(CASE WHEN uid = 5 THEN weight ELSE NULL END) AS uid_5,\n       MAX(CASE WHEN uid = 6 THEN weight ELSE NULL END) AS uid_6,\n       MAX(CASE WHEN uid = 7 THEN weight ELSE NULL END) AS uid_7,\n       MAX(CASE WHEN uid = 8 THEN weight ELSE NULL END) AS uid_8,\n       MAX(CASE WHEN uid = 9 THEN weight ELSE NULL END) AS uid_9,\n       MAX(CASE WHEN uid = 10 THEN weight ELSE NULL END) AS uid_10,\n       MAX(CASE WHEN uid = 11 THEN weight ELSE NULL END) AS uid_11,\n       MAX(CASE WHEN uid = 12 THEN weight ELSE NULL END) AS uid_12,\n       MAX(CASE WHEN uid = 13 THEN weight ELSE NULL END) AS uid_13,\n       MAX(CASE WHEN uid = 14 THEN weight ELSE NULL END) AS uid_14,\n       MAX(CASE WHEN uid = 15 THEN weight ELSE NULL END) AS uid_15,\n       MAX(CASE WHEN uid = 16 THEN weight ELSE NULL END) AS uid_16,\n       MAX(CASE WHEN uid = 17 THEN weight ELSE NULL END) AS uid_17,\n       MAX(CASE WHEN uid = 18 THEN weight ELSE NULL END) AS uid_18,\n       MAX(CASE WHEN uid = 19 THEN weight ELSE NULL END) AS uid_19,\n       MAX(CASE WHEN uid = 20 THEN weight ELSE NULL END) AS uid_20,\n       MAX(CASE WHEN uid = 21 THEN weight ELSE NULL END) AS uid_21,\n       MAX(CASE WHEN uid = 22 THEN weight ELSE NULL END) AS uid_22,\n       MAX(CASE WHEN uid = 23 THEN weight ELSE NULL END) AS uid_23,\n       MAX(CASE WHEN uid = 24 THEN weight ELSE NULL END) AS uid_24,\n       MAX(CASE WHEN uid = 25 THEN weight ELSE NULL END) AS uid_25,\n       MAX(CASE WHEN uid = 26 THEN weight ELSE NULL END) AS uid_26,\n       MAX(CASE WHEN uid = 27 THEN weight ELSE NULL END) AS uid_27,\n       MAX(CASE WHEN uid = 28 THEN weight ELSE NULL END) AS uid_28,\n       MAX(CASE WHEN uid = 29 THEN weight ELSE NULL END) AS uid_29,\n       MAX(CASE WHEN uid = 30 THEN weight ELSE NULL END) AS uid_30,\n       MAX(CASE WHEN uid = 31 THEN weight ELSE NULL END) AS uid_31,\n       MAX(CASE WHEN uid = 32 THEN weight ELSE NULL END) AS uid_32,\n       MAX(CASE WHEN uid = 33 THEN weight ELSE NULL END) AS uid_33,\n       MAX(CASE WHEN uid = 34 THEN weight ELSE NULL END) AS uid_34,\n       MAX(CASE WHEN uid = 35 THEN weight ELSE NULL END) AS uid_35,\n       MAX(CASE WHEN uid = 36 THEN weight ELSE NULL END) AS uid_36,\n       MAX(CASE WHEN uid = 37 THEN weight ELSE NULL END) AS uid_37,\n       MAX(CASE WHEN uid = 38 THEN weight ELSE NULL END) AS uid_38,\n       MAX(CASE WHEN uid = 39 THEN weight ELSE NULL END) AS uid_39,\n       MAX(CASE WHEN uid = 40 THEN weight ELSE NULL END) AS uid_40,\n       MAX(CASE WHEN uid = 41 THEN weight ELSE NULL END) AS uid_41,\n       MAX(CASE WHEN uid = 42 THEN weight ELSE NULL END) AS uid_42,\n       MAX(CASE WHEN uid = 43 THEN weight ELSE NULL END) AS uid_43,\n       MAX(CASE WHEN uid = 44 THEN weight ELSE NULL END) AS uid_44,\n       MAX(CASE WHEN uid = 45 THEN weight ELSE NULL END) AS uid_45,\n       MAX(CASE WHEN uid = 46 THEN weight ELSE NULL END) AS uid_46,\n       MAX(CASE WHEN uid = 47 THEN weight ELSE NULL END) AS uid_47,\n       MAX(CASE WHEN uid = 48 THEN weight ELSE NULL END) AS uid_48,\n       MAX(CASE WHEN uid = 49 THEN weight ELSE NULL END) AS uid_49,\n       MAX(CASE WHEN uid = 50 THEN weight ELSE NULL END) AS uid_50,\n       MAX(CASE WHEN uid = 51 THEN weight ELSE NULL END) AS uid_51,\n       MAX(CASE WHEN uid = 52 THEN weight ELSE NULL END) AS uid_52,\n       MAX(CASE WHEN uid = 53 THEN weight ELSE NULL END) AS uid_53,\n       MAX(CASE WHEN uid = 54 THEN weight ELSE NULL END) AS uid_54,\n       MAX(CASE WHEN uid = 55 THEN weight ELSE NULL END) AS uid_55,\n       MAX(CASE WHEN uid = 56 THEN weight ELSE NULL END) AS uid_56,\n       MAX(CASE WHEN uid = 57 THEN weight ELSE NULL END) AS uid_57,\n       MAX(CASE WHEN uid = 58 THEN weight ELSE NULL END) AS uid_58,\n       MAX(CASE WHEN uid = 59 THEN weight ELSE NULL END) AS uid_59,\n       MAX(CASE WHEN uid = 60 THEN weight ELSE NULL END) AS uid_60,\n       MAX(CASE WHEN uid = 61 THEN weight ELSE NULL END) AS uid_61,\n       MAX(CASE WHEN uid = 62 THEN weight ELSE NULL END) AS uid_62,\n       MAX(CASE WHEN uid = 63 THEN weight ELSE NULL END) AS uid_63,\n       MAX(CASE WHEN uid = 64 THEN weight ELSE NULL END) AS uid_64,\n       MAX(CASE WHEN uid = 65 THEN weight ELSE NULL END) AS uid_65,\n       MAX(CASE WHEN uid = 66 THEN weight ELSE NULL END) AS uid_66,\n       MAX(CASE WHEN uid = 67 THEN weight ELSE NULL END) AS uid_67,\n       MAX(CASE WHEN uid = 68 THEN weight ELSE NULL END) AS uid_68,\n       MAX(CASE WHEN uid = 69 THEN weight ELSE NULL END) AS uid_69,\n       MAX(CASE WHEN uid = 70 THEN weight ELSE NULL END) AS uid_70,\n       MAX(CASE WHEN uid = 71 THEN weight ELSE NULL END) AS uid_71,\n       MAX(CASE WHEN uid = 72 THEN weight ELSE NULL END) AS uid_72,\n       MAX(CASE WHEN uid = 73 THEN weight ELSE NULL END) AS uid_73,\n       MAX(CASE WHEN uid = 74 THEN weight ELSE NULL END) AS uid_74,\n       MAX(CASE WHEN uid = 75 THEN weight ELSE NULL END) AS uid_75,\n       MAX(CASE WHEN uid = 76 THEN weight ELSE NULL END) AS uid_76,\n       MAX(CASE WHEN uid = 77 THEN weight ELSE NULL END) AS uid_77,\n       MAX(CASE WHEN uid = 78 THEN weight ELSE NULL END) AS uid_78,\n       MAX(CASE WHEN uid = 79 THEN weight ELSE NULL END) AS uid_79,\n       MAX(CASE WHEN uid = 80 THEN weight ELSE NULL END) AS uid_80,\n       MAX(CASE WHEN uid = 81 THEN weight ELSE NULL END) AS uid_81,\n       MAX(CASE WHEN uid = 82 THEN weight ELSE NULL END) AS uid_82,\n       MAX(CASE WHEN uid = 83 THEN weight ELSE NULL END) AS uid_83,\n       MAX(CASE WHEN uid = 84 THEN weight ELSE NULL END) AS uid_84,\n       MAX(CASE WHEN uid = 85 THEN weight ELSE NULL END) AS uid_85,\n       MAX(CASE WHEN uid = 86 THEN weight ELSE NULL END) AS uid_86,\n       MAX(CASE WHEN uid = 87 THEN weight ELSE NULL END) AS uid_87,\n       MAX(CASE WHEN uid = 88 THEN weight ELSE NULL END) AS uid_88,\n       MAX(CASE WHEN uid = 89 THEN weight ELSE NULL END) AS uid_89,\n       MAX(CASE WHEN uid = 90 THEN weight ELSE NULL END) AS uid_90,\n       MAX(CASE WHEN uid = 91 THEN weight ELSE NULL END) AS uid_91,\n       MAX(CASE WHEN uid = 92 THEN weight ELSE NULL END) AS uid_92,\n       MAX(CASE WHEN uid = 93 THEN weight ELSE NULL END) AS uid_93,\n       MAX(CASE WHEN uid = 94 THEN weight ELSE NULL END) AS uid_94,\n       MAX(CASE WHEN uid = 95 THEN weight ELSE NULL END) AS uid_95,\n       MAX(CASE WHEN uid = 96 THEN weight ELSE NULL END) AS uid_96,\n       MAX(CASE WHEN uid = 97 THEN weight ELSE NULL END) AS uid_97,\n       MAX(CASE WHEN uid = 98 THEN weight ELSE NULL END) AS uid_98,\n       MAX(CASE WHEN uid = 99 THEN weight ELSE NULL END) AS uid_99,\n       MAX(CASE WHEN uid = 100 THEN weight ELSE NULL END) AS uid_100,\n       MAX(CASE WHEN uid = 101 THEN weight ELSE NULL END) AS uid_101,\n       MAX(CASE WHEN uid = 102 THEN weight ELSE NULL END) AS uid_102,\n       MAX(CASE WHEN uid = 103 THEN weight ELSE NULL END) AS uid_103,\n       MAX(CASE WHEN uid = 104 THEN weight ELSE NULL END) AS uid_104,\n       MAX(CASE WHEN uid = 105 THEN weight ELSE NULL END) AS uid_105,\n       MAX(CASE WHEN uid = 106 THEN weight ELSE NULL END) AS uid_106,\n       MAX(CASE WHEN uid = 107 THEN weight ELSE NULL END) AS uid_107,\n       MAX(CASE WHEN uid = 108 THEN weight ELSE NULL END) AS uid_108,\n       MAX(CASE WHEN uid = 109 THEN weight ELSE NULL END) AS uid_109,\n       MAX(CASE WHEN uid = 110 THEN weight ELSE NULL END) AS uid_110,\n       MAX(CASE WHEN uid = 111 THEN weight ELSE NULL END) AS uid_111,\n       MAX(CASE WHEN uid = 112 THEN weight ELSE NULL END) AS uid_112,\n       MAX(CASE WHEN uid = 113 THEN weight ELSE NULL END) AS uid_113,\n       MAX(CASE WHEN uid = 114 THEN weight ELSE NULL END) AS uid_114,\n       MAX(CASE WHEN uid = 115 THEN weight ELSE NULL END) AS uid_115,\n       MAX(CASE WHEN uid = 116 THEN weight ELSE NULL END) AS uid_116,\n       MAX(CASE WHEN uid = 117 THEN weight ELSE NULL END) AS uid_117,\n       MAX(CASE WHEN uid = 118 THEN weight ELSE NULL END) AS uid_118,\n       MAX(CASE WHEN uid = 119 THEN weight ELSE NULL END) AS uid_119,\n       MAX(CASE WHEN uid = 120 THEN weight ELSE NULL END) AS uid_120,\n       MAX(CASE WHEN uid = 121 THEN weight ELSE NULL END) AS uid_121,\n       MAX(CASE WHEN uid = 122 THEN weight ELSE NULL END) AS uid_122,\n       MAX(CASE WHEN uid = 123 THEN weight ELSE NULL END) AS uid_123,\n       MAX(CASE WHEN uid = 124 THEN weight ELSE NULL END) AS uid_124,\n       MAX(CASE WHEN uid = 125 THEN weight ELSE NULL END) AS uid_125,\n       MAX(CASE WHEN uid = 126 THEN weight ELSE NULL END) AS uid_126,\n       MAX(CASE WHEN uid = 127 THEN weight ELSE NULL END) AS uid_127,\n       MAX(CASE WHEN uid = 128 THEN weight ELSE NULL END) AS uid_128,\n       MAX(CASE WHEN uid = 129 THEN weight ELSE NULL END) AS uid_129,\n       MAX(CASE WHEN uid = 130 THEN weight ELSE NULL END) AS uid_130,\n       MAX(CASE WHEN uid = 131 THEN weight ELSE NULL END) AS uid_131,\n       MAX(CASE WHEN uid = 132 THEN weight ELSE NULL END) AS uid_132,\n       MAX(CASE WHEN uid = 133 THEN weight ELSE NULL END) AS uid_133,\n       MAX(CASE WHEN uid = 134 THEN weight ELSE NULL END) AS uid_134,\n       MAX(CASE WHEN uid = 135 THEN weight ELSE NULL END) AS uid_135,\n       MAX(CASE WHEN uid = 136 THEN weight ELSE NULL END) AS uid_136,\n       MAX(CASE WHEN uid = 137 THEN weight ELSE NULL END) AS uid_137,\n       MAX(CASE WHEN uid = 138 THEN weight ELSE NULL END) AS uid_138,\n       MAX(CASE WHEN uid = 139 THEN weight ELSE NULL END) AS uid_139,\n       MAX(CASE WHEN uid = 140 THEN weight ELSE NULL END) AS uid_140,\n       MAX(CASE WHEN uid = 141 THEN weight ELSE NULL END) AS uid_141,\n       MAX(CASE WHEN uid = 142 THEN weight ELSE NULL END) AS uid_142,\n       MAX(CASE WHEN uid = 143 THEN weight ELSE NULL END) AS uid_143,\n       MAX(CASE WHEN uid = 144 THEN weight ELSE NULL END) AS uid_144,\n       MAX(CASE WHEN uid = 145 THEN weight ELSE NULL END) AS uid_145,\n       MAX(CASE WHEN uid = 146 THEN weight ELSE NULL END) AS uid_146,\n       MAX(CASE WHEN uid = 147 THEN weight ELSE NULL END) AS uid_147,\n       MAX(CASE WHEN uid = 148 THEN weight ELSE NULL END) AS uid_148,\n       MAX(CASE WHEN uid = 149 THEN weight ELSE NULL END) AS uid_149,\n       MAX(CASE WHEN uid = 150 THEN weight ELSE NULL END) AS uid_150,\n       MAX(CASE WHEN uid = 151 THEN weight ELSE NULL END) AS uid_151,\n       MAX(CASE WHEN uid = 152 THEN weight ELSE NULL END) AS uid_152,\n       MAX(CASE WHEN uid = 153 THEN weight ELSE NULL END) AS uid_153,\n       MAX(CASE WHEN uid = 154 THEN weight ELSE NULL END) AS uid_154,\n       MAX(CASE WHEN uid = 155 THEN weight ELSE NULL END) AS uid_155,\n       MAX(CASE WHEN uid = 156 THEN weight ELSE NULL END) AS uid_156,\n       MAX(CASE WHEN uid = 157 THEN weight ELSE NULL END) AS uid_157,\n       MAX(CASE WHEN uid = 158 THEN weight ELSE NULL END) AS uid_158,\n       MAX(CASE WHEN uid = 159 THEN weight ELSE NULL END) AS uid_159,\n       MAX(CASE WHEN uid = 160 THEN weight ELSE NULL END) AS uid_160,\n       MAX(CASE WHEN uid = 161 THEN weight ELSE NULL END) AS uid_161,\n       MAX(CASE WHEN uid = 162 THEN weight ELSE NULL END) AS uid_162,\n       MAX(CASE WHEN uid = 163 THEN weight ELSE NULL END) AS uid_163,\n       MAX(CASE WHEN uid = 164 THEN weight ELSE NULL END) AS uid_164,\n       MAX(CASE WHEN uid = 165 THEN weight ELSE NULL END) AS uid_165,\n       MAX(CASE WHEN uid = 166 THEN weight ELSE NULL END) AS uid_166,\n       MAX(CASE WHEN uid = 167 THEN weight ELSE NULL END) AS uid_167,\n       MAX(CASE WHEN uid = 168 THEN weight ELSE NULL END) AS uid_168,\n       MAX(CASE WHEN uid = 169 THEN weight ELSE NULL END) AS uid_169,\n       MAX(CASE WHEN uid = 170 THEN weight ELSE NULL END) AS uid_170,\n       MAX(CASE WHEN uid = 171 THEN weight ELSE NULL END) AS uid_171,\n       MAX(CASE WHEN uid = 172 THEN weight ELSE NULL END) AS uid_172,\n       MAX(CASE WHEN uid = 173 THEN weight ELSE NULL END) AS uid_173,\n       MAX(CASE WHEN uid = 174 THEN weight ELSE NULL END) AS uid_174,\n       MAX(CASE WHEN uid = 175 THEN weight ELSE NULL END) AS uid_175,\n       MAX(CASE WHEN uid = 176 THEN weight ELSE NULL END) AS uid_176,\n       MAX(CASE WHEN uid = 177 THEN weight ELSE NULL END) AS uid_177,\n       MAX(CASE WHEN uid = 178 THEN weight ELSE NULL END) AS uid_178,\n       MAX(CASE WHEN uid = 179 THEN weight ELSE NULL END) AS uid_179,\n       MAX(CASE WHEN uid = 180 THEN weight ELSE NULL END) AS uid_180,\n       MAX(CASE WHEN uid = 181 THEN weight ELSE NULL END) AS uid_181,\n       MAX(CASE WHEN uid = 182 THEN weight ELSE NULL END) AS uid_182,\n       MAX(CASE WHEN uid = 183 THEN weight ELSE NULL END) AS uid_183,\n       MAX(CASE WHEN uid = 184 THEN weight ELSE NULL END) AS uid_184,\n       MAX(CASE WHEN uid = 185 THEN weight ELSE NULL END) AS uid_185,\n       MAX(CASE WHEN uid = 186 THEN weight ELSE NULL END) AS uid_186,\n       MAX(CASE WHEN uid = 187 THEN weight ELSE NULL END) AS uid_187,\n       MAX(CASE WHEN uid = 188 THEN weight ELSE NULL END) AS uid_188,\n       MAX(CASE WHEN uid = 189 THEN weight ELSE NULL END) AS uid_189,\n       MAX(CASE WHEN uid = 190 THEN weight ELSE NULL END) AS uid_190,\n       MAX(CASE WHEN uid = 191 THEN weight ELSE NULL END) AS uid_191,\n       MAX(CASE WHEN uid = 192 THEN weight ELSE NULL END) AS uid_192,\n       MAX(CASE WHEN uid = 193 THEN weight ELSE NULL END) AS uid_193,\n       MAX(CASE WHEN uid = 194 THEN weight ELSE NULL END) AS uid_194,\n       MAX(CASE WHEN uid = 195 THEN weight ELSE NULL END) AS uid_195,\n       MAX(CASE WHEN uid = 196 THEN weight ELSE NULL END) AS uid_196,\n       MAX(CASE WHEN uid = 197 THEN weight ELSE NULL END) AS uid_197,\n       MAX(CASE WHEN uid = 198 THEN weight ELSE NULL END) AS uid_198,\n       MAX(CASE WHEN uid = 199 THEN weight ELSE NULL END) AS uid_199,\n       MAX(CASE WHEN uid = 200 THEN weight ELSE NULL END) AS uid_200,\n       MAX(CASE WHEN uid = 201 THEN weight ELSE NULL END) AS uid_201,\n       MAX(CASE WHEN uid = 202 THEN weight ELSE NULL END) AS uid_202,\n       MAX(CASE WHEN uid = 203 THEN weight ELSE NULL END) AS uid_203,\n       MAX(CASE WHEN uid = 204 THEN weight ELSE NULL END) AS uid_204,\n       MAX(CASE WHEN uid = 205 THEN weight ELSE NULL END) AS uid_205,\n       MAX(CASE WHEN uid = 206 THEN weight ELSE NULL END) AS uid_206,\n       MAX(CASE WHEN uid = 207 THEN weight ELSE NULL END) AS uid_207,\n       MAX(CASE WHEN uid = 208 THEN weight ELSE NULL END) AS uid_208,\n       MAX(CASE WHEN uid = 209 THEN weight ELSE NULL END) AS uid_209,\n       MAX(CASE WHEN uid = 210 THEN weight ELSE NULL END) AS uid_210,\n       MAX(CASE WHEN uid = 211 THEN weight ELSE NULL END) AS uid_211,\n       MAX(CASE WHEN uid = 212 THEN weight ELSE NULL END) AS uid_212,\n       MAX(CASE WHEN uid = 213 THEN weight ELSE NULL END) AS uid_213,\n       MAX(CASE WHEN uid = 214 THEN weight ELSE NULL END) AS uid_214,\n       MAX(CASE WHEN uid = 215 THEN weight ELSE NULL END) AS uid_215,\n       MAX(CASE WHEN uid = 216 THEN weight ELSE NULL END) AS uid_216,\n       MAX(CASE WHEN uid = 217 THEN weight ELSE NULL END) AS uid_217,\n       MAX(CASE WHEN uid = 218 THEN weight ELSE NULL END) AS uid_218,\n       MAX(CASE WHEN uid = 219 THEN weight ELSE NULL END) AS uid_219,\n       MAX(CASE WHEN uid = 220 THEN weight ELSE NULL END) AS uid_220,\n       MAX(CASE WHEN uid = 221 THEN weight ELSE NULL END) AS uid_221,\n       MAX(CASE WHEN uid = 222 THEN weight ELSE NULL END) AS uid_222,\n       MAX(CASE WHEN uid = 223 THEN weight ELSE NULL END) AS uid_223,\n       MAX(CASE WHEN uid = 224 THEN weight ELSE NULL END) AS uid_224,\n       MAX(CASE WHEN uid = 225 THEN weight ELSE NULL END) AS uid_225,\n       MAX(CASE WHEN uid = 226 THEN weight ELSE NULL END) AS uid_226,\n       MAX(CASE WHEN uid = 227 THEN weight ELSE NULL END) AS uid_227,\n       MAX(CASE WHEN uid = 228 THEN weight ELSE NULL END) AS uid_228,\n       MAX(CASE WHEN uid = 229 THEN weight ELSE NULL END) AS uid_229,\n       MAX(CASE WHEN uid = 230 THEN weight ELSE NULL END) AS uid_230,\n       MAX(CASE WHEN uid = 231 THEN weight ELSE NULL END) AS uid_231,\n       MAX(CASE WHEN uid = 232 THEN weight ELSE NULL END) AS uid_232,\n       MAX(CASE WHEN uid = 233 THEN weight ELSE NULL END) AS uid_233,\n       MAX(CASE WHEN uid = 234 THEN weight ELSE NULL END) AS uid_234,\n       MAX(CASE WHEN uid = 235 THEN weight ELSE NULL END) AS uid_235,\n       MAX(CASE WHEN uid = 236 THEN weight ELSE NULL END) AS uid_236,\n       MAX(CASE WHEN uid = 237 THEN weight ELSE NULL END) AS uid_237,\n       MAX(CASE WHEN uid = 238 THEN weight ELSE NULL END) AS uid_238,\n       MAX(CASE WHEN uid = 239 THEN weight ELSE NULL END) AS uid_239,\n       MAX(CASE WHEN uid = 240 THEN weight ELSE NULL END) AS uid_240,\n       MAX(CASE WHEN uid = 241 THEN weight ELSE NULL END) AS uid_241,\n       MAX(CASE WHEN uid = 242 THEN weight ELSE NULL END) AS uid_242,\n       MAX(CASE WHEN uid = 243 THEN weight ELSE NULL END) AS uid_243,\n       MAX(CASE WHEN uid = 244 THEN weight ELSE NULL END) AS uid_244,\n       MAX(CASE WHEN uid = 245 THEN weight ELSE NULL END) AS uid_245,\n       MAX(CASE WHEN uid = 246 THEN weight ELSE NULL END) AS uid_246,\n       MAX(CASE WHEN uid = 247 THEN weight ELSE NULL END) AS uid_247,\n       MAX(CASE WHEN uid = 248 THEN weight ELSE NULL END) AS uid_248,\n       MAX(CASE WHEN uid = 249 THEN weight ELSE NULL END) AS uid_249,\n       MAX(CASE WHEN uid = 250 THEN weight ELSE NULL END) AS uid_250,\n       MAX(CASE WHEN uid = 251 THEN weight ELSE NULL END) AS uid_251,\n       MAX(CASE WHEN uid = 252 THEN weight ELSE NULL END) AS uid_252,\n       MAX(CASE WHEN uid = 253 THEN weight ELSE NULL END) AS uid_253,\n       MAX(CASE WHEN uid = 254 THEN weight ELSE NULL END) AS uid_254,\n       MAX(CASE WHEN uid = 255 THEN weight ELSE NULL END) AS uid_255\nFROM (\n  SELECT b.timestamp AS created_at, mn.uid,\n    (w.weight / NULLIF(src_mm.weights_sum, 0)) AS weight\n  FROM metagraph_neuron vn\n    JOIN metagraph_hotkey vh ON vh.id = vn.hotkey_id\n  JOIN metagraph_weight w ON w.source_neuron_id = vn.id\n    JOIN metagraph_neuron_snapshot src_ns ON src_ns.neuron_id = w.source_neuron_id AND src_ns.block_id = w.block_id\n    JOIN metagraph_mechanism_metrics src_mm ON src_mm.snapshot_id = src_ns.id AND src_mm.mech_id = w.mech_id\n    JOIN metagraph_neuron mn ON mn.id = w.target_neuron_id\n    JOIN metagraph_block b ON b.number = w.block_id AND w.block_id >= (SELECT number FROM metagraph_block WHERE timestamp >= '${__from:date}' ORDER BY timestamp LIMIT 1) AND w.block_id <= (SELECT number FROM metagraph_block WHERE timestamp <= '${__to:date}' ORDER BY timestamp DESC LIMIT 1)\n  WHERE vn.subnet_id = ${subnet} AND vh.hotkey = '${validator}'\n    AND w.mech_id = ${mech_id} AND w.weight > 0 AND src_mm.weights_sum != 0\n    AND b.timestamp BETWEEN '${__from:date}' AND '${__to:date}'\n  GROUP BY mn.uid, b.timestamp, w.weight, src_mm.weights_sum\n) t\nGROUP BY created_at",
+            "refId": "main",
+            "sql": {
+              "columns": [
+                {
+                  "parameters": [],
+                  "type": "function"
+                }
+              ],
+              "groupBy": [
+                {
+                  "property": {
+                    "type": "string"
+                  },
+                  "type": "groupBy"
+                }
+              ],
+              "limit": 50
+            }
+          }
+        ],
+        "title": "Weight UID heatmap in sn${subnet} mechid ${mech_id} for validator: ${validator}",
+        "type": "heatmap"
+      },
+      {
+        "datasource": {
+          "type": "grafana-postgresql-datasource",
+          "uid": "postgresql"
+        },
+        "fieldConfig": {
+          "defaults": {
+            "custom": {
+              "hideFrom": {
+                "legend": false,
+                "tooltip": false,
+                "viz": false
+              },
+              "scaleDistribution": {
+                "type": "linear"
+              }
+            }
+          },
+          "overrides": []
+        },
+        "gridPos": {
+          "h": 16,
+          "w": 24,
+          "x": 0,
+          "y": 134
+        },
+        "id": 11,
+        "options": {
+          "calculate": false,
+          "cellGap": 0,
+          "color": {
+            "exponent": 0.5,
+            "fill": "dark-orange",
+            "min": 1e-06,
+            "mode": "scheme",
+            "reverse": false,
+            "scale": "exponential",
+            "scheme": "Rainbow",
+            "steps": 64
+          },
+          "exemplars": {
+            "color": "rgba(255,0,255,0.7)"
+          },
+          "filterValues": {
+            "le": 1e-06
+          },
+          "legend": {
+            "show": true
+          },
+          "rowsFrame": {
+            "layout": "auto"
+          },
+          "tooltip": {
+            "mode": "single",
+            "showColorScale": false,
+            "yHistogram": true
+          },
+          "yAxis": {
+            "axisPlacement": "hidden",
+            "reverse": false
+          }
+        },
+        "pluginVersion": "11.2.0",
+        "targets": [
+          {
+            "datasource": {
+              "type": "grafana-postgresql-datasource",
+              "uid": "postgresql"
+            },
+            "editorMode": "code",
+            "format": "table",
+            "rawQuery": true,
+            "rawSql": "SELECT created_at,\n       MAX(CASE WHEN uid = 0 THEN weight ELSE NULL END) AS uid_0,\n       MAX(CASE WHEN uid = 1 THEN weight ELSE NULL END) AS uid_1,\n       MAX(CASE WHEN uid = 2 THEN weight ELSE NULL END) AS uid_2,\n       MAX(CASE WHEN uid = 3 THEN weight ELSE NULL END) AS uid_3,\n       MAX(CASE WHEN uid = 4 THEN weight ELSE NULL END) AS uid_4,\n       MAX(CASE WHEN uid = 5 THEN weight ELSE NULL END) AS uid_5,\n       MAX(CASE WHEN uid = 6 THEN weight ELSE NULL END) AS uid_6,\n       MAX(CASE WHEN uid = 7 THEN weight ELSE NULL END) AS uid_7,\n       MAX(CASE WHEN uid = 8 THEN weight ELSE NULL END) AS uid_8,\n       MAX(CASE WHEN uid = 9 THEN weight ELSE NULL END) AS uid_9,\n       MAX(CASE WHEN uid = 10 THEN weight ELSE NULL END) AS uid_10,\n       MAX(CASE WHEN uid = 11 THEN weight ELSE NULL END) AS uid_11,\n       MAX(CASE WHEN uid = 12 THEN weight ELSE NULL END) AS uid_12,\n       MAX(CASE WHEN uid = 13 THEN weight ELSE NULL END) AS uid_13,\n       MAX(CASE WHEN uid = 14 THEN weight ELSE NULL END) AS uid_14,\n       MAX(CASE WHEN uid = 15 THEN weight ELSE NULL END) AS uid_15,\n       MAX(CASE WHEN uid = 16 THEN weight ELSE NULL END) AS uid_16,\n       MAX(CASE WHEN uid = 17 THEN weight ELSE NULL END) AS uid_17,\n       MAX(CASE WHEN uid = 18 THEN weight ELSE NULL END) AS uid_18,\n       MAX(CASE WHEN uid = 19 THEN weight ELSE NULL END) AS uid_19,\n       MAX(CASE WHEN uid = 20 THEN weight ELSE NULL END) AS uid_20,\n       MAX(CASE WHEN uid = 21 THEN weight ELSE NULL END) AS uid_21,\n       MAX(CASE WHEN uid = 22 THEN weight ELSE NULL END) AS uid_22,\n       MAX(CASE WHEN uid = 23 THEN weight ELSE NULL END) AS uid_23,\n       MAX(CASE WHEN uid = 24 THEN weight ELSE NULL END) AS uid_24,\n       MAX(CASE WHEN uid = 25 THEN weight ELSE NULL END) AS uid_25,\n       MAX(CASE WHEN uid = 26 THEN weight ELSE NULL END) AS uid_26,\n       MAX(CASE WHEN uid = 27 THEN weight ELSE NULL END) AS uid_27,\n       MAX(CASE WHEN uid = 28 THEN weight ELSE NULL END) AS uid_28,\n       MAX(CASE WHEN uid = 29 THEN weight ELSE NULL END) AS uid_29,\n       MAX(CASE WHEN uid = 30 THEN weight ELSE NULL END) AS uid_30,\n       MAX(CASE WHEN uid = 31 THEN weight ELSE NULL END) AS uid_31,\n       MAX(CASE WHEN uid = 32 THEN weight ELSE NULL END) AS uid_32,\n       MAX(CASE WHEN uid = 33 THEN weight ELSE NULL END) AS uid_33,\n       MAX(CASE WHEN uid = 34 THEN weight ELSE NULL END) AS uid_34,\n       MAX(CASE WHEN uid = 35 THEN weight ELSE NULL END) AS uid_35,\n       MAX(CASE WHEN uid = 36 THEN weight ELSE NULL END) AS uid_36,\n       MAX(CASE WHEN uid = 37 THEN weight ELSE NULL END) AS uid_37,\n       MAX(CASE WHEN uid = 38 THEN weight ELSE NULL END) AS uid_38,\n       MAX(CASE WHEN uid = 39 THEN weight ELSE NULL END) AS uid_39,\n       MAX(CASE WHEN uid = 40 THEN weight ELSE NULL END) AS uid_40,\n       MAX(CASE WHEN uid = 41 THEN weight ELSE NULL END) AS uid_41,\n       MAX(CASE WHEN uid = 42 THEN weight ELSE NULL END) AS uid_42,\n       MAX(CASE WHEN uid = 43 THEN weight ELSE NULL END) AS uid_43,\n       MAX(CASE WHEN uid = 44 THEN weight ELSE NULL END) AS uid_44,\n       MAX(CASE WHEN uid = 45 THEN weight ELSE NULL END) AS uid_45,\n       MAX(CASE WHEN uid = 46 THEN weight ELSE NULL END) AS uid_46,\n       MAX(CASE WHEN uid = 47 THEN weight ELSE NULL END) AS uid_47,\n       MAX(CASE WHEN uid = 48 THEN weight ELSE NULL END) AS uid_48,\n       MAX(CASE WHEN uid = 49 THEN weight ELSE NULL END) AS uid_49,\n       MAX(CASE WHEN uid = 50 THEN weight ELSE NULL END) AS uid_50,\n       MAX(CASE WHEN uid = 51 THEN weight ELSE NULL END) AS uid_51,\n       MAX(CASE WHEN uid = 52 THEN weight ELSE NULL END) AS uid_52,\n       MAX(CASE WHEN uid = 53 THEN weight ELSE NULL END) AS uid_53,\n       MAX(CASE WHEN uid = 54 THEN weight ELSE NULL END) AS uid_54,\n       MAX(CASE WHEN uid = 55 THEN weight ELSE NULL END) AS uid_55,\n       MAX(CASE WHEN uid = 56 THEN weight ELSE NULL END) AS uid_56,\n       MAX(CASE WHEN uid = 57 THEN weight ELSE NULL END) AS uid_57,\n       MAX(CASE WHEN uid = 58 THEN weight ELSE NULL END) AS uid_58,\n       MAX(CASE WHEN uid = 59 THEN weight ELSE NULL END) AS uid_59,\n       MAX(CASE WHEN uid = 60 THEN weight ELSE NULL END) AS uid_60,\n       MAX(CASE WHEN uid = 61 THEN weight ELSE NULL END) AS uid_61,\n       MAX(CASE WHEN uid = 62 THEN weight ELSE NULL END) AS uid_62,\n       MAX(CASE WHEN uid = 63 THEN weight ELSE NULL END) AS uid_63,\n       MAX(CASE WHEN uid = 64 THEN weight ELSE NULL END) AS uid_64,\n       MAX(CASE WHEN uid = 65 THEN weight ELSE NULL END) AS uid_65,\n       MAX(CASE WHEN uid = 66 THEN weight ELSE NULL END) AS uid_66,\n       MAX(CASE WHEN uid = 67 THEN weight ELSE NULL END) AS uid_67,\n       MAX(CASE WHEN uid = 68 THEN weight ELSE NULL END) AS uid_68,\n       MAX(CASE WHEN uid = 69 THEN weight ELSE NULL END) AS uid_69,\n       MAX(CASE WHEN uid = 70 THEN weight ELSE NULL END) AS uid_70,\n       MAX(CASE WHEN uid = 71 THEN weight ELSE NULL END) AS uid_71,\n       MAX(CASE WHEN uid = 72 THEN weight ELSE NULL END) AS uid_72,\n       MAX(CASE WHEN uid = 73 THEN weight ELSE NULL END) AS uid_73,\n       MAX(CASE WHEN uid = 74 THEN weight ELSE NULL END) AS uid_74,\n       MAX(CASE WHEN uid = 75 THEN weight ELSE NULL END) AS uid_75,\n       MAX(CASE WHEN uid = 76 THEN weight ELSE NULL END) AS uid_76,\n       MAX(CASE WHEN uid = 77 THEN weight ELSE NULL END) AS uid_77,\n       MAX(CASE WHEN uid = 78 THEN weight ELSE NULL END) AS uid_78,\n       MAX(CASE WHEN uid = 79 THEN weight ELSE NULL END) AS uid_79,\n       MAX(CASE WHEN uid = 80 THEN weight ELSE NULL END) AS uid_80,\n       MAX(CASE WHEN uid = 81 THEN weight ELSE NULL END) AS uid_81,\n       MAX(CASE WHEN uid = 82 THEN weight ELSE NULL END) AS uid_82,\n       MAX(CASE WHEN uid = 83 THEN weight ELSE NULL END) AS uid_83,\n       MAX(CASE WHEN uid = 84 THEN weight ELSE NULL END) AS uid_84,\n       MAX(CASE WHEN uid = 85 THEN weight ELSE NULL END) AS uid_85,\n       MAX(CASE WHEN uid = 86 THEN weight ELSE NULL END) AS uid_86,\n       MAX(CASE WHEN uid = 87 THEN weight ELSE NULL END) AS uid_87,\n       MAX(CASE WHEN uid = 88 THEN weight ELSE NULL END) AS uid_88,\n       MAX(CASE WHEN uid = 89 THEN weight ELSE NULL END) AS uid_89,\n       MAX(CASE WHEN uid = 90 THEN weight ELSE NULL END) AS uid_90,\n       MAX(CASE WHEN uid = 91 THEN weight ELSE NULL END) AS uid_91,\n       MAX(CASE WHEN uid = 92 THEN weight ELSE NULL END) AS uid_92,\n       MAX(CASE WHEN uid = 93 THEN weight ELSE NULL END) AS uid_93,\n       MAX(CASE WHEN uid = 94 THEN weight ELSE NULL END) AS uid_94,\n       MAX(CASE WHEN uid = 95 THEN weight ELSE NULL END) AS uid_95,\n       MAX(CASE WHEN uid = 96 THEN weight ELSE NULL END) AS uid_96,\n       MAX(CASE WHEN uid = 97 THEN weight ELSE NULL END) AS uid_97,\n       MAX(CASE WHEN uid = 98 THEN weight ELSE NULL END) AS uid_98,\n       MAX(CASE WHEN uid = 99 THEN weight ELSE NULL END) AS uid_99,\n       MAX(CASE WHEN uid = 100 THEN weight ELSE NULL END) AS uid_100,\n       MAX(CASE WHEN uid = 101 THEN weight ELSE NULL END) AS uid_101,\n       MAX(CASE WHEN uid = 102 THEN weight ELSE NULL END) AS uid_102,\n       MAX(CASE WHEN uid = 103 THEN weight ELSE NULL END) AS uid_103,\n       MAX(CASE WHEN uid = 104 THEN weight ELSE NULL END) AS uid_104,\n       MAX(CASE WHEN uid = 105 THEN weight ELSE NULL END) AS uid_105,\n       MAX(CASE WHEN uid = 106 THEN weight ELSE NULL END) AS uid_106,\n       MAX(CASE WHEN uid = 107 THEN weight ELSE NULL END) AS uid_107,\n       MAX(CASE WHEN uid = 108 THEN weight ELSE NULL END) AS uid_108,\n       MAX(CASE WHEN uid = 109 THEN weight ELSE NULL END) AS uid_109,\n       MAX(CASE WHEN uid = 110 THEN weight ELSE NULL END) AS uid_110,\n       MAX(CASE WHEN uid = 111 THEN weight ELSE NULL END) AS uid_111,\n       MAX(CASE WHEN uid = 112 THEN weight ELSE NULL END) AS uid_112,\n       MAX(CASE WHEN uid = 113 THEN weight ELSE NULL END) AS uid_113,\n       MAX(CASE WHEN uid = 114 THEN weight ELSE NULL END) AS uid_114,\n       MAX(CASE WHEN uid = 115 THEN weight ELSE NULL END) AS uid_115,\n       MAX(CASE WHEN uid = 116 THEN weight ELSE NULL END) AS uid_116,\n       MAX(CASE WHEN uid = 117 THEN weight ELSE NULL END) AS uid_117,\n       MAX(CASE WHEN uid = 118 THEN weight ELSE NULL END) AS uid_118,\n       MAX(CASE WHEN uid = 119 THEN weight ELSE NULL END) AS uid_119,\n       MAX(CASE WHEN uid = 120 THEN weight ELSE NULL END) AS uid_120,\n       MAX(CASE WHEN uid = 121 THEN weight ELSE NULL END) AS uid_121,\n       MAX(CASE WHEN uid = 122 THEN weight ELSE NULL END) AS uid_122,\n       MAX(CASE WHEN uid = 123 THEN weight ELSE NULL END) AS uid_123,\n       MAX(CASE WHEN uid = 124 THEN weight ELSE NULL END) AS uid_124,\n       MAX(CASE WHEN uid = 125 THEN weight ELSE NULL END) AS uid_125,\n       MAX(CASE WHEN uid = 126 THEN weight ELSE NULL END) AS uid_126,\n       MAX(CASE WHEN uid = 127 THEN weight ELSE NULL END) AS uid_127,\n       MAX(CASE WHEN uid = 128 THEN weight ELSE NULL END) AS uid_128,\n       MAX(CASE WHEN uid = 129 THEN weight ELSE NULL END) AS uid_129,\n       MAX(CASE WHEN uid = 130 THEN weight ELSE NULL END) AS uid_130,\n       MAX(CASE WHEN uid = 131 THEN weight ELSE NULL END) AS uid_131,\n       MAX(CASE WHEN uid = 132 THEN weight ELSE NULL END) AS uid_132,\n       MAX(CASE WHEN uid = 133 THEN weight ELSE NULL END) AS uid_133,\n       MAX(CASE WHEN uid = 134 THEN weight ELSE NULL END) AS uid_134,\n       MAX(CASE WHEN uid = 135 THEN weight ELSE NULL END) AS uid_135,\n       MAX(CASE WHEN uid = 136 THEN weight ELSE NULL END) AS uid_136,\n       MAX(CASE WHEN uid = 137 THEN weight ELSE NULL END) AS uid_137,\n       MAX(CASE WHEN uid = 138 THEN weight ELSE NULL END) AS uid_138,\n       MAX(CASE WHEN uid = 139 THEN weight ELSE NULL END) AS uid_139,\n       MAX(CASE WHEN uid = 140 THEN weight ELSE NULL END) AS uid_140,\n       MAX(CASE WHEN uid = 141 THEN weight ELSE NULL END) AS uid_141,\n       MAX(CASE WHEN uid = 142 THEN weight ELSE NULL END) AS uid_142,\n       MAX(CASE WHEN uid = 143 THEN weight ELSE NULL END) AS uid_143,\n       MAX(CASE WHEN uid = 144 THEN weight ELSE NULL END) AS uid_144,\n       MAX(CASE WHEN uid = 145 THEN weight ELSE NULL END) AS uid_145,\n       MAX(CASE WHEN uid = 146 THEN weight ELSE NULL END) AS uid_146,\n       MAX(CASE WHEN uid = 147 THEN weight ELSE NULL END) AS uid_147,\n       MAX(CASE WHEN uid = 148 THEN weight ELSE NULL END) AS uid_148,\n       MAX(CASE WHEN uid = 149 THEN weight ELSE NULL END) AS uid_149,\n       MAX(CASE WHEN uid = 150 THEN weight ELSE NULL END) AS uid_150,\n       MAX(CASE WHEN uid = 151 THEN weight ELSE NULL END) AS uid_151,\n       MAX(CASE WHEN uid = 152 THEN weight ELSE NULL END) AS uid_152,\n       MAX(CASE WHEN uid = 153 THEN weight ELSE NULL END) AS uid_153,\n       MAX(CASE WHEN uid = 154 THEN weight ELSE NULL END) AS uid_154,\n       MAX(CASE WHEN uid = 155 THEN weight ELSE NULL END) AS uid_155,\n       MAX(CASE WHEN uid = 156 THEN weight ELSE NULL END) AS uid_156,\n       MAX(CASE WHEN uid = 157 THEN weight ELSE NULL END) AS uid_157,\n       MAX(CASE WHEN uid = 158 THEN weight ELSE NULL END) AS uid_158,\n       MAX(CASE WHEN uid = 159 THEN weight ELSE NULL END) AS uid_159,\n       MAX(CASE WHEN uid = 160 THEN weight ELSE NULL END) AS uid_160,\n       MAX(CASE WHEN uid = 161 THEN weight ELSE NULL END) AS uid_161,\n       MAX(CASE WHEN uid = 162 THEN weight ELSE NULL END) AS uid_162,\n       MAX(CASE WHEN uid = 163 THEN weight ELSE NULL END) AS uid_163,\n       MAX(CASE WHEN uid = 164 THEN weight ELSE NULL END) AS uid_164,\n       MAX(CASE WHEN uid = 165 THEN weight ELSE NULL END) AS uid_165,\n       MAX(CASE WHEN uid = 166 THEN weight ELSE NULL END) AS uid_166,\n       MAX(CASE WHEN uid = 167 THEN weight ELSE NULL END) AS uid_167,\n       MAX(CASE WHEN uid = 168 THEN weight ELSE NULL END) AS uid_168,\n       MAX(CASE WHEN uid = 169 THEN weight ELSE NULL END) AS uid_169,\n       MAX(CASE WHEN uid = 170 THEN weight ELSE NULL END) AS uid_170,\n       MAX(CASE WHEN uid = 171 THEN weight ELSE NULL END) AS uid_171,\n       MAX(CASE WHEN uid = 172 THEN weight ELSE NULL END) AS uid_172,\n       MAX(CASE WHEN uid = 173 THEN weight ELSE NULL END) AS uid_173,\n       MAX(CASE WHEN uid = 174 THEN weight ELSE NULL END) AS uid_174,\n       MAX(CASE WHEN uid = 175 THEN weight ELSE NULL END) AS uid_175,\n       MAX(CASE WHEN uid = 176 THEN weight ELSE NULL END) AS uid_176,\n       MAX(CASE WHEN uid = 177 THEN weight ELSE NULL END) AS uid_177,\n       MAX(CASE WHEN uid = 178 THEN weight ELSE NULL END) AS uid_178,\n       MAX(CASE WHEN uid = 179 THEN weight ELSE NULL END) AS uid_179,\n       MAX(CASE WHEN uid = 180 THEN weight ELSE NULL END) AS uid_180,\n       MAX(CASE WHEN uid = 181 THEN weight ELSE NULL END) AS uid_181,\n       MAX(CASE WHEN uid = 182 THEN weight ELSE NULL END) AS uid_182,\n       MAX(CASE WHEN uid = 183 THEN weight ELSE NULL END) AS uid_183,\n       MAX(CASE WHEN uid = 184 THEN weight ELSE NULL END) AS uid_184,\n       MAX(CASE WHEN uid = 185 THEN weight ELSE NULL END) AS uid_185,\n       MAX(CASE WHEN uid = 186 THEN weight ELSE NULL END) AS uid_186,\n       MAX(CASE WHEN uid = 187 THEN weight ELSE NULL END) AS uid_187,\n       MAX(CASE WHEN uid = 188 THEN weight ELSE NULL END) AS uid_188,\n       MAX(CASE WHEN uid = 189 THEN weight ELSE NULL END) AS uid_189,\n       MAX(CASE WHEN uid = 190 THEN weight ELSE NULL END) AS uid_190,\n       MAX(CASE WHEN uid = 191 THEN weight ELSE NULL END) AS uid_191,\n       MAX(CASE WHEN uid = 192 THEN weight ELSE NULL END) AS uid_192,\n       MAX(CASE WHEN uid = 193 THEN weight ELSE NULL END) AS uid_193,\n       MAX(CASE WHEN uid = 194 THEN weight ELSE NULL END) AS uid_194,\n       MAX(CASE WHEN uid = 195 THEN weight ELSE NULL END) AS uid_195,\n       MAX(CASE WHEN uid = 196 THEN weight ELSE NULL END) AS uid_196,\n       MAX(CASE WHEN uid = 197 THEN weight ELSE NULL END) AS uid_197,\n       MAX(CASE WHEN uid = 198 THEN weight ELSE NULL END) AS uid_198,\n       MAX(CASE WHEN uid = 199 THEN weight ELSE NULL END) AS uid_199,\n       MAX(CASE WHEN uid = 200 THEN weight ELSE NULL END) AS uid_200,\n       MAX(CASE WHEN uid = 201 THEN weight ELSE NULL END) AS uid_201,\n       MAX(CASE WHEN uid = 202 THEN weight ELSE NULL END) AS uid_202,\n       MAX(CASE WHEN uid = 203 THEN weight ELSE NULL END) AS uid_203,\n       MAX(CASE WHEN uid = 204 THEN weight ELSE NULL END) AS uid_204,\n       MAX(CASE WHEN uid = 205 THEN weight ELSE NULL END) AS uid_205,\n       MAX(CASE WHEN uid = 206 THEN weight ELSE NULL END) AS uid_206,\n       MAX(CASE WHEN uid = 207 THEN weight ELSE NULL END) AS uid_207,\n       MAX(CASE WHEN uid = 208 THEN weight ELSE NULL END) AS uid_208,\n       MAX(CASE WHEN uid = 209 THEN weight ELSE NULL END) AS uid_209,\n       MAX(CASE WHEN uid = 210 THEN weight ELSE NULL END) AS uid_210,\n       MAX(CASE WHEN uid = 211 THEN weight ELSE NULL END) AS uid_211,\n       MAX(CASE WHEN uid = 212 THEN weight ELSE NULL END) AS uid_212,\n       MAX(CASE WHEN uid = 213 THEN weight ELSE NULL END) AS uid_213,\n       MAX(CASE WHEN uid = 214 THEN weight ELSE NULL END) AS uid_214,\n       MAX(CASE WHEN uid = 215 THEN weight ELSE NULL END) AS uid_215,\n       MAX(CASE WHEN uid = 216 THEN weight ELSE NULL END) AS uid_216,\n       MAX(CASE WHEN uid = 217 THEN weight ELSE NULL END) AS uid_217,\n       MAX(CASE WHEN uid = 218 THEN weight ELSE NULL END) AS uid_218,\n       MAX(CASE WHEN uid = 219 THEN weight ELSE NULL END) AS uid_219,\n       MAX(CASE WHEN uid = 220 THEN weight ELSE NULL END) AS uid_220,\n       MAX(CASE WHEN uid = 221 THEN weight ELSE NULL END) AS uid_221,\n       MAX(CASE WHEN uid = 222 THEN weight ELSE NULL END) AS uid_222,\n       MAX(CASE WHEN uid = 223 THEN weight ELSE NULL END) AS uid_223,\n       MAX(CASE WHEN uid = 224 THEN weight ELSE NULL END) AS uid_224,\n       MAX(CASE WHEN uid = 225 THEN weight ELSE NULL END) AS uid_225,\n       MAX(CASE WHEN uid = 226 THEN weight ELSE NULL END) AS uid_226,\n       MAX(CASE WHEN uid = 227 THEN weight ELSE NULL END) AS uid_227,\n       MAX(CASE WHEN uid = 228 THEN weight ELSE NULL END) AS uid_228,\n       MAX(CASE WHEN uid = 229 THEN weight ELSE NULL END) AS uid_229,\n       MAX(CASE WHEN uid = 230 THEN weight ELSE NULL END) AS uid_230,\n       MAX(CASE WHEN uid = 231 THEN weight ELSE NULL END) AS uid_231,\n       MAX(CASE WHEN uid = 232 THEN weight ELSE NULL END) AS uid_232,\n       MAX(CASE WHEN uid = 233 THEN weight ELSE NULL END) AS uid_233,\n       MAX(CASE WHEN uid = 234 THEN weight ELSE NULL END) AS uid_234,\n       MAX(CASE WHEN uid = 235 THEN weight ELSE NULL END) AS uid_235,\n       MAX(CASE WHEN uid = 236 THEN weight ELSE NULL END) AS uid_236,\n       MAX(CASE WHEN uid = 237 THEN weight ELSE NULL END) AS uid_237,\n       MAX(CASE WHEN uid = 238 THEN weight ELSE NULL END) AS uid_238,\n       MAX(CASE WHEN uid = 239 THEN weight ELSE NULL END) AS uid_239,\n       MAX(CASE WHEN uid = 240 THEN weight ELSE NULL END) AS uid_240,\n       MAX(CASE WHEN uid = 241 THEN weight ELSE NULL END) AS uid_241,\n       MAX(CASE WHEN uid = 242 THEN weight ELSE NULL END) AS uid_242,\n       MAX(CASE WHEN uid = 243 THEN weight ELSE NULL END) AS uid_243,\n       MAX(CASE WHEN uid = 244 THEN weight ELSE NULL END) AS uid_244,\n       MAX(CASE WHEN uid = 245 THEN weight ELSE NULL END) AS uid_245,\n       MAX(CASE WHEN uid = 246 THEN weight ELSE NULL END) AS uid_246,\n       MAX(CASE WHEN uid = 247 THEN weight ELSE NULL END) AS uid_247,\n       MAX(CASE WHEN uid = 248 THEN weight ELSE NULL END) AS uid_248,\n       MAX(CASE WHEN uid = 249 THEN weight ELSE NULL END) AS uid_249,\n       MAX(CASE WHEN uid = 250 THEN weight ELSE NULL END) AS uid_250,\n       MAX(CASE WHEN uid = 251 THEN weight ELSE NULL END) AS uid_251,\n       MAX(CASE WHEN uid = 252 THEN weight ELSE NULL END) AS uid_252,\n       MAX(CASE WHEN uid = 253 THEN weight ELSE NULL END) AS uid_253,\n       MAX(CASE WHEN uid = 254 THEN weight ELSE NULL END) AS uid_254,\n       MAX(CASE WHEN uid = 255 THEN weight ELSE NULL END) AS uid_255\nFROM (\n  SELECT b.timestamp AS created_at, mn.uid,\n    ((w.weight / NULLIF(src_mm.weights_sum, 0)) - tgt_mm.consensus) AS weight\n  FROM metagraph_neuron vn\n    JOIN metagraph_hotkey vh ON vh.id = vn.hotkey_id\n  JOIN metagraph_weight w ON w.source_neuron_id = vn.id\n    JOIN metagraph_neuron_snapshot src_ns ON src_ns.neuron_id = w.source_neuron_id AND src_ns.block_id = w.block_id\n    JOIN metagraph_mechanism_metrics src_mm ON src_mm.snapshot_id = src_ns.id AND src_mm.mech_id = w.mech_id\n    JOIN metagraph_neuron mn ON mn.id = w.target_neuron_id\n    JOIN metagraph_block b ON b.number = w.block_id AND w.block_id >= (SELECT number FROM metagraph_block WHERE timestamp >= '${__from:date}' ORDER BY timestamp LIMIT 1) AND w.block_id <= (SELECT number FROM metagraph_block WHERE timestamp <= '${__to:date}' ORDER BY timestamp DESC LIMIT 1)\n    JOIN metagraph_neuron_snapshot tgt_ns ON tgt_ns.neuron_id = mn.id AND tgt_ns.block_id = w.block_id\n    LEFT JOIN metagraph_mechanism_metrics tgt_mm ON tgt_mm.snapshot_id = tgt_ns.id AND tgt_mm.mech_id = 0\n  WHERE vn.subnet_id = ${subnet} AND vh.hotkey = '${validator}'\n    AND w.weight > 0 AND src_mm.weights_sum != 0\n    AND b.timestamp BETWEEN '${__from:date}' AND '${__to:date}'\n  GROUP BY mn.uid, b.timestamp, w.weight, src_mm.weights_sum, tgt_mm.consensus\n) t\nGROUP BY created_at",
+            "refId": "main",
+            "sql": {
+              "columns": [
+                {
+                  "parameters": [],
+                  "type": "function"
+                }
+              ],
+              "groupBy": [
+                {
+                  "property": {
+                    "type": "string"
+                  },
+                  "type": "groupBy"
+                }
+              ],
+              "limit": 50
+            }
+          }
+        ],
+        "title": "Clipping heatmap in sn${subnet} mechid ${mech_id} for validator: ${validator}",
+        "type": "heatmap"
+      }
+    ],
+    "preload": false,
+    "refresh": false,
+    "schemaVersion": 39,
+    "tags": [],
+    "templating": {
+      "list": [
+        {
+          "allValue": "'-1'",
+          "current": {
+            "text": "12 - Compute Horde",
+            "value": "12"
+          },
+          "datasource": {
+            "type": "grafana-postgresql-datasource",
+            "uid": "postgresql"
+          },
+          "definition": "-- id=var.subnet\nSELECT CONCAT(netuid, ' - ', name) AS subnet\nFROM metagraph_subnet\nWHERE netuid != 0\nORDER BY netuid",
+          "description": "subnet",
+          "includeAll": true,
+          "label": "subnet",
+          "name": "subnet",
+          "options": [],
+          "query": "-- id=var.subnet\nSELECT CONCAT(netuid, ' - ', name) AS subnet\nFROM metagraph_subnet\nWHERE netuid != 0\nORDER BY netuid",
+          "refresh": 1,
+          "regex": "/^(?<text>(?<value>\\w+).*)/",
+          "type": "query"
+        },
+        {
+          "current": {
+            "text": "0",
+            "value": "0"
+          },
+          "datasource": {
+            "type": "grafana-postgresql-datasource",
+            "uid": "postgresql"
+          },
+          "definition": "SELECT DISTINCT mm.mech_id\nFROM metagraph_mechanism_metrics mm\n  JOIN metagraph_neuron_snapshot ns ON ns.id = mm.snapshot_id\n  JOIN metagraph_neuron n ON n.id = ns.neuron_id\n  JOIN metagraph_block b ON b.number = ns.block_id AND ns.block_id >= (SELECT number FROM metagraph_block WHERE timestamp >= '${__from:date}' ORDER BY timestamp LIMIT 1) AND ns.block_id <= (SELECT number FROM metagraph_block WHERE timestamp <= '${__to:date}' ORDER BY timestamp DESC LIMIT 1)\nWHERE n.subnet_id = ${subnet}\n  AND b.timestamp BETWEEN '${__from:date}' AND '${__to:date}'\nORDER BY mm.mech_id;",
+          "label": "mech_id",
+          "name": "mech_id",
+          "options": [],
+          "query": "SELECT DISTINCT mm.mech_id\nFROM metagraph_mechanism_metrics mm\n  JOIN metagraph_neuron_snapshot ns ON ns.id = mm.snapshot_id\n  JOIN metagraph_neuron n ON n.id = ns.neuron_id\n  JOIN metagraph_block b ON b.number = ns.block_id AND ns.block_id >= (SELECT number FROM metagraph_block WHERE timestamp >= '${__from:date}' ORDER BY timestamp LIMIT 1) AND ns.block_id <= (SELECT number FROM metagraph_block WHERE timestamp <= '${__to:date}' ORDER BY timestamp DESC LIMIT 1)\nWHERE n.subnet_id = ${subnet}\n  AND b.timestamp BETWEEN '${__from:date}' AND '${__to:date}'\nORDER BY mm.mech_id;",
+          "refresh": 2,
+          "regex": "",
+          "type": "query"
+        },
+        {
+          "current": {
+            "text": "Owner12",
+            "value": "5Hjbf5s2Cb4xuYGLKUGVEkwQrMpSMYvnatJxVenMnjodtEKi"
+          },
+          "datasource": {
+            "type": "grafana-postgresql-datasource",
+            "uid": "postgresql"
+          },
+          "definition": "-- id=var.validator\nSELECT CONCAT(\n  TO_CHAR(MAX(ns.total_stake / 1e9), 'fm00000000'), '.',\n  TO_CHAR(MAX(ns.block_id), 'fm00000000'), '----',\n  COALESCE(NULLIF(h.label, ''), CONCAT(h.hotkey, ' @ ', MAX(ns.total_stake / 1e9))), '----',\n  h.hotkey\n)\nFROM metagraph_neuron n\n  JOIN metagraph_hotkey h ON h.id = n.hotkey_id\n  JOIN metagraph_neuron_snapshot ns ON ns.neuron_id = n.id\n  JOIN metagraph_block b ON b.number = ns.block_id AND ns.block_id >= (SELECT number FROM metagraph_block WHERE timestamp >= '${__from:date}' ORDER BY timestamp LIMIT 1) AND ns.block_id <= (SELECT number FROM metagraph_block WHERE timestamp <= '${__to:date}' ORDER BY timestamp DESC LIMIT 1)\nWHERE n.subnet_id = ${subnet}\n  AND ns.is_validator = true\n  AND b.timestamp BETWEEN '${__from:date}' AND '${__to:date}'\nGROUP BY h.hotkey, h.label\nORDER BY 1 DESC",
+          "description": "validator",
+          "includeAll": false,
+          "label": "validator",
+          "name": "validator",
+          "options": [],
+          "query": "-- id=var.validator\nSELECT CONCAT(\n  TO_CHAR(MAX(ns.total_stake / 1e9), 'fm00000000'), '.',\n  TO_CHAR(MAX(ns.block_id), 'fm00000000'), '----',\n  COALESCE(NULLIF(h.label, ''), CONCAT(h.hotkey, ' @ ', MAX(ns.total_stake / 1e9))), '----',\n  h.hotkey\n)\nFROM metagraph_neuron n\n  JOIN metagraph_hotkey h ON h.id = n.hotkey_id\n  JOIN metagraph_neuron_snapshot ns ON ns.neuron_id = n.id\n  JOIN metagraph_block b ON b.number = ns.block_id AND ns.block_id >= (SELECT number FROM metagraph_block WHERE timestamp >= '${__from:date}' ORDER BY timestamp LIMIT 1) AND ns.block_id <= (SELECT number FROM metagraph_block WHERE timestamp <= '${__to:date}' ORDER BY timestamp DESC LIMIT 1)\nWHERE n.subnet_id = ${subnet}\n  AND ns.is_validator = true\n  AND b.timestamp BETWEEN '${__from:date}' AND '${__to:date}'\nGROUP BY h.hotkey, h.label\nORDER BY 1 DESC",
+          "refresh": 1,
+          "regex": "/.*----(?<text>.*)----(?<value>.*)/",
+          "type": "query"
+        }
+      ]
+    },
+    "time": {
+      "from": "now-24h",
+      "to": "now"
+    },
+    "timepicker": {
+      "refresh_intervals": [
+        "10m",
+        "15m",
+        "30m",
+        "1h",
+        "2h",
+        "8h",
+        "1d"
+      ]
+    },
+    "timezone": "",
+    "title": "Metagraph Validator",
+    "weekStart": ""
+  }
+}
