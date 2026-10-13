@@ -36,6 +36,8 @@ RUN groupadd --gid 1000 appuser \
 WORKDIR /root/src/
 ENV PYTHONUNBUFFERED=1
 ENV PATH="/root/src/.venv/bin:$PATH"
+# lets Python find sitecustomize.py (the memory profiling hook) at interpreter start
+ENV PYTHONPATH=/root/src
 
 COPY --from=base-image --chown=appuser:appuser /root/src/ /root/src/
 

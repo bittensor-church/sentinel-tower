@@ -150,3 +150,11 @@ The tuning doc now tells operators to restart them by hand after a manual `up -d
 **Action:** decide whether the repo wants readable's style (it also splits lines after colons and pads table cells, so it is broader than one sentence per line); if yes, pass `list_files(".md")` minus `docs/3rd_party/` to the image the way the shellcheck step does, because the pinned image neither honours `!` exclusions nor skips `.nox`/`.venv`, and reformat the existing docs in one commit; if not, drop the step.
 
 **Why deferred:** reformatting every doc is noisy and unrelated to any feature branch.
+
+## Move the venv out of the source tree in the app image
+
+The dev compose bind-mounts `./app/src` over `/root/src`, which hides the image's venv at `/root/src/.venv`, so it mounts the named volume `app-venv` there as a replacement. Docker fills that volume from the image only once, when it is empty, so every dependency change after that leaves dev containers running a stale copy until someone runs `docker volume rm sentinel-tower_app-venv`. And when several services start together on a fresh volume, Docker's copy step races with itself (`mkdir ... file exists`), so the first start after a removal has to be `docker compose up -d app` alone.
+
+**Action:** in `app/envs/prod/Dockerfile` set `UV_PROJECT_ENVIRONMENT=/venv` before `uv sync`, point `PATH` at `/venv/bin` and copy `/venv` into the final stage; then delete the `app-venv` line and its `volumes:` entry from `envs/dev/docker-compose.yml`. Dependency changes then reach dev containers with a plain `docker compose build`, and there is nothing left to race. Do it in the cookiecutter template first so it arrives here via `cruft update`.
+
+**Why deferred:** unrelated to the memory profiling change that exposed it; it changes the image layout, so it wants its own PR and a full local run.
