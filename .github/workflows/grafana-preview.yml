@@ -1,0 +1,66 @@
+name: Grafana preview
+
+on:
+  pull_request_target:
+    # No base-branch filter: retargeting a labelled PR away from master must remove it.
+    types: [opened, reopened, synchronize, labeled, unlabeled, closed, edited]
+  push:
+    branches: [master]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+defaults:
+  run:
+    shell: bash
+
+jobs:
+  preview:
+    if: >-
+      github.event_name != 'pull_request_target' ||
+      github.event.label.name == 'grafana-preview' ||
+      contains(github.event.pull_request.labels.*.name, 'grafana-preview')
+    concurrency:
+      group: grafana-preview
+      cancel-in-progress: false
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    permissions:
+      contents: write
+      pull-requests: write
+    env:
+      GH_TOKEN: ${{ github.token }}
+      GRAFANA_PREVIEW_URL: ${{ vars.GRAFANA_PREVIEW_URL }}
+    steps:
+      # Always execute trusted master code, even for fork PRs and manual runs.
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+        with:
+          ref: master
+          fetch-depth: 0
+
+      - name: Set temporary paths
+        run: |
+          echo "PREVIEW_STATE=$RUNNER_TEMP/grafana-preview-state.json" >> "$GITHUB_ENV"
+          echo "PREVIEW_PULLS=$RUNNER_TEMP/grafana-preview-pulls.json" >> "$GITHUB_ENV"
+          echo "PREVIEW_REPORT=$RUNNER_TEMP/grafana-preview-report.md" >> "$GITHUB_ENV"
+
+      - name: Read current PRs
+        run: |
+          gh api --paginate "repos/$GITHUB_REPOSITORY/pulls?state=open&per_page=100" \
+            --jq '.[]' | jq -s . > "$PREVIEW_PULLS"
+
+      - name: Build combined preview without checking out PR code
+        run: python3 scripts/grafana_preview.py build "$PREVIEW_PULLS" "$PREVIEW_STATE"
+
+      - name: Recheck inputs and publish branch
+        run: |
+          gh api --paginate "repos/$GITHUB_REPOSITORY/pulls?state=open&per_page=100" \
+            --jq '.[]' | jq -s . > "$PREVIEW_PULLS"
+          python3 scripts/grafana_preview.py publish "$PREVIEW_PULLS" "$PREVIEW_STATE"
+
+      - name: Update preview summary and PR comments
+        if: ${{ always() && !cancelled() }}
+        env:
+          TRIGGER_PR: ${{ github.event.pull_request.number }}
+        run: bash scripts/grafana_preview_comments.sh
