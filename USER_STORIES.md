@@ -160,6 +160,14 @@ Wants to know not just *that* a hyperparameter changed, but what it changed *fro
 
 Wants the system to be operable and debuggable, since there's no support team behind it.
 
+- **As a dashboard reviewer**, I want all open `grafana-preview` PRs targeting `master`
+  combined on `staging-grafana`, so I can review several dashboard changes together before
+  merging. Removing a label, closing/merging a PR, changing its target branch, or updating
+  `master` rebuilds the preview. Conflicts or invalid dashboard JSON leave the previous preview
+  intact and are reported on the PRs. A failed comment update must not prevent notifying the other
+  affected PRs, and partial notification failures remain visible in Actions. Publishing the branch
+  does not claim Grafana has imported it.
+
 - **As a developer**, I want Celery tasks isolated onto separate queues by cost (`metagraph` vs.
   `celery`), so a burst of expensive metagraph dumps can't starve lightweight notification tasks.
 - **As a developer**, I want tasks to re-enqueue automatically if a worker crashes mid-task

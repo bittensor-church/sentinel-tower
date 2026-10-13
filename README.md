@@ -124,6 +124,18 @@ Monitor backfill progress with:
 celery -A project inspect active
 ```
 
+## Grafana dashboard previews
+
+Apply the `grafana-preview` label to a PR targeting `master` to include it in the shared
+`staging-grafana` branch. Configure staging Grafana Git Sync to read that branch and
+`grafana/dashboards`; production stays on `master`. Set the Actions repository variable
+`GRAFANA_PREVIEW_URL` for the staging link, and allow the Action to force-update the generated
+branch. Conflicts preserve the previous preview. PR comments confirm branch publication;
+verify Grafana has finished importing before reviewing. Never merge `staging-grafana` into `master`.
+
+Test the preview tooling with `python3 -m unittest discover -s scripts/tests -v`
+(Python 3.11+, Git 2.38+, Bash, and jq).
+
 ## Set up production environment (git deploy)
 
 <details>
