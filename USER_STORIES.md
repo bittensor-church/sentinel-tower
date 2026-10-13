@@ -51,6 +51,9 @@ Responsible for keeping the ingestion pipeline healthy and trusting the data it 
 - **As a chain operator**, I want a debug tool (`get_block_extrinsics`) that dumps raw extrinsics for
   one block directly from the node, so I can compare "what the chain says" against "what Sentinel
   Tower stored" when investigating a discrepancy.
+- **As a chain operator**, I want the Bittensor Metrics dashboard (`bittensor-metrics.json`) to show
+  the current UTC time (`HH:MM:SS`, as of the last dashboard refresh) at the top, so I can check the
+  time without leaving the dashboard.
 
 ## 2. Metagraph / APY Data Consumer (Grafana dashboard viewer, analyst)
 
