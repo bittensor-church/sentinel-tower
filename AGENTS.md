@@ -25,3 +25,12 @@ If USER_STORIES.md doesn't exist or is empty, inform your handler that they need
 After reading this file, read `AGENTS.local.md` if it exists.
 
 `AGENTS.local.md` may contain checkout-specific commands, environment details, and personal workflow preferences. It must not weaken or contradict the repository-wide requirements in this file and in case of a conflict, always default to the repository-wide rules and engineering standards.
+
+## Grafana dashboard previews
+
+- For changes under `grafana/dashboards/`, open a PR targeting `master` with the `grafana-preview` label.
+- The preview workflow publishes the PR to `staging-grafana` and comments on the PR when it is live. If it reports a conflict, rebase the PR on `master` or tell the reviewer it collides with another open preview.
+- Post the PR link and a direct link to each changed dashboard: `https://sentinel-staging.bactensor.io/grafana/d/<uid>`, with `<uid>` from the dashboard JSON. Mention that Grafana may take a short while to pick up the change.
+- Never change an existing dashboard's `uid`.
+- Never push directly to `staging-grafana` or edit dashboards in the staging Grafana UI.
+- Leave merging into `master` to a human.
