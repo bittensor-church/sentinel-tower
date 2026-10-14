@@ -215,6 +215,14 @@ If one wants to deploy other branch, force may be used to push desired branch to
 git push --force-with-lease production local-branch-to-deploy:master
 ```
 
+### Deploy to staging from GitHub Actions
+
+Pushing a commit to the `deploy/staging` branch (`git push --force origin <sha>:deploy/staging`) runs the
+"Deploy to staging" workflow: it pushes the commit through the jump host to the staging server, where the
+post-receive hook runs `deploy.sh`, and then applies migrations. Its SSH key, hosts, paths and pinned host
+keys live in the `staging` GitHub Environment, which only `deploy/staging` may use; the list is at the top
+of `.github/workflows/deploy-staging.yml`. Production is still deployed by hand.
+
 ### TLS certificates
 
 `nginx/templates/default.conf.template` reads four files, and the `nginx` service bind-mounts `./letsencrypt/etc` into `/etc/letsencrypt` to supply them:
