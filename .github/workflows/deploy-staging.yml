@@ -1,0 +1,94 @@
+name: Deploy to staging
+
+# Deploys the pushed commit to staging: force-pushes it through the jump host
+# to the staging server's bare repo, whose post-receive hook runs deploy.sh,
+# then applies Django migrations there (deploy.sh does not run them).
+#
+# To deploy: git push --force origin <sha>:deploy/staging
+#
+# Configuration lives in the `staging` GitHub Environment, which only the
+# deploy/staging branch may use:
+#   secret   STAGING_DEPLOY_SSH_KEY  private key accepted by the jump host and staging
+#   variable STAGING_JUMP_HOST       user@host of the jump host
+#   variable STAGING_SSH_HOST        user@host of the staging server
+#   variable STAGING_REPO_PATH       bare repo on staging, e.g. /root/repos/sentinel_tower.git
+#   variable STAGING_APP_DIR         work tree deploy.sh runs in, e.g. /root/domains/sentinel_tower
+#   variable STAGING_KNOWN_HOSTS     known_hosts lines for both hosts
+#
+# The workflow only fires if this file exists on the pushed commit.
+
+on:
+  push:
+    branches: [deploy/staging]
+
+concurrency:
+  group: deploy-staging
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+
+defaults:
+  run:
+    shell: bash
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    environment: staging
+    env:
+      STAGING_JUMP_HOST: ${{ vars.STAGING_JUMP_HOST }}
+      STAGING_SSH_HOST: ${{ vars.STAGING_SSH_HOST }}
+      STAGING_REPO_PATH: ${{ vars.STAGING_REPO_PATH }}
+      STAGING_APP_DIR: ${{ vars.STAGING_APP_DIR }}
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+
+      - name: Configure SSH
+        env:
+          STAGING_DEPLOY_SSH_KEY: ${{ secrets.STAGING_DEPLOY_SSH_KEY }}
+          STAGING_KNOWN_HOSTS: ${{ vars.STAGING_KNOWN_HOSTS }}
+        run: |
+          for name in STAGING_DEPLOY_SSH_KEY STAGING_KNOWN_HOSTS STAGING_JUMP_HOST STAGING_SSH_HOST STAGING_REPO_PATH STAGING_APP_DIR; do
+            [ -n "${!name}" ] || { echo "::error::$name is not set in the staging environment"; exit 1; }
+          done
+          umask 077
+          mkdir -p ~/.ssh
+          printf '%s\n' "$STAGING_DEPLOY_SSH_KEY" > ~/.ssh/id_ed25519
+          printf '%s\n' "$STAGING_KNOWN_HOSTS" > ~/.ssh/known_hosts
+          cat > ~/.ssh/config <<'CONFIG'
+          Host *
+            IdentityFile ~/.ssh/id_ed25519
+            IdentitiesOnly yes
+            StrictHostKeyChecking yes
+            UserKnownHostsFile ~/.ssh/known_hosts
+            BatchMode yes
+            ServerAliveInterval 30
+          CONFIG
+
+      - name: Push to staging
+        run: |
+          set -o pipefail
+          log="$RUNNER_TEMP/push.log"
+          GIT_SSH_COMMAND="ssh -J $STAGING_JUMP_HOST" \
+            git push --force "$STAGING_SSH_HOST:$STAGING_REPO_PATH" HEAD:master 2>&1 | tee "$log"
+          # The hook's exit status does not fail the push; deploy.sh prints this line only on success.
+          if grep -q 'Everything up-to-date' "$log"; then
+            echo "::notice::Staging already has $GITHUB_SHA; deploy.sh was not re-run."
+          elif ! grep -q '^remote: Deploy done\.' "$log"; then
+            echo "::error::deploy.sh did not finish on staging; see the log above."
+            exit 1
+          fi
+
+      - name: Apply migrations
+        run: |
+          ssh -J "$STAGING_JUMP_HOST" "$STAGING_SSH_HOST" bash -s -- "$STAGING_APP_DIR" <<'REMOTE'
+          set -eu
+          cd "$1"
+          docker compose run --rm -T app sh -c 'unset PROMETHEUS_MULTIPROC_DIR PROMETHEUS_USE_FLOCK; python manage.py wait_for_database --timeout 10 && python manage.py migrate' </dev/null
+          REMOTE
+
