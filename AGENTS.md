@@ -34,3 +34,12 @@ After reading this file, read `AGENTS.local.md` if it exists.
 - Never change an existing dashboard's `uid`.
 - Never push directly to `staging-grafana` or edit dashboards in the staging Grafana UI.
 - Leave merging into `master` to a human.
+
+## Deploying to staging
+
+- Deploy to staging only when a human asks. Never deploy to production; humans do that.
+- Deploy a commit that is already on GitHub, usually the PR head: `git push --force origin <sha>:deploy/staging`. `deploy/staging` is a deploy pointer, so force-pushing it is expected; never force-push any other branch.
+- The "Deploy to staging" workflow pushes that commit to the staging server, where `deploy.sh` runs, and then applies migrations. A green run means staging runs that commit; a red run means it does not, so read its log. Report the run link.
+- The commit must contain `.github/workflows/deploy-staging.yml`; update an older branch from `master` first, or nothing is deployed.
+- Staging holds one version at a time and the last deploy wins. Say in the PR which commit is on staging. Migrations from a PR stay applied on staging after it moves to another commit; mention them in the PR.
+- Never SSH to the staging or production servers and never push to their git remotes from an agent environment.
