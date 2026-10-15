@@ -68,6 +68,10 @@ Wants trustworthy point-in-time snapshots of subnet state without touching the c
 - **As a subnet owner or miner**, I want per-subnet Grafana dashboards (`metagraph-miner.json`,
   `metagraph-validator.json`, `metagraph-multi-miner.json`) so I can track my own neurons' stake,
   incentive, and emissions over time.
+- **As an analyst browsing a subnet** (`metagraph-subnet.json`), I want each hotkey in the neuron
+  tables to open the Miner dashboard (and, for validators, the Validator dashboard) for that
+  subnet, hotkey and time range, and a link bar to the other Metagraph dashboards, so I can drill
+  down without retyping the hotkey.
 - **As an analyst**, I want validator per-epoch APY facts maintained incrementally (every 15 min,
   single-flight) in a compact epoch table, so dashboard numbers stay fresh without recomputing
   history and without competing for database resources.
@@ -76,6 +80,11 @@ Wants trustworthy point-in-time snapshots of subnet state without touching the c
   time, so I can populate months of missing APY history without babysitting the process.
 - **As an analyst**, I want known coldkeys/hotkeys labeled with human-readable names
   (`load_key_labels`), so dashboards show "Foundation Validator" instead of a raw SS58 address.
+- **As an analyst**, I want every coldkey that registered an on-chain identity to be shown by that
+  name (refreshed hourly by `sync_coldkey_identities`) whenever no manual label exists, so most
+  validators are named on dashboards without anyone maintaining a label list. Dashboards resolve a
+  key's name as: hotkey label, then coldkey label, then on-chain identity name, then the shortened
+  hotkey.
 - **As an analyst**, I want each subnet's *burn* — the share of its incentive that goes back to the
   subnet owner's own coldkey — and the same measurement for one separately configured coldkey
   (*superburn*, `METAGRAPH_SUPERBURN_COLDKEY`) recorded directly from each epoch-start snapshot,

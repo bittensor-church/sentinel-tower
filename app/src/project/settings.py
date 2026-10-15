@@ -171,6 +171,13 @@ CELERY_BEAT_SCHEDULE = {
         "schedule": timedelta(minutes=72),
         "options": {"expires": int(timedelta(minutes=60).total_seconds())},
     },
+    "sync-coldkey-identities": {
+        "task": "apps.metagraph.tasks.sync_coldkey_identities",
+        # Owners rename themselves rarely; hourly keeps dashboards current at the
+        # cost of one storage-map read.
+        "schedule": timedelta(hours=1),
+        "options": {"expires": int(timedelta(minutes=50).total_seconds())},
+    },
     "cleanup-expired-data": {
         "task": "project.core.tasks.cleanup_expired_data",
         "schedule": crontab(hour=3, minute=30),  # daily, low-traffic UTC hour
