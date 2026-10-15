@@ -784,7 +784,7 @@
             "editorMode": "code",
             "format": "table",
             "rawQuery": true,
-            "rawSql": "WITH anchor AS (\n    SELECT MAX(epoch_ts) AS end_t FROM metagraph_validator_apy_epoch\n),\nagg AS (\n    SELECT e.neuron_id, e.hotkey_id,\n           AVG(e.apy_pct) FILTER (WHERE e.epoch_ts >= a.end_t - INTERVAL '1 day')  AS apy_1d,\n           AVG(e.apy_pct) FILTER (WHERE e.epoch_ts >= a.end_t - INTERVAL '1 week') AS apy_1w,\n           AVG(e.apy_pct) AS apy_1m\n    FROM metagraph_validator_apy_epoch e, anchor a\n    WHERE e.subnet_id = ${subnet} AND e.epoch_ts >= a.end_t - INTERVAL '1 month'\n    GROUP BY e.neuron_id, e.hotkey_id\n),\nlatest AS (\n    SELECT DISTINCT ON (e.neuron_id)\n           e.neuron_id, e.hotkey_id, e.apy_pct AS apy_latest,\n           e.alpha_stake / 1e9 AS alpha_stake_tao,\n           e.total_stake / 1e9 AS stake_tao\n    FROM metagraph_validator_apy_epoch e, anchor a\n    WHERE e.subnet_id = ${subnet}\n      AND e.epoch_ts >= a.end_t - INTERVAL '1 month'\n    ORDER BY e.neuron_id, e.epoch_block DESC\n)\nSELECT COALESCE(NULLIF(h.label, ''), LEFT(h.hotkey, 8) || '...') AS validator_name,\n       l.alpha_stake_tao,\n       l.stake_tao,\n       l.apy_latest AS apy_epoch,\n       COALESCE(g.apy_1d, 0) AS apy_1d,\n       COALESCE(g.apy_1w, 0) AS apy_1w,\n       COALESCE(g.apy_1m, 0) AS apy_1m\nFROM latest l\nJOIN metagraph_hotkey h ON h.id = l.hotkey_id\nLEFT JOIN agg g ON g.neuron_id = l.neuron_id\nORDER BY l.alpha_stake_tao DESC",
+            "rawSql": "WITH anchor AS (\n    SELECT MAX(epoch_ts) AS end_t FROM metagraph_validator_apy_epoch\n),\nagg AS (\n    SELECT e.neuron_id, e.hotkey_id,\n           AVG(e.apy_pct) FILTER (WHERE e.epoch_ts >= a.end_t - INTERVAL '1 day')  AS apy_1d,\n           AVG(e.apy_pct) FILTER (WHERE e.epoch_ts >= a.end_t - INTERVAL '1 week') AS apy_1w,\n           AVG(e.apy_pct) AS apy_1m\n    FROM metagraph_validator_apy_epoch e, anchor a\n    WHERE e.subnet_id = ${subnet} AND e.epoch_ts >= a.end_t - INTERVAL '1 month'\n    GROUP BY e.neuron_id, e.hotkey_id\n),\nlatest AS (\n    SELECT DISTINCT ON (e.neuron_id)\n           e.neuron_id, e.hotkey_id, e.apy_pct AS apy_latest,\n           e.alpha_stake / 1e9 AS alpha_stake_tao,\n           e.total_stake / 1e9 AS stake_tao\n    FROM metagraph_validator_apy_epoch e, anchor a\n    WHERE e.subnet_id = ${subnet}\n      AND e.epoch_ts >= a.end_t - INTERVAL '1 month'\n    ORDER BY e.neuron_id, e.epoch_block DESC\n)\nSELECT COALESCE(NULLIF(h.label, ''), NULLIF(ck.label, ''), ck.identity_name, LEFT(h.hotkey, 8) || '...') AS validator_name,\n       l.alpha_stake_tao,\n       l.stake_tao,\n       l.apy_latest AS apy_epoch,\n       COALESCE(g.apy_1d, 0) AS apy_1d,\n       COALESCE(g.apy_1w, 0) AS apy_1w,\n       COALESCE(g.apy_1m, 0) AS apy_1m\nFROM latest l\nJOIN metagraph_hotkey h ON h.id = l.hotkey_id\nJOIN metagraph_coldkey ck ON ck.id = h.coldkey_id\nLEFT JOIN agg g ON g.neuron_id = l.neuron_id\nORDER BY l.alpha_stake_tao DESC",
             "refId": "A"
           }
         ],
@@ -901,7 +901,7 @@
             "editorMode": "code",
             "format": "time_series",
             "rawQuery": true,
-            "rawSql": "SELECT e.epoch_ts AS time, COALESCE(NULLIF(h.label, ''), LEFT(h.hotkey, 8) || '...') AS metric, e.apy_pct AS value FROM metagraph_validator_apy_epoch e JOIN metagraph_hotkey h ON h.id = e.hotkey_id WHERE e.subnet_id = ${subnet} AND e.epoch_ts IS NOT NULL ORDER BY time",
+            "rawSql": "SELECT e.epoch_ts AS time, COALESCE(NULLIF(h.label, ''), NULLIF(ck.label, ''), ck.identity_name, LEFT(h.hotkey, 8) || '...') AS metric, e.apy_pct AS value FROM metagraph_validator_apy_epoch e JOIN metagraph_hotkey h ON h.id = e.hotkey_id JOIN metagraph_coldkey ck ON ck.id = h.coldkey_id WHERE e.subnet_id = ${subnet} AND e.epoch_ts IS NOT NULL ORDER BY time",
             "refId": "A"
           },
           {
@@ -1008,7 +1008,7 @@
             "editorMode": "code",
             "format": "time_series",
             "rawQuery": true,
-            "rawSql": "SELECT e.epoch_ts AS time, COALESCE(NULLIF(h.label, ''), LEFT(h.hotkey, 8) || '...') AS metric, e.alpha_stake / 1e9 AS value FROM metagraph_validator_apy_epoch e JOIN metagraph_hotkey h ON h.id = e.hotkey_id WHERE e.subnet_id = ${subnet} AND e.epoch_ts IS NOT NULL ORDER BY time",
+            "rawSql": "SELECT e.epoch_ts AS time, COALESCE(NULLIF(h.label, ''), NULLIF(ck.label, ''), ck.identity_name, LEFT(h.hotkey, 8) || '...') AS metric, e.alpha_stake / 1e9 AS value FROM metagraph_validator_apy_epoch e JOIN metagraph_hotkey h ON h.id = e.hotkey_id JOIN metagraph_coldkey ck ON ck.id = h.coldkey_id WHERE e.subnet_id = ${subnet} AND e.epoch_ts IS NOT NULL ORDER BY time",
             "refId": "A"
           }
         ],
@@ -1104,7 +1104,7 @@
             "editorMode": "code",
             "format": "time_series",
             "rawQuery": true,
-            "rawSql": "SELECT e.epoch_ts AS time, COALESCE(NULLIF(h.label, ''), LEFT(h.hotkey, 8) || '...') AS metric, e.alpha_dividends / 1e9 AS value FROM metagraph_validator_apy_epoch e JOIN metagraph_hotkey h ON h.id = e.hotkey_id WHERE e.subnet_id = ${subnet} AND e.epoch_ts IS NOT NULL ORDER BY time",
+            "rawSql": "SELECT e.epoch_ts AS time, COALESCE(NULLIF(h.label, ''), NULLIF(ck.label, ''), ck.identity_name, LEFT(h.hotkey, 8) || '...') AS metric, e.alpha_dividends / 1e9 AS value FROM metagraph_validator_apy_epoch e JOIN metagraph_hotkey h ON h.id = e.hotkey_id JOIN metagraph_coldkey ck ON ck.id = h.coldkey_id WHERE e.subnet_id = ${subnet} AND e.epoch_ts IS NOT NULL ORDER BY time",
             "refId": "A"
           }
         ],
