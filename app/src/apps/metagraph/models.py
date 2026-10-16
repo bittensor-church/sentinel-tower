@@ -11,6 +11,10 @@ class Coldkey(models.Model):
     coldkey = models.CharField(max_length=66, unique=True)
     created_at = models.DateTimeField(auto_now_add=True)
     label = models.CharField(max_length=255, blank=True)
+    # Name the key's owner registered on chain (SubtensorModule.IdentitiesV2), kept in
+    # sync by the `sync_coldkey_identities` beat task. Dashboards fall back to it when
+    # neither the hotkey nor the coldkey has a manual `label`.
+    identity_name = models.CharField(max_length=255, null=True, blank=True)
 
     class Meta:
         db_table = "metagraph_coldkey"

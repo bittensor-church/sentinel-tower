@@ -21,7 +21,7 @@ from django.db import connection, transaction
 from prometheus_client import Gauge
 
 from apps.metagraph.models import Block, NeuronSnapshot, SnapshotHealthMetric, Subnet
-from apps.metagraph.services import apy_epoch_ingest
+from apps.metagraph.services import apy_epoch_ingest, coldkey_identity_sync
 from apps.metagraph.utils import get_dumpable_blocks_in_range
 
 logger = structlog.get_logger()
@@ -258,3 +258,17 @@ def set_snapshot_health_metrics() -> None:
     missing_snapshot_blocks_gauge.clear()
     for netuid, window, missing in SnapshotHealthMetric.objects.values_list("netuid", "window", "missing_blocks"):
         missing_snapshot_blocks_gauge.labels(netuid=str(netuid), window=window).set(missing)
+
+
+IDENTITY_SYNC_TIME_LIMIT = int(timedelta(minutes=5).total_seconds())
+
+
+@shared_task(time_limit=IDENTITY_SYNC_TIME_LIMIT, soft_time_limit=IDENTITY_SYNC_TIME_LIMIT - 30)
+def sync_coldkey_identities() -> None:
+    """
+    Refresh `Coldkey.identity_name` from the names owners registered on chain.
+
+    Run by Celery beat (see settings.CELERY_BEAT_SCHEDULE).
+    """
+    result = coldkey_identity_sync.sync_coldkey_identity_names()
+    logger.info("Synced coldkey identity names", added=result.added, changed=result.changed, cleared=result.cleared)
