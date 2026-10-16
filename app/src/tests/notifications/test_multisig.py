@@ -298,3 +298,20 @@ def test_direct_and_sudo_wrapped_registrations_are_unchanged(discord):
     [content] = discord.contents_for(REGISTRATION_URL)
     assert f"**signer**: `{FINAL_APPROVER}`" in content
     assert "**multisig**" not in content
+
+
+def test_multisig_runtime_upgrade_alert_fits_in_a_discord_message(discord):
+    """Finney 9286202-0028: the sudo multisig executing Sudo(System.set_code) with a ~2.6 MB wasm blob."""
+    code = "0x52bc537646db8e05" + "00" * 2_645_806 + "b65d2039"
+    set_code = {"call_module": "System", "call_function": "set_code", "call_args": [{"name": "code", "value": code}]}
+
+    assert dispatch_block_notifications(9286202, [_executed_sudo(set_code)]) == 1
+    [content] = discord.contents_for(SUDO_URL)
+    assert content == (
+        "**Block #9286202**\n"
+        "\n"
+        "**Global**\n"
+        "`set_code` — **code**: `0x52bc537646db8e05…b65d2039 (2645818 bytes)`\n"
+        "\n"
+        "[View on TaoStats](https://taostats.io/extrinsic/9286202-0002?network=finney)"
+    )

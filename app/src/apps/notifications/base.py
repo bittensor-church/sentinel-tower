@@ -12,6 +12,8 @@ logger = structlog.get_logger()
 MIN_LENGTH_FOR_TRUNCATION = 20
 MAX_CALL_ARGS_LENGTH = 1000
 MAX_LIST_ITEMS_DISPLAY = 3
+# Discord rejects messages over 2000 characters; a runtime upgrade's set_code alone is megabytes of hex.
+MAX_VALUE_DISPLAY_LENGTH = 100
 
 
 class ExtrinsicNotification(abc.ABC):
@@ -74,12 +76,17 @@ class ExtrinsicNotification(abc.ABC):
 
     @staticmethod
     def format_value(value: Any) -> str:
-        """Format a value for display, truncating long lists."""
+        """Format a value for display, truncating long lists and long values."""
         if value is None:
             return "N/A"
         if isinstance(value, list) and len(value) > MAX_LIST_ITEMS_DISPLAY:
             return f"[{len(value)} items]"
-        return str(value)
+        text = str(value)
+        if len(text) <= MAX_VALUE_DISPLAY_LENGTH:
+            return text
+        if isinstance(value, str) and value.startswith("0x"):
+            return f"{value[:18]}…{value[-8:]} ({(len(value) - 2) // 2} bytes)"
+        return f"{text[:60]}… ({len(text)} chars)"
 
     @staticmethod
     def format_call_args(call_args: list[dict[str, Any]] | None) -> str:

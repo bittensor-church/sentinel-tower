@@ -190,6 +190,10 @@ def test_unwrap_sudo_without_dict_value():
         ([1, 2], "[1, 2]"),
         ("hello", "hello"),
         (42, "42"),
+        ("5DcSqBNqCmfdJZRGFSwwcRb2dZdJHZuKK8Tb1Gx8gbmF5E8s", "5DcSqBNqCmfdJZRGFSwwcRb2dZdJHZuKK8Tb1Gx8gbmF5E8s"),
+        ("0x52bc5376" + "ab" * 1000 + "b65d2039", "0x52bc5376abababab…b65d2039 (1008 bytes)"),
+        ("x" * 101, "x" * 60 + "… (101 chars)"),
+        ({"name": "y" * 120}, "{'name': '" + "y" * 50 + "… (132 chars)"),
     ],
 )
 def test_format_value(value, expected):
