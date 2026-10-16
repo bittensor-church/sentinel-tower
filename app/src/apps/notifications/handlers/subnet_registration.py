@@ -24,7 +24,7 @@ class SubnetRegistrationNotification(ExtrinsicNotification):
     def format_message(self, block_number: int, extrinsics: list[dict[str, Any]]) -> dict[str, Any]:
         first = extrinsics[0]
         link = self.taostats_link(block_number, first.get("extrinsic_index", 0))
-        unwrapped = [self.unwrap_sudo_call(e) for e in extrinsics]
+        unwrapped = [self._with_created_netuid(self.unwrap_call(e)) for e in extrinsics]
 
         lines = [f"**Block #{block_number}**", ""]
 
@@ -40,13 +40,31 @@ class SubnetRegistrationNotification(ExtrinsicNotification):
         lines.append(f"[View on TaoStats]({link})")
         return {"content": "\n".join(lines), "flags": 1 << 2}
 
+    @classmethod
+    def _with_created_netuid(cls, extrinsic: dict[str, Any]) -> dict[str, Any]:
+        """Fill a missing netuid from NetworkAdded.
+
+        Ingestion only parses it for unwrapped register_network calls; Sudo- and
+        Multisig-wrapped ones arrive without it.
+        """
+        if extrinsic.get("netuid") is not None:
+            return extrinsic
+        for event in extrinsic.get("events") or []:
+            if isinstance(event, dict) and event.get("event_id") == "NetworkAdded":
+                return {**extrinsic, "netuid": cls._event_netuid(event)}
+        return extrinsic
+
     def _format_registration(self, extrinsic: dict[str, Any]) -> str:
         call_function = extrinsic.get("call_function", "unknown")
         call_args = extrinsic.get("call_args", [])
         address = extrinsic.get("address", "N/A")
         extrinsic_hash = extrinsic.get("extrinsic_hash", "N/A")
 
-        parts = [f"`{call_function}`", *self._outcome_lines(extrinsic), f"**signer**: `{address}`"]
+        parts = [f"`{call_function}`", *self._outcome_lines(extrinsic)]
+        if approver := extrinsic.get("multisig_approver"):
+            parts.extend([f"**multisig**: `{address}`", f"**final approval**: `{approver}`"])
+        else:
+            parts.append(f"**signer**: `{address}`")
 
         for arg in call_args:
             name = arg.get("name", "")

@@ -1,5 +1,9 @@
 import abc
+import contextlib
 import os
+from collections.abc import Iterator
+from contextvars import ContextVar
+from dataclasses import dataclass
 
 import httpx
 import structlog
@@ -9,6 +13,33 @@ logger = structlog.get_logger()
 _DISABLED_WEBHOOK_PATTERNS = ("disabled", "https://discord.com/api/webhooks/0/disabled")
 
 _http_client = httpx.Client(timeout=10.0)
+
+
+@dataclass(frozen=True)
+class DryRunDelivery:
+    """A notification captured instead of being posted, see ``dry_run()``."""
+
+    channel: str
+    url_count: int
+    payload: dict
+
+
+_dry_run_deliveries: ContextVar[list[DryRunDelivery] | None] = ContextVar("_dry_run_deliveries", default=None)
+
+
+@contextlib.contextmanager
+def dry_run() -> Iterator[list[DryRunDelivery]]:
+    """Capture and log every webhook delivery made inside the block instead of posting it.
+
+    A channel still reports success only if it has webhook URLs configured,
+    so routing and fallbacks behave as they would for real.
+    """
+    deliveries: list[DryRunDelivery] = []
+    token = _dry_run_deliveries.set(deliveries)
+    try:
+        yield deliveries
+    finally:
+        _dry_run_deliveries.reset(token)
 
 
 class NotificationChannel(abc.ABC):
@@ -22,6 +53,12 @@ class NotificationChannel(abc.ABC):
     @staticmethod
     def _send_to_urls(urls: list[str], payload: dict, *, context: str = "") -> bool:
         """Send a payload to a list of webhook URLs. Returns True if at least one succeeds."""
+        deliveries = _dry_run_deliveries.get()
+        if deliveries is not None:
+            deliveries.append(DryRunDelivery(channel=context, url_count=len(urls), payload=payload))
+            logger.info("Dry run: webhook not posted", context=context, url_count=len(urls), payload=payload)
+            return bool(urls)
+
         any_sent = False
         for url in urls:
             try:
@@ -53,10 +90,7 @@ class DiscordWebhookChannel(NotificationChannel):
         return [u for u in urls if u and not any(p in u for p in _DISABLED_WEBHOOK_PATTERNS)]
 
     def send(self, payload: dict) -> bool:
-        urls = self._get_webhook_urls()
-        if not urls:
-            return False
-        return self._send_to_urls(urls, payload, context=self.env_var)
+        return self._send_to_urls(self._get_webhook_urls(), payload, context=self.env_var)
 
     def __repr__(self) -> str:
         return f"DiscordWebhookChannel({self.env_var!r})"
@@ -79,10 +113,7 @@ class DatabaseWebhookChannel(NotificationChannel):
         )
 
     def send(self, payload: dict) -> bool:
-        urls = self._get_webhook_urls()
-        if not urls:
-            return False
-        return self._send_to_urls(urls, payload, context=f"subnet:{self.netuid}")
+        return self._send_to_urls(self._get_webhook_urls(), payload, context=f"subnet:{self.netuid}")
 
     def __repr__(self) -> str:
         return f"DatabaseWebhookChannel(netuid={self.netuid})"
