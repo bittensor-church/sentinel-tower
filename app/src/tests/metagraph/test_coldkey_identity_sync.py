@@ -17,6 +17,8 @@ CHARLIE = Keypair.create_from_uri("//Charlie").ss58_address
 DAVE = Keypair.create_from_uri("//Dave").ss58_address
 EVE = Keypair.create_from_uri("//Eve").ss58_address
 FERDIE = Keypair.create_from_uri("//Ferdie").ss58_address
+CHARLIE_STASH = Keypair.create_from_uri("//Charlie//stash").ss58_address
+DAVE_STASH = Keypair.create_from_uri("//Dave//stash").ss58_address
 
 
 @pytest.fixture
@@ -58,7 +60,7 @@ def test_renamed_and_removed_identities_are_followed(chain):
 
 @pytest.mark.django_db
 def test_unusable_names_are_skipped_without_affecting_the_others(chain):
-    for coldkey in (ALICE, BOB, CHARLIE, DAVE, EVE, FERDIE):
+    for coldkey in (ALICE, BOB, CHARLIE, DAVE, EVE, FERDIE, CHARLIE_STASH, DAVE_STASH):
         ColdkeyFactory(coldkey=coldkey)
     chain.identities = {
         ALICE: "   ",
@@ -67,6 +69,8 @@ def test_unusable_names_are_skipped_without_affecting_the_others(chain):
         DAVE: "x" * 300,
         EVE: "5",  # a real, if odd, name that happens to match the address' first character
         FERDIE: "Rhef",
+        CHARLIE_STASH: "0x09cC765F40520Bce2ECe342806c56DeD191462d1",  # an EVM address as the name
+        DAVE_STASH: ALICE,  # someone else's SS58 address as the name
     }
 
     tasks.sync_coldkey_identities()
@@ -78,6 +82,8 @@ def test_unusable_names_are_skipped_without_affecting_the_others(chain):
         DAVE: "x" * 255,
         EVE: "5",
         FERDIE: "Rhef",
+        CHARLIE_STASH: None,
+        DAVE_STASH: None,
     }
 
 

@@ -4,6 +4,7 @@ Only coldkeys Sentinel already knows are touched; a name the chain no longer has
 cleared. Manual labels live in a separate column and are never written here.
 """
 
+import re
 import unicodedata
 from dataclasses import dataclass
 
@@ -17,6 +18,8 @@ IDENTITY_NAME_MAX_LENGTH = Coldkey._meta.get_field("identity_name").max_length
 # A name that is just the start of the key's own address says nothing a shortened
 # address would not. Shorter prefixes are left alone: they can be real names.
 _ADDRESS_PREFIX_MIN_LENGTH = 8
+# Some owners register a bare address (an EVM one, or another SS58 key) as their name.
+_ADDRESS = re.compile(r"0x[0-9a-fA-F]{40}|[1-9A-HJ-NP-Za-km-z]{46,48}")
 
 
 @dataclass(frozen=True)
@@ -33,6 +36,8 @@ def _display_name(coldkey: str, registered_name: str) -> str | None:
     if not name:
         return None
     if len(name) >= _ADDRESS_PREFIX_MIN_LENGTH and coldkey.startswith(name):
+        return None
+    if _ADDRESS.fullmatch(name):
         return None
     return name
 
