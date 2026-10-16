@@ -534,7 +534,7 @@
             "calcs": [],
             "displayMode": "list",
             "placement": "bottom",
-            "showLegend": true
+            "showLegend": false
           },
           "tooltip": {
             "mode": "multi",
@@ -1004,7 +1004,8 @@
                 }
               ]
             },
-            "unit": "short"
+            "unit": "locale",
+            "decimals": 0
           },
           "overrides": []
         },
@@ -1025,7 +1026,7 @@
             ],
             "displayMode": "table",
             "placement": "bottom",
-            "showLegend": true
+            "showLegend": false
           },
           "tooltip": {
             "mode": "multi",
@@ -1092,7 +1093,7 @@
                 "tooltip": false,
                 "viz": false
               },
-              "insertNulls": 3600000,
+              "insertNulls": 7200000,
               "lineInterpolation": "linear",
               "lineWidth": 1,
               "pointSize": 5,
@@ -1155,10 +1156,15 @@
         "id": 109,
         "options": {
           "legend": {
-            "calcs": [],
-            "displayMode": "list",
-            "placement": "bottom",
-            "showLegend": true
+            "calcs": [
+              "lastNotNull",
+              "mean"
+            ],
+            "displayMode": "table",
+            "placement": "right",
+            "showLegend": true,
+            "sortBy": "Last *",
+            "sortDesc": true
           },
           "tooltip": {
             "mode": "multi",
@@ -2158,7 +2164,7 @@
           "calculate": false,
           "cellGap": 1,
           "color": {
-            "exponent": 0.5,
+            "exponent": 0.25,
             "fill": "dark-orange",
             "mode": "scheme",
             "reverse": false,
@@ -2184,7 +2190,7 @@
             "yHistogram": false
           },
           "yAxis": {
-            "axisPlacement": "hidden",
+            "axisPlacement": "left",
             "reverse": false
           }
         },
@@ -2198,7 +2204,7 @@
             "editorMode": "code",
             "format": "table",
             "rawQuery": true,
-            "rawSql": "SELECT\n\tdate_bin(GREATEST(INTERVAL '72 minutes', ('${__to:date}'::timestamptz - '${__from:date}'::timestamptz) / 200),\n\t  created_at, TIMESTAMPTZ '2000-01-01 00:00:00+00') AS time,\n\tuid,\n\tAVG(dividends) AS value\nFROM (\n\tSELECT b.timestamp AS created_at, n.uid, mm.dividend AS dividends\n\tFROM metagraph_neuron n\n\t  JOIN metagraph_neuron_snapshot ns ON ns.neuron_id = n.id AND ns.block_id >= (SELECT number FROM metagraph_block WHERE timestamp >= '${__from:date}' ORDER BY timestamp LIMIT 1) AND ns.block_id <= (SELECT number FROM metagraph_block WHERE timestamp <= '${__to:date}' ORDER BY timestamp DESC LIMIT 1)\n\t  JOIN metagraph_block b ON b.number = ns.block_id\n\t  JOIN metagraph_mechanism_metrics mm ON mm.snapshot_id = ns.id AND mm.mech_id = ${mech_id}\n\tWHERE n.subnet_id = ${subnet}\n\t  AND ns.is_validator = true\n\t  AND b.timestamp BETWEEN '${__from:date}' AND '${__to:date}'\n\tGROUP BY n.uid, b.timestamp, mm.dividend\n) t\nGROUP BY 1, 2\nORDER BY 1, 2;",
+            "rawSql": "SELECT\n\tdate_bin(GREATEST(INTERVAL '72 minutes', ('${__to:date}'::timestamptz - '${__from:date}'::timestamptz) / 200),\n\t  t.created_at, TIMESTAMPTZ '2000-01-01 00:00:00+00') AS time,\n\tCOALESCE(NULLIF(h.label, ''), NULLIF(ck.label, ''), ck.identity_name, LEFT(h.hotkey, 8) || '...') || ' (' || t.uid || ')' AS neuron,\n\tAVG(dividends) AS value\nFROM (\n\tSELECT b.timestamp AS created_at, n.uid, n.hotkey_id, mm.dividend AS dividends\n\tFROM metagraph_neuron n\n\t  JOIN metagraph_neuron_snapshot ns ON ns.neuron_id = n.id AND ns.block_id >= (SELECT number FROM metagraph_block WHERE timestamp >= '${__from:date}' ORDER BY timestamp LIMIT 1) AND ns.block_id <= (SELECT number FROM metagraph_block WHERE timestamp <= '${__to:date}' ORDER BY timestamp DESC LIMIT 1)\n\t  JOIN metagraph_block b ON b.number = ns.block_id\n\t  JOIN metagraph_mechanism_metrics mm ON mm.snapshot_id = ns.id AND mm.mech_id = ${mech_id}\n\tWHERE n.subnet_id = ${subnet}\n\t  AND ns.is_validator = true\n\t  AND b.timestamp BETWEEN '${__from:date}' AND '${__to:date}'\n\tGROUP BY n.uid, n.hotkey_id, b.timestamp, mm.dividend\n) t\n  JOIN metagraph_hotkey h ON h.id = t.hotkey_id\n  JOIN metagraph_coldkey ck ON ck.id = h.coldkey_id\nGROUP BY 1, 2, t.uid\nORDER BY 1, t.uid;",
             "refId": "A",
             "sql": {
               "columns": [
@@ -2225,7 +2231,7 @@
           {
             "id": "groupingToMatrix",
             "options": {
-              "columnField": "uid",
+              "columnField": "neuron",
               "rowField": "time",
               "valueField": "value",
               "emptyValue": "null"
@@ -2264,7 +2270,7 @@
           "calculate": false,
           "cellGap": 1,
           "color": {
-            "exponent": 0.5,
+            "exponent": 0.25,
             "fill": "dark-orange",
             "mode": "scheme",
             "reverse": false,
@@ -2290,7 +2296,7 @@
             "yHistogram": false
           },
           "yAxis": {
-            "axisPlacement": "hidden",
+            "axisPlacement": "left",
             "reverse": false
           }
         },
@@ -2304,7 +2310,7 @@
             "editorMode": "code",
             "format": "table",
             "rawQuery": true,
-            "rawSql": "SELECT\n\tdate_bin(GREATEST(INTERVAL '72 minutes', ('${__to:date}'::timestamptz - '${__from:date}'::timestamptz) / 200),\n\t  created_at, TIMESTAMPTZ '2000-01-01 00:00:00+00') AS time,\n\tuid,\n\tAVG(incentives) AS value\nFROM (\n\tSELECT b.timestamp AS created_at, n.uid, mm.incentive AS incentives\n\tFROM metagraph_neuron n\n\t  JOIN metagraph_neuron_snapshot ns ON ns.neuron_id = n.id AND ns.block_id >= (SELECT number FROM metagraph_block WHERE timestamp >= '${__from:date}' ORDER BY timestamp LIMIT 1) AND ns.block_id <= (SELECT number FROM metagraph_block WHERE timestamp <= '${__to:date}' ORDER BY timestamp DESC LIMIT 1)\n\t  JOIN metagraph_block b ON b.number = ns.block_id\n\t  JOIN metagraph_mechanism_metrics mm ON mm.snapshot_id = ns.id AND mm.mech_id = ${mech_id}\n\tWHERE n.subnet_id = ${subnet}\n\t  AND (ns.is_immune OR ns.has_any_weights)          -- miner set\n\t  AND b.timestamp BETWEEN '${__from:date}' AND '${__to:date}'\n\tGROUP BY n.uid, b.timestamp, mm.incentive\n) t\nGROUP BY 1, 2\nORDER BY 1, 2;",
+            "rawSql": "SELECT\n\tdate_bin(GREATEST(INTERVAL '72 minutes', ('${__to:date}'::timestamptz - '${__from:date}'::timestamptz) / 200),\n\t  t.created_at, TIMESTAMPTZ '2000-01-01 00:00:00+00') AS time,\n\tCOALESCE(NULLIF(h.label, ''), NULLIF(ck.label, ''), ck.identity_name, LEFT(h.hotkey, 8) || '...') || ' (' || t.uid || ')' AS neuron,\n\tAVG(incentives) AS value\nFROM (\n\tSELECT b.timestamp AS created_at, n.uid, n.hotkey_id, mm.incentive AS incentives\n\tFROM metagraph_neuron n\n\t  JOIN metagraph_neuron_snapshot ns ON ns.neuron_id = n.id AND ns.block_id >= (SELECT number FROM metagraph_block WHERE timestamp >= '${__from:date}' ORDER BY timestamp LIMIT 1) AND ns.block_id <= (SELECT number FROM metagraph_block WHERE timestamp <= '${__to:date}' ORDER BY timestamp DESC LIMIT 1)\n\t  JOIN metagraph_block b ON b.number = ns.block_id\n\t  JOIN metagraph_mechanism_metrics mm ON mm.snapshot_id = ns.id AND mm.mech_id = ${mech_id}\n\tWHERE n.subnet_id = ${subnet}\n\t  AND (ns.is_immune OR ns.has_any_weights)          -- miner set\n\t  AND b.timestamp BETWEEN '${__from:date}' AND '${__to:date}'\n\tGROUP BY n.uid, n.hotkey_id, b.timestamp, mm.incentive\n) t\n  JOIN metagraph_hotkey h ON h.id = t.hotkey_id\n  JOIN metagraph_coldkey ck ON ck.id = h.coldkey_id\nGROUP BY 1, 2, t.uid\nORDER BY 1, t.uid;",
             "refId": "A",
             "sql": {
               "columns": [
@@ -2331,7 +2337,7 @@
           {
             "id": "groupingToMatrix",
             "options": {
-              "columnField": "uid",
+              "columnField": "neuron",
               "rowField": "time",
               "valueField": "value",
               "emptyValue": "null"
@@ -2371,7 +2377,7 @@
           "calculate": false,
           "cellGap": 1,
           "color": {
-            "exponent": 0.5,
+            "exponent": 0.25,
             "fill": "dark-orange",
             "mode": "scheme",
             "reverse": false,
@@ -2397,7 +2403,7 @@
             "yHistogram": false
           },
           "yAxis": {
-            "axisPlacement": "hidden",
+            "axisPlacement": "left",
             "reverse": false
           }
         },
@@ -2411,7 +2417,7 @@
             "editorMode": "code",
             "format": "table",
             "rawQuery": true,
-            "rawSql": "SELECT\n\tdate_bin(GREATEST(INTERVAL '72 minutes', ('${__to:date}'::timestamptz - '${__from:date}'::timestamptz) / 200),\n\t  created_at, TIMESTAMPTZ '2000-01-01 00:00:00+00') AS time,\n\tuid,\n\tAVG(weight) AS value\nFROM (\n\tSELECT b.timestamp AS created_at, tgt.uid,\n\t       SUM((w.weight / NULLIF(src_mm.weights_sum, 0)) * src_ns.normalized_stake) AS weight\n\tFROM metagraph_weight w\n\t  JOIN metagraph_neuron src ON src.id = w.source_neuron_id\n\t  JOIN metagraph_neuron_snapshot src_ns ON src_ns.neuron_id = w.source_neuron_id AND src_ns.block_id = w.block_id\n\t  JOIN metagraph_mechanism_metrics src_mm ON src_mm.snapshot_id = src_ns.id AND src_mm.mech_id = w.mech_id\n\t  JOIN metagraph_neuron tgt ON tgt.id = w.target_neuron_id\n\t  JOIN metagraph_block b ON b.number = w.block_id\n\tWHERE src.subnet_id = ${subnet}\n\t  AND tgt.subnet_id = ${subnet}\n\t  AND w.mech_id = ${mech_id}\n\t  AND w.weight > 0\n\t  AND w.block_id >= (SELECT number FROM metagraph_block WHERE timestamp >= '${__from:date}' ORDER BY timestamp LIMIT 1) AND w.block_id <= (SELECT number FROM metagraph_block WHERE timestamp <= '${__to:date}' ORDER BY timestamp DESC LIMIT 1)\n\t  AND src_mm.weights_sum != 0\n\t  AND b.timestamp BETWEEN '${__from:date}' AND '${__to:date}'\n\tGROUP BY tgt.uid, b.timestamp\n) t\nGROUP BY 1, 2\nORDER BY 1, 2;",
+            "rawSql": "SELECT\n\tdate_bin(GREATEST(INTERVAL '72 minutes', ('${__to:date}'::timestamptz - '${__from:date}'::timestamptz) / 200),\n\t  t.created_at, TIMESTAMPTZ '2000-01-01 00:00:00+00') AS time,\n\tCOALESCE(NULLIF(h.label, ''), NULLIF(ck.label, ''), ck.identity_name, LEFT(h.hotkey, 8) || '...') || ' (' || t.uid || ')' AS neuron,\n\tAVG(weight) AS value\nFROM (\n\tSELECT b.timestamp AS created_at, tgt.uid, tgt.hotkey_id,\n\t       SUM((w.weight / NULLIF(src_mm.weights_sum, 0)) * src_ns.normalized_stake) AS weight\n\tFROM metagraph_weight w\n\t  JOIN metagraph_neuron src ON src.id = w.source_neuron_id\n\t  JOIN metagraph_neuron_snapshot src_ns ON src_ns.neuron_id = w.source_neuron_id AND src_ns.block_id = w.block_id\n\t  JOIN metagraph_mechanism_metrics src_mm ON src_mm.snapshot_id = src_ns.id AND src_mm.mech_id = w.mech_id\n\t  JOIN metagraph_neuron tgt ON tgt.id = w.target_neuron_id\n\t  JOIN metagraph_block b ON b.number = w.block_id\n\tWHERE src.subnet_id = ${subnet}\n\t  AND tgt.subnet_id = ${subnet}\n\t  AND w.mech_id = ${mech_id}\n\t  AND w.weight > 0\n\t  AND w.block_id >= (SELECT number FROM metagraph_block WHERE timestamp >= '${__from:date}' ORDER BY timestamp LIMIT 1) AND w.block_id <= (SELECT number FROM metagraph_block WHERE timestamp <= '${__to:date}' ORDER BY timestamp DESC LIMIT 1)\n\t  AND src_mm.weights_sum != 0\n\t  AND b.timestamp BETWEEN '${__from:date}' AND '${__to:date}'\n\tGROUP BY tgt.uid, tgt.hotkey_id, b.timestamp\n) t\n  JOIN metagraph_hotkey h ON h.id = t.hotkey_id\n  JOIN metagraph_coldkey ck ON ck.id = h.coldkey_id\nGROUP BY 1, 2, t.uid\nORDER BY 1, t.uid;",
             "refId": "A",
             "sql": {
               "columns": [
@@ -2438,7 +2444,7 @@
           {
             "id": "groupingToMatrix",
             "options": {
-              "columnField": "uid",
+              "columnField": "neuron",
               "rowField": "time",
               "valueField": "value",
               "emptyValue": "null"
@@ -2477,7 +2483,7 @@
           "calculate": false,
           "cellGap": 1,
           "color": {
-            "exponent": 0.5,
+            "exponent": 0.25,
             "fill": "dark-orange",
             "mode": "scheme",
             "reverse": false,
@@ -2503,7 +2509,7 @@
             "yHistogram": false
           },
           "yAxis": {
-            "axisPlacement": "hidden",
+            "axisPlacement": "left",
             "reverse": false
           }
         },
@@ -2517,7 +2523,7 @@
             "editorMode": "code",
             "format": "table",
             "rawQuery": true,
-            "rawSql": "SELECT\n\tdate_bin(GREATEST(INTERVAL '72 minutes', ('${__to:date}'::timestamptz - '${__from:date}'::timestamptz) / 200),\n\t  created_at, TIMESTAMPTZ '2000-01-01 00:00:00+00') AS time,\n\tuid,\n\tAVG(consensus) AS value\nFROM (\n\tSELECT b.timestamp AS created_at, n.uid, mm.consensus AS consensus\n\tFROM metagraph_neuron n\n\t  JOIN metagraph_neuron_snapshot ns ON ns.neuron_id = n.id AND ns.block_id >= (SELECT number FROM metagraph_block WHERE timestamp >= '${__from:date}' ORDER BY timestamp LIMIT 1) AND ns.block_id <= (SELECT number FROM metagraph_block WHERE timestamp <= '${__to:date}' ORDER BY timestamp DESC LIMIT 1)\n\t  JOIN metagraph_block b ON b.number = ns.block_id\n\t  JOIN metagraph_mechanism_metrics mm ON mm.snapshot_id = ns.id AND mm.mech_id = ${mech_id}\n\tWHERE n.subnet_id = ${subnet}\n\t  AND (ns.is_immune OR ns.has_any_weights)\n\t  AND b.timestamp BETWEEN '${__from:date}' AND '${__to:date}'\n\tGROUP BY n.uid, b.timestamp, mm.consensus\n) t\nGROUP BY 1, 2\nORDER BY 1, 2;",
+            "rawSql": "SELECT\n\tdate_bin(GREATEST(INTERVAL '72 minutes', ('${__to:date}'::timestamptz - '${__from:date}'::timestamptz) / 200),\n\t  t.created_at, TIMESTAMPTZ '2000-01-01 00:00:00+00') AS time,\n\tCOALESCE(NULLIF(h.label, ''), NULLIF(ck.label, ''), ck.identity_name, LEFT(h.hotkey, 8) || '...') || ' (' || t.uid || ')' AS neuron,\n\tAVG(consensus) AS value\nFROM (\n\tSELECT b.timestamp AS created_at, n.uid, n.hotkey_id, mm.consensus AS consensus\n\tFROM metagraph_neuron n\n\t  JOIN metagraph_neuron_snapshot ns ON ns.neuron_id = n.id AND ns.block_id >= (SELECT number FROM metagraph_block WHERE timestamp >= '${__from:date}' ORDER BY timestamp LIMIT 1) AND ns.block_id <= (SELECT number FROM metagraph_block WHERE timestamp <= '${__to:date}' ORDER BY timestamp DESC LIMIT 1)\n\t  JOIN metagraph_block b ON b.number = ns.block_id\n\t  JOIN metagraph_mechanism_metrics mm ON mm.snapshot_id = ns.id AND mm.mech_id = ${mech_id}\n\tWHERE n.subnet_id = ${subnet}\n\t  AND (ns.is_immune OR ns.has_any_weights)\n\t  AND b.timestamp BETWEEN '${__from:date}' AND '${__to:date}'\n\tGROUP BY n.uid, n.hotkey_id, b.timestamp, mm.consensus\n) t\n  JOIN metagraph_hotkey h ON h.id = t.hotkey_id\n  JOIN metagraph_coldkey ck ON ck.id = h.coldkey_id\nGROUP BY 1, 2, t.uid\nORDER BY 1, t.uid;",
             "refId": "A",
             "sql": {
               "columns": [
@@ -2544,7 +2550,7 @@
           {
             "id": "groupingToMatrix",
             "options": {
-              "columnField": "uid",
+              "columnField": "neuron",
               "rowField": "time",
               "valueField": "value",
               "emptyValue": "null"
@@ -3277,7 +3283,7 @@
               "calculate": false,
               "cellGap": 1,
               "color": {
-                "exponent": 0.5,
+                "exponent": 0.25,
                 "fill": "dark-orange",
                 "mode": "scheme",
                 "reverse": false,
@@ -3303,7 +3309,7 @@
                 "yHistogram": false
               },
               "yAxis": {
-                "axisPlacement": "hidden",
+                "axisPlacement": "left",
                 "reverse": false
               }
             },
@@ -3317,7 +3323,7 @@
                 "editorMode": "code",
                 "format": "table",
                 "rawQuery": true,
-                "rawSql": "SELECT\n\tdate_bin(GREATEST(INTERVAL '72 minutes', ('${__to:date}'::timestamptz - '${__from:date}'::timestamptz) / 200),\n\t  created_at, TIMESTAMPTZ '2000-01-01 00:00:00+00') AS time,\n\tuid,\n\tAVG(rn) AS value\nFROM (\n\tSELECT b.timestamp AS created_at, n.uid,\n\t  CASE\n\t    WHEN ns.emissions = 0 THEN 0\n\t    ELSE ROW_NUMBER() OVER (\n\t      PARTITION BY b.timestamp\n\t      ORDER BY ns.emissions ASC, n.first_seen_block ASC\n\t    )\n\t  END AS rn\n\tFROM metagraph_neuron n\n\t  JOIN metagraph_neuron_snapshot ns ON ns.neuron_id = n.id AND ns.block_id >= (SELECT number FROM metagraph_block WHERE timestamp >= '${__from:date}' ORDER BY timestamp LIMIT 1) AND ns.block_id <= (SELECT number FROM metagraph_block WHERE timestamp <= '${__to:date}' ORDER BY timestamp DESC LIMIT 1)\n\t  JOIN metagraph_block b ON b.number = ns.block_id\n\tWHERE n.subnet_id = ${subnet}\n\t  AND (ns.is_immune OR ns.has_any_weights)          -- miner set\n\t  AND b.timestamp BETWEEN '${__from:date}' AND '${__to:date}'\n) t\nGROUP BY 1, 2\nORDER BY 1, 2;",
+                "rawSql": "SELECT\n\tdate_bin(GREATEST(INTERVAL '72 minutes', ('${__to:date}'::timestamptz - '${__from:date}'::timestamptz) / 200),\n\t  t.created_at, TIMESTAMPTZ '2000-01-01 00:00:00+00') AS time,\n\tCOALESCE(NULLIF(h.label, ''), NULLIF(ck.label, ''), ck.identity_name, LEFT(h.hotkey, 8) || '...') || ' (' || t.uid || ')' AS neuron,\n\tAVG(rn) AS value\nFROM (\n\tSELECT b.timestamp AS created_at, n.uid, n.hotkey_id,\n\t  CASE\n\t    WHEN ns.emissions = 0 THEN 0\n\t    ELSE ROW_NUMBER() OVER (\n\t      PARTITION BY b.timestamp\n\t      ORDER BY ns.emissions ASC, n.first_seen_block ASC\n\t    )\n\t  END AS rn\n\tFROM metagraph_neuron n\n\t  JOIN metagraph_neuron_snapshot ns ON ns.neuron_id = n.id AND ns.block_id >= (SELECT number FROM metagraph_block WHERE timestamp >= '${__from:date}' ORDER BY timestamp LIMIT 1) AND ns.block_id <= (SELECT number FROM metagraph_block WHERE timestamp <= '${__to:date}' ORDER BY timestamp DESC LIMIT 1)\n\t  JOIN metagraph_block b ON b.number = ns.block_id\n\tWHERE n.subnet_id = ${subnet}\n\t  AND (ns.is_immune OR ns.has_any_weights)          -- miner set\n\t  AND b.timestamp BETWEEN '${__from:date}' AND '${__to:date}'\n) t\n  JOIN metagraph_hotkey h ON h.id = t.hotkey_id\n  JOIN metagraph_coldkey ck ON ck.id = h.coldkey_id\nGROUP BY 1, 2, t.uid\nORDER BY 1, t.uid;",
                 "refId": "A",
                 "sql": {
                   "columns": [
@@ -3344,7 +3350,7 @@
               {
                 "id": "groupingToMatrix",
                 "options": {
-                  "columnField": "uid",
+                  "columnField": "neuron",
                   "rowField": "time",
                   "valueField": "value",
                   "emptyValue": "null"
@@ -3378,7 +3384,7 @@
                     "tooltip": false,
                     "viz": false
                   },
-                  "insertNulls": false,
+                  "insertNulls": 7200000,
                   "lineInterpolation": "linear",
                   "lineWidth": 1,
                   "pointSize": 5,
@@ -3420,10 +3426,15 @@
             "id": 121,
             "options": {
               "legend": {
-                "calcs": [],
-                "displayMode": "list",
-                "placement": "bottom",
-                "showLegend": true
+                "calcs": [
+                  "lastNotNull",
+                  "mean"
+                ],
+                "displayMode": "table",
+                "placement": "right",
+                "showLegend": true,
+                "sortBy": "Last *",
+                "sortDesc": true
               },
               "tooltip": {
                 "mode": "single",
@@ -3543,7 +3554,7 @@
                 "calcs": [],
                 "displayMode": "list",
                 "placement": "bottom",
-                "showLegend": true
+                "showLegend": false
               },
               "tooltip": {
                 "mode": "single",
