@@ -5,6 +5,7 @@ from typing import Any
 import structlog
 
 from apps.extrinsics.models import SubnetHyperparam, SubnetHyperparamHistory
+from apps.notifications.unwrap import unwrap_call
 
 logger = structlog.get_logger()
 
@@ -111,45 +112,24 @@ def update_hyperparam(
     return previous_value
 
 
-def _unwrap_sudo_call(extrinsic: dict[str, Any]) -> tuple[str, str, list, int | None]:
-    """Extract inner call details from a Sudo-wrapped extrinsic.
-
-    Returns (call_module, call_function, call_args, netuid).
-    For non-Sudo extrinsics, returns the extrinsic's own values.
-    """
-    call_module = extrinsic.get("call_module", "")
-    call_function = extrinsic.get("call_function", "")
-    call_args = extrinsic.get("call_args", [])
-    netuid = extrinsic.get("netuid")
-
-    if call_module == "Sudo" and call_function == "sudo":
-        for arg in call_args:
-            if arg.get("name") == "call" and isinstance(arg.get("value"), dict):
-                inner = arg["value"]
-                inner_args = inner.get("call_args", [])
-                if netuid is None:
-                    for inner_arg in inner_args:
-                        if inner_arg.get("name") == "netuid":
-                            netuid = inner_arg.get("value")
-                            break
-                return inner.get("call_module", ""), inner.get("call_function", ""), inner_args, netuid
-
-    return call_module, call_function, call_args, netuid
-
-
-def enrich_extrinsic_with_previous_values(extrinsic: dict[str, Any]) -> dict[str, Any]:
+def enrich_extrinsic_with_previous_values(extrinsic: dict[str, Any], *, persist: bool = True) -> dict[str, Any]:
     """
     Enrich an extrinsic with previous hyperparam values.
 
-    For AdminUtils extrinsics (including Sudo-wrapped ones) that change
+    For AdminUtils extrinsics (including Sudo/Multisig-wrapped ones) that change
     hyperparams, adds a 'previous_values' dict mapping param names to
     their previous values.
 
-    Also updates the stored hyperparam values.
+    Also updates the stored hyperparam values, unless ``persist`` is False
+    (read-only, e.g. a dry-run replay).
     """
-    call_module, call_function, call_args, netuid = _unwrap_sudo_call(extrinsic)
+    unwrapped = unwrap_call(extrinsic)
+    call_module = unwrapped.get("call_module", "")
+    call_function = unwrapped.get("call_function", "")
+    call_args = unwrapped.get("call_args", [])
+    netuid = unwrapped.get("netuid")
     block_number = extrinsic.get("block_number", 0)
-    success = extrinsic.get("success", False)
+    success = unwrapped.get("success", False)
 
     # Only process AdminUtils extrinsics with a netuid
     if call_module != "AdminUtils" or netuid is None:
@@ -173,10 +153,10 @@ def enrich_extrinsic_with_previous_values(extrinsic: dict[str, Any]) -> dict[str
         return extrinsic
 
     extrinsic_hash = extrinsic.get("extrinsic_hash", "")
-    address = extrinsic.get("address", "")
+    address = unwrapped.get("address", "")
 
     # Get and update the previous value (only update if extrinsic succeeded)
-    if success:
+    if success and persist:
         previous_value = update_hyperparam(
             netuid,
             param_name,
@@ -187,7 +167,7 @@ def enrich_extrinsic_with_previous_values(extrinsic: dict[str, Any]) -> dict[str
             success=True,
         )
     else:
-        # For failed extrinsics, just get the current value without updating
+        # For failed extrinsics (or read-only runs), just get the current value without updating
         previous_value = get_previous_value(netuid, param_name)
 
     # Add previous value to extrinsic
@@ -199,6 +179,8 @@ def enrich_extrinsic_with_previous_values(extrinsic: dict[str, Any]) -> dict[str
 
 def enrich_extrinsics_with_previous_values(
     extrinsics: list[dict[str, Any]],
+    *,
+    persist: bool = True,
 ) -> list[dict[str, Any]]:
     """Enrich a list of extrinsics with previous hyperparam values."""
-    return [enrich_extrinsic_with_previous_values(ext) for ext in extrinsics]
+    return [enrich_extrinsic_with_previous_values(ext, persist=persist) for ext in extrinsics]

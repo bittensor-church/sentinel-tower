@@ -113,12 +113,12 @@ def test_notify_empty_extrinsics():
     assert n.notify(100, []) == 0
 
 
-# ── unwrap_sudo_call() ────────────────────────────────────────────────
+# ── unwrap_call() ────────────────────────────────────────────────
 
 
 def test_unwrap_non_sudo_returned_as_is():
     ext = {"call_module": "AdminUtils", "call_function": "sudo_set_tempo"}
-    assert ExtrinsicNotification.unwrap_sudo_call(ext) is ext
+    assert ExtrinsicNotification.unwrap_call(ext) is ext
 
 
 def test_unwrap_extracts_inner_call():
@@ -140,7 +140,7 @@ def test_unwrap_extracts_inner_call():
             }
         ],
     }
-    result = ExtrinsicNotification.unwrap_sudo_call(ext)
+    result = ExtrinsicNotification.unwrap_call(ext)
 
     assert result["call_module"] == "AdminUtils"
     assert result["call_function"] == "sudo_set_tempo"
@@ -165,7 +165,7 @@ def test_unwrap_preserves_outer_netuid():
             }
         ],
     }
-    result = ExtrinsicNotification.unwrap_sudo_call(ext)
+    result = ExtrinsicNotification.unwrap_call(ext)
     assert result["netuid"] == 5
 
 
@@ -175,7 +175,7 @@ def test_unwrap_sudo_without_dict_value():
         "call_function": "sudo",
         "call_args": [{"name": "call", "value": "not_a_dict"}],
     }
-    result = ExtrinsicNotification.unwrap_sudo_call(ext)
+    result = ExtrinsicNotification.unwrap_call(ext)
     assert result["call_module"] == "Sudo"
 
 
@@ -190,6 +190,10 @@ def test_unwrap_sudo_without_dict_value():
         ([1, 2], "[1, 2]"),
         ("hello", "hello"),
         (42, "42"),
+        ("5DcSqBNqCmfdJZRGFSwwcRb2dZdJHZuKK8Tb1Gx8gbmF5E8s", "5DcSqBNqCmfdJZRGFSwwcRb2dZdJHZuKK8Tb1Gx8gbmF5E8s"),
+        ("0x52bc5376" + "ab" * 1000 + "b65d2039", "0x52bc5376abababab…b65d2039 (1008 bytes)"),
+        ("x" * 101, "x" * 60 + "… (101 chars)"),
+        ({"name": "y" * 120}, "{'name': '" + "y" * 50 + "… (132 chars)"),
     ],
 )
 def test_format_value(value, expected):

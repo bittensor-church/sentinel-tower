@@ -15,7 +15,7 @@ class SudoNotification(ExtrinsicNotification):
     def format_message(self, block_number: int, extrinsics: list[dict[str, Any]]) -> dict[str, Any]:
         first = extrinsics[0]
         link = self.taostats_link(block_number, first.get("extrinsic_index", 0))
-        unwrapped = [self.unwrap_sudo_call(e) for e in extrinsics]
+        unwrapped = [self.unwrap_call(e) for e in extrinsics]
 
         lines = [f"**Block #{block_number}**", ""]
 

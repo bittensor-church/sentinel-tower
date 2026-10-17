@@ -1,5 +1,6 @@
 import time
 from datetime import UTC, datetime
+from typing import cast
 
 import structlog
 from sentinel.v1.dto import EventDTO, ExtrinsicDTO
@@ -92,6 +93,16 @@ def _parse_extrinsic_record(record: dict) -> dict | None:
         "events": _sanitize_json(events),
         "netuid": netuid,
     }
+
+
+def parse_extrinsic(extrinsic: ExtrinsicDTO, block_number: int, timestamp: int | None) -> dict | None:
+    """Parse an extrinsic DTO into Extrinsic model fields (also the notification input)."""
+    return _parse_extrinsic_record({"block_number": block_number, "timestamp": timestamp, **extrinsic.model_dump()})
+
+
+def block_level_events(block_events: list[EventDTO]) -> list[dict]:
+    """Events emitted by runtime hooks rather than extrinsics (``extrinsic_idx`` is None)."""
+    return [cast(dict, _sanitize_json(e.model_dump())) for e in block_events if e.extrinsic_idx is None]
 
 
 def store_block_extrinsics(block_number: int, provider: BlockchainProvider) -> dict:
@@ -198,12 +209,7 @@ def sync_extrinsics_to_db(
     )
 
     for extrinsic in extrinsics:
-        record = {
-            "block_number": block_number,
-            "timestamp": timestamp,
-            **extrinsic.model_dump(),
-        }
-        parsed = _parse_extrinsic_record(record)
+        parsed = parse_extrinsic(extrinsic, block_number, timestamp)
         if not parsed:
             continue
 
@@ -240,10 +246,10 @@ def sync_extrinsics_to_db(
     # extrinsics; dispatch them only on first-time processing so backfill or
     # reprocessing never re-sends them (mirrors the hash dedup above).
     if not existing_hashes and block_events:
-        block_level = [_sanitize_json(e.model_dump()) for e in block_events if e.extrinsic_idx is None]
+        block_level = block_level_events(block_events)
         if block_level:
             try:
-                dispatch_block_event_notifications(block_number, block_level)  # type: ignore[arg-type]
+                dispatch_block_event_notifications(block_number, block_level)
             except Exception:  # noqa: BLE001
                 logger.exception("sync_extrinsics_to_db: block event dispatch failed", block_number=block_number)
 

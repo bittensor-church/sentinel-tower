@@ -146,6 +146,16 @@ Wants to be alerted the moment something governance-relevant happens, without po
   inner call before matching against handlers, so a governance action performed via sudo (the common
   path for `AdminUtils` hyperparameter changes) is still routed to the right notification instead of
   falling through to the generic Sudo alert.
+- **As a subnet owner or governance watcher**, I want a call executed through a multisig
+  (`Multisig.as_multi` on its final approval, or `as_multi_threshold_1`) to be alerted exactly like the
+  same call sent directly — including a multisig wrapping `Sudo` — naming the multisig account as the
+  actor and the member who sent the final approval. Proposals and intermediate approvals have not run
+  the call and are not alerted; an execution whose inner call failed counts as failed; a
+  multisig-wrapped call with no specific handler is not alerted (there is no multisig catch-all).
+- **As an operator verifying notifications**, I want to replay the notification pipeline for any past
+  block (`replay_notifications <block>…`, `--archive` to read the archive node directly) and see every
+  payload and its target channel printed and logged instead of posted, with nothing written to the
+  database, so I can check alert behaviour on staging or production without paging anyone.
 
 ## 5. Subnet Hyperparameter Watcher
 
