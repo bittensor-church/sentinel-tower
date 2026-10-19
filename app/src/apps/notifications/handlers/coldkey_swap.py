@@ -121,7 +121,7 @@ class ColdkeySwapNotification(SubnetRoutedNotification):
     def format_message(self, block_number: int, extrinsics: list[dict[str, Any]]) -> dict[str, Any]:
         first = extrinsics[0]
         link = self.taostats_link(block_number, first.get("extrinsic_index", 0))
-        unwrapped = [self.unwrap_sudo_call(e) for e in extrinsics]
+        unwrapped = [self.unwrap_call(e) for e in extrinsics]
 
         # Deduplicate: when fanned out, the same extrinsic appears per-netuid
         seen: set[tuple[str, str]] = set()
@@ -153,7 +153,11 @@ class ColdkeySwapNotification(SubnetRoutedNotification):
         parts = [f"**{label}**"]
         if address:
             identity = f" ({labels[address]})" if address in labels else ""
-            parts.append(f"**signer**: `{address}`{identity}")
+            if approver := extrinsic.get("multisig_approver"):
+                parts.append(f"**multisig**: `{address}`{identity}")
+                parts.append(f"**final approval**: `{approver}`")
+            else:
+                parts.append(f"**signer**: `{address}`{identity}")
 
         parts.extend(roles.format_lines())
 

@@ -4,6 +4,7 @@ from typing import Any, ClassVar
 import structlog
 
 from apps.notifications.channels import DatabaseWebhookChannel, NotificationChannel
+from apps.notifications.unwrap import unwrap_call
 
 logger = structlog.get_logger()
 
@@ -11,6 +12,8 @@ logger = structlog.get_logger()
 MIN_LENGTH_FOR_TRUNCATION = 20
 MAX_CALL_ARGS_LENGTH = 1000
 MAX_LIST_ITEMS_DISPLAY = 3
+# Discord rejects messages over 2000 characters; a runtime upgrade's set_code alone is megabytes of hex.
+MAX_VALUE_DISPLAY_LENGTH = 100
 
 
 class ExtrinsicNotification(abc.ABC):
@@ -69,45 +72,21 @@ class ExtrinsicNotification(abc.ABC):
 
     # ── Shared formatting utilities ──────────────────────────────────────
 
-    @staticmethod
-    def unwrap_sudo_call(extrinsic: dict[str, Any]) -> dict[str, Any]:
-        """Unwrap a Sudo extrinsic to extract the inner call details."""
-        call_module = extrinsic.get("call_module", "")
-        call_function = extrinsic.get("call_function", "")
-
-        if call_module != "Sudo" or call_function != "sudo":
-            return extrinsic
-
-        call_args = extrinsic.get("call_args", [])
-        for arg in call_args:
-            if arg.get("name") == "call" and isinstance(arg.get("value"), dict):
-                inner = arg["value"]
-                inner_args = inner.get("call_args", [])
-                netuid = extrinsic.get("netuid")
-                if netuid is None:
-                    for inner_arg in inner_args:
-                        if inner_arg.get("name") == "netuid":
-                            netuid = inner_arg.get("value")
-                            break
-                return {
-                    **extrinsic,
-                    "call_module": inner.get("call_module", call_module),
-                    "call_function": inner.get("call_function", call_function),
-                    "call_args": inner_args,
-                    "netuid": netuid,
-                    "_is_sudo": True,
-                }
-
-        return extrinsic
+    unwrap_call = staticmethod(unwrap_call)
 
     @staticmethod
     def format_value(value: Any) -> str:
-        """Format a value for display, truncating long lists."""
+        """Format a value for display, truncating long lists and long values."""
         if value is None:
             return "N/A"
         if isinstance(value, list) and len(value) > MAX_LIST_ITEMS_DISPLAY:
             return f"[{len(value)} items]"
-        return str(value)
+        text = str(value)
+        if len(text) <= MAX_VALUE_DISPLAY_LENGTH:
+            return text
+        if isinstance(value, str) and value.startswith("0x"):
+            return f"{value[:18]}…{value[-8:]} ({(len(value) - 2) // 2} bytes)"
+        return f"{text[:60]}… ({len(text)} chars)"
 
     @staticmethod
     def format_call_args(call_args: list[dict[str, Any]] | None) -> str:

@@ -107,6 +107,8 @@ class SubmittedExtrinsic:
     success: bool
     # The netuid the chain assigned, recovered from the NetworkAdded event (register_network only).
     netuid: int | None = None
+    # Position within the block; with block_number it is a multisig Timepoint.
+    index: int | None = None
 
 
 @dataclass
@@ -179,6 +181,7 @@ class Localnet:
             extrinsic_hash=self._extrinsic_hash(int(block_number), int(index)),
             success=bool(result.success),
             netuid=_network_added_netuid(result.events),
+            index=int(index),
         )
 
     def _extrinsic_hash(self, block_number: int, index: int) -> str:

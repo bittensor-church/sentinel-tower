@@ -23,21 +23,20 @@ def get_registry() -> list[ExtrinsicNotification]:
 def dispatch_block_notifications(block_number: int, extrinsics: list[dict[str, Any]]) -> int:
     """Dispatch extrinsics to matching notification handlers.
 
-    Each extrinsic is unwrapped (if Sudo) and matched against registered
-    handlers. Extrinsics are grouped per handler and sent as a single message.
+    Each extrinsic is unwrapped (Sudo, executed Multisig, nested) and matched
+    against registered handlers on its inner call. Handlers receive the
+    unwrapped extrinsics, grouped per handler and sent as a single message.
     If a Sudo-wrapped inner call matches a specific handler, it goes there;
-    otherwise it falls through to the Sudo catch-all handler.
+    otherwise it falls through to the Sudo catch-all handler. A
+    Multisig-wrapped call that matches no handler is dropped.
 
     Returns the total number of extrinsics notified.
     """
     if not extrinsics:
         return 0
 
-    # Unwrap Sudo calls so inner calls can match specific handlers
-    unwrapped_map: list[tuple[dict[str, Any], dict[str, Any]]] = []
-    for ext in extrinsics:
-        unwrapped = ExtrinsicNotification.unwrap_sudo_call(ext)
-        unwrapped_map.append((ext, unwrapped))
+    # Unwrap Sudo/Multisig calls so inner calls can match specific handlers
+    unwrapped_extrinsics = [ExtrinsicNotification.unwrap_call(ext) for ext in extrinsics]
 
     # Group extrinsics by handler (skip the Sudo catch-all on first pass)
     handler_groups: dict[ExtrinsicNotification, list[dict[str, Any]]] = {}
@@ -51,21 +50,17 @@ def dispatch_block_notifications(block_number: int, extrinsics: list[dict[str, A
             continue
         handler_groups[handler] = []
 
-    matched_originals: set[int] = set()
-
-    for i, (original, unwrapped) in enumerate(unwrapped_map):
+    for unwrapped in unwrapped_extrinsics:
         for handler in handler_groups:
             call_module = unwrapped.get("call_module", "")
             call_function = unwrapped.get("call_function", "")
             if handler.matches(call_module, call_function):
-                handler_groups[handler].append(original)
-                matched_originals.add(i)
+                handler_groups[handler].append(unwrapped)
                 break
         else:
             # No specific handler matched; if it was Sudo-wrapped, save for fallback
-            if unwrapped.get("_is_sudo") or original.get("call_module") == "Sudo":
-                unmatched_sudo.append(original)
-                matched_originals.add(i)
+            if unwrapped.get("_is_sudo") or unwrapped.get("call_module") == "Sudo":
+                unmatched_sudo.append(unwrapped)
 
     # Sudo catch-all gets only unmatched Sudo extrinsics
     if sudo_handler and unmatched_sudo:
