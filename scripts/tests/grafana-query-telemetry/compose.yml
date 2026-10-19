@@ -13,6 +13,8 @@ services:
       GF_SERVER_ROOT_URL: http://localhost:18380/grafana/
       GF_SERVER_SERVE_FROM_SUB_PATH: 'true'
       GF_ANALYTICS_REPORTING_ENABLED: 'false'
+      # Keep bundled plugins fixed: background updates can kill in-flight test queries.
+      GF_PLUGINS_PREINSTALL_DISABLED: 'true'
     volumes:
       - ./datasources.yml:/etc/grafana/provisioning/datasources/test.yml:ro
   nginx:
