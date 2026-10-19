@@ -123,3 +123,25 @@ def test_recursive_collector_preserves_flock_locked_live_file(tmp_path: Path) ->
     finally:
         writer.terminate()
         writer.wait(timeout=5)
+
+
+def test_recursive_collector_drops_obsolete_snapshot_gauge(tmp_path):
+    # A retired pre-upgrade worker can leave a positive max-gauge behind.
+    path = tmp_path / "gauge_max_123.db"
+    metric_file = MmapedDict(str(path))
+    metric_file.write_value(
+        mmap_key(
+            "metagraph_missing_snapshot_blocks",
+            "metagraph_missing_snapshot_blocks",
+            ["netuid", "window"],
+            ["5", "7d"],
+            "Old snapshot gauge",
+        ),
+        8.0,
+        0.0,
+    )
+    metric_file.close()
+    _write_counter(tmp_path / "counter_124.db", 3.0)
+    collector = RecursiveMultiProcessCollector(None, path=str(tmp_path))
+    assert "metagraph_missing_snapshot_blocks" not in {m.name for m in collector.collect()}
+    assert _collect_counter(collector) == 3.0

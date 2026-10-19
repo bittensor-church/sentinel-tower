@@ -1,0 +1,14 @@
+import.file "query_metrics" {
+  filename = "/etc/alloy/grafana-query-metrics.alloy"
+}
+query_metrics.grafana_query_metrics "queries" {
+  forward_to = []
+}
+local.file_match "queries" {
+  path_targets = [{"__path__" = "/logs/queries.log", "container" = "test-nginx-1"}]
+  sync_period = "1s"
+}
+loki.source.file "queries" {
+  targets = local.file_match.queries.targets
+  forward_to = [query_metrics.grafana_query_metrics.queries.receiver]
+}

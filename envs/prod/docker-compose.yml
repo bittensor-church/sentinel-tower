@@ -479,6 +479,7 @@ services:
       - node-exporter
       - postgres-exporter
       - grafana
+      - alloy
       - db
     command: nginx -g 'daemon off;'
     ports:
@@ -560,6 +561,7 @@ services:
       - alloy-data:/var/lib/alloy
     command:
       - run
+      - --server.http.listen-addr=0.0.0.0:12345
       - --storage.path=/var/lib/alloy/data
       - /etc/alloy/config.alloy
     logging:

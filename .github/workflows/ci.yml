@@ -16,6 +16,24 @@ jobs:
       - name: Test Grafana preview with disposable Git repositories
         run: python3 -m unittest discover -s scripts/tests -v
 
+  grafana_query_telemetry:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd  # v6.0.2
+        with:
+          persist-credentials: false
+      - name: Start disposable Grafana query telemetry stack
+        run: docker compose -p sentinel-query-tests -f scripts/tests/grafana-query-telemetry/compose.yml up -d
+      - name: Test failed SQL, timeouts, attribution and slow requests
+        run: GRAFANA_TELEMETRY_TEST=1 python3 -m unittest discover -s scripts/tests -p test_grafana_query_telemetry.py -v
+      - name: Show test stack diagnostics on failure
+        if: failure()
+        run: docker compose -p sentinel-query-tests -f scripts/tests/grafana-query-telemetry/compose.yml logs --tail=100
+      - name: Remove disposable services and data
+        if: always()
+        run: docker compose -p sentinel-query-tests -f scripts/tests/grafana-query-telemetry/compose.yml down -v
+
   linter:
     runs-on: ubuntu-latest
     steps:

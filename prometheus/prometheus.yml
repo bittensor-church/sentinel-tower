@@ -54,7 +54,7 @@ scrape_configs:
   # shown on the "Grafana Query Timing" dashboard. Prometheus reads this file
   # only at start or on `curl -X POST http://127.0.0.1:9090/-/reload`.
   - job_name: 'grafana'
-    metrics_path: /metrics
+    metrics_path: /grafana/metrics
     static_configs:
       - targets: ['grafana:3000']
     scrape_interval: 30s
@@ -68,3 +68,12 @@ scrape_configs:
     static_configs:
       - targets: ['internal.grafana.bactensor.io']
     scrape_interval: 30s
+
+  # Query attribution derived from nginx access events by Alloy (prod stack).
+  - job_name: sentinel-grafana-queries
+    static_configs:
+      - targets: ['alloy:12345']
+    metric_relabel_configs:
+      - source_labels: [__name__]
+        regex: sentinel_grafana_.*|alloy_build_info
+        action: keep

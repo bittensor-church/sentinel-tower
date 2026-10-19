@@ -10,6 +10,7 @@ from sentinel.v1.services.sentinel import sentinel_service
 from apps.extrinsics.hyperparam_service import enrich_extrinsics_with_previous_values
 from apps.extrinsics.models import Extrinsic
 from apps.notifications import dispatch_block_event_notifications, dispatch_block_notifications
+from project.core.monitoring import record_ingestion_success
 from project.core.services import JsonLinesStorage
 
 logger = structlog.get_logger()
@@ -145,6 +146,9 @@ def store_block_extrinsics(block_number: int, provider: BlockchainProvider) -> d
 
     # Sync to Django models
     db_count = sync_extrinsics_to_db(extrinsics, block_number, timestamp, block_events=block.events)
+
+    source_time = datetime.fromtimestamp(timestamp / 1000, tz=UTC) if timestamp is not None else None
+    record_ingestion_success("extrinsics", block_number, source_time)
     t4 = time.monotonic()
     logger.debug("DB sync completed", block_number=block_number, db_count=db_count, duration_s=round(t4 - t3, 3))
 

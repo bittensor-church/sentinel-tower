@@ -3,12 +3,10 @@ from unittest.mock import patch
 
 import pytest
 from django.test import override_settings
-from prometheus_client import REGISTRY, generate_latest
 from prometheus_client.parser import text_string_to_metric_families
 
 from apps.metagraph.models import SnapshotHealthMetric
 from apps.metagraph.tasks import (
-    set_snapshot_health_metrics,
     update_snapshot_health_metrics,
 )
 from apps.metagraph.utils import get_dumpable_blocks_in_range
@@ -138,15 +136,13 @@ def test_task_replaces_previous_rows(latest_block, neuron):
 
 
 @pytest.mark.django_db
-def test_set_snapshot_health_metrics_exposes_persisted_rows():
+def test_metrics_exposes_persisted_snapshot_health_rows(client):
     SnapshotHealthMetric.objects.create(netuid=5, window="7d", missing_blocks=4)
     SnapshotHealthMetric.objects.create(netuid=5, window="12d", missing_blocks=9)
     SnapshotHealthMetric.objects.create(netuid=15, window="7d", missing_blocks=1)
     SnapshotHealthMetric.objects.create(netuid=15, window="12d", missing_blocks=12)
 
-    set_snapshot_health_metrics()
-
-    content = generate_latest(REGISTRY).decode()
+    content = client.get("/metrics").content.decode()
     assert _gauge_value(content, 5, "7d") == 4.0
     assert _gauge_value(content, 5, "12d") == 9.0
     assert _gauge_value(content, 15, "7d") == 1.0
@@ -154,16 +150,23 @@ def test_set_snapshot_health_metrics_exposes_persisted_rows():
 
 
 @pytest.mark.django_db
-def test_set_snapshot_health_metrics_clears_stale_labels():
+def test_metrics_clears_stale_snapshot_health_labels(client):
     SnapshotHealthMetric.objects.create(netuid=5, window="7d", missing_blocks=4)
-    set_snapshot_health_metrics()
 
     # Replace the persisted rows, mirroring a fresh task run, and re-publish.
     SnapshotHealthMetric.objects.all().delete()
     SnapshotHealthMetric.objects.create(netuid=6, window="7d", missing_blocks=1)
-    set_snapshot_health_metrics()
 
-    content = generate_latest(REGISTRY).decode()
+    content = client.get("/metrics").content.decode()
     assert _gauge_value(content, 6, "7d") == 1.0
     with pytest.raises(KeyError):
         _gauge_value(content, 5, "7d")
+
+
+@pytest.mark.django_db
+def test_snapshot_health_metric_recovers_after_backfill(client):
+    row = SnapshotHealthMetric.objects.create(netuid=5, window="7d", missing_blocks=8)
+    assert _gauge_value(client.get("/metrics").content.decode(), 5, "7d") == 8
+    row.missing_blocks = 0
+    row.save()
+    assert _gauge_value(client.get("/metrics").content.decode(), 5, "7d") == 0

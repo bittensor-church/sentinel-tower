@@ -1,3 +1,11 @@
+import.file "query_metrics" {
+	filename = "/etc/alloy/grafana-query-metrics.alloy"
+}
+
+query_metrics.grafana_query_metrics "queries" {
+	forward_to = [loki.write.default.receiver]
+}
+
 discovery.docker "containerlogs" {
 	host             = "unix:///var/run/docker.sock"
 }
@@ -30,7 +38,7 @@ loki.source.docker "containerlogs" {
 // entry so the slow-statement and STATEMENT lines keep their full SQL.
 // Everything that is not the db container passes through unchanged.
 loki.process "containerlogs" {
-	forward_to = [loki.write.default.receiver]
+	forward_to = [query_metrics.grafana_query_metrics.queries.receiver]
 
 	stage.match {
 		selector = "{container=~\".*-db-1\"}"
