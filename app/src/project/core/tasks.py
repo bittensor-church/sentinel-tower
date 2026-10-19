@@ -17,6 +17,10 @@ from datetime import timedelta
 from celery import shared_task
 
 from project.core import retention
+from project.core.grafana_probes import run_grafana_probes
+from project.core.monitoring import refresh_data_health
+
+__all__ = ["cleanup_expired_data", "run_grafana_probes", "refresh_data_health"]
 
 CLEANUP_TIME_LIMIT = int(timedelta(hours=4).total_seconds())
 

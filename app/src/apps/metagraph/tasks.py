@@ -18,11 +18,11 @@ from billiard.exceptions import SoftTimeLimitExceeded
 from celery import shared_task
 from django.conf import settings
 from django.db import connection, transaction
-from prometheus_client import Gauge
 
 from apps.metagraph.models import Block, NeuronSnapshot, SnapshotHealthMetric, Subnet
 from apps.metagraph.services import apy_epoch_ingest, coldkey_identity_sync
 from apps.metagraph.utils import get_dumpable_blocks_in_range
+from project.core.monitoring import record_task_success
 
 logger = structlog.get_logger()
 
@@ -145,6 +145,7 @@ def ingest_validator_apy_epochs() -> None:
                 connection.connection.cancel_safe(timeout=5.0)
             connection.close()  # atomic sees closed_in_transaction and skips ROLLBACK
             raise
+    record_task_success("validator_apy")
     logger.info(
         "Ingested validator APY epochs",
         reconciled=deleted,
@@ -162,14 +163,6 @@ _SNAPSHOT_HEALTH_WINDOWS = {
     "7d": 7 * 24 * 3600 // settings.BITTENSOR_SECONDS_PER_BLOCK,
     "12d": 12 * 24 * 3600 // settings.BITTENSOR_SECONDS_PER_BLOCK,
 }
-
-
-missing_snapshot_blocks_gauge = Gauge(
-    "metagraph_missing_snapshot_blocks",
-    "Dumpable blocks with no NeuronSnapshot entries for this netuid in the look-back window",
-    ["netuid", "window"],
-    multiprocess_mode="max",
-)
 
 
 def _compute_missing_snapshot_blocks() -> dict[tuple[int, str], int]:
@@ -245,19 +238,8 @@ def update_snapshot_health_metrics() -> None:
                 for (netuid, window), missing in results.items()
             ]
         )
+        record_task_success("snapshot_health")
     logger.info("Updated snapshot health metrics", rows=len(results))
-
-
-def set_snapshot_health_metrics() -> None:
-    """
-    Populate the snapshot-health gauge from persisted rows in the SnapshotHealthMetric table.
-
-    Clears the metric to allow Prometheus to mark subnet/window combinations that no longer exist
-    as stale.
-    """
-    missing_snapshot_blocks_gauge.clear()
-    for netuid, window, missing in SnapshotHealthMetric.objects.values_list("netuid", "window", "missing_blocks"):
-        missing_snapshot_blocks_gauge.labels(netuid=str(netuid), window=window).set(missing)
 
 
 IDENTITY_SYNC_TIME_LIMIT = int(timedelta(minutes=5).total_seconds())

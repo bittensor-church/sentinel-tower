@@ -171,6 +171,16 @@ CELERY_BEAT_SCHEDULE = {
         "schedule": timedelta(minutes=72),
         "options": {"expires": int(timedelta(minutes=60).total_seconds())},
     },
+    "refresh-data-health": {
+        "task": "project.core.monitoring.refresh_data_health",
+        "schedule": timedelta(minutes=5),
+        "options": {"expires": 240},
+    },
+    "grafana-query-probes": {
+        "task": "project.core.grafana_probes.run_grafana_probes",
+        "schedule": timedelta(minutes=5),
+        "options": {"expires": 240},
+    },
     "sync-coldkey-identities": {
         "task": "apps.metagraph.tasks.sync_coldkey_identities",
         # Owners rename themselves rarely; hourly keeps dashboards current at the
@@ -414,6 +424,11 @@ BLOCK_TASK_MAX_RETRY_DELAY_MINUTES = 1440
 # Metagraph
 METAGRAPH_NETUIDS: list[int] | None = env.list("METAGRAPH_NETUIDS", default=[], cast=int) or None
 METAGRAPH_LITE = env.bool("METAGRAPH_LITE", default=False)
+
+# Service-account token stays in the deployment's secret environment.
+SENTINEL_GRAFANA_URL = env.str("SENTINEL_GRAFANA_URL", default="http://grafana:3000/grafana")
+SENTINEL_GRAFANA_TOKEN = env.str("SENTINEL_GRAFANA_TOKEN", default="")
+SENTINEL_GRAFANA_PROBE_NETUIDS = env.list("SENTINEL_GRAFANA_PROBE_NETUIDS", default=[], cast=int)
 
 # Coldkey tracked as "superburn" alongside each subnet's own owner-coldkey burn
 # (apps.metagraph.services.burn_service). Set empty to record superburn as 0.

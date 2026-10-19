@@ -13,6 +13,8 @@ upstream gunicorn {
 #     server dagster:3000;
 # }
 
+include /etc/nginx/config_helpers/grafana-query-telemetry.conf;
+
 upstream grafana {
     server grafana:3000;
 }
@@ -110,6 +112,9 @@ server {
     }
 
     location /grafana/ {
+        access_log /dev/stdout;
+        access_log /dev/stdout sentinel_grafana_query if=$sentinel_is_query;
+        proxy_set_header X-Request-ID $request_id;
         proxy_pass http://grafana;
         proxy_http_version 1.1;
         proxy_set_header Host $http_host;
@@ -205,6 +210,16 @@ server {
         proxy_set_header X-Forwarded-Proto $scheme;
         proxy_set_header X-Request-ID $request_id;
         proxy_pass http://gunicorn/metrics;
+    }
+
+    # Same client-certificate protection as application metrics.
+    location /grafana-query-metrics/ {
+        access_log /dev/stdout sentinel_query_collector_heartbeat;
+        proxy_pass http://alloy:12345/metrics;
+    }
+
+    location /grafana-metrics/ {
+        proxy_pass http://grafana/grafana/metrics;
     }
 
     location /business-metrics/ {

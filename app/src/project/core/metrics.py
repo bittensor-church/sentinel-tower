@@ -6,8 +6,8 @@ from django.http import HttpResponse
 from django_prometheus.exports import ExportToDjangoView
 from prometheus_client import REGISTRY, multiprocess
 
-from apps.metagraph.tasks import set_snapshot_health_metrics
 from project.celery import CeleryQueueLenCollector
+from project.core.monitoring_metrics import MonitoringCollector
 
 
 class RecursiveMultiProcessCollector(multiprocess.MultiProcessCollector):
@@ -23,6 +23,10 @@ class RecursiveMultiProcessCollector(multiprocess.MultiProcessCollector):
                 # the shared directory. Missing files are transient, not a 500.
                 continue
             for name, metric in file_metrics.items():
+                # Pre-upgrade max-gauge files can outlive their workers. This metric
+                # now comes directly from persisted rows in MonitoringCollector.
+                if name == "metagraph_missing_snapshot_blocks":
+                    continue
                 if name in metrics:
                     metrics[name].samples.extend(metric.samples)
                 else:
@@ -40,12 +44,11 @@ else:
     registry = REGISTRY
 
 registry.register(CeleryQueueLenCollector())
+registry.register(MonitoringCollector())
 
 
 def metrics_view(request):
     """Exports metrics as a Django view"""
-
-    set_snapshot_health_metrics()
 
     if is_multiprocess:
         return HttpResponse(

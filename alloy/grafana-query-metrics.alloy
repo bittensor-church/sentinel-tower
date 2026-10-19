@@ -1,0 +1,127 @@
+// Reused by production Docker log ingestion and the disposable integration test.
+// Series expire after one hour without matching events. Request IDs, URLs and SQL
+// are never metric labels. Context headers identify the requested chart, not SQL scope.
+declare "grafana_query_metrics" {
+	argument "forward_to" { }
+
+	export "receiver" {
+		value = loki.process.queries.receiver
+	}
+
+	loki.process "queries" {
+		forward_to = argument.forward_to.value
+
+		stage.match {
+			selector = `{container=~".*-nginx-1"} |= "\"event\":\"sentinel_query_collector_heartbeat\""`
+
+			stage.json {
+				expressions = {event_time = "timestamp"}
+			}
+
+			stage.metrics {
+				metric.gauge {
+					name              = "query_log_last_seen_timestamp_seconds"
+					prefix            = "sentinel_grafana_"
+					source            = "event_time"
+					action            = "set"
+					max_idle_duration = "1h"
+				}
+			}
+		}
+
+		stage.match {
+			selector = `{container=~".*-nginx-1"} |= "\"event\":\"sentinel_grafana_query\""`
+
+			stage.json {
+				expressions = {
+					event_time       = "timestamp",
+					dashboard_uid    = "",
+					panel_id         = "",
+					dashboard_title  = "",
+					panel_title      = "",
+					datasource_uid   = "",
+					netuid           = "",
+					subnet_variable  = "",
+					status_code      = "",
+					duration_seconds = "",
+				}
+			}
+
+			stage.labels {
+				values = {
+					dashboard_uid   = "",
+					panel_id        = "",
+					dashboard_title = "",
+					panel_title     = "",
+					datasource_uid  = "",
+					netuid          = "",
+					subnet_variable = "",
+					status_code     = "",
+				}
+			}
+
+			stage.metrics {
+				metric.histogram {
+					name              = "query_duration_seconds"
+					prefix            = "sentinel_grafana_"
+					description       = "Completed chart query request duration at nginx"
+					source            = "duration_seconds"
+					buckets           = [1, 5, 10, 30, 60]
+					max_idle_duration = "1h"
+				}
+			}
+			// Track the actual slow-event timestamp, including the first request.
+			stage.template {
+				source   = "slow_query"
+				template = "{{ if gt (float64 .duration_seconds) 5.0 }}yes{{ else }}no{{ end }}"
+			}
+
+			stage.labels {
+				values = {slow_query = ""}
+			}
+
+			stage.match {
+				selector = `{status_code="200",slow_query="yes"}`
+
+				stage.label_drop {
+					values = ["slow_query"]
+				}
+
+				stage.metrics {
+					metric.gauge {
+						name              = "query_last_slow_timestamp_seconds"
+						prefix            = "sentinel_grafana_"
+						source            = "event_time"
+						action            = "set"
+						max_idle_duration = "1h"
+					}
+				}
+			}
+
+			stage.label_drop {
+				values = ["slow_query"]
+			}
+			// Browser navigation often cancels a request (499); login expiry is 401.
+			// Neither is evidence of a broken chart. Grafana SQL errors are HTTP 400,
+			// including mixed batches where another query succeeded (pinned 13.2.3).
+			stage.match {
+				selector = "{status_code=~\"4..|5..\",status_code!~\"401|499\"}"
+
+				stage.metrics {
+					metric.gauge {
+						name              = "query_last_failure_timestamp_seconds"
+						prefix            = "sentinel_grafana_"
+						description       = "Timestamp of last observed failed chart request; not proof of recovery"
+						source            = "event_time"
+						action            = "set"
+						max_idle_duration = "1h"
+					}
+				}
+			}
+			// Keep Loki stream cardinality unchanged; context remains in the JSON log.
+			stage.label_drop {
+				values = ["dashboard_uid", "panel_id", "dashboard_title", "panel_title", "datasource_uid", "netuid", "subnet_variable", "status_code"]
+			}
+		}
+	}
+}
