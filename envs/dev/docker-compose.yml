@@ -30,6 +30,8 @@ x-backend: &backend
     - ./app/envs/prod/block-scheduler-entrypoint.sh:/root/src/block-scheduler-entrypoint.sh
     - ./app/envs/prod/docker-entrypoint.sh:/docker-entrypoint.sh
     - ${MEDIA_VOLUME_PATH:-./app/src/media}:/root/src/media
+    # memray captures when MEMORY_PROFILING=1, see README "Memory profiling"
+    - ./profiles:/var/profiles
 
 services:
   app:
