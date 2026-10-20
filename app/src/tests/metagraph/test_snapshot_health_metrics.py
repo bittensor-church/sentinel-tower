@@ -170,3 +170,61 @@ def test_snapshot_health_metric_recovers_after_backfill(client):
     row.missing_blocks = 0
     row.save()
     assert _gauge_value(client.get("/metrics").content.decode(), 5, "7d") == 0
+
+
+@pytest.mark.django_db
+@override_settings(METAGRAPH_NETUIDS=[1, 2], METAGRAPH_SNAPSHOT_HEALTH_START_BLOCK=99753)
+def test_collection_start_limits_windows_without_hiding_later_gaps(client):
+    BlockFactory(number=100000, timestamp=datetime(2026, 1, 1, tzinfo=UTC))
+    neuron = NeuronFactory(subnet=SubnetFactory(netuid=1))
+    # Subnet 1 expects 99753, 99873, 99993, 99994 from this boundary.
+    # Leave the boundary itself and 99873 missing, including on a later run.
+    for number in (99993, 99994):
+        NeuronSnapshotFactory(neuron=neuron, block=BlockFactory(number=number))
+
+    update_snapshot_health_metrics()
+    content = client.get("/metrics").content.decode()
+    for window in ("7d", "12d"):
+        assert _gauge_value(content, 1, window) == 2
+        # Subnet 2 has no snapshots at all; its three expected blocks still count.
+        assert _gauge_value(content, 2, window) == 3
+
+    # Older backfilled rows must not change when coverage became expected.
+    NeuronSnapshotFactory(neuron=neuron, block=BlockFactory(number=99000))
+    update_snapshot_health_metrics()
+    assert _gauge_value(client.get("/metrics").content.decode(), 1, "7d") == 2
+
+    for number in (99753, 99873):
+        NeuronSnapshotFactory(neuron=neuron, block=BlockFactory(number=number))
+    update_snapshot_health_metrics()
+    assert _gauge_value(client.get("/metrics").content.decode(), 1, "7d") == 0
+
+
+@pytest.mark.django_db
+@pytest.mark.parametrize("start_block", [0, 10000])
+def test_established_collection_keeps_full_rolling_windows(settings, client, start_block):
+    settings.METAGRAPH_NETUIDS = [1]
+    settings.METAGRAPH_SNAPSHOT_HEALTH_START_BLOCK = start_block
+    BlockFactory(number=100000, timestamp=datetime(2026, 1, 1, tzinfo=UTC))
+
+    update_snapshot_health_metrics()
+
+    content = client.get("/metrics").content.decode()
+    # 7d begins at 49600: two tail slots + 139 full epochs + one start slot.
+    assert _gauge_value(content, 1, "7d") == 559
+    # 12d begins at 13600: one tail slot + 239 full epochs + one start slot.
+    assert _gauge_value(content, 1, "12d") == 958
+
+
+@pytest.mark.django_db
+@pytest.mark.parametrize("start_block", [-1, 100001])
+def test_invalid_collection_start_preserves_previous_health_result(settings, start_block):
+    settings.METAGRAPH_NETUIDS = [1]
+    settings.METAGRAPH_SNAPSHOT_HEALTH_START_BLOCK = start_block
+    BlockFactory(number=100000, timestamp=datetime(2026, 1, 1, tzinfo=UTC))
+    SnapshotHealthMetric.objects.create(netuid=1, window="7d", missing_blocks=5)
+
+    with pytest.raises(ValueError, match="METAGRAPH_SNAPSHOT_HEALTH_START_BLOCK"):
+        update_snapshot_health_metrics()
+
+    assert SnapshotHealthMetric.objects.get(netuid=1, window="7d").missing_blocks == 5

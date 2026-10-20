@@ -424,6 +424,9 @@ BLOCK_TASK_MAX_RETRY_DELAY_MINUTES = 1440
 # Metagraph
 METAGRAPH_NETUIDS: list[int] | None = env.list("METAGRAPH_NETUIDS", default=[], cast=int) or None
 METAGRAPH_LITE = env.bool("METAGRAPH_LITE", default=False)
+# First block from which this deployment expects regular snapshot coverage.
+# Fixed explicitly: historical backfills must not move the collection boundary.
+METAGRAPH_SNAPSHOT_HEALTH_START_BLOCK = env.int("METAGRAPH_SNAPSHOT_HEALTH_START_BLOCK", default=0)
 
 # Service-account token stays in the deployment's secret environment.
 SENTINEL_GRAFANA_URL = env.str("SENTINEL_GRAFANA_URL", default="http://grafana:3000/grafana")
