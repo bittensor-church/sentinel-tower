@@ -170,9 +170,9 @@ def _compute_missing_snapshot_blocks() -> dict[tuple[int, str], int]:
 
     Mirrors the logic in apps.metagraph.utils.get_dumpable_blocks_in_range: for
     each look-back window it determines the blocks for which neuron snapshots are
-    expected per netuid and verifies at least one snapshot exists for each
-    expected block/netuid pair. Returns an empty mapping when no timestamped
-    block exists yet.
+    expected per netuid, starting no earlier than the configured collection
+    boundary, and verifies at least one snapshot exists for each expected
+    block/netuid pair. Returns an empty mapping when no timestamped block exists yet.
     """
     latest_block = Block.objects.filter(timestamp__isnull=False).order_by("-number").first()
     if not latest_block:
@@ -181,16 +181,17 @@ def _compute_missing_snapshot_blocks() -> dict[tuple[int, str], int]:
     netuids: list[int] = settings.METAGRAPH_NETUIDS or list(Subnet.objects.values_list("netuid", flat=True))
 
     end_block = latest_block.number
+    collection_start = settings.METAGRAPH_SNAPSHOT_HEALTH_START_BLOCK
+    if not 0 <= collection_start <= end_block:
+        raise ValueError("METAGRAPH_SNAPSHOT_HEALTH_START_BLOCK must be between 0 and the latest stored block")
     # Process windows largest-first so each subnet is queried once over the widest
     # block range; the narrower windows are subsets and reuse that single result.
     windows_by_size = sorted(_SNAPSHOT_HEALTH_WINDOWS.items(), key=lambda kv: kv[1], reverse=True)
-    widest_start_block = end_block - windows_by_size[0][1]
+    widest_start_block = max(end_block - windows_by_size[0][1], collection_start)
 
     results: dict[tuple[int, str], int] = {}
     for netuid in netuids:
         widest_dumpable = get_dumpable_blocks_in_range(widest_start_block, end_block, netuid)
-        if not widest_dumpable:
-            continue
         # A separate query for each subnet is necessary as querying all dumpable blocks for all
         # subnets in one query causes memory-related server issues. Since this is meant to be run
         # as a Celery task every 72 minutes, the longer runtime isn't critical.
@@ -211,8 +212,6 @@ def _compute_missing_snapshot_blocks() -> dict[tuple[int, str], int]:
         for window_name, block_delta in windows_by_size:
             # Narrow the widest dumpable set to this window's range; no extra query.
             dumpable = {block for block in widest_dumpable if block >= end_block - block_delta}
-            if not dumpable:
-                continue
             results[(netuid, window_name)] = len(dumpable - covered)
     return results
 
