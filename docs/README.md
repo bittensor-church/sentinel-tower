@@ -1,4 +1,9 @@
 
+# Sentinel guides
+
+- [Monitoring and alerting](sentinel-alerting.md): what we monitor, why each check
+  matters, and how alerts reach Sentry and Slack.
+
 # Base cookiecutter-rt-django README
 
 - docker with [compose plugin](https://docs.docker.com/compose/install/linux/)
