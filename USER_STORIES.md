@@ -39,6 +39,9 @@ Responsible for keeping the ingestion pipeline healthy and trusting the data it 
   handshakes until a chain operation succeeds. If the endpoint stays unreachable one retry is logged
   at error level (and so reaches Sentry), while later retries remain warnings until recovery resets the
   outage state.
+- **As a chain operator**, I want missing or unfinished metagraph dumps repaired automatically
+  after restarts, without pausing live collection or backfilling before collection began.
+  Repair retries every five minutes within a configurable window; older gaps need manual backfill.
 - **As a chain operator**, I want failed extrinsics decoded into a human-readable error name
   (`SubtensorErrorCode`) instead of a raw hex module/index pair, so I can diagnose failures without
   cross-referencing the subtensor source.

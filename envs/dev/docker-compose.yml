@@ -276,7 +276,11 @@ services:
 
   backfill-metagraph:
     <<: *backend
-    command: python manage.py backfill_metagraph
+    restart: unless-stopped
+    command: >-
+      python manage.py backfill_metagraph
+      --interval 300 --settle-blocks 25
+      --lookback ${METAGRAPH_REPAIR_LOOKBACK:-7200}
     depends_on:
       db:
         condition: service_healthy
