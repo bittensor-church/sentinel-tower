@@ -82,6 +82,17 @@ BITTENSOR_ARCHIVE_NETWORK=wss://archive.node.url  # Archive node URI
 BACKFILL_RATE_LIMIT=0.5          # Seconds between blocks (default: 1.0)
 ```
 
+### Automatic metagraph gap repair
+
+The `backfill-metagraph` Compose service scans on startup and five minutes after each pass,
+repairing missing or unfinished dumps from the archive node. It skips the newest 25 blocks
+(~5 minutes) and scans the preceding `METAGRAPH_REPAIR_LOOKBACK` blocks (default 7200, ~24 hours),
+starting no earlier than each subnet's first dump. Failed repairs retry on the next pass;
+older gaps require manual backfill. Snapshot-health alerts refresh every 72 minutes.
+
+Direct `python manage.py backfill_metagraph` runs remain one-shot with a 300-block safety margin.
+Use `--interval SECONDS` for repeat mode and `--settle-blocks N` to change the margin.
+
 ### Fast backfill mode
 
 Synchronous lite APY-only backfill. Processes epoch-start blocks directly in the management command using a single WebSocket connection. Uses `--lite` mode (excludes weights/bonds). Good for smaller ranges or debugging.

@@ -244,12 +244,16 @@ services:
   backfill-metagraph:
     image: project/app
     init: true
+    restart: unless-stopped
     env_file: ./.env
     extra_hosts:
       - "host.docker.internal:host-gateway"
     environment:
       - MEDIA_ROOT=${MEDIA_ROOT}
-    command: python manage.py backfill_metagraph
+    command: >-
+      python manage.py backfill_metagraph
+      --interval 300 --settle-blocks 25
+      --lookback ${METAGRAPH_REPAIR_LOOKBACK:-7200}
     volumes:
       - ${MEDIA_VOLUME_PATH:-./media}:${MEDIA_ROOT}
     profiles:
