@@ -7,7 +7,8 @@ if [ ! -f ".env" ]; then
     exit 1;
 fi
 
-docker compose build
+docker compose build --pull
+docker compose pull --ignore-buildable
 
 docker compose up -d db  # in case it hasn't been launched before
 # backup db before any database changes
@@ -23,7 +24,7 @@ SERVICES=$(docker compose ps --services 2>/dev/null | grep -E "$APP_SERVICES" ||
 if [ -n "$SERVICES" ]; then
     # Build profiled service images before stopping their existing containers.
     # shellcheck disable=2086
-    docker compose build $SERVICES
+    docker compose build --pull $SERVICES
     # shellcheck disable=2086
     docker compose stop $SERVICES
 fi
