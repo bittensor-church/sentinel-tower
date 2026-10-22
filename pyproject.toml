@@ -103,10 +103,11 @@ reportIncompatibleVariableOverride = false
 
 [tool.uv]
 exclude-newer = "14 days"
-exclude-newer-package = { django = false, cryptography = false, dagster = false, dagster-graphql = false, dagster-pipes = false, dagster-shared = false, dagster-webserver = false, bittensor-sentinel = false }
+exclude-newer-package = { django = false, cryptography = false, certifi = false, dagster = false, dagster-graphql = false, dagster-pipes = false, dagster-shared = false, dagster-webserver = false, bittensor-sentinel = false }
 constraint-dependencies = [
     "urllib3>=2.7.0",
     "idna>=3.15",
+    "certifi>=2026.10.19",  # emSign CA removal
 ]
 
 [tool.coverage.run]
