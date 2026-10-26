@@ -13,14 +13,30 @@ class MonitoringCollector:
         return []
 
     def collect(self):
-        gaps = GaugeMetricFamily(
-            "metagraph_missing_snapshot_blocks",
-            "Dumpable blocks with no NeuronSnapshot entries in the look-back window",
-            labels=["netuid", "window"],
-        )
-        for netuid, window, missing in SnapshotHealthMetric.objects.values_list("netuid", "window", "missing_blocks"):
-            gaps.add_metric([str(netuid), window], missing)
-        yield gaps
+        health = list(SnapshotHealthMetric.objects.all())
+        for name, field, description in (
+            (
+                "metagraph_missing_snapshot_blocks",
+                "missing_blocks",
+                "Uncollected dumpable blocks, excluding proven retention",
+            ),
+            (
+                "metagraph_acknowledged_missing_snapshot_blocks",
+                "acknowledged_blocks",
+                "Missing blocks with operator evidence",
+            ),
+            (
+                "metagraph_actionable_missing_snapshot_blocks",
+                "actionable_blocks",
+                "Missing blocks needing investigation",
+            ),
+        ):
+            gaps = GaugeMetricFamily(name, description, labels=["netuid", "window"])
+            for row in health:
+                value = getattr(row, field)
+                # Migration-era rows have not been classified yet: keep every gap actionable.
+                gaps.add_metric([str(row.netuid), row.window], row.missing_blocks if value is None else value)
+            yield gaps
         configured = GaugeMetricFamily(
             "sentinel_grafana_probes_configured", "Grafana probe credentials and subnet configured"
         )
@@ -36,6 +52,7 @@ class MonitoringCollector:
         rows = list(MonitoringResult.objects.all())
         for field, suffix, help_text in (
             ("source_timestamp", "timestamp_seconds", "Latest stored source data time"),
+            ("freshness_required", "freshness_required", "Whether new output is expected for this dataset"),
             ("max_age_seconds", "max_age_seconds", "Allowed age for this dataset"),
             ("checked_at", "checked_timestamp_seconds", "When this dataset was checked"),
         ):
@@ -43,7 +60,7 @@ class MonitoringCollector:
             for row in rows:
                 if row.kind == "data":
                     value = getattr(row, field)
-                    if field != "max_age_seconds":
+                    if field not in ("max_age_seconds", "freshness_required"):
                         value = value.timestamp() if value else 0
                     metric.add_metric([row.name, row.netuid], value)
             yield metric

@@ -36,6 +36,7 @@ class MonitoringResult(models.Model):
     checked_at = models.DateTimeField()
     source_timestamp = models.DateTimeField(null=True)
     max_age_seconds = models.PositiveIntegerField(default=300)
+    freshness_required = models.BooleanField(default=True, db_default=True)
     success = models.BooleanField(default=False)
     duration_seconds = models.FloatField(default=0)
     error_code = models.CharField(max_length=64, blank=True)

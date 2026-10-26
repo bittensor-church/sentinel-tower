@@ -18,8 +18,16 @@ from billiard.exceptions import SoftTimeLimitExceeded
 from celery import shared_task
 from django.conf import settings
 from django.db import connection, transaction
+from django.utils import timezone
 
-from apps.metagraph.models import Block, NeuronSnapshot, SnapshotHealthMetric, Subnet
+from apps.metagraph.models import (
+    Block,
+    MetagraphDump,
+    NeuronSnapshot,
+    SnapshotGapAcknowledgement,
+    SnapshotHealthMetric,
+    Subnet,
+)
 from apps.metagraph.services import apy_epoch_ingest, coldkey_identity_sync
 from apps.metagraph.utils import get_dumpable_blocks_in_range
 from project.core.monitoring import record_task_success
@@ -165,14 +173,15 @@ _SNAPSHOT_HEALTH_WINDOWS = {
 }
 
 
-def _compute_missing_snapshot_blocks() -> dict[tuple[int, str], int]:
-    """Count dumpable blocks with no NeuronSnapshot per (netuid, window).
+def _compute_missing_snapshot_blocks() -> dict[tuple[int, str], tuple[int, int]]:
+    """Return (missing, acknowledged) counts per (netuid, window).
 
     Mirrors the logic in apps.metagraph.utils.get_dumpable_blocks_in_range: for
     each look-back window it determines the blocks for which neuron snapshots are
     expected per netuid, starting no earlier than the configured collection
     boundary, and verifies at least one snapshot exists for each expected
-    block/netuid pair. Returns an empty mapping when no timestamped block exists yet.
+    block/netuid pair. Proven retention cleanup is coverage. Returns an empty
+    mapping when no timestamped block exists yet.
     """
     latest_block = Block.objects.filter(timestamp__isnull=False).order_by("-number").first()
     if not latest_block:
@@ -189,7 +198,7 @@ def _compute_missing_snapshot_blocks() -> dict[tuple[int, str], int]:
     windows_by_size = sorted(_SNAPSHOT_HEALTH_WINDOWS.items(), key=lambda kv: kv[1], reverse=True)
     widest_start_block = max(end_block - windows_by_size[0][1], collection_start)
 
-    results: dict[tuple[int, str], int] = {}
+    results: dict[tuple[int, str], tuple[int, int]] = {}
     for netuid in netuids:
         widest_dumpable = get_dumpable_blocks_in_range(widest_start_block, end_block, netuid)
         # A separate query for each subnet is necessary as querying all dumpable blocks for all
@@ -209,10 +218,24 @@ def _compute_missing_snapshot_blocks() -> dict[tuple[int, str], int]:
             .values_list("block_id", flat=True)
             .distinct()
         )
+        pruned = set(
+            MetagraphDump.objects.filter(
+                netuid=netuid,
+                block_id__gte=widest_start_block,
+                block_id__lte=end_block,
+                finished_at__isnull=False,
+                validator_snapshot_count=0,
+                retention_pruned_at__isnull=False,
+            ).values_list("block_id", flat=True)
+        )
+        acknowledgements = SnapshotGapAcknowledgement.objects.filter(netuid=netuid, revoked_at__isnull=True)
+        acknowledgements.filter(block_number__in=covered).update(revoked_at=timezone.now())
+        acknowledged = set(acknowledgements.values_list("block_number", flat=True))
         for window_name, block_delta in windows_by_size:
             # Narrow the widest dumpable set to this window's range; no extra query.
             dumpable = {block for block in widest_dumpable if block >= end_block - block_delta}
-            results[(netuid, window_name)] = len(dumpable - covered)
+            missing = dumpable - covered - pruned
+            results[(netuid, window_name)] = (len(missing), len(missing & acknowledged))
     return results
 
 
@@ -233,8 +256,14 @@ def update_snapshot_health_metrics() -> None:
         SnapshotHealthMetric.objects.all().delete()
         SnapshotHealthMetric.objects.bulk_create(
             [
-                SnapshotHealthMetric(netuid=netuid, window=window, missing_blocks=missing)
-                for (netuid, window), missing in results.items()
+                SnapshotHealthMetric(
+                    netuid=netuid,
+                    window=window,
+                    missing_blocks=missing,
+                    acknowledged_blocks=acknowledged,
+                    actionable_blocks=missing - acknowledged,
+                )
+                for (netuid, window), (missing, acknowledged) in results.items()
             ]
         )
         record_task_success("snapshot_health")

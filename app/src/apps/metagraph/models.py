@@ -422,6 +422,8 @@ class MetagraphDump(models.Model):
         blank=True,
         help_text="Subnet tempo at dump time; NULL on legacy rows (pre-0015)",
     )
+    validator_snapshot_count = models.PositiveIntegerField(null=True, blank=True)
+    retention_pruned_at = models.DateTimeField(null=True, blank=True)
     created_at = models.DateTimeField(auto_now_add=True)
     started_at = models.DateTimeField(null=True, blank=True)
     finished_at = models.DateTimeField(null=True, blank=True)
@@ -552,7 +554,8 @@ class SnapshotHealthMetric(models.Model):
     """Pre-computed snapshot-health metric, refreshed periodically by Celery.
 
     Stores, per (netuid, look-back window), the number of dumpable blocks that
-    have no NeuronSnapshot entries. Computing this scans the large
+    have no NeuronSnapshot entries or proven retention cleanup, and how many
+    are acknowledged versus actionable. Computing this scans the large
     neuron_snapshot table, so it is kept off the Prometheus scrape path: the
     Celery task ``apps.metagraph.tasks.update_snapshot_health_metrics`` refreshes
     these rows on a schedule, and the ``/metrics`` endpoint reads them cheaply on
@@ -562,6 +565,8 @@ class SnapshotHealthMetric(models.Model):
     netuid = models.PositiveIntegerField()
     window = models.CharField(max_length=16)
     missing_blocks = models.PositiveIntegerField(default=0)
+    acknowledged_blocks = models.PositiveIntegerField(default=0, db_default=0)
+    actionable_blocks = models.PositiveIntegerField(null=True, blank=True)
     updated_at = models.DateTimeField(auto_now=True)
 
     class Meta:
@@ -670,3 +675,23 @@ class ValidatorApyEpoch(models.Model):
 
     def __str__(self) -> str:
         return f"APY epoch subnet={self.subnet_id} neuron={self.neuron_id} block={self.epoch_block}"
+
+
+class SnapshotGapAcknowledgement(models.Model):
+    """An operator's evidence for one missing subnet/block, never a blanket exemption."""
+
+    netuid = models.PositiveIntegerField()
+    block_number = models.PositiveBigIntegerField()
+    reason = models.CharField(
+        max_length=32,
+        choices=[
+            ("upstream_unavailable", "Upstream unavailable"),
+            ("retention", "Verified legacy retention"),
+        ],
+    )
+    evidence = models.TextField()
+    created_at = models.DateTimeField(auto_now_add=True)
+    revoked_at = models.DateTimeField(null=True, blank=True)
+
+    class Meta:
+        constraints = [models.UniqueConstraint(fields=["netuid", "block_number"], name="unique_snapshot_gap_ack")]
