@@ -218,3 +218,27 @@ def test_sync_metagraph_dump_captures_tempo():
 
     assert dump.epoch_position == 2
     assert dump.tempo == 720
+
+
+@pytest.mark.django_db
+def test_reingestion_records_validator_count_and_retires_old_gap_evidence():
+    from sentinel.v1.testing.factories import NeuronSnapshotFullFactory as SdkSnapshotFactory
+
+    from apps.metagraph.models import SnapshotGapAcknowledgement
+
+    service = MetagraphSyncService()
+    data = _snapshot_with_owner(1, 99993, "5Owner", "5Coldkey")
+    data.neurons = [SdkSnapshotFactory.build(is_validator=True), SdkSnapshotFactory.build(is_validator=False)]
+    service.sync_metagraph(data, _dump_metadata(1))
+    dump = MetagraphDump.objects.get(netuid=1, block_id=99993)
+    assert dump.validator_snapshot_count == 1
+    dump.retention_pruned_at = timezone.now()
+    dump.save()
+    ack = SnapshotGapAcknowledgement.objects.create(
+        netuid=1, block_number=99993, reason="upstream_unavailable", evidence="Archived incident"
+    )
+    service.sync_metagraph(data, _dump_metadata(1))
+    dump.refresh_from_db()
+    ack.refresh_from_db()
+    assert dump.retention_pruned_at is None
+    assert ack.revoked_at is not None

@@ -1,13 +1,15 @@
 """Persist and evaluate data progress without scanning large tables on scrape."""
 
-from datetime import datetime
+from datetime import datetime, timedelta
 
 from celery import shared_task
 from django.conf import settings
 from django.db import connection, transaction
+from django.db.models import Exists, OuterRef, Q
 from django.utils import timezone
 
-from apps.metagraph.models import MetagraphDump, Subnet, ValidatorApyEpoch
+from apps.metagraph.models import MetagraphDump, NeuronSnapshot, Subnet, ValidatorApyEpoch
+from apps.metagraph.services.apy_epoch_ingest import RETENTION_DAYS
 from project.core.models import MonitoringProgress, MonitoringResult
 
 
@@ -33,7 +35,7 @@ def refresh_data_health() -> None:
     now = timezone.now()
     results = []
 
-    def add(name, netuid, stamp, age):
+    def add(name, netuid, stamp, age, freshness_required=True):
         results.append(
             MonitoringResult(
                 kind="data",
@@ -43,6 +45,8 @@ def refresh_data_health() -> None:
                 source_timestamp=stamp,
                 max_age_seconds=age,
                 success=stamp is not None,
+                freshness_required=freshness_required,
+                error_code="" if freshness_required else "no_eligible_validators",
             )
         )
 
@@ -65,15 +69,56 @@ def refresh_data_health() -> None:
                 .first()
             )
             add("snapshots", netuid, stamp, age)
-            apy_stamp = (
+            apy_stamp, latest_apy_block = (
                 ValidatorApyEpoch.objects.filter(subnet_id=netuid, epoch_ts__isnull=False)
                 .order_by("-epoch_ts")
-                .values_list("epoch_ts", flat=True)
+                .values_list("epoch_ts", "epoch_block")
                 .first()
-            )
-            add("apy", netuid, apy_stamp, age + 1800)
+            ) or (None, 0)
+            required = _apy_freshness_required(netuid, latest_apy_block, now, age)
+            add("apy", netuid, apy_stamp, age + 1800, required)
         progress = MonitoringProgress.objects.filter(name="extrinsics").first()
         add("extrinsics", "all", progress.source_timestamp if progress else None, 300)
         MonitoringResult.objects.filter(kind="data").delete()
         MonitoringResult.objects.bulk_create(results)
         record_task_success("data_health")
+
+
+def _apy_freshness_required(netuid: int, latest_apy_block: int, now: datetime, max_age: int) -> bool:
+    """Exempt only a recent, observed no-output epoch with no newer eligible backlog."""
+    epoch = (
+        MetagraphDump.objects.filter(netuid=netuid, epoch_position=2)
+        .select_related("block")
+        .order_by("-block_id")
+        .first()
+    )
+    if not epoch or not epoch.finished_at or not epoch.block.timestamp:
+        return True
+    if not 0 <= (now - epoch.block.timestamp).total_seconds() <= max_age:
+        return True
+    snapshots = NeuronSnapshot.objects.filter(neuron__subnet_id=netuid)
+    current = snapshots.filter(block_id=epoch.block_id)
+    if (
+        epoch.validator_snapshot_count is None
+        or current.filter(is_validator=True).count() != epoch.validator_snapshot_count
+    ):
+        return True
+    if not current.exists() or current.filter(is_validator=True, alpha_stake__gt=0).exists():
+        return True
+    # Do not hide an older eligible epoch still waiting for APY ingestion merely
+    # because the newest epoch has zero stake. APY facts expire after 90 days;
+    # retained validator snapshots older than that are not a processing backlog.
+    # Untimestamped evidence remains unknown, so cannot grant an exemption.
+    epoch_end = MetagraphDump.objects.filter(netuid=netuid, block_id=OuterRef("block_id"), epoch_position=2)
+    return (
+        snapshots.filter(
+            is_validator=True,
+            alpha_stake__gt=0,
+            block_id__gt=latest_apy_block,
+        )
+        .filter(
+            Exists(epoch_end),
+            Q(block__timestamp__gte=now - timedelta(days=RETENTION_DAYS)) | Q(block__timestamp__isnull=True),
+        )
+        .exists()
+    )

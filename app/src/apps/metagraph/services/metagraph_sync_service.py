@@ -17,6 +17,7 @@ from apps.metagraph.models import (
     MetagraphDump,
     Neuron,
     NeuronSnapshot,
+    SnapshotGapAcknowledgement,
     Subnet,
 )
 from apps.metagraph.services.key_cache import KeyCacheService
@@ -147,7 +148,13 @@ class MetagraphSyncService:
                 stats["collaterals"] = self._relation_syncer.sync_collaterals(metagraph.collaterals, block, subnet)
 
             # 7. Sync metagraph dump record
-            self._sync_metagraph_dump(dump_metadata, block, subnet)
+            self._sync_metagraph_dump(dump_metadata, block, subnet, sum(n.is_validator for n in metagraph.neurons))
+            if stats["snapshots"]:
+                SnapshotGapAcknowledgement.objects.filter(
+                    netuid=subnet.pk,
+                    block_number=block.pk,
+                    revoked_at__isnull=True,
+                ).update(revoked_at=timezone.now())
             stats["dumps"] = 1
 
             # 8. Bulk update last_seen for all hotkeys
@@ -339,6 +346,7 @@ class MetagraphSyncService:
         dump_metadata: DumpMetadata,
         block: Block,
         subnet: Subnet,
+        validator_count: int | None = None,
     ) -> MetagraphDump:
         """Sync a MetagraphDump record."""
         epoch_position_map = {"start": 0, "inside": 1, "end": 2}
@@ -349,6 +357,8 @@ class MetagraphSyncService:
             block=block,
             defaults={
                 "owner_hotkey_id": subnet.owner_hotkey_id,
+                "validator_snapshot_count": validator_count,
+                "retention_pruned_at": None,
                 "epoch_position": epoch_position,
                 "started_at": dump_metadata.started_at,
                 "finished_at": dump_metadata.finished_at,

@@ -49,7 +49,21 @@ _SNAPSHOT_BATCH_DELETE_SQL = """
     ns AS (
         DELETE FROM metagraph_neuron_snapshot
         WHERE id IN (SELECT id FROM batch)
-        RETURNING 1
+        RETURNING neuron_id, block_id
+    ),
+    proof AS (
+        UPDATE metagraph_dump d SET retention_pruned_at = CURRENT_TIMESTAMP
+        FROM (SELECT DISTINCT n.subnet_id, ns.block_id FROM ns
+              JOIN metagraph_neuron n ON n.id = ns.neuron_id) removed
+        WHERE d.netuid = removed.subnet_id AND d.block_id = removed.block_id
+          AND d.finished_at IS NOT NULL AND d.validator_snapshot_count = 0
+          AND NOT EXISTS (
+              SELECT 1 FROM metagraph_neuron_snapshot remaining
+              JOIN metagraph_neuron n ON n.id = remaining.neuron_id
+              WHERE n.subnet_id = d.netuid AND remaining.block_id = d.block_id
+                AND remaining.id NOT IN (SELECT id FROM batch)
+          )
+        RETURNING d.id
     )
     SELECT (SELECT count(*) FROM mm) AS mm_deleted, (SELECT count(*) FROM ns) AS ns_deleted
 """
