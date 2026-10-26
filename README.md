@@ -303,6 +303,50 @@ With the credentials in place, Alloy also ships the Postgres log, and the
 **Postgres Slow Statements** Grafana dashboard lists slow, cancelled and failed
 statements with their SQL. See [docs/postgres-slow-statements.md](docs/postgres-slow-statements.md).
 
+## Memory profiling
+
+Every Python process in the app image can be profiled with [memray](https://bloomberg.github.io/memray/) on demand, without code changes. Set
+
+```sh
+MEMORY_PROFILING=1
+```
+
+in `.env` and recreate the containers:
+
+```sh
+docker compose up -d
+```
+
+(`docker compose restart` is not enough: it keeps the old environment.) From then on every Python process writes a capture file to `./profiles` on the host (`/var/profiles` inside the containers). Most also log a line like `memray_autostart: profiling gunicorn -> /var/profiles/gunicorn-....bin` when they start; the celery nodes don't, because `celery multi` detaches them from their output, so check `./profiles` for their files. To stop, set the variable back to `0` and run `docker compose up -d` again. The dev compose runs the same image, so the same switch in `envs/dev/.env` works locally.
+
+### What gets profiled
+
+The hook is `app/src/sitecustomize.py`, which Python imports at interpreter start because the image puts `/root/src` on `PYTHONPATH`; it delegates to `app/src/memray_autostart.py`. So it covers gunicorn and its workers, every celery node and its pool children, celery beat, flower, every `manage.py` daemon (`sync_extrinsics`, `sync_metagraph`, `block_scheduler`, the backfills, ...) and anything else that starts a Python interpreter, including processes added later. Forked children get a capture of their own: the parent's file name with the child's pid appended.
+
+Short-lived processes are skipped so they don't litter `./profiles`: `manage.py` housekeeping commands (`migrate`, `collectstatic`, `wait_for_database`, `shell`, `test`, ...), celery subcommands other than `worker`, `beat` and `flower` (`status`, `inspect`, `multi`, ...), `healthcheck.py` and `memray` itself. The lists are constants at the top of `memray_autostart.py`.
+
+Captures are named `<role>-<container hostname>-<pid>-<UTC timestamp>.bin`, where the role comes from the command line: `gunicorn`, `celery-master`, `celery-metagraph`, `celery-beat`, `manage-sync_extrinsics`, ...
+
+### Reading a capture
+
+memray is installed in the image, so reports are generated on the server. `bin/render-memory-profiles.sh` renders a temporal flame graph for every capture in `./profiles` that has no report yet, or only for the captures you name, and writes each one next to its capture as `<capture>.html`:
+
+```sh
+bin/render-memory-profiles.sh
+bin/render-memory-profiles.sh gunicorn-*.bin*
+```
+
+Copy the HTML to your machine and open it in a browser. The script runs `memray flamegraph --temporal -o /var/profiles/<capture>.html /var/profiles/<capture>` inside the app image; if you run that by hand for a forked child's capture (`....bin.<pid>`), keep the `-o`, because memray's default output name drops the `.<pid>` suffix and reports for two children of the same parent would overwrite each other. The temporal flame graph lets you select a time window and see what was allocated in it and is still alive, which is the view to use for leaks. `memray summary`, `memray stats` and `memray tree` work on the same file. Captures can also be copied to another machine with the same memray version and analysed there.
+
+### Costs and caveats
+
+- memray records every allocation as it happens, so captures grow with allocation volume: a busy process can write gigabytes over a few hours. Profile for a bounded window and keep an eye on free disk space.
+- Allocation tracking slows the process down; don't leave it on.
+- A capture stays readable if its process is killed, e.g. by Docker after `stop_grace_period`; the file is simply truncated at that point.
+- memray runs a sampling thread, so while profiling is on Python emits a `DeprecationWarning` about forking a multi-threaded process when gunicorn or celery fork. It is hidden by the default warning filters and harmless: memray reinitialises itself in the child.
+- Python's own small-object allocator is traced too (`trace_python_allocators=True` in `memray_autostart.start`), so a leak of many small objects is attributed to the line that created them rather than to whichever code happened to grow the allocator's arena. This makes captures larger and profiling slower than memray's default; it is the right trade for leak hunting.
+- Captures contain Python frames only; allocations made inside C extensions are still counted and attributed to the Python line that called them. memray can also record the C/C++ frames (`native_traces=True` in `memray_autostart.start`), but such captures must be analysed inside the same image, and the slim base image ships no debug symbols, so native frames would show as `<unknown>`.
+
 ## Sentinel Core
 
 Core is a standalone Python package for monitoring the Bittensor blockchain. Located in `app/src/sentinel`.
