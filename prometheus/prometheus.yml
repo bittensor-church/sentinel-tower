@@ -66,7 +66,8 @@ scrape_configs:
     scheme: https
     metrics_path: /metrics
     static_configs:
-      - targets: ['internal.grafana.bactensor.io']
+      # Preserve the v2 instance label: v3 no longer supplies the default port.
+      - targets: ['internal.grafana.bactensor.io:443']
     scrape_interval: 30s
 
   # Query attribution derived from nginx access events by Alloy (prod stack).

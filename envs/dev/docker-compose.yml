@@ -58,7 +58,7 @@ services:
       - ${REDIS_PORT}:6379
 
   db:
-    image: mirror.gcr.io/postgres:14.0-alpine
+    image: mirror.gcr.io/postgres:14-alpine
     healthcheck:
       test: pg_isready -U ${POSTGRES_USER} || exit 1
     environment:
@@ -87,7 +87,11 @@ services:
       - ${POSTGRES_PORT}:5432
 
   postgres-exporter:
-    image: prometheuscommunity/postgres-exporter:v0.20.1
+    build:
+      context: ./monitoring
+      target: postgres-exporter
+    image: sentinel-tower/postgres-exporter:v0.20.1-ca20261020
+    pull_policy: never
     environment:
       - DATA_SOURCE_URI=db:5432/${POSTGRES_DB}?sslmode=disable
       - DATA_SOURCE_USER=${POSTGRES_EXPORTER_USER:-${POSTGRES_USER}}
@@ -103,7 +107,11 @@ services:
       - 127.0.0.1:9187:9187
 
   node-exporter:
-    image: prom/node-exporter:latest
+    build:
+      context: ./monitoring
+      target: node-exporter
+    image: sentinel-tower/node-exporter:v1.12.1-ca20261020
+    pull_policy: never
     restart: unless-stopped
     volumes:
       - /:/host:ro
@@ -117,7 +125,7 @@ services:
       - 127.0.0.1:9100:9100
 
   prometheus:
-    image: prom/prometheus:v2.47.0
+    image: prom/prometheus:v3.15.1
     command:
       - '--config.file=/etc/prometheus/prometheus.yml'
       - '--storage.tsdb.path=/prometheus'
@@ -131,7 +139,7 @@ services:
       - app
 
   grafana:
-    image: grafana/grafana:13.2.3
+    image: grafana/grafana:13.2.5
     environment:
       # Match production's subpath for the shared scrape config and query probes.
       - GF_SERVER_ROOT_URL=http://localhost:${GRAFANA_PORT:-3001}/grafana/
@@ -164,12 +172,11 @@ services:
       - prometheus
       - db
 
-  # Subtensor localnet for end-to-end tests. The chain moved to RaoFoundation, which
-  # publishes no runtime-suffixed tags, so the pin is by digest — `latest` alone would
-  # silently change the runtime under the suite. This digest is runtime specVersion 454.
+  # Subtensor localnet for end-to-end tests; keep the runtime and CA fix reproducible.
   # Start with: docker compose --profile e2e up -d localnet
   localnet:
-    image: ghcr.io/raofoundation/subtensor-localnet:latest@sha256:01e02515a4237e2a9d6de5759b1a27d0a5bb440a8d363e1bf6a4f448f5542ba2
+    # ghcr.io/raofoundation/subtensor-localnet:v482
+    image: ghcr.io/raofoundation/subtensor-localnet:v482@sha256:6fa0bccdd855b5abd81aa3d08f425b3c4593590104adc7f180959d1657ccebc8
     ports:
       - ${LOCALNET_PORT:-9944}:9944
       - ${LOCALNET_PORT_ALT:-9945}:9945

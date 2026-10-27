@@ -10,6 +10,8 @@ jobs:
   grafana_preview_tests:
     runs-on: ubuntu-latest
     steps:
+      - name: Upgrade CA certificates
+        run: sudo apt-get update && sudo apt-get install -y --only-upgrade ca-certificates
       - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd  # v6.0.2
         with:
           persist-credentials: false
@@ -20,6 +22,8 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 10
     steps:
+      - name: Upgrade CA certificates
+        run: sudo apt-get update && sudo apt-get install -y --only-upgrade ca-certificates
       - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd  # v6.0.2
         with:
           persist-credentials: false
@@ -37,13 +41,13 @@ jobs:
   linter:
     runs-on: ubuntu-latest
     steps:
+      - name: Upgrade CA certificates
+        run: sudo apt-get update && sudo apt-get install -y --only-upgrade ca-certificates
       - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd  # v6.0.2
         with:
           fetch-depth: 0
       - name: Install uv
-        uses: astral-sh/setup-uv@08807647e7069bb48b6ef5acd8ec9567f424441b  # v8.1.0
-        with:
-          version: "0.11.17"
+        uses: astral-sh/setup-uv@07a047e608db84b3d8c06cd9a7c7dcc9c355c18e  # v10.3.2
       - name: Prepare environment
         run: ./setup-dev.sh
       - name: Install nox
@@ -53,13 +57,13 @@ jobs:
   type_check:
     runs-on: ubuntu-latest
     steps:
+      - name: Upgrade CA certificates
+        run: sudo apt-get update && sudo apt-get install -y --only-upgrade ca-certificates
       - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd  # v6.0.2
         with:
           fetch-depth: 0
       - name: Install uv
-        uses: astral-sh/setup-uv@08807647e7069bb48b6ef5acd8ec9567f424441b  # v8.1.0
-        with:
-          version: "0.11.17"
+        uses: astral-sh/setup-uv@07a047e608db84b3d8c06cd9a7c7dcc9c355c18e  # v10.3.2
       - name: Prepare environment
         run: ./setup-dev.sh
       - name: Install nox
@@ -73,14 +77,14 @@ jobs:
       contents: read
       pull-requests: write
     steps:
+      - name: Upgrade CA certificates
+        run: sudo apt-get update && sudo apt-get install -y --only-upgrade ca-certificates
       - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd  # v6.0.2
         with:
           persist-credentials: false
           fetch-depth: 0
       - name: Install uv
-        uses: astral-sh/setup-uv@08807647e7069bb48b6ef5acd8ec9567f424441b  # v8.1.0
-        with:
-          version: "0.11.17"
+        uses: astral-sh/setup-uv@07a047e608db84b3d8c06cd9a7c7dcc9c355c18e  # v10.3.2
       - name: Prepare environment
         run: ./setup-dev.sh
       - name: Run dockerized services
@@ -111,13 +115,14 @@ jobs:
     timeout-minutes: 15
     runs-on: ubuntu-latest
     steps:
+      - name: Upgrade CA certificates
+        run: sudo apt-get update && sudo apt-get install -y --only-upgrade ca-certificates
       - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd
         with:
           fetch-depth: 0
       - name: Install uv
-        uses: astral-sh/setup-uv@08807647e7069bb48b6ef5acd8ec9567f424441b
+        uses: astral-sh/setup-uv@07a047e608db84b3d8c06cd9a7c7dcc9c355c18e
         with:
-          version: "0.11.17"
           python-version: "3.14"
       - name: Prepare environment
         run: ./setup-dev.sh
@@ -126,9 +131,9 @@ jobs:
       - name: Run migrations
         run: cd app/src && uv run python manage.py wait_for_database --timeout 120 && uv run python manage.py migrate
       - name: Install nox
-        run: python -m pip install --upgrade nox
+        run: uv tool install --with pyyaml nox
       - name: Run end-to-end tests
-        run: nox -vs test_e2e
+        run: uvx nox -vs test_e2e
       - name: Stop dockerized services
         if: success() || failure()
         run: docker compose --profile e2e down -v

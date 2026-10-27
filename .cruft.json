@@ -1,7 +1,7 @@
 {
   "template": "https://github.com/reef-technologies/cookiecutter-rt-django",
-  "commit": "dd0a8d44281b4d144446d0d45b6d0c284054593f",
-  "checkout": "master",
+  "commit": "9fa0e5c4c094122d4145ad98df36ccbb5e4b06d5",
+  "checkout": null,
   "context": {
     "cookiecutter": {
       "repostory_name": "bittensor_sentinel",
@@ -25,13 +25,11 @@
       "allauth_staff_email_domain": "",
       "allauth_trust_external_emails": false,
       "allauth_providers": "n",
-      "vulnerabilities_scanning": true,
       "sentry_dsn": "",
       "csp_enabled": false,
       "nginx_compression_enabled": false,
       "nginx_tls_early_data_enabled": false,
       "deployment_type": "direct",
-      "aws_use_packer": false,
       "aws_project_name": "bittensor_sentinel",
       "aws_infra_bucket": "bittensor_sentinel-awgkkh",
       "aws_region": "us-east-1",
@@ -52,7 +50,7 @@
         "lstrip_blocks": true
       },
       "_template": "https://github.com/reef-technologies/cookiecutter-rt-django",
-      "_commit": "dd0a8d44281b4d144446d0d45b6d0c284054593f"
+      "_commit": "9fa0e5c4c094122d4145ad98df36ccbb5e4b06d5"
     }
   },
   "directory": null

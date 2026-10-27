@@ -103,7 +103,7 @@ declare "grafana_query_metrics" {
 			}
 			// Browser navigation often cancels a request (499); login expiry is 401.
 			// Neither is evidence of a broken chart. Grafana SQL errors are HTTP 400,
-			// including mixed batches where another query succeeded (pinned 13.2.3).
+			// including mixed batches where another query succeeded (pinned 13.2.5).
 			stage.match {
 				selector = "{status_code=~\"4..|5..\",status_code!~\"401|499\"}"
 

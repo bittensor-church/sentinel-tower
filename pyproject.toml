@@ -25,7 +25,7 @@ dependencies = [
     "pydantic~=2.12.5",
     "prometheus-client @ git+https://github.com/reef-technologies/prometheus_client.git@77cda428598193698f53129d2311010d39ae8134",
     "django-prometheus~=2.4.1",
-    "django-business-metrics>=1.0.1,<2",
+    "django-business-metrics>=2.0.0,<3",
     "whitenoise~=6.6.0",
     "abstract-block-dumper[prometheus]==0.1.11",
     "bittensor-sentinel[testing]==0.2.7",
@@ -102,11 +102,14 @@ ignore-words-list = 'datas,brin'
 reportIncompatibleVariableOverride = false
 
 [tool.uv]
+required-version = ">=0.13.4"
 exclude-newer = "14 days"
-exclude-newer-package = { django = false, cryptography = false, dagster = false, dagster-graphql = false, dagster-pipes = false, dagster-shared = false, dagster-webserver = false, bittensor-sentinel = false }
+exclude-newer-package = { django = false, cryptography = false, dagster = false, dagster-graphql = false, dagster-pipes = false, dagster-shared = false, dagster-webserver = false, bittensor-sentinel = false, certifi = false, grpcio = false, django-business-metrics = false }
 constraint-dependencies = [
     "urllib3>=2.7.0",
     "idna>=3.15",
+    "certifi>=2026.10.19",  # emSign CA removal
+    "grpcio>=1.84.1",  # gRPC ships its own CA bundle
 ]
 
 [tool.coverage.run]

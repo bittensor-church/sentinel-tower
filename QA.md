@@ -27,7 +27,7 @@ docker compose up -d db redis                          # unit + e2e need these
 docker compose --profile e2e up -d localnet            # e2e also needs the chain
 ```
 
-The e2e localnet is pinned by digest to `ghcr.io/raofoundation/subtensor-localnet:latest`.
+The e2e localnet is pinned by digest to `ghcr.io/raofoundation/subtensor-localnet:v482` (runtime 482).
 
 ## What deserves an e2e test here
 
@@ -62,7 +62,8 @@ That shapes the whole design:
 ## Decision log
 
 - **Metagraph/APY/explorer are covered e2e** against runtime 424 after we found the
-  localnet image (not the SDK) was the blocker. `v3.4.9-424` is the required image.
+  localnet image (not the SDK) was the blocker. That was the original baseline; the
+  current digest uses v482 to include the emSign trust fix.
 - **Coldkey-swap announcement alerting (§4.2) IS covered e2e.** A real
   `announce_coldkey_swap` locks the signing account until it matures
   (`InitialColdkeySwapAnnouncementDelay` = 50 blocks, ~20s at the localnet's block time).
