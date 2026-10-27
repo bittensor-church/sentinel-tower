@@ -43,6 +43,8 @@ jobs:
       STAGING_REPO_PATH: ${{ vars.STAGING_REPO_PATH }}
       STAGING_APP_DIR: ${{ vars.STAGING_APP_DIR }}
     steps:
+      - name: Upgrade CA certificates
+        run: sudo apt-get update && sudo apt-get install -y --only-upgrade ca-certificates
       - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
         with:
           fetch-depth: 0

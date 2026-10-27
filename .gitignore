@@ -8,6 +8,7 @@
 /db/data/
 /letsencrypt/
 .env
+# Retired vulnrelay credentials may remain on existing checkouts.
 .vuln.env
 .venv
 venv

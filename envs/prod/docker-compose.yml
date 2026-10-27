@@ -16,7 +16,7 @@ services:
       <<: *logging
 
   db:
-    image: postgres:14.0-alpine
+    image: postgres:14-alpine
     shm_size: 1gb
     # NOTE: every setting below is a `-c` command-line override, which outranks
     # both postgresql.conf and postgresql.auto.conf (ALTER SYSTEM). Two values
@@ -195,6 +195,7 @@ services:
 
   sync-extrinsics:
     image: project/app
+    pull_policy: never  # built locally by the app service
     init: true
     healthcheck:
       test: ["CMD-SHELL", "pgrep -f 'manage.py sync_extrinsics' || exit 1"]
@@ -218,6 +219,7 @@ services:
 
   sync-metagraph:
     image: project/app
+    pull_policy: never  # built locally by the app service
     init: true
     healthcheck:
       test: ["CMD-SHELL", "pgrep -f 'manage.py sync_metagraph' || exit 1"]
@@ -243,6 +245,7 @@ services:
 
   backfill-metagraph:
     image: project/app
+    pull_policy: never  # built locally by the app service
     init: true
     restart: unless-stopped
     env_file: ./.env
@@ -265,6 +268,7 @@ services:
 
   historical-metagraph-backfill:
     image: project/app
+    pull_policy: never  # built locally by the app service
     init: true
     restart: unless-stopped
     env_file: ./.env
@@ -284,6 +288,7 @@ services:
 
   backfill-validator-apy-epochs:
     image: project/app
+    pull_policy: never  # built locally by the app service
     init: true
     env_file: ./.env
     extra_hosts:
@@ -302,6 +307,7 @@ services:
 
   backfill-extrinsics:
     image: project/app
+    pull_policy: never  # built locally by the app service
     init: true
     env_file: ./.env
     extra_hosts:
@@ -320,6 +326,7 @@ services:
 
   prune-retention:
     image: project/app
+    pull_policy: never  # built locally by the app service
     init: true
     env_file: ./.env
     extra_hosts:
@@ -346,6 +353,7 @@ services:
 
   celery-worker:
     image: project/app
+    pull_policy: never  # built locally by the app service
     init: true
     healthcheck:
       # Cheap pidfile liveness check: `celery -A project status` boots the whole
@@ -379,6 +387,7 @@ services:
 
   celery-beat:
     image: project/app
+    pull_policy: never  # built locally by the `app` service; `docker compose pull` must skip it
     init: true
     restart: unless-stopped
     env_file: ./.env
@@ -394,6 +403,7 @@ services:
 
   celery-flower:
     image: project/app
+    pull_policy: never  # built locally by the `app` service; `docker compose pull` must skip it
     healthcheck:
       test: wget --user "${CELERY_FLOWER_USER}" --password "${CELERY_FLOWER_PASSWORD}" -qO- 127.0.0.1:5555 > /dev/null || exit 1
     init: true
@@ -453,7 +463,7 @@ services:
   #     <<: *logging
 
   nginx:
-    image: 'ghcr.io/reef-technologies/nginx-rt:v1.2.2'
+    image: 'ghcr.io/reef-technologies/nginx-rt:v1.4.0'
     restart: unless-stopped
     healthcheck:
       test: [
@@ -497,7 +507,11 @@ services:
       - "host.docker.internal:host-gateway"
 
   node-exporter:
-    image: prom/node-exporter:latest
+    build:
+      context: ./monitoring
+      target: node-exporter
+    image: sentinel-tower/node-exporter:v1.12.1-ca20261020
+    pull_policy: never
     container_name: node-exporter
     restart: unless-stopped
     network_mode: host
@@ -515,9 +529,13 @@ services:
       <<: *logging
 
   cadvisor:
-    image: ghcr.io/google/cadvisor:v0.60.5
+    build:
+      context: ./monitoring
+      target: cadvisor
+    image: sentinel-tower/cadvisor:v0.60.5-ca20261020
+    pull_policy: never
     container_name: cadvisor
-    privileged: true
+    privileged: false
     devices:
       - /dev/kmsg:/dev/kmsg
     volumes:
@@ -530,12 +548,18 @@ services:
       <<: *logging
 
   postgres-exporter:
-    image: prometheuscommunity/postgres-exporter:v0.20.1
+    build:
+      context: ./monitoring
+      target: postgres-exporter
+    image: sentinel-tower/postgres-exporter:v0.20.1-ca20261020
+    pull_policy: never
     container_name: postgres-exporter
     restart: unless-stopped
     environment:
-      # the bundled postgres container does not speak TLS; lib/pq defaults to sslmode=require
-      - DATA_SOURCE_URI=db:5432/${POSTGRES_DB}?sslmode=disable
+      # Host and port come from the environment (.env defaults to the bundled db container).
+      # That container does not speak TLS; lib/pq defaults to sslmode=require.
+      # Hosted databases that require TLS need sslmode=require here instead.
+      - DATA_SOURCE_URI=${POSTGRES_HOST}:${POSTGRES_PORT}/${POSTGRES_DB}?sslmode=disable
       # Dedicated read-only role (pg_monitor) when POSTGRES_EXPORTER_USER/PASSWORD are
       # set (created by db/init/01-monitoring.sh on a fresh database, by hand otherwise);
       # falls back to the application user so monitoring works without any role setup.
@@ -553,7 +577,7 @@ services:
       <<: *logging
 
   alloy:
-    image: grafana/alloy:v1.8.3
+    image: grafana/alloy:v1.21.1
     restart: unless-stopped
     environment:
       - LOKI_URL=${LOKI_URL}
@@ -570,32 +594,8 @@ services:
       - /etc/alloy/config.alloy
     logging:
       <<: *logging
-  vulnrelay:
-    image: 'ghcr.io/reef-technologies/vulnrelay:latest'
-    container_name: vulnrelay
-    restart: unless-stopped
-    env_file: ./.vuln.env
-    environment:
-      - METRICS_DIR=/app/metrics
-    volumes:
-      - /var/run/docker.sock:/var/run/docker.sock:ro
-      - nodeexporter_collectors:/app/metrics
-    logging:
-      <<: *logging
-
-  watchtower:
-    image: containrrr/watchtower:latest
-    restart: unless-stopped
-    environment:
-      - DOCKER_API_VERSION=1.45
-    volumes:
-      - /var/run/docker.sock:/var/run/docker.sock:ro
-    command: --interval 7200 vulnrelay
-    logging:
-      <<: *logging
-
   prometheus:
-    image: prom/prometheus:v2.47.0
+    image: prom/prometheus:v3.15.1
     restart: unless-stopped
     # resolves host.docker.internal so the node-exporter scrape (which goes through
     # the host, see prometheus.yml) works on plain Linux Docker
@@ -607,8 +607,6 @@ services:
     command:
       - '--config.file=/etc/prometheus/prometheus.yml'
       - '--storage.tsdb.path=/prometheus'
-      - '--web.console.libraries=/etc/prometheus/console_libraries'
-      - '--web.console.templates=/etc/prometheus/consoles'
       - '--web.enable-lifecycle'
     ports:
       - 127.0.0.1:9090:9090
@@ -616,7 +614,7 @@ services:
       <<: *logging
 
   grafana:
-    image: grafana/grafana:13.2.3
+    image: grafana/grafana:13.2.5
     restart: unless-stopped
     environment:
       - GF_SECURITY_ADMIN_USER=${GRAFANA_ADMIN_USER:-admin}
