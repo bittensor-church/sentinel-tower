@@ -90,7 +90,7 @@ services:
       <<: *exporter_logging
 
   nginx:
-    image: 'ghcr.io/reef-technologies/nginx-rt:v1.2.2'
+    image: 'ghcr.io/reef-technologies/nginx-rt:v1.4.0'
     restart: unless-stopped
     healthcheck:
       test: wget -q --spider http://0.0.0.0:8000/alive/ || exit 1

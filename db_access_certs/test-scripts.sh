@@ -166,7 +166,7 @@ else
         -v "$REPO_ROOT/nginx/nginx.conf:/etc/nginx/nginx.conf:ro" \
         -v "$STREAM_D:/etc/nginx/stream.d:ro" \
         -v "$WORK:/etc/db_access_certs:ro" \
-        --entrypoint sh ghcr.io/reef-technologies/nginx-rt:v1.2.2 \
+        --entrypoint sh ghcr.io/reef-technologies/nginx-rt:v1.4.0 \
         -c 'nginx -t' 2>&1 || true )"
     assert "nginx -t accepts the generated certs" \
         bash -c "echo '$NGINX_OUTPUT' | grep -q 'test is successful'"

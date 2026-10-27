@@ -63,9 +63,12 @@ This flag previously existed **only on the deployed server**, not in the repo â€
 a redeploy from a clean checkout would have silently dropped it. It is now
 version-controlled.
 
-Both `.so` files ship with `postgres:14.0-alpine` (verified at
-`/usr/local/lib/postgresql/`). A missing library in `shared_preload_libraries`
-prevents Postgres from starting at all, so verify before bumping the image.
+Both `.so` files ship with `postgres:14-alpine` (PostgreSQL 14.24, verified at
+`/usr/local/lib/postgresql/` on 2026-10-22). A disposable database started with
+the full production `db` command, including
+`shared_preload_libraries=pg_stat_statements,auto_explain`; creating and querying
+the `pg_stat_statements` extension succeeded. A missing preload library prevents
+Postgres from starting at all, so repeat this check before future image bumps.
 
 ### `auto_explain` settings
 
@@ -207,5 +210,5 @@ How to read it, the log recipes for cancelled statements and plans, and the 2026
 - Logs go to `journald` on `/` (13 GB free). `log_min_duration_statement=2000`
   plus `auto_explain` will increase log volume â€” watch it for the first day and
   raise the thresholds via `.env` if needed.
-- `postgres:14.0-alpine` is pinned to a `.0` patch release from 2021 with many
-  known fixes since. Worth a separate upgrade to the latest 14.x.
+- The image now follows `postgres:14-alpine`, replacing the `14.0-alpine` pin
+  from 2021 so rebuilds can pick up PostgreSQL 14 patch releases.
