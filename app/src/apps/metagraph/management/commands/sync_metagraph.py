@@ -10,6 +10,7 @@ from apps.metagraph.block_tasks import sync_metagraph_for_block, sync_subnet_emi
 from apps.metagraph.services.burn_service import BurnService
 from apps.metagraph.services.metagraph_service import MetagraphService
 from project.core.services.bittensor_connection import ProviderReconnectBackoff
+from project.core.services.collector_watchdog import CollectorWatchdog
 
 logger = structlog.get_logger()
 
@@ -20,6 +21,7 @@ class Command(BaseCommand):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self._shutdown = False
+        self._watchdog: CollectorWatchdog
 
     def _handle_signal(self, signum, frame):
         sig_name = signal.Signals(signum).name
@@ -58,7 +60,8 @@ class Command(BaseCommand):
         while not self._shutdown:
             provider = self._build_provider(provider_name)
             try:
-                provider.__enter__()
+                with self._watchdog.operation("connect_provider"):
+                    provider.__enter__()
             except Exception:
                 self._close_provider(provider)
                 delay = reconnect.record_failure(
@@ -75,7 +78,8 @@ class Command(BaseCommand):
 
     def _close_provider(self, provider: BlockchainProvider) -> None:
         try:
-            provider.__exit__(None, None, None)
+            with self._watchdog.operation("close_provider"):
+                provider.__exit__(None, None, None)
         except Exception:
             logger.warning("Error closing provider", exc_info=True)
 
@@ -91,9 +95,12 @@ class Command(BaseCommand):
         signal.signal(signal.SIGTERM, self._handle_signal)
         signal.signal(signal.SIGINT, self._handle_signal)
 
-        provider_name = options["provider"]
+        with CollectorWatchdog.from_env() as self._watchdog:
+            self._run(options["provider"])
 
-        netuids = MetagraphService.netuids_to_sync()
+    def _run(self, provider_name: str) -> None:
+        with self._watchdog.operation("load_subnets"):
+            netuids = MetagraphService.netuids_to_sync()
 
         self.stdout.write("Starting sync_metagraph daemon...")
         logger.info(
@@ -118,7 +125,8 @@ class Command(BaseCommand):
                         break
 
                 try:
-                    head = provider.get_current_block()
+                    with self._watchdog.operation("fetch_head"):
+                        head = provider.get_current_block()
                 except Exception:
                     self._close_provider(provider)
                     provider = None
@@ -155,11 +163,13 @@ class Command(BaseCommand):
                     if not dumpable_netuids and not starts_meta_epoch:
                         logger.debug("No subnets dumpable at block", block_number=block_number)
                         last_processed_block = block_number
+                        self._watchdog.advance(block_number)
                         continue
 
                     try:
                         for netuid in dumpable_netuids:
-                            result = sync_metagraph_for_block(block_number, netuid, provider)
+                            with self._watchdog.operation(f"sync_metagraph block={block_number} netuid={netuid}"):
+                                result = sync_metagraph_for_block(block_number, netuid, provider)
                             if result:
                                 logger.info(
                                     "Metagraph synced",
@@ -175,9 +185,11 @@ class Command(BaseCommand):
                             # Run after this block's metagraph dumps so the emission
                             # sync can reuse their Block row. An unreadable emission
                             # sample reports 0 rather than costing the block's dumps.
-                            subnets = sync_subnet_emissions_for_block(block_number, provider)
+                            with self._watchdog.operation(f"sync_emissions block={block_number}"):
+                                subnets = sync_subnet_emissions_for_block(block_number, provider)
                             logger.info("Subnet emissions synced", block=block_number, subnets=subnets)
                         last_processed_block = block_number
+                        self._watchdog.advance(block_number)
                     except Exception:
                         self._close_provider(provider)
                         provider = None

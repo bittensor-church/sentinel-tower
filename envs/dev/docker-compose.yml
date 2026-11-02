@@ -272,6 +272,11 @@ services:
   sync-metagraph:
     <<: *backend
     restart: always
+    healthcheck:
+      test: ["CMD", "python", "-m", "project.core.services.collector_watchdog"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
     command: python manage.py sync_metagraph
     depends_on:
       db:

@@ -8,7 +8,9 @@ The daemon must survive that instead of dying with an unhandled TimeoutError.
 
 from __future__ import annotations
 
+import multiprocessing
 import signal
+import time
 from io import StringIO
 from typing import Any
 
@@ -39,9 +41,10 @@ RETRY_SETTINGS = {
 
 
 @pytest.fixture(autouse=True)
-def _restore_signal_handlers():
+def _restore_signal_handlers(monkeypatch, tmp_path):
     """The daemon installs SIGTERM/SIGINT handlers; don't leak them into other tests."""
     original = {sig: signal.getsignal(sig) for sig in (signal.SIGINT, signal.SIGTERM)}
+    monkeypatch.setenv("METAGRAPH_HEALTH_FILE", str(tmp_path / "collector.json"))
     yield
     for sig, handler in original.items():
         signal.signal(sig, handler)
@@ -217,3 +220,51 @@ def test_unreadable_subnet_emissions_do_not_stop_the_metagraph_dumps(monkeypatch
     assert [entry["block"] for entry in skipped] == [META_EPOCH_START]
     synced = [entry for entry in logs if entry["event"] == "Subnet emissions synced"]
     assert [entry["subnets"] for entry in synced] == [0]
+
+
+@pytest.mark.parametrize("stalled_at", ["connect", "head", "metagraph", "close", "frozen_head"])
+@override_settings(**RETRY_SETTINGS)
+def test_stalled_collector_exits_for_container_restart(monkeypatch, stalled_at):
+    """A real blocked provider must not keep a healthy-looking daemon alive forever."""
+    command = sync_metagraph.Command()
+    monkeypatch.setenv("METAGRAPH_OPERATION_TIMEOUT_SECONDS", "0.2")
+    monkeypatch.setenv("METAGRAPH_PROGRESS_TIMEOUT_SECONDS", "0.5")
+
+    class StalledProvider(ScriptedProvider):
+        def __enter__(self):
+            if stalled_at == "connect":
+                time.sleep(60)
+            return super().__enter__()
+
+        def get_current_block(self):
+            if stalled_at == "head":
+                time.sleep(60)
+            return super().get_current_block()
+
+        def get_mechanism_count(self, netuid, block_number=None):
+            if stalled_at == "metagraph":
+                time.sleep(60)
+            return super().get_mechanism_count(netuid, block_number)
+
+        def close(self):
+            if stalled_at == "close":
+                time.sleep(60)
+            super().close()
+
+    def stop_for_close():
+        if stalled_at == "close":
+            command._shutdown = True
+
+    provider = StalledProvider([DUMPABLE_BLOCK], on_heads_exhausted=stop_for_close)
+    monkeypatch.setattr(sync_metagraph, "bittensor_provider", ProviderFactory(provider))
+    process = multiprocessing.get_context("fork").Process(
+        target=call_command, args=(command,), kwargs={"provider": "bittensor", "stdout": StringIO()}
+    )
+    process.start()
+    try:
+        process.join(timeout=3)
+        assert process.exitcode == 70, "collector stayed stuck instead of exiting for Docker to restart it"
+    finally:
+        if process.is_alive():
+            process.kill()
+        process.join(timeout=3)
