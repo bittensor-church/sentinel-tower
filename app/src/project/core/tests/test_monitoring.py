@@ -39,7 +39,33 @@ def test_freshness_keeps_healthy_missing_and_stale_subnets_distinct(client, sett
     assert sample(client, "sentinel_data_timestamp_seconds", dataset="snapshots", netuid=1) == now.timestamp()
     assert sample(client, "sentinel_data_timestamp_seconds", dataset="snapshots", netuid=2) == 0
     assert sample(client, "sentinel_data_timestamp_seconds", dataset="snapshots", netuid=3) == old.timestamp()
-    assert sample(client, "sentinel_data_max_age_seconds", dataset="snapshots", netuid=1) == 9264
+    assert sample(client, "sentinel_data_max_age_seconds", dataset="snapshots", netuid=1) == 3480
+
+
+@pytest.mark.django_db
+@pytest.mark.parametrize("tempo", [99, 360, 720])
+def test_freshness_uses_collection_cadence_not_subnet_tempo(client, settings, tempo):
+    from apps.metagraph.models import MetagraphDump
+    from project.core.monitoring import refresh_data_health
+    from tests.factories.metagraph import NeuronFactory, NeuronSnapshotFactory
+
+    settings.METAGRAPH_NETUIDS = [1]
+    subnet = SubnetFactory(netuid=1, tempo=tempo)
+    now = timezone.now()
+    # An 85-minute-old completed epoch is normal between 72-minute source updates
+    # plus collection/Celery delay, even when the chain's tempo is only 99.
+    block = BlockFactory(number=718, timestamp=now - timedelta(minutes=85))
+    MetagraphDump.objects.create(netuid=1, block=block, epoch_position=2, finished_at=now, validator_snapshot_count=1)
+    NeuronSnapshotFactory(neuron=NeuronFactory(subnet=subnet), block=block, is_validator=True, alpha_stake=0)
+    refresh_data_health()
+    assert sample(client, "sentinel_data_max_age_seconds", dataset="snapshots", netuid=1) == 3480
+    assert sample(client, "sentinel_data_max_age_seconds", dataset="apy", netuid=1) == 6732
+    assert sample(client, "sentinel_data_freshness_required", dataset="apy", netuid=1) == 0
+    assert sample(client, "sentinel_data_timestamp_seconds", dataset="apy", netuid=1) == 0
+    block.timestamp = now - timedelta(hours=3)
+    block.save(update_fields=["timestamp"])
+    refresh_data_health()
+    assert sample(client, "sentinel_data_freshness_required", dataset="apy", netuid=1) == 1
 
 
 @pytest.mark.django_db

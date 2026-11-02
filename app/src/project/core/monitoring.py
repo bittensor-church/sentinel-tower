@@ -10,6 +10,7 @@ from django.utils import timezone
 
 from apps.metagraph.models import MetagraphDump, NeuronSnapshot, Subnet, ValidatorApyEpoch
 from apps.metagraph.services.apy_epoch_ingest import RETENTION_DAYS
+from apps.metagraph.utils import TEMPO, get_dumpable_blocks, get_epoch_duration
 from project.core.models import MonitoringProgress, MonitoringResult
 
 
@@ -57,26 +58,30 @@ def refresh_data_health() -> None:
             cursor.execute("SELECT pg_try_advisory_xact_lock(1936614772)")
             if not cursor.fetchone()[0]:
                 return
-        subnets = dict(Subnet.objects.values_list("netuid", "tempo"))
-        netuids = settings.METAGRAPH_NETUIDS or sorted(subnets)
+        netuids = settings.METAGRAPH_NETUIDS or list(Subnet.objects.order_by("netuid").values_list("netuid", flat=True))
+        epoch_blocks = get_epoch_duration(TEMPO)
+        scheduled = (*get_dumpable_blocks(range(epoch_blocks)), epoch_blocks)
+        snapshot_interval = max(end - start for start, end in zip(scheduled, scheduled[1:]))
+        snapshot_age = 2 * snapshot_interval * settings.BITTENSOR_SECONDS_PER_BLOCK + 600
+        # APY needs one epoch-end sample, collection grace, and two 15-minute
+        # calculation opportunities. On-chain subnet tempo does not set our schedule.
+        apy_age = epoch_blocks * settings.BITTENSOR_SECONDS_PER_BLOCK + 600 + 1800
         for netuid in netuids:
-            age = 2 * (subnets.get(netuid, 360) or 360) * settings.BITTENSOR_SECONDS_PER_BLOCK
-            age += 2 * settings.BITTENSOR_SECONDS_PER_BLOCK + 600
             stamp = (
                 MetagraphDump.objects.filter(netuid=netuid, finished_at__isnull=False)
                 .order_by("-block_id")
                 .values_list("block__timestamp", flat=True)
                 .first()
             )
-            add("snapshots", netuid, stamp, age)
+            add("snapshots", netuid, stamp, snapshot_age)
             apy_stamp, latest_apy_block = (
                 ValidatorApyEpoch.objects.filter(subnet_id=netuid, epoch_ts__isnull=False)
                 .order_by("-epoch_ts")
                 .values_list("epoch_ts", "epoch_block")
                 .first()
             ) or (None, 0)
-            required = _apy_freshness_required(netuid, latest_apy_block, now, age)
-            add("apy", netuid, apy_stamp, age + 1800, required)
+            required = _apy_freshness_required(netuid, latest_apy_block, now, apy_age)
+            add("apy", netuid, apy_stamp, apy_age, required)
         progress = MonitoringProgress.objects.filter(name="extrinsics").first()
         add("extrinsics", "all", progress.source_timestamp if progress else None, 300)
         MonitoringResult.objects.filter(kind="data").delete()

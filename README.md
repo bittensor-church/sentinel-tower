@@ -382,6 +382,11 @@ my_storage = get_storage("my-storage")
 | `aws_secret_access_key` | No       |
 
 
+## Collector health
+
+Recreate `sync-metagraph` on deployment to apply its progress health check. It automatically
+restarts after a 120-second operation timeout or 10 minutes without block progress.
+
 ## Tests / CI
 
 First install `nox` as a tool for running tests and other checks:

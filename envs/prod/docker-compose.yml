@@ -222,7 +222,7 @@ services:
     pull_policy: never  # built locally by the app service
     init: true
     healthcheck:
-      test: ["CMD-SHELL", "pgrep -f 'manage.py sync_metagraph' || exit 1"]
+      test: ["CMD", "python", "-m", "project.core.services.collector_watchdog"]
       interval: 30s
       timeout: 10s
       retries: 3
