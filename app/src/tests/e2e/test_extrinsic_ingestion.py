@@ -1,7 +1,8 @@
 """E2E: real extrinsics on the chain become queryable, correctly-decoded records.
 
-Covers the Chain Operator ingestion stories (USER_STORIES §1) and the admin
-extrinsic-browser story (§3.3), driving the real `bittensor` provider end to end.
+Covers extrinsic ingestion (README "How it works") and the admin extrinsic
+search (USER_STORIES "Exploring chain data"), driving the real `bittensor`
+provider end to end.
 """
 
 from __future__ import annotations

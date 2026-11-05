@@ -13,6 +13,51 @@
 # Bittensor Sentinel
 
 A platform that allows for tracking and alerting on specific events/patterns/anomalies.
+Sentinel records Bittensor chain activity in PostgreSQL, serves it through Grafana dashboards
+and the Django admin, and sends governance alerts to Discord. What its users can do is described
+in [USER_STORIES.md](USER_STORIES.md).
+
+## How it works
+
+- **Extrinsics.** The `sync_extrinsics` daemon records every extrinsic as blocks appear. A block
+  that cannot be read stays a detectable gap for `backfill_extrinsics` instead of being stored as
+  empty. Failed chain calls reopen the connection and retry with exponential backoff instead of
+  exiting; the first retry of a lasting outage is logged at error level (and reaches Sentry).
+- **Notifications.** Each successful extrinsic is matched against the notification handlers,
+  after unwrapping sudo and executed multisig calls, and posted to Discord: to the channel
+  configured for that alert type, or, for subnet-routed alerts, to the subnet's webhooks from
+  admin (`SubnetWebhook`). Unhandled sudo calls go to a
+  catch-all alert; multisig proposals and intermediate approvals are not alerted.
+- **Metagraph snapshots.** `sync_metagraph` dumps every subnet's metagraph at epoch start, two
+  intermediate points and epoch end. Missing dumps are repaired automatically (see
+  [Automatic metagraph gap repair](#automatic-metagraph-gap-repair)).
+- **Derived data.** Validator APY facts are updated incrementally every 15 minutes. Burns,
+  superburns (`METAGRAPH_SUPERBURN_COLDKEY`) and subnet emission flags are recorded from each
+  epoch-start snapshot against the root subnet's epoch; a missing anchor block is recovered from
+  Finney, then the archive node. Coldkey identities refresh hourly; manual key labels win over
+  them. Hyperparameter changes from extrinsics update the current-value table and append their
+  old and new value to its history.
+- **Retention.** A daily job prunes old low-value rows (non-validator neuron snapshots, weights,
+  bonds and collateral past their retention windows) in bounded batches; validator APY data is
+  kept forever.
+- **Workers.** Expensive metagraph tasks run on the `metagraph` queue and everything else on
+  `celery`. Tasks are acknowledged late and re-queued if a worker dies; workers recycle after a
+  fixed number of tasks.
+
+## Operator commands
+
+Run from `app/src` with `uv run manage.py <command>`:
+
+| Command | Purpose |
+| --- | --- |
+| `backfill_extrinsics --lookback N` | Find and fill missing extrinsic blocks between the head and head-N, using the live node for recent blocks and the archive node for older ones |
+| `historical_metagraph_backfill --block-start A --block-end B [--netuids ...]` | Long-running walk over a historical range, one epoch-start snapshot at a time, to fill APY history |
+| `backfill_burn_metrics --from-block A --to-block B` | Recompute burn and superburn rows from stored snapshots; emission history for such ranges needs an archive node. Dumps from before owners were recorded per block use the current owner as a best-effort stand-in |
+| `load_key_labels --hotkeys FILE --coldkeys FILE` | Load human-readable key labels for dashboards |
+| `sync_hyperparams [--block N]` | Seed or repair the current hyperparameter values from the chain |
+| `replay_notifications BLOCK... [--archive]` | Dry-run the notification pipeline for past blocks: print and log payloads and target channels, post and store nothing |
+| `prune_retention` | Run the retention pruning now |
+| `acknowledge_snapshot_gap --block N --netuids ...` | Acknowledge one exact missing block; never repairs or fabricates data |
 
 ## Local Development Setup
 

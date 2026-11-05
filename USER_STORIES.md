@@ -1,205 +1,61 @@
 # User Stories
 
-> **Note:** The stories below were reverse-engineered from the codebase — Django models, admin 
-> configuration, management commands, Celery tasks, notification handlers, and Grafana dashboards.
-> Where intent was ambiguous, the story is phrased around what the code actually enables rather 
-> than speculation about unbuilt features. 
+What Sentinel's users can do: people reading its Grafana dashboards, receiving its Discord alerts and browsing its admin. Only user stories belong here; [AGENTS.md](AGENTS.md#user-stories) says what qualifies and how to write one. How the data is collected, setup and operations are in [README.md](README.md) and [docs/](docs/).
 
-Sentinel Tower watches the Bittensor blockchain (subtensor chain), records what happens on it, and
-tells specific people when specific things happen. It has no public API and no end-user frontend —
-its "users" are internal: chain/infra operators, subnet owners, and anyone reading the Grafana
-dashboards or Django admin. Stories are grouped by the persona whose need drove that part of the
-system.
+## Dashboards
 
----
+### Validator returns
 
-## 1. Chain Operator / On-Call Engineer
+As a validator operator, I see my validator's APY computed from actual per-epoch dividends and stake, so that I can verify my returns without building the calculation myself.
 
-Responsible for keeping the ingestion pipeline healthy and trusting the data it produces.
+- The **Subnet APY** dashboard shows APY per validator and subnet over time.
+- Numbers stay fresh within minutes of new epochs.
 
-- **As a chain operator**, I want every extrinsic on the chain recorded as it happens, so that I have
-  a complete, queryable audit trail of on-chain activity (`sync_extrinsics` daemon →
-  `apps.extrinsics.Extrinsic`).
-- **As a chain operator**, I want an unreadable block to remain a detectable ingestion gap instead
-  of being recorded as an empty block, so the daemon leaves it for `backfill_extrinsics` to recover
-  later without unnecessarily reopening a healthy provider connection.
-- **As a chain operator**, I want a liveness endpoint (`GET /alive/`) so that my orchestrator
-  (Docker/Kubernetes) can detect and restart a hung ingestion process.
-- **As a chain operator**, I want Prometheus metrics (`/metrics`, `/business-metrics`) exposed so I
-  can alert on ingestion lag, queue depth, and pipeline health from existing monitoring
-  infrastructure rather than watching logs.
-- **As a chain operator**, if the ingestion process misses blocks (crash, network partition, deploy
-  gap), I want a backfill command (`backfill_extrinsics --lookback N`) that detects the exact missing
-  block range and fills it in, using the live node for recent blocks and falling back to an archive
-  node for older ones, so gaps don't require manual investigation.
-- **As a chain operator**, I want the ingestion daemons (`sync_extrinsics`, `sync_metagraph`) to ride
-  out chain-endpoint trouble: when a chain call fails they reopen the connection, and if that reopen
-  fails too (a websocket handshake that times out) they retry it with exponential backoff instead of
-  exiting, so a brief network blip doesn't stop ingestion. The backoff continues across successful
-  handshakes until a chain operation succeeds. If the endpoint stays unreachable one retry is logged
-  at error level (and so reaches Sentry), while later retries remain warnings until recovery resets the
-  outage state.
-- **As a chain operator**, I want missing or unfinished metagraph dumps repaired automatically
-  after restarts, without pausing live collection or backfilling before collection began.
-  Repair retries every five minutes within a configurable window; older gaps need manual backfill.
-- **As a chain operator**, I want failed extrinsics decoded into a human-readable error name
-  (`SubtensorErrorCode`) instead of a raw hex module/index pair, so I can diagnose failures without
-  cross-referencing the subtensor source.
-- **As a chain operator**, I want old, low-value data (non-validator neuron snapshots, weight/bond/
-  collateral rows past a retention cutoff) pruned automatically in bounded batches, so the database
-  doesn't grow unbounded while validator history — which the APY dashboards depend on — is preserved.
-- **As a chain operator**, I want stuck or misrouted Celery tasks to be movable or flushable
-  (`move_tasks`, `flush_queue`) without redeploying, so I can recover from a bad queue state during an
-  incident.
-- **As a chain operator**, I want a debug tool (`get_block_extrinsics`) that dumps raw extrinsics for
-  one block directly from the node, so I can compare "what the chain says" against "what Sentinel
-  Tower stored" when investigating a discrepancy.
+### Neurons over time
 
-## 2. Metagraph / APY Data Consumer (Grafana dashboard viewer, analyst)
+As a subnet owner or miner, I follow my neurons' stake, incentive and emissions over time, so that I can see how my subnet and miners perform.
 
-Wants trustworthy point-in-time snapshots of subnet state without touching the chain directly.
+- **Metagraph Miner**, **Metagraph Multi-miner**, **Metagraph Validator** and **Metagraph Subnet** show snapshots taken at the start, middle and end of each epoch.
+- In **Metagraph Subnet**, each hotkey opens its Miner (and, for validators, Validator) dashboard for the same subnet and time range.
+- Known keys show a name instead of an address: a manual label first, otherwise the coldkey's on-chain identity.
 
-- **As an analyst**, I want periodic full snapshots of every subnet's metagraph (neurons, weights,
-  bonds, collateral) stored in Postgres, so I can query historical subnet state through Grafana
-  instead of replaying the chain.
-- **As an analyst**, I want snapshots taken at meaningful points in the epoch (epoch start, two
-  intermediate points, epoch end) rather than every block, so storage stays bounded while I still get
-  enough resolution to see how a subnet evolves within an epoch.
-- **As a validator operator**, I want my validator's APY computed from actual per-epoch dividend/stake
-  data and exposed on a Grafana dashboard (`legacy/subnet-apy.json`), so I can verify my returns without
-  building the computation myself.
-- **As a subnet owner or miner**, I want per-subnet Grafana dashboards (`metagraph-miner.json`,
-  `metagraph-validator.json`, `metagraph-multi-miner.json`) so I can track my own neurons' stake,
-  incentive, and emissions over time.
-- **As an analyst browsing a subnet** (`metagraph-subnet.json`), I want each hotkey in the neuron
-  tables to open the Miner dashboard (and, for validators, the Validator dashboard) for that
-  subnet, hotkey and time range, and a link bar to the other Metagraph dashboards, so I can drill
-  down without retyping the hotkey.
-- **As an analyst**, I want validator per-epoch APY facts maintained incrementally (every 15 min,
-  single-flight) in a compact epoch table, so dashboard numbers stay fresh without recomputing
-  history and without competing for database resources.
-- **As an operator historically missing data**, I want a long-running backfill daemon
-  (`historical_metagraph_backfill`) that walks a historical block range one epoch-start snapshot at a
-  time, so I can populate months of missing APY history without babysitting the process.
-- **As an analyst**, I want known coldkeys/hotkeys labeled with human-readable names
-  (`load_key_labels`), so dashboards show "Foundation Validator" instead of a raw SS58 address.
-- **As an analyst**, I want every coldkey that registered an on-chain identity to be shown by that
-  name (refreshed hourly by `sync_coldkey_identities`) whenever no manual label exists, so most
-  validators are named on dashboards without anyone maintaining a label list. Dashboards resolve a
-  key's name as: hotkey label, then coldkey label, then on-chain identity name, then the shortened
-  hotkey.
-- **As an analyst**, I want each subnet's *burn* — the share of its incentive that goes back to the
-  subnet owner's own coldkey — and the same measurement for one separately configured coldkey
-  (*superburn*, `METAGRAPH_SUPERBURN_COLDKEY`) recorded directly from each epoch-start snapshot,
-  filed against the root-epoch anchor already present in Sentinel's ingested blocks, so I can see at
-  a glance which subnets are paying miners and which are paying themselves. If that anchor block is
-  unexpectedly absent, I want Sentinel to recover it from Finney and then the archive node so a
-  pruned live-node timestamp does not leave a permanent metric gap.
-- **As an analyst**, I want to know whether each subnet had emissions enabled on chain
-  (`SubtensorModule.SubnetEmissionEnabled`) at a given time, since nothing in the metagraph
-  snapshots records it and it cannot be reconstructed after the fact from a non-archive node.
-- **As an analyst**, I want those per-subnet values filed against a single shared time bucket (the
-  *meta epoch* — the root subnet's epoch), so that 128 subnets running on 128 offset epoch schedules
-  still line up column-by-column in one heatmap (`docs/grafana/burns-and-emissions.json`).
-- **As an analyst**, I want each subnet's burn attributed to whoever owned the subnet *at the sampled
-  block* — recorded on that block's `MetagraphDump` — so that a subnet changing hands does not
-  retroactively rewrite the burn of every earlier epoch. If a block's dump is missing, I want no burn
-  row at all rather than one scored against today's owner.
-- **As an analyst**, I want burn history recoverable for block ranges that predate this feature
-  (`backfill_burn_metrics`), because it is derivable from snapshots already stored — and I accept
-  that emission history for those ranges needs an archive node instead. For dumps taken before owners
-  were recorded per block, I accept the current owner as a best-effort stand-in (stamped once by
-  migration `0015`), recoverable exactly by re-running `historical_metagraph_backfill` over the range.
+### Burns and emissions
 
-## 3. Metagraph Explorer User (Django admin)
+As an analyst, I see for every subnet how much of its incentive goes back to the owner's own coldkey and whether emissions were enabled, so that I can tell which subnets pay their miners and which pay themselves.
 
-Wants to inspect raw metagraph state interactively without writing SQL.
+- **Burns and Emissions** lines all subnets up on the same epochs in one heatmap.
+- A burn is attributed to whoever owned the subnet at that time, so a change of owner does not rewrite history.
+- The same measurement is available for one separately configured coldkey ("superburn").
 
-- **As an admin user**, I want to pick a subnet and a block from dropdowns and see that subnet's full
-  metagraph state at that block, so I can inspect specific historical moments without knowing the
-  underlying schema.
-- **As an admin user**, I want the block list for a given subnet to only show blocks that were
-  actually dumped (not every chain block), so I'm not offered blocks with no data.
-- **As an admin user**, I want to browse and search extrinsics by call module, success/failure, netuid,
-  address, or extrinsic hash directly in the Django admin, so I can investigate a specific transaction
-  without a custom tool.
+### Hyperparameters and weights
 
-## 4. Subnet Owner / Governance Watcher (Discord notification recipient)
+As a subnet owner or researcher, I see every subnet's current hyperparameters and the history of their changes, so that I can follow governance decisions over time.
 
-Wants to be alerted the moment something governance-relevant happens, without polling the chain.
+- **Subnet Hyperparameters** shows current values and each change with its old and new value.
+- **Weight Setting** and **Subnets** give an overview of weight-setting activity and subnets.
 
-- **As a subnet owner**, I want a Discord alert the instant my subnet is registered or dissolved, so I
-  don't have to poll the chain to know the registration succeeded (or that dissolution — often
-  irreversible and high-stakes — actually happened).
-- **As a subnet owner**, I want a Discord alert when a coldkey swap is announced, disputed, reset, or
-  cleared for keys relevant to my subnet, routed to a webhook I control, so I can react to a
-  potentially fraudulent or unexpected swap in progress before it completes.
-- **As a subnet owner**, I want to configure my own Discord webhook URL for my subnet through the
-  Django admin (`SubnetWebhook`), without needing a code deploy or asking an engineer to add an
-  environment variable.
-- **As a subnet owner**, I want to be able to disable my webhook temporarily (rather than delete it),
-  so I can silence notifications during planned maintenance without losing the configuration.
-- **As a chain governance watcher**, I want a catch-all alert for any `Sudo`-wrapped call that isn't
-  handled by a more specific notification (coldkey swap, subnet registration/dissolution), so
-  unexpected root-level chain interventions never go unnoticed just because no one wrote a specific
-  handler for them yet.
-- **As a notification recipient**, I only want to be alerted about extrinsics that actually succeeded
-  on-chain, so I'm not paged for attempted-but-rejected transactions.
-- **As an engineer extending the notification system**, I want to unwrap `Sudo`-wrapped calls to their
-  inner call before matching against handlers, so a governance action performed via sudo (the common
-  path for `AdminUtils` hyperparameter changes) is still routed to the right notification instead of
-  falling through to the generic Sudo alert.
-- **As a subnet owner or governance watcher**, I want a call executed through a multisig
-  (`Multisig.as_multi` on its final approval, or `as_multi_threshold_1`) to be alerted exactly like the
-  same call sent directly — including a multisig wrapping `Sudo` — naming the multisig account as the
-  actor and the member who sent the final approval. Proposals and intermediate approvals have not run
-  the call and are not alerted; an execution whose inner call failed counts as failed; a
-  multisig-wrapped call with no specific handler is not alerted (there is no multisig catch-all).
-- **As an operator verifying notifications**, I want to replay the notification pipeline for any past
-  block (`replay_notifications <block>…`, `--archive` to read the archive node directly) and see every
-  payload and its target channel printed and logged instead of posted, with nothing written to the
-  database, so I can check alert behaviour on staging or production without paging anyone.
+## Alerts
 
-## 5. Subnet Hyperparameter Watcher
+### Governance alerts on Discord
 
-Wants to know not just *that* a hyperparameter changed, but what it changed *from* and *to*.
+As a subnet owner or governance watcher, I get a Discord alert when something governance-relevant happens on chain, so that I can react without watching the chain myself.
 
-- **As a subnet owner or researcher**, I want the current value of every tunable subnet hyperparameter
-  (tempo, weight rate limit, immunity period, min/max difficulty, etc.) tracked in one table, so I can
-  see a subnet's current configuration at a glance instead of querying the chain live.
-- **As a subnet owner or researcher**, I want every hyperparameter *change* recorded with its old and
-  new value, so I can build a timeline of governance decisions for a subnet (`SubnetHyperparamHistory`,
-  `hyperparam-events.json` dashboard).
-- **As a notification recipient**, when a hyperparameter-changing extrinsic fires, I want the alert to
-  include the previous value alongside the new one, so I can judge the significance of the change
-  (e.g., "immunity period 4032 → 100" reads very differently from "4032 → 4000") without a separate
-  lookup.
-- **As a chain operator**, I want a one-shot sync command (`sync_hyperparams`) to seed or repair the
-  current-value table for one or more subnets directly from the chain, independent of the
-  extrinsic-driven update path, so I can recover from drift without replaying history.
+- Alerts cover subnet registration and dissolution, coldkey swap announcements, disputes, resets and clears, hyperparameter changes (with old and new value), and any other sudo call.
+- Calls made through sudo or a multisig are alerted like the same call sent directly, naming the multisig and the member who executed it.
+- Only calls that succeeded on chain are alerted.
 
-## 6. Platform/Infra Engineer (developer extending the system)
+### Alerts for my subnet
 
-Wants the system to be operable and debuggable, since there's no support team behind it.
+As an administrator, I route a subnet's alerts to its owner's own Discord webhook and pause it when needed, so that owners hear about their subnet without a code change.
 
-- **As a dashboard reviewer**, I want all open `grafana-preview` PRs targeting `master`
-  combined on `staging-grafana`, so I can review several dashboard changes together before
-  merging. Removing a label, closing/merging a PR, changing its target branch, or updating
-  `master` rebuilds the preview. Conflicts or invalid dashboard JSON leave the previous preview
-  intact and are reported on the PRs. A failed comment update must not prevent notifying the other
-  affected PRs, and partial notification failures remain visible in Actions. Publishing the branch
-  does not claim Grafana has imported it.
+- Webhooks are managed per subnet in Django admin.
+- A webhook can be disabled temporarily without losing its configuration.
 
-- **As a developer**, I want Celery tasks isolated onto separate queues by cost (`metagraph` vs.
-  `celery`), so a burst of expensive metagraph dumps can't starve lightweight notification tasks.
-- **As a developer**, I want tasks to re-enqueue automatically if a worker crashes mid-task
-  (`acks_late`, `reject_on_worker_lost`), so a worker restart during a deploy doesn't silently drop
-  in-flight work.
-- **As a developer**, I want workers to recycle after a fixed number of tasks, so a memory leak in the
-  underlying Bittensor SDK client doesn't slowly degrade a long-lived worker process.
-- **As a developer**, I want a pluggable storage abstraction (local filesystem or S3, chosen by
-  config) behind one interface, so artifact storage can move from local disk to S3 in production
-  without touching call sites.
-- **As a developer adding a new alert type**, I want to add a notification handler by subclassing a
-  base class, declaring which extrinsic patterns it matches, and registering it with a decorator, so
-  wiring a new Discord alert doesn't require touching the dispatch/matching code at all.
+## Admin
+
+### Exploring chain data
+
+As an admin user, I inspect a subnet's full metagraph at any recorded block and search extrinsics, so that I can investigate a specific moment or transaction without writing SQL.
+
+- I pick a subnet and one of the blocks that were actually recorded for it.
+- Extrinsics can be filtered by call module, success and subnet, and searched by hash, address or call function.
