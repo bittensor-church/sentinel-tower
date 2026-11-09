@@ -194,7 +194,8 @@ server {
         proxy_set_header X-Real-IP $remote_addr;
         proxy_set_header X-Forwarded-Proto $scheme;
         proxy_set_header X-Request-ID $request_id;
-        proxy_pass http://cadvisor:8080/metrics;
+        set $cadvisor_upstream cadvisor:8080;
+        proxy_pass http://$cadvisor_upstream/metrics;
     }
 
     location /nginx-metrics/ {

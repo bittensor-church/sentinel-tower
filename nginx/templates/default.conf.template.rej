@@ -1,0 +1,41 @@
+diff a/nginx/templates/default.conf.template b/nginx/templates/default.conf.template	(rejected hunks)
+@@ -105,6 +105,9 @@ server {
+     server_name monitoring;
+     listen      10443           ssl http2;
+ 
++    # Resolve sidecars per request (Docker DNS), so nginx still starts when one of them is down.
++    resolver 127.0.0.11 valid=10s ipv6=off;
++
+ 
+     include /etc/nginx/config_helpers/brotli.conf;
+     include /etc/nginx/config_helpers/gzip.conf;
+@@ -171,7 +175,8 @@ server {
+         proxy_set_header X-Real-IP $remote_addr;
+         proxy_set_header X-Request-ID $request_id;
+         proxy_set_header X-Forwarded-Proto $scheme;
+-        proxy_pass http://celery-flower:5555/metrics;
++        set $celery_flower_upstream celery-flower:5555;
++        proxy_pass http://$celery_flower_upstream/metrics;
+     }
+ 
+     location /backup-metrics/ {
+@@ -181,7 +186,8 @@ server {
+         proxy_set_header X-Real-IP $remote_addr;
+         proxy_set_header X-Forwarded-Proto $scheme;
+         proxy_set_header X-Request-ID $request_id;
+-        proxy_pass http://backups:8000/;
++        set $backups_upstream backups:8000;
++        proxy_pass http://$backups_upstream/;
+     }
+ 
+     location /postgres-metrics/ {
+@@ -190,7 +196,8 @@ server {
+         proxy_set_header Host $http_host;
+         proxy_set_header X-Real-IP $remote_addr;
+         proxy_set_header X-Forwarded-Proto $scheme;
+-        proxy_pass http://postgres-exporter:9187/metrics;
++        set $postgres_exporter_upstream postgres-exporter:9187;
++        proxy_pass http://$postgres_exporter_upstream/metrics;
+     }
+ }
+ 

@@ -1,0 +1,24 @@
+diff a/bin/prepare-os.sh b/bin/prepare-os.sh	(rejected hunks)
+@@ -11,21 +11,16 @@ Compress=yes
+ EOF
+ systemctl restart systemd-journald
+ 
+-sudo ufw allow proto tcp from 172.16.0.0/16 to any port 9100  # nginx getting node-exporter metrics
++ufw allow proto tcp from 172.16.0.0/16 to any port 9100  # nginx getting node-exporter metrics
+ 
+ DOCKER_BIN="$(command -v docker || true)"
+ DOCKER_COMPOSE_INSTALLED=""
+ if docker compose version >/dev/null 2>&1; then
+   DOCKER_COMPOSE_INSTALLED=1
+ fi
+-AWS_CLI="$(command -v aws || true)"
+ JQ_BIN="$(command -v jq || true)"
+ # https://docs.docker.com/engine/install/ubuntu/
+ DOCKER_APT_KEY_FINGERPRINT="9DC858229FC7DD38854AE2D88D81803C0EBFCD88"
+-DOCKER_GROUP_USER="${SUDO_USER:-}"
+-if [ -z "${DOCKER_GROUP_USER}" ]; then
+-  DOCKER_GROUP_USER="$(id -un 1000 2>/dev/null || true)"
+-fi
+ 
+ export DEBIAN_FRONTEND=noninteractive
+ 
