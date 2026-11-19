@@ -59,3 +59,14 @@ As an admin user, I inspect a subnet's full metagraph at any recorded block and 
 
 - I pick a subnet and one of the blocks that were actually recorded for it.
 - Extrinsics can be filtered by call module, success and subnet, and searched by hash, address or call function.
+
+## Integrations
+
+### Metagraph history for other services
+
+As a developer of another service, I fetch a subnet's metagraph history with an access token, so that my service can run its own calculations without access to the admin or the database.
+
+- For a subnet and a time span I get one snapshot per epoch: the registered keys, their stake and the weights validators set.
+- Known keys come with the same names the dashboards show.
+- I am told which epochs were left out because their weights are no longer stored.
+- Each service has its own token, which can be withdrawn without affecting the others.

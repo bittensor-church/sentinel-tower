@@ -427,6 +427,36 @@ my_storage = get_storage("my-storage")
 | `aws_secret_access_key` | No       |
 
 
+## Metagraph data API
+
+`GET /api/v1/metagraph-data/` exports metagraph history for other services: for one subnet and a
+block or time span it returns one snapshot per epoch (the latest finished dump of each epoch).
+
+Set `METAGRAPH_API_TOKENS` to a comma-separated list of bearer tokens, one per consumer; the
+endpoint answers 404 while the list is empty. Callers send `Authorization: Bearer <token>`.
+
+```sh
+curl -H "Authorization: Bearer $TOKEN" \
+  "https://<host>/api/v1/metagraph-data/?netuid=1&start_date=2026-01-01T00:00:00&end_date=2026-01-03T00:00:00"
+```
+
+| Parameter                    | Required | Description                                               |
+|------------------------------|----------|-----------------------------------------------------------|
+| `netuid`                     | Yes      | Subnet to export                                          |
+| `start_block` / `start_date` | Yes      | Start of the range; dates are ISO 8601, UTC without offset |
+| `end_block` / `end_date`     | Yes      | End of the range (inclusive)                              |
+| `mech_id`                    | No       | Mechanism whose weights are returned (default `0`)        |
+
+The response holds `blocks` (the snapshot blocks, ascending) and, keyed by block: `hotkeys` (a list
+indexed by uid of `[hotkey, is_validator, is_active]`, with `null` for an empty slot), `stakes`
+(uid → total stake in TAO) and `weights` (validator uid → target uid → weight). `labels` maps
+hotkeys to names with the same precedence as the dashboards.
+
+A range may span at most `METAGRAPH_API_MAX_BLOCKS` blocks (7 days by default). Weights are kept
+for `DATA_RETENTION_BULK_DAYS` and are not collected with `METAGRAPH_LITE=1`: epoch snapshots
+without weights are listed in `skipped_blocks` instead of `blocks`, and a range with none at all
+answers 404.
+
 ## Collector health
 
 Recreate `sync-metagraph` on deployment to apply its progress health check. It automatically
