@@ -11,6 +11,7 @@ from datetime import UTC, datetime, timedelta
 import pytest
 from django.utils import timezone
 
+from apps.metagraph.models import ApiToken
 from tests.factories.metagraph import (
     BlockFactory,
     ColdkeyFactory,
@@ -35,9 +36,10 @@ pytestmark = pytest.mark.django_db
 
 
 @pytest.fixture(autouse=True)
-def api_tokens(settings):
-    settings.METAGRAPH_API_TOKENS = [BEARER, "second-consumer-token"]
+def api_token(settings):
+    """A consumer whose token is BEARER; `_get` sends it by default."""
     settings.METAGRAPH_API_MAX_BLOCKS = 50_400
+    return ApiToken.objects.create(name="simulator", token_digest=ApiToken.digest(BEARER), token_prefix=BEARER[:8])
 
 
 @pytest.fixture
@@ -88,15 +90,6 @@ def _get(client, token=BEARER, **params):
 # --- authentication -----------------------------------------------------------------------
 
 
-def test__endpoint_does_not_exist_while_no_token_is_configured(client, settings, neurons):
-    settings.METAGRAPH_API_TOKENS = []
-    _dump(neurons, EPOCH_A_END)
-
-    response = _get(client, netuid=NETUID, start_block=358, end_block=EPOCH_A_END)
-
-    assert response.status_code == 404
-
-
 @pytest.mark.parametrize("token", [None, "", "wrong-token", "test-toke", "test-token-and-more"])
 def test__request_without_a_valid_token_is_rejected(client, neurons, token):
     _dump(neurons, EPOCH_A_END)
@@ -120,12 +113,52 @@ def test__token_must_use_the_bearer_scheme(client, neurons):
     assert response.status_code == 401
 
 
-def test__every_configured_token_is_accepted(client, neurons):
+def test__each_consumer_authenticates_with_its_own_token(client, neurons):
     _dump(neurons, EPOCH_A_END)
+    _other, other_token = ApiToken.issue("another-service")
 
-    response = _get(client, token="second-consumer-token", netuid=NETUID, start_block=358, end_block=EPOCH_A_END)
+    response = _get(client, token=other_token, netuid=NETUID, start_block=358, end_block=EPOCH_A_END)
 
     assert response.status_code == 200
+
+
+def test__withdrawn_token_is_rejected_while_others_keep_working(client, neurons, api_token):
+    _dump(neurons, EPOCH_A_END)
+    _other, other_token = ApiToken.issue("another-service")
+    api_token.is_active = False
+    api_token.save()
+
+    withdrawn = _get(client, netuid=NETUID, start_block=358, end_block=EPOCH_A_END)
+    other = _get(client, token=other_token, netuid=NETUID, start_block=358, end_block=EPOCH_A_END)
+
+    assert withdrawn.status_code == 401
+    assert other.status_code == 200
+
+
+def test__deleted_token_is_rejected(client, neurons, api_token):
+    _dump(neurons, EPOCH_A_END)
+    api_token.delete()
+
+    response = _get(client, netuid=NETUID, start_block=358, end_block=EPOCH_A_END)
+
+    assert response.status_code == 401
+
+
+def test__use_of_a_token_is_recorded(client, neurons, api_token):
+    _dump(neurons, EPOCH_A_END)
+    assert api_token.last_used_at is None
+    before = timezone.now()
+
+    _get(client, netuid=NETUID, start_block=358, end_block=EPOCH_A_END)
+
+    api_token.refresh_from_db()
+    assert before <= api_token.last_used_at <= timezone.now()
+
+    # a rejected request does not count as use
+    first_use = api_token.last_used_at
+    _get(client, token="wrong-token", netuid=NETUID, start_block=358, end_block=EPOCH_A_END)
+    api_token.refresh_from_db()
+    assert api_token.last_used_at == first_use
 
 
 def test__only_get_is_allowed(client):
@@ -332,3 +365,51 @@ def test__invalid_parameters_are_a_400_with_the_reason(client, neurons, params, 
 
     assert response.status_code == 400
     assert response.json() == {"error": error}
+
+
+# --- token management ---------------------------------------------------------------------
+
+
+def test__issued_token_is_stored_only_as_a_digest():
+    api_token, token = ApiToken.issue("yuma-simulator")
+
+    stored = ApiToken.objects.filter(name="yuma-simulator").values().get()
+    assert token not in {str(value) for value in stored.values()}
+    assert stored["token_digest"] == ApiToken.digest(token)
+    assert stored["token_prefix"] == token[:8]
+    assert len(token) >= 40
+    assert ApiToken.authenticate(token) == api_token
+    assert ApiToken.authenticate(token + "x") is None
+
+
+def test__admin_shows_a_new_token_once_and_that_token_works(admin_client, client, neurons):
+    _dump(neurons, EPOCH_A_END)
+
+    response = admin_client.post(
+        "/admin/metagraph/apitoken/add/", {"name": "issued-in-admin", "is_active": "on"}, follow=True
+    )
+
+    assert response.status_code == 200
+    created = ApiToken.objects.get(name="issued-in-admin")
+    (message,) = [str(m) for m in response.context["messages"] if "Token for issued-in-admin" in str(m)]
+    token = message.split("Token for issued-in-admin: ")[1].split(" ")[0]
+    assert token.startswith(created.token_prefix)
+    assert ApiToken.digest(token) == created.token_digest
+
+    # the token from the message authenticates; the detail page never shows it again
+    assert _get(client, token=token, netuid=NETUID, start_block=358, end_block=EPOCH_A_END).status_code == 200
+    detail = admin_client.get(f"/admin/metagraph/apitoken/{created.pk}/change/")
+    assert token not in detail.content.decode()
+
+
+def test__renaming_a_token_in_admin_keeps_the_token(admin_client, api_token):
+    digest_before = api_token.token_digest
+
+    response = admin_client.post(
+        f"/admin/metagraph/apitoken/{api_token.pk}/change/", {"name": "renamed", "is_active": "on"}, follow=True
+    )
+
+    assert response.status_code == 200
+    api_token.refresh_from_db()
+    assert (api_token.name, api_token.token_digest) == ("renamed", digest_before)
+    assert not [m for m in response.context["messages"] if "Token for" in str(m)]

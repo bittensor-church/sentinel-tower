@@ -69,4 +69,4 @@ As a developer of another service, I fetch a subnet's metagraph history with an 
 - For a subnet and a time span I get one snapshot per epoch: the registered keys, their stake and the weights validators set.
 - Known keys come with the same names the dashboards show.
 - I am told which epochs were left out because their weights are no longer stored.
-- Each service has its own token, which can be withdrawn without affecting the others.
+- An administrator issues each service its own token in the admin, sees when it was last used, and can withdraw it without affecting the others.

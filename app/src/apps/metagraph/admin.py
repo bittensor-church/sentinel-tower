@@ -1,6 +1,7 @@
-from django.contrib import admin
+from django.contrib import admin, messages
 
 from .models import (
+    ApiToken,
     Block,
     Bond,
     Coldkey,
@@ -218,3 +219,27 @@ class SubnetEmissionAdmin(admin.ModelAdmin):
     list_filter = ("emission_enabled", "subnet")
     raw_id_fields = ("subnet", "meta_epoch")
     ordering = ("-meta_epoch", "subnet")
+
+
+@admin.register(ApiToken)
+class ApiTokenAdmin(admin.ModelAdmin):
+    """Issue and withdraw tokens for the metagraph data API."""
+
+    list_display = ("name", "token_prefix", "is_active", "created_at", "last_used_at")
+    list_filter = ("is_active",)
+    search_fields = ("name", "token_prefix")
+    fields = ("name", "is_active", "token_prefix", "created_at", "last_used_at")
+    readonly_fields = ("token_prefix", "created_at", "last_used_at")
+
+    def save_model(self, request, obj, form, change):
+        if change:
+            super().save_model(request, obj, form, change)
+            return
+        token = obj.assign_new_token()
+        super().save_model(request, obj, form, change)
+        # the only time the token is available: it is stored as a digest
+        self.message_user(
+            request,
+            f"Token for {obj.name}: {token} — copy it now. It is not stored and cannot be shown again.",
+            messages.WARNING,
+        )

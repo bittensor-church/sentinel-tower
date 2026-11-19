@@ -432,8 +432,9 @@ my_storage = get_storage("my-storage")
 `GET /api/v1/metagraph-data/` exports metagraph history for other services: for one subnet and a
 block or time span it returns one snapshot per epoch (the latest finished dump of each epoch).
 
-Set `METAGRAPH_API_TOKENS` to a comma-separated list of bearer tokens, one per consumer; the
-endpoint answers 404 while the list is empty. Callers send `Authorization: Bearer <token>`.
+Each consumer gets its own token: add an **API token** in the admin and copy the token from the
+confirmation message — it is stored as a digest and cannot be shown again. Unticking *Is active*
+withdraws a token without deleting it. Callers send `Authorization: Bearer <token>`.
 
 ```sh
 curl -H "Authorization: Bearer $TOKEN" \

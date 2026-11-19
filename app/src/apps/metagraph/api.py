@@ -5,11 +5,10 @@ Read-only HTTP API that exports metagraph history to other services.
 snapshot per epoch: every neuron's hotkey, validator/active flags and stake, the weights
 recorded at that block, and the names of known hotkeys.
 
-Requests carry ``Authorization: Bearer <token>`` with one of ``METAGRAPH_API_TOKENS``.
-While no token is configured the endpoint answers 404.
+Requests carry ``Authorization: Bearer <token>``. Tokens are issued per consuming service
+in the admin (``ApiToken``) and stored as digests.
 """
 
-import hmac
 from datetime import UTC, datetime
 from typing import Any
 
@@ -19,7 +18,7 @@ from django.http import HttpRequest, JsonResponse
 from django.views.decorators.http import require_GET
 
 from . import utils as metagraph_utils
-from .models import Block, MetagraphDump, NeuronSnapshot, Subnet, Weight
+from .models import ApiToken, Block, MetagraphDump, NeuronSnapshot, Subnet, Weight
 
 logger = structlog.get_logger()
 
@@ -38,14 +37,13 @@ class NoData(Exception):
     """The request is valid, but nothing is stored for it."""
 
 
-def _is_authorized(request: HttpRequest) -> bool:
+def _authenticate(request: HttpRequest) -> ApiToken | None:
+    """The active API token sent with the request, if it sent one."""
     scheme, _, token = request.headers.get("Authorization", "").partition(" ")
     token = token.strip()
     if scheme.lower() != "bearer" or not token:
-        return False
-    # compare against every token, without short-circuiting on the first match
-    matches = [hmac.compare_digest(token.encode(), valid.encode()) for valid in settings.METAGRAPH_API_TOKENS]
-    return any(matches)
+        return None
+    return ApiToken.authenticate(token)
 
 
 def _int_param(request: HttpRequest, name: str, default: int | None = None) -> int:
@@ -246,12 +244,12 @@ def metagraph_data_view(request: HttpRequest) -> JsonResponse:
         labels          hotkey -> name, for hotkeys that have one: the hotkey's label, else its
                         coldkey's label, else the coldkey's on-chain identity
     """
-    if not settings.METAGRAPH_API_TOKENS:
-        return JsonResponse({"error": "Not found."}, status=404)
-    if not _is_authorized(request):
+    api_token = _authenticate(request)
+    if api_token is None:
         response = JsonResponse({"error": "Missing or invalid bearer token."}, status=401)
         response["WWW-Authenticate"] = "Bearer"
         return response
+    api_token.mark_used()
 
     try:
         netuid = _int_param(request, "netuid")
@@ -265,6 +263,7 @@ def metagraph_data_view(request: HttpRequest) -> JsonResponse:
 
     logger.info(
         "Served metagraph data",
+        consumer=api_token.name,
         netuid=netuid,
         mech_id=mech_id,
         start_block=start_block,

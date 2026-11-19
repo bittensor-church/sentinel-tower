@@ -445,11 +445,7 @@ METAGRAPH_LITE = env.bool("METAGRAPH_LITE", default=False)
 # Fixed explicitly: historical backfills must not move the collection boundary.
 METAGRAPH_SNAPSHOT_HEALTH_START_BLOCK = env.int("METAGRAPH_SNAPSHOT_HEALTH_START_BLOCK", default=0)
 
-# Read-only metagraph export API (apps.metagraph.api). Bearer tokens, comma-separated:
-# one per consumer, so each can be rotated on its own. Empty disables the endpoint.
-METAGRAPH_API_TOKENS: list[str] = [
-    token.strip() for token in env.list("METAGRAPH_API_TOKENS", default=[]) if token.strip()
-]
+# Read-only metagraph export API (apps.metagraph.api); its tokens are managed in the admin.
 # Longest block span one request may cover; the default is 7 days of 12-second blocks.
 METAGRAPH_API_MAX_BLOCKS = env.int("METAGRAPH_API_MAX_BLOCKS", default=50_400)
 
