@@ -3,6 +3,7 @@ from django.contrib.admin.sites import site
 from django.http import HttpResponse
 from django.urls import include, path
 
+from apps.metagraph.api import metagraph_data_view
 from apps.metagraph.explorer import get_explorer_urls
 
 from .core.business_metrics import metrics_manager
@@ -13,6 +14,7 @@ urlpatterns = [
     path("alive/", lambda _: HttpResponse(b"ok")),
     path(".well-known/security.txt", security_txt),
     path("admin/", (get_explorer_urls(site) + site.get_urls(), "admin", site.name)),
+    path("api/v1/metagraph-data/", metagraph_data_view, name="metagraph-data-api"),
     path("metrics", metrics_view, name="prometheus-django-metrics"),
     path("business-metrics", metrics_manager.view, name="prometheus-business-metrics"),
     path("", include("django.contrib.auth.urls")),

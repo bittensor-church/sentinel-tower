@@ -1,8 +1,13 @@
 """Django models for metagraph data storage."""
 
+import hashlib
+import secrets
+from datetime import timedelta
+
 from django.core.validators import MaxValueValidator, MinValueValidator
 from django.db import models
 from django.db.models import Q
+from django.utils import timezone
 
 
 class Coldkey(models.Model):
@@ -695,3 +700,64 @@ class SnapshotGapAcknowledgement(models.Model):
 
     class Meta:
         constraints = [models.UniqueConstraint(fields=["netuid", "block_number"], name="unique_snapshot_gap_ack")]
+
+
+class ApiToken(models.Model):
+    """Bearer token of a service allowed to read the metagraph data API (``apps.metagraph.api``).
+
+    Only the SHA-256 digest of a token is stored; the token itself is shown once, when it is
+    issued. The digest is unsalted on purpose: tokens are long random strings, and requests
+    are looked up by digest.
+    """
+
+    PREFIX_LENGTH = 8
+    # `last_used_at` is refreshed at most this often, so reads do not write on every request.
+    LAST_USED_RESOLUTION = timedelta(minutes=1)
+
+    name = models.CharField(max_length=255, unique=True, help_text="The service that uses this token.")
+    token_digest = models.CharField(max_length=64, unique=True, editable=False)
+    token_prefix = models.CharField(
+        max_length=PREFIX_LENGTH,
+        editable=False,
+        help_text="First characters of the token, to tell tokens apart.",
+    )
+    is_active = models.BooleanField(default=True, help_text="Untick to reject the token without deleting it.")
+    created_at = models.DateTimeField(auto_now_add=True)
+    last_used_at = models.DateTimeField(null=True, blank=True, editable=False)
+
+    class Meta:
+        db_table = "metagraph_api_token"
+        verbose_name = "API token"
+
+    def __str__(self) -> str:
+        return f"{self.name} ({self.token_prefix}…)"
+
+    @staticmethod
+    def digest(token: str) -> str:
+        return hashlib.sha256(token.encode()).hexdigest()
+
+    def assign_new_token(self) -> str:
+        """Give this row a fresh random token and return it. The caller saves the row."""
+        token = secrets.token_urlsafe(32)
+        self.token_digest = self.digest(token)
+        self.token_prefix = token[: self.PREFIX_LENGTH]
+        return token
+
+    @classmethod
+    def issue(cls, name: str) -> tuple[ApiToken, str]:
+        """Create a token for `name`; returns the row and the token, which is not stored."""
+        api_token = cls(name=name)
+        token = api_token.assign_new_token()
+        api_token.save()
+        return api_token, token
+
+    @classmethod
+    def authenticate(cls, token: str) -> ApiToken | None:
+        """The active token row matching `token`, if any."""
+        return cls.objects.filter(token_digest=cls.digest(token), is_active=True).first()
+
+    def mark_used(self) -> None:
+        now = timezone.now()
+        if self.last_used_at is None or now - self.last_used_at >= self.LAST_USED_RESOLUTION:
+            type(self).objects.filter(pk=self.pk).update(last_used_at=now)
+            self.last_used_at = now
