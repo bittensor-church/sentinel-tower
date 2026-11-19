@@ -1,6 +1,6 @@
 {
   "template": "https://github.com/reef-technologies/cookiecutter-rt-django",
-  "commit": "9fa0e5c4c094122d4145ad98df36ccbb5e4b06d5",
+  "commit": "4183a30b59cdc9fef9d43f2bbedb2f3a2b72877f",
   "checkout": null,
   "context": {
     "cookiecutter": {
@@ -43,14 +43,15 @@
       "ci_use_typechecker": true,
       "ci_use_spellchecker": true,
       "_copy_without_render": [
-        ".github/workflows/cruft-updates.yml"
+        ".github/workflows/cruft-updates.yml",
+        "bin/check-template-update.sh"
       ],
       "_jinja2_env_vars": {
         "trim_blocks": true,
         "lstrip_blocks": true
       },
       "_template": "https://github.com/reef-technologies/cookiecutter-rt-django",
-      "_commit": "9fa0e5c4c094122d4145ad98df36ccbb5e4b06d5"
+      "_commit": "4183a30b59cdc9fef9d43f2bbedb2f3a2b72877f"
     }
   },
   "directory": null

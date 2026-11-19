@@ -7,9 +7,11 @@ from apps.metagraph.explorer import get_explorer_urls
 
 from .core.business_metrics import metrics_manager
 from .core.metrics import metrics_view
+from .core.security_txt import security_txt
 
 urlpatterns = [
     path("alive/", lambda _: HttpResponse(b"ok")),
+    path(".well-known/security.txt", security_txt),
     path("admin/", (get_explorer_urls(site) + site.get_urls(), "admin", site.name)),
     path("metrics", metrics_view, name="prometheus-django-metrics"),
     path("business-metrics", metrics_manager.view, name="prometheus-business-metrics"),
