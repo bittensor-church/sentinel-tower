@@ -58,5 +58,10 @@ docker compose exec nginx nginx -s reload || true
 echo "Deploy done. If this release contains migrations, apply them now with:"
 echo "  docker compose run --rm app sh -c 'unset PROMETHEUS_MULTIPROC_DIR PROMETHEUS_USE_FLOCK; python manage.py wait_for_database --timeout 10 && python manage.py migrate'"
 
-# Clean up older dangling images without killing recent build cache
-docker image prune -f --filter "until=168h" || true
+# Reclaim disk space; a failed cleanup never fails the deploy. Builds keep
+# reusing the cache they need, so anything unused for 3 days is stale.
+PRUNE_UNTIL="until=72h"
+# build cache: layers no build has used for 3 days (old dependency and frontend layers)
+docker builder prune -f --filter "$PRUNE_UNTIL" || true
+# images no container uses, created over 3 days ago: earlier app builds, one-off pulls
+docker image prune -af --filter "$PRUNE_UNTIL" || true

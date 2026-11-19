@@ -1,12 +1,13 @@
 # pyright: reportArgumentType=false, reportCallIssue=false, reportAssignmentType=false
 import logging
 from collections.abc import Callable
-from datetime import timedelta
+from datetime import UTC, datetime, timedelta
 from typing import TypedDict
 
 import environ
 import structlog
 from celery.schedules import crontab
+from django.core.exceptions import ImproperlyConfigured
 from django.utils.log import CallbackFilter
 from kombu import Queue
 from structlog.typing import Processor, WrappedLogger
@@ -128,6 +129,22 @@ if CORS_ENABLED := env.bool("CORS_ENABLED"):
     CORS_ALLOWED_ORIGINS = env.list("CORS_ALLOWED_ORIGINS", default=[])
     CORS_ALLOWED_ORIGIN_REGEXES = env.list("CORS_ALLOWED_ORIGIN_REGEXES", default=[])
     CORS_ALLOW_ALL_ORIGINS = env.bool("CORS_ALLOW_ALL_ORIGINS")
+
+
+def _parse_security_txt_expires(value: str) -> datetime | None:
+    if not value:
+        return None
+    try:
+        expires = datetime.fromisoformat(value)
+    except ValueError as exc:
+        raise ImproperlyConfigured(
+            f"SECURITY_TXT_EXPIRES must be an ISO 8601 date, e.g. 2027-10-01, got {value!r}"
+        ) from exc
+    return expires if expires.tzinfo else expires.replace(tzinfo=UTC)
+
+
+SECURITY_TXT_CONTACTS = env.list("SECURITY_TXT_CONTACTS", default=[])
+SECURITY_TXT_EXPIRES = _parse_security_txt_expires(env("SECURITY_TXT_EXPIRES", default=""))
 
 REDIS_HOST = env("REDIS_HOST")
 REDIS_PORT = env.int("REDIS_PORT")

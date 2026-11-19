@@ -463,7 +463,7 @@ services:
   #     <<: *logging
 
   nginx:
-    image: 'ghcr.io/reef-technologies/nginx-rt:v1.4.0'
+    image: 'ghcr.io/reef-technologies/nginx-rt:v1.4.1'
     restart: unless-stopped
     healthcheck:
       test: [
